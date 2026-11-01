@@ -497,9 +497,9 @@ async function refreshSession(session){
   $s('aqwEditUsername').value=data.username||'';
   $s('aqwEditDisplayName').value=data.display_name||'';
   $s('aqwBio').value=data.bio||'';
-  setStatus('ログイン中：@'+data.username);
+  setStatus((localJa()?'ログイン中：@':'Signed in as @')+data.username);
   await loadFriends();
- }catch(e){setStatus('プロフィールを読み込めませんでした：'+errText(e))}
+ }catch(e){setStatus((localJa()?'プロフィールを読み込めませんでした：':'Could not load profile: ')+errText(e))}
 }
 async function uploadImage(file){
  if(!file)return null;
@@ -516,7 +516,7 @@ async function loadFeed(){
  if(!sb)return;
  const feed=$s('aqwFeed');feed.replaceChildren();
  const {data:posts,error}=await sb.from('posts').select('id,user_id,body,image_path,parent_post_id,quiz_result,created_at,profiles(username,display_name)').is('parent_post_id',null).order('created_at',{ascending:false}).limit(50);
- if(error){feed.textContent='タイムラインを読み込めませんでした：'+errText(error);return}
+ if(error){feed.textContent=(localJa()?'タイムラインを読み込めませんでした：':'Could not load feed: ')+errText(error);return}
  if(!posts?.length){feed.innerHTML='<div class="aqw-empty">まだ投稿がありません。最初の投稿をしてみましょう。</div>';return}
  const postIds=posts.map(post=>post.id);
  const {data:likeRows,error:likesError}=await sb.from('post_likes').select('post_id').in('post_id',postIds);
@@ -533,28 +533,28 @@ async function renderPost(post,initialLikeCount){
  head.append(who,time);article.append(head);
  if(post.body){const body=document.createElement('p');body.className='aqw-post-body';body.textContent=post.body;article.append(body)}
  if(post.image_path){const img=document.createElement('img');img.className='aqw-post-image';img.loading='lazy';img.src=post.image_path;img.alt='投稿画像';article.append(img)}
- if(post.quiz_result){const result=document.createElement('p');result.className='muted';result.textContent='クイズ結果：'+JSON.stringify(post.quiz_result);article.append(result)}
+ if(post.quiz_result){const result=document.createElement('p');result.className='muted';result.textContent=(localJa()?'クイズ結果：':'Quiz result: ')+JSON.stringify(post.quiz_result);article.append(result)}
  const actions=document.createElement('div');actions.className='aqw-post-actions';
- const like=document.createElement('button');like.type='button';like.textContent='いいね';
+ const like=document.createElement('button');like.type='button';like.textContent=localJa()?'いいね':'Like';
  let likeCount=initialLikeCount;
  if(likeCount===undefined){const result=await sb.from('post_likes').select('*',{count:'exact',head:true}).eq('post_id',post.id);likeCount=result.count}
  const count=document.createElement('small');count.textContent=' '+(likeCount||0);
- const replyBtn=document.createElement('button');replyBtn.type='button';replyBtn.textContent='返信を見る / 返信する';
- const deleteBtn=document.createElement('button');deleteBtn.type='button';deleteBtn.textContent='自分の投稿を削除';deleteBtn.className='danger-button';deleteBtn.classList.toggle('hidden',post.user_id!==currentUser?.id);
+ const replyBtn=document.createElement('button');replyBtn.type='button';replyBtn.textContent=localJa()?'返信を見る / 返信する':'View / write replies';
+ const deleteBtn=document.createElement('button');deleteBtn.type='button';deleteBtn.textContent=localJa()?'自分の投稿を削除':'Delete your post';deleteBtn.className='danger-button';deleteBtn.classList.toggle('hidden',post.user_id!==currentUser?.id);
  actions.append(like,count,replyBtn,deleteBtn);article.append(actions);
  like.disabled=!currentUser;
  like.onclick=async()=>{try{const {data:existing,error}=await sb.from('post_likes').select('post_id').eq('post_id',post.id).eq('user_id',currentUser.id).maybeSingle();if(error)throw error;if(existing){const r=await sb.from('post_likes').delete().eq('post_id',post.id).eq('user_id',currentUser.id);if(r.error)throw r.error}else{const r=await sb.from('post_likes').insert({post_id:post.id,user_id:currentUser.id});if(r.error)throw r.error}const {count:n}=await sb.from('post_likes').select('*',{count:'exact',head:true}).eq('post_id',post.id);count.textContent=' '+(n||0)}catch(e){message(postMsg,errText(e))}};
  deleteBtn.onclick=async()=>{if(!confirm('この投稿を削除しますか？'))return;const {error}=await sb.from('posts').delete().eq('id',post.id);if(error)message(postMsg,errText(error));else await loadFeed()};
- const replies=document.createElement('div');replies.className='aqw-replies hidden';replyBtn.onclick=async()=>{replies.classList.toggle('hidden');if(!replies.dataset.loaded&&!replies.classList.contains('hidden')){replies.dataset.loaded='1';const {data,error}=await sb.from('posts').select('id,user_id,body,created_at,profiles(username,display_name)').eq('parent_post_id',post.id).order('created_at');if(error){replies.textContent=errText(error)}else if(!data.length){replies.textContent='返信はまだありません。'}else data.forEach(r=>{const p=document.createElement('p');p.textContent=(r.profiles?.display_name||r.profiles?.username||'User')+'：'+r.body+' ('+stamp(r.created_at)+')';replies.append(p)})}}
- if(currentUser){const form=document.createElement('form');form.className='aqw-reply-form';const input=document.createElement('input');input.maxLength=2000;input.required=true;input.placeholder='返信を書く';const submit=document.createElement('button');submit.type='submit';submit.textContent='返信';form.append(input,submit);form.onsubmit=async e=>{e.preventDefault();const {error}=await sb.from('posts').insert({user_id:currentUser.id,parent_post_id:post.id,body:input.value.trim()});if(error)message(postMsg,errText(error));else{input.value='';await loadFeed()}};replies.append(form)}
+ const replies=document.createElement('div');replies.className='aqw-replies hidden';replyBtn.onclick=async()=>{replies.classList.toggle('hidden');if(!replies.dataset.loaded&&!replies.classList.contains('hidden')){replies.dataset.loaded='1';const {data,error}=await sb.from('posts').select('id,user_id,body,created_at,profiles(username,display_name)').eq('parent_post_id',post.id).order('created_at');if(error){replies.textContent=errText(error)}else if(!data.length){replies.textContent=localJa()?'返信はまだありません。':'No replies yet.'}else data.forEach(r=>{const p=document.createElement('p');p.textContent=(r.profiles?.display_name||r.profiles?.username||'User')+'：'+r.body+' ('+stamp(r.created_at)+')';replies.append(p)})}}
+ if(currentUser){const form=document.createElement('form');form.className='aqw-reply-form';const input=document.createElement('input');input.maxLength=2000;input.required=true;input.placeholder='返信を書く';const submit=document.createElement('button');submit.type='submit';submit.textContent=localJa()?'返信':'Reply';form.append(input,submit);form.onsubmit=async e=>{e.preventDefault();const {error}=await sb.from('posts').insert({user_id:currentUser.id,parent_post_id:post.id,body:input.value.trim()});if(error)message(postMsg,errText(error));else{input.value='';await loadFeed()}};replies.append(form)}
  article.append(replies);return article;
 }
 async function doPost(bodyOverride){
- if(!currentUser){message(postMsg,'投稿するにはログインしてください。');return}
+ if(!currentUser){message(postMsg,localJa()?'投稿するにはログインしてください。':'Sign in to create a post.');return}
  const body=(bodyOverride??$s('aqwPostBody').value).trim(),file=$s('aqwPostImage').files[0];
- if(!body&&!file){message(postMsg,'本文または画像を入力してください。');return}
- message(postMsg,'投稿しています…');
- try{let image_path=null;if(file)image_path=await uploadImage(file);const {error}=await sb.from('posts').insert({user_id:currentUser.id,body,image_path});if(error)throw error;$s('aqwPostBody').value='';$s('aqwPostImage').value='';message(postMsg,'投稿しました。');await loadFeed()}catch(e){message(postMsg,'投稿できませんでした：'+errText(e))}
+ if(!body&&!file){message(postMsg,localJa()?'本文または画像を入力してください。':'Enter text or select an image.');return}
+ message(postMsg,localJa()?'投稿しています…':'Publishing…');
+ try{let image_path=null;if(file)image_path=await uploadImage(file);const {error}=await sb.from('posts').insert({user_id:currentUser.id,body,image_path});if(error)throw error;$s('aqwPostBody').value='';$s('aqwPostImage').value='';message(postMsg,localJa()?'投稿しました。':'Post published.');await loadFeed()}catch(e){message(postMsg,(localJa()?'投稿できませんでした：':'Could not publish: ')+errText(e))}
 }
 async function searchUsers(e){
  e.preventDefault();const term=$s('aqwUserSearch').value.trim();const box=$s('aqwUserResults');box.textContent=localJa()?'検索中…':'Searching…';
@@ -619,11 +619,11 @@ async function sendFriendMessage(e){
 if(!initSupabase())return;
 $s('aqwAuthForm').addEventListener('submit',e=>{e.preventDefault();authAction(signupMode?'signup':'signin')});
 $s('aqwSignUp').addEventListener('click',()=>setAuthMode(!signupMode));
-$s('aqwPasswordForm').addEventListener('submit',async e=>{e.preventDefault();const next=$s('aqwNewPassword').value,confirmPassword=$s('aqwConfirmPassword').value;message($s('aqwPasswordMessage'),'');if(next.length<8){message($s('aqwPasswordMessage'),'パスワードは8文字以上にしてください。');return}if(next!==confirmPassword){message($s('aqwPasswordMessage'),'確認用パスワードが一致しません。');return}const button=$s('aqwPasswordForm').querySelector('button[type="submit"]');button.disabled=true;try{const {error}=await sb.auth.updateUser({password:next});if(error)throw error;$s('aqwNewPassword').value='';$s('aqwConfirmPassword').value='';message($s('aqwPasswordMessage'),'パスワードを変更しました。')}catch(err){message($s('aqwPasswordMessage'),'変更できませんでした：'+errText(err))}finally{button.disabled=false}});
-$s('aqwSignOut').addEventListener('click',async()=>{const {error}=await sb.auth.signOut();if(error)message(authMsg,errText(error));else message(authMsg,'ログアウトしました。')});
+$s('aqwPasswordForm').addEventListener('submit',async e=>{e.preventDefault();const next=$s('aqwNewPassword').value,confirmPassword=$s('aqwConfirmPassword').value;message($s('aqwPasswordMessage'),'');if(next.length<8){message($s('aqwPasswordMessage'),localJa()?'パスワードは8文字以上にしてください。':'Password must be at least 8 characters.');return}if(next!==confirmPassword){message($s('aqwPasswordMessage'),localJa()?'確認用パスワードが一致しません。':'Passwords do not match.');return}const button=$s('aqwPasswordForm').querySelector('button[type="submit"]');button.disabled=true;try{const {error}=await sb.auth.updateUser({password:next});if(error)throw error;$s('aqwNewPassword').value='';$s('aqwConfirmPassword').value='';message($s('aqwPasswordMessage'),localJa()?'パスワードを変更しました。':'Password changed successfully.')}catch(err){message($s('aqwPasswordMessage'),(localJa()?'変更できませんでした：':'Could not change password: ')+errText(err))}finally{button.disabled=false}});
+$s('aqwSignOut').addEventListener('click',async()=>{const {error}=await sb.auth.signOut();if(error)message(authMsg,errText(error));else message(authMsg,localJa()?'ログアウトしました。':'Signed out.')});
 sb.auth.onAuthStateChange((_event,session)=>{setTimeout(()=>refreshSession(session),0)});
 sb.auth.getSession().then(({data,error})=>{if(error)setStatus(errText(error));else refreshSession(data.session)});
-$s('aqwProfileForm').addEventListener('submit',async e=>{e.preventDefault();if(!currentUser)return;const username=$s('aqwEditUsername').value.trim();if(!/^[A-Za-z0-9_]{3,24}$/.test(username)){message(authMsg,'ユーザー名は半角英数字と _ の3〜24文字にしてください。');return}const {error}=await sb.from('profiles').update({username,display_name:$s('aqwEditDisplayName').value.trim(),bio:$s('aqwBio').value.trim(),updated_at:new Date().toISOString()}).eq('id',currentUser.id);if(error)message(authMsg,errText(error));else{message(authMsg,'プロフィールを保存しました。');await refreshSession({user:currentUser})}});
+$s('aqwProfileForm').addEventListener('submit',async e=>{e.preventDefault();if(!currentUser)return;const username=$s('aqwEditUsername').value.trim();if(!/^[A-Za-z0-9_]{3,24}$/.test(username)){message(authMsg,'ユーザー名は半角英数字と _ の3〜24文字にしてください。');return}const {error}=await sb.from('profiles').update({username,display_name:$s('aqwEditDisplayName').value.trim(),bio:$s('aqwBio').value.trim(),updated_at:new Date().toISOString()}).eq('id',currentUser.id);if(error)message(authMsg,errText(error));else{message(authMsg,localJa()?'プロフィールを保存しました。':'Profile saved.');await refreshSession({user:currentUser})}});
 $s('aqwPostForm').addEventListener('submit',e=>{e.preventDefault();doPost()});
 $s('aqwShareQuiz').addEventListener('click',()=>{let h=[];try{h=JSON.parse(localStorage.getItem('aqw-history')||'[]')}catch{}const runs=localStorage.getItem('aqw-total-runs')||'0',xp=localStorage.getItem('aqw-xp')||'0';$s('aqwPostBody').value='AQWクイズ記録\nプレイ回数：'+runs+'\n経験値：'+xp+'\n'+(h.length?'最近の記録：'+JSON.stringify(h.slice(-3)):'')+'\n#AQW';$s('aqwPostBody').focus()});
 $s('aqwRefreshFeed').addEventListener('click',loadFeed);
@@ -631,7 +631,7 @@ $s('aqwRefreshFriends').addEventListener('click',loadFriends);
 $s('aqwMessageForm').addEventListener('submit',sendFriendMessage);
 $s('aqwUserSearchForm').addEventListener('submit',searchUsers);
 $s('aqwNotificationsButton').addEventListener('click',loadNotifications);
-setStatus('ログインすると投稿・フォローなどのSNS機能を利用できます。');
+setStatus(localJa()?'ログインすると投稿・フォローなどのSNS機能を利用できます。':'Sign in to post and follow users.');
 })();
 </script>
 </body></html>
