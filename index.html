@@ -354,7 +354,7 @@ async function loadFeed(){
  const {data:posts,error}=await sb.from('posts').select('id,user_id,body,image_path,parent_post_id,quiz_result,created_at,profiles(username,display_name)').is('parent_post_id',null).order('created_at',{ascending:false}).limit(50);
  if(error){feed.textContent='タイムラインを読み込めませんでした：'+errText(error);return}
  if(!posts?.length){feed.innerHTML='<div class="aqw-empty">まだ投稿がありません。最初の投稿をしてみましょう。</div>';return}
- for(const post of posts){feed.append(await renderPost(post))}
+ const rendered=[];for(let i=0;i<posts.length;i+=8){const batch=await Promise.all(posts.slice(i,i+8).map(renderPost));rendered.push(...batch)}const fragment=document.createDocumentFragment();rendered.forEach(node=>fragment.append(node));feed.append(fragment)
 }
 async function renderPost(post){
  const article=document.createElement('article');article.className='aqw-post';
