@@ -104,7 +104,7 @@ const modeNames={image:'image',studio:'studio',synonym:'synonym',titleYear:'titl
 const foot=document.getElementById('footerText');if(foot&&lang!=='ja')foot.textContent=lang==='en'?'Anime data and images are provided by an external anime database service. This is an unofficial fan site; all rights belong to their respective owners. An internet connection is required.':({ko:'작품 데이터와 이미지는 외부 애니메이션 데이터베이스에서 제공합니다. 비공식 팬 사이트이며 모든 권리는 각 권리자에게 있습니다. 인터넷 연결이 필요합니다.',zh:'作品数据和图片来自外部动漫数据库。本网站为非官方粉丝网站，所有权利归各自权利人所有。需要连接互联网。',es:'Los datos e imágenes proceden de una base de datos externa. Este es un sitio de fans no oficial; los derechos pertenecen a sus respectivos titulares. Se requiere conexión a Internet.',fr:'Les données et images proviennent d’une base de données externe. Ce site de fans est non officiel ; tous les droits appartiennent à leurs détenteurs. Une connexion Internet est nécessaire.',pt:'Os dados e imagens vêm de uma base de dados externa. Este é um site de fãs não oficial; todos os direitos pertencem aos respetivos titulares. É necessária ligação à Internet.',de:'Anime-Daten und Bilder stammen aus einer externen Datenbank. Dies ist eine inoffizielle Fanseite; alle Rechte liegen bei den jeweiligen Rechteinhabern. Eine Internetverbindung ist erforderlich.'}[lang]||ui.heroDescription);const ph=document.getElementById('query');if(ph)ph.placeholder=lang==='ja'?'例：葬送のフリーレン':lang==='en'?'e.g. Frieren: Beyond Journey’s End':({ko:'예: 장송의 프리렌',zh:'例如：葬送的芙莉莲',es:'p. ej., Frieren',fr:'ex. : Frieren',pt:'ex.: Frieren',de:'z. B. Frieren'}[lang]||'Search anime');
 }
 const query=`query ($page:Int,$perPage:Int,$search:String) { Page(page:$page,perPage:$perPage) { media(type:ANIME,sort:POPULARITY_DESC,search:$search,isAdult:false) { id format title { romaji english native } description(asHtml:false) synonyms coverImage { large } episodes seasonYear averageScore genres studios(isMain:true) { nodes { name } } } } }`;
-const $=s=>document.querySelector(s);let pool=[],questions=[],index=0,points=0,locked=false,questionTimer=null,clockTimer=null,secondsLeft=15,startedAt=0,elapsedSeconds=0,missedQuestions=[],reviewMode=false,playMode='normal',roundFailed=false,lastResultData=null,combo=0,bestCombo=0,hintUsed=false;
+const $=s=>document.querySelector(s);let pool=[],questions=[],index=0,points=0,locked=false,questionTimer=null,clockTimer=null,secondsLeft=15,startedAt=0,elapsedSeconds=0,missedQuestions=[],reviewMode=false,playMode='normal',roundFailed=false,lastResultData=null,combo=0,bestCombo=0,hintUsed=false,backgroundLoadPromise=null;
 async function fetchAnime(vars={}){
  const request=async(variables,sort='POPULARITY_DESC')=>{
   let lastError;
@@ -112,38 +112,75 @@ async function fetchAnime(vars={}){
    const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),10000);
    try{
     const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query:query.replace('sort:POPULARITY_DESC','sort:'+sort),variables}),signal:controller.signal});
-    if(!response.ok){const err=new Error(response.status===429?'アクセスが集中しています（HTTP 429）。':('データサーバー応答エラー（HTTP '+response.status+'）。'));if(response.status===429||response.status>=500){lastError=err;if(attempt===0)await new Promise(resolve=>setTimeout(resolve,700));continue}throw err}
+    if(!response.ok){
+     const err=new Error(response.status===429?'アクセスが集中しています（HTTP 429）。':('データサーバー応答エラー（HTTP '+response.status+'）。'));
+     if(response.status===429||response.status>=500){lastError=err;if(attempt===0)await new Promise(resolve=>setTimeout(resolve,1200));continue}
+     throw err;
+    }
     const json=await response.json();
     if(json.errors?.length)throw new Error(json.errors.map(e=>e.message).join(' / '));
     return json.data?.Page?.media||[];
-   }catch(error){lastError=error.name==='AbortError'?new Error('データ取得がタイムアウトしました。'):error;if(attempt===0)await new Promise(resolve=>setTimeout(resolve,400))}
-   finally{clearTimeout(timeout)}
+   }catch(error){
+    lastError=error.name==='AbortError'?new Error('データ取得がタイムアウトしました。'):error;
+    if(attempt===0)await new Promise(resolve=>setTimeout(resolve,500));
+   }finally{clearTimeout(timeout)}
   }
   throw lastError||new Error('データを取得できませんでした。');
  };
  if(vars.search)return (await request({page:1,perPage:18,search:vars.search})).filter(isUsableAnime);
- const cacheKey='aqw-anime-pool-v5-1000',cacheHours=24,targetCount=1000;
- try{const cached=JSON.parse(localStorage.getItem(cacheKey)||'null');if(cached&&Date.now()-cached.savedAt<cacheHours*3600000&&Array.isArray(cached.items)&&cached.items.length>=targetCount)return cached.items.filter(isUsableAnime)}catch(e){}
- // Fetch pages in small batches, prioritizing popularity but adding other sorts for variety.
- const tasks=[];for(let page=1;page<=20;page++)tasks.push(['POPULARITY_DESC',page]);
- for(const sort of ['TRENDING_DESC','SCORE_DESC','ID_DESC','FAVOURITES_DESC'])for(let page=1;page<=10;page++)tasks.push([sort,page]);
- const all=[];let failures=0;
- for(let i=0;i<tasks.length;i+=5){
-  const batch=tasks.slice(i,i+5);
-  const results=await Promise.allSettled(batch.map(([sort,page])=>request({page,perPage:50},sort)));
-  results.forEach(result=>{if(result.status==='fulfilled')all.push(...result.value);else failures++});
-  const items=[...new Map(all.map(a=>[a.id,a])).values()].filter(isUsableAnime);
-  $('#quizStatus').textContent=lang==='ja'?('作品データを取得中… '+items.length+' / '+targetCount+'作品'):('Loading anime data… '+items.length+' / '+targetCount);
-  if(items.length>=targetCount){try{localStorage.setItem(cacheKey,JSON.stringify({savedAt:Date.now(),items}))}catch(e){}return items}
+ const cacheKey='aqw-anime-pool-v6-progressive',legacyKeys=['aqw-anime-pool-v5-1000','aqw-anime-pool-v4'],targetCount=1000;
+ let initial=[];
+ for(const key of [cacheKey,...legacyKeys]){
+  try{
+   const cached=JSON.parse(localStorage.getItem(key)||'null');
+   if(cached&&Array.isArray(cached.items)&&cached.items.length){
+    initial=[...new Map(cached.items.filter(isUsableAnime).map(a=>[a.id,a])).values()];
+    if(initial.length){try{localStorage.setItem(cacheKey,JSON.stringify({savedAt:cached.savedAt||Date.now(),items:initial}))}catch(e){}break}
+   }
+  }catch(e){}
  }
- const items=[...new Map(all.map(a=>[a.id,a])).values()].filter(isUsableAnime);
- if(!items.length)throw new Error(lang==='ja'?'作品データを取得できませんでした。通信制限または接続障害の可能性があります。':'Could not load usable anime data. The connection may be blocked or temporarily unavailable.');
- if(failures===tasks.length)throw new Error(lang==='ja'?'作品データの取得に失敗しました。':'Failed to fetch anime data.');
- try{localStorage.setItem(cacheKey,JSON.stringify({savedAt:Date.now(),items}))}catch(e){}
- if(items.length<targetCount)throw new Error(lang==='ja'?('取得できた作品は'+items.length+'件でした。外部APIの制限により1000件に届きませんでした。時間をおいて再試行してください。'):('Only '+items.length+' anime could be loaded. The external API limit prevented reaching 1,000; please retry later.'));
- return items
+ if(initial.length>=targetCount)return initial;
+ if(!initial.length){
+  const first=(await request({page:1,perPage:50},'POPULARITY_DESC')).filter(isUsableAnime);
+  if(!first.length)throw new Error(lang==='ja'?'作品データを取得できませんでした。通信制限または接続障害の可能性があります。':'Could not load anime data. The connection may be blocked or temporarily unavailable.');
+  initial=first;
+  try{localStorage.setItem(cacheKey,JSON.stringify({savedAt:Date.now(),items:initial}))}catch(e){}
  }
- function isUsableAnime(a){return !!(a&&a.id&&a.coverImage?.large&&titleOf(a)&&['TV','TV_SHORT','MOVIE','OVA','ONA'].includes(a.format)&&!((a.genres||[]).includes('Hentai')))}
+ // Return usable cached data immediately. Fill the pool in the background at a rate compatible with AniList limits.
+ if(!backgroundLoadPromise){
+  backgroundLoadPromise=(async()=>{
+   const all=new Map(initial.map(a=>[a.id,a]));
+   const tasks=[];
+   for(let page=2;page<=40;page++)tasks.push(['POPULARITY_DESC',page]);
+   for(const sort of ['TRENDING_DESC','SCORE_DESC','FAVOURITES_DESC','ID_DESC'])for(let page=1;page<=10;page++)tasks.push([sort,page]);
+   let completed=0,failures=0;
+   for(const [sort,page] of tasks){
+    if(all.size>=targetCount)break;
+    await new Promise(resolve=>setTimeout(resolve,2200));
+    try{
+     const rows=await request({page,perPage:50},sort);
+     rows.forEach(a=>{if(isUsableAnime(a))all.set(a.id,a)});
+    }catch(err){failures++;console.warn('Background anime page failed:',sort,page,err)}
+    completed++;
+    const items=[...all.values()];
+    pool=items;
+    try{localStorage.setItem(cacheKey,JSON.stringify({savedAt:Date.now(),items}))}catch(e){}
+    const status=document.getElementById('quizStatus');
+    if(status){
+     const message=lang==='ja'?'作品データを追加中… '+items.length+' / '+targetCount+'作品':'Adding anime… '+items.length+' / '+targetCount;
+     status.textContent=items.length>=targetCount?(lang==='ja'?'作品データ '+items.length+'件を準備しました。':'Anime data ready: '+items.length):message;
+    }
+   }
+   if(all.size<targetCount){
+    const status=document.getElementById('quizStatus');
+    if(status)status.textContent=lang==='ja'?('現在'+all.size+'作品を利用できます。外部APIの制限などにより1,000作品に未到達です。再読み込みすると続きから再試行します。'):('Currently '+all.size+' anime are available. API limits may have prevented reaching 1,000; reload to retry.');
+   }
+   return {count:all.size,failures,completed};
+  })().finally(()=>{backgroundLoadPromise=null});
+ }
+ return initial;
+}
+function isUsableAnime(a){return !!(a&&a.id&&a.coverImage?.large&&titleOf(a)&&['TV','TV_SHORT','MOVIE','OVA','ONA'].includes(a.format)&&!((a.genres||[]).includes('Hentai')))}
 function descriptionOf(a){return (a?.description||'').replace(/<[^>]*>/g,' ').replace(/\[[^\]]*\]\([^)]*\)/g,' ').replace(/&nbsp;/gi,' ').replace(/&amp;/gi,'&').replace(/&quot;/gi,'"').replace(/&#39;/g,"'").replace(/\s+/g,' ').trim()}
 function hasJapanese(text){return /[ぁ-んァ-ヶ一-龯]/.test(String(text||''))}
 function titleUsable(a){return lang!=='ja'||hasJapanese(a.title?.native||'')}
@@ -151,13 +188,13 @@ function synopsisText(a){const s=descriptionOf(a);return s.length>300?s.slice(0,
 function usablePool(mode){return pool.filter(a=>{if(['image','studio','synonym','titleYear','titleStudio','synopsis','titleSynopsis'].includes(mode)&&!titleUsable(a))return false;if(mode==='studio'||mode==='titleStudio')return !!a.studios?.nodes?.[0]?.name;if(mode==='synonym')return (a.synonyms||[]).some(s=>validAlias(a,s));if(mode==='titleYear')return Number.isInteger(a.seasonYear)&&a.seasonYear>1900;if(mode==='synopsis'||mode==='titleSynopsis')return descriptionOf(a).length>=35&&(lang!=='ja'||hasJapanese(descriptionOf(a)));return true})}
 function validAlias(a,s){if(!s||typeof s!=='string')return false;const n=s.trim().toLowerCase();return n.length>=2&&![a.title?.romaji,a.title?.english,a.title?.native,titleOf(a)].filter(Boolean).some(t=>t.trim().toLowerCase()===n)}
 function makeTitleOptions(a){const titles=new Map();for(const item of shuffle([a,...pool.filter(x=>x.id!==a.id&&titleUsable(x))])){const title=titleOf(item);if(title&&!titles.has(title))titles.set(title,title);if(titles.size>=4)break}return shuffle([...titles.values()]).map(title=>({label:title,value:title}))}
-function makeSynopsisOptions(a){const options=new Map();for(const item of shuffle([a,...pool.filter(x=>x.id!==a.id&&descriptionOf(x).length>=35&&(lang!=='ja'||hasJapanese(descriptionOf(x))))])){const synopsis=synopsisText(item);if(synopsis&&!options.has(synopsis))options.set(synopsis,{label:synopsis,value:descriptionOf(item)});if(options.size>=4)break}return shuffle([...options.values()])}
+function makeSynopsisOptions(a,answerIsTitle=false){const options=new Map();for(const item of shuffle([a,...pool.filter(x=>x.id!==a.id&&descriptionOf(x).length>=35&&(lang!=='ja'||hasJapanese(descriptionOf(x))))])){const synopsis=synopsisText(item);if(synopsis&&!options.has(synopsis))options.set(synopsis,{label:synopsis,value:answerIsTitle?titleOf(item):descriptionOf(item)});if(options.size>=4)break}return shuffle([...options.values()])}
 function normalizeAnswer(value){return String(value||'').normalize('NFKC').toLocaleLowerCase().replace(/[\\s　・･:：!！?？.,，。'"“”「」『』()（）\\-‐‑–—_]/g,'').trim()}
 function acceptedAnswers(a,mode,correct){if(mode==='titleYear')return [String(a.seasonYear)];if(mode==='titleStudio')return [a.studios?.nodes?.[0]?.name||''];if(mode==='titleSynopsis')return [descriptionOf(a)];return [a.title?.native,a.title?.english,a.title?.romaji,titleOf(a),...(a.synonyms||[])].filter(Boolean)}
 function answersMatch(input,a,mode,correct){const typed=normalizeAnswer(input);if(!typed)return false;const candidates=acceptedAnswers(a,mode,correct).map(normalizeAnswer).filter(Boolean);if(candidates.some(x=>x===typed))return true;if(mode==='titleSynopsis')return candidates.some(x=>x.length>80&&typed.length>80&&(x.includes(typed)||typed.includes(x)));return false}
 function titleOf(a){return lang==='ja'?(a.title.native||a.title.english||a.title.romaji||'タイトル不明'):(a.title.english||a.title.romaji||a.title.native||'Unknown title')}
 function shuffle(a){return [...a].sort(()=>Math.random()-.5)}
-async function prepare(){ $('#quizStatus').textContent=tr('loading');$('#start').classList.add('hidden');try{pool=await fetchAnime();if(!pool.length)throw new Error('作品データが0件でした。');$('#quizStatus').textContent=lang==='ja'?pool.length+'作品を読み込みました。クイズを開始できます。':pool.length+tr('loaded');$('#start').classList.remove('hidden');$('#start').textContent=tr('start')}catch(e){console.error('Anime data loading failed:',e);$('#quizStatus').textContent=lang==='ja'?('読み込み失敗：'+e.message+' 「再読み込みして開始」を押して再試行してください。'):('Load failed: '+e.message+' Press retry to try again.');$('#start').classList.remove('hidden');$('#start').textContent=tr('retry')}}
+async function prepare(){ $('#quizStatus').textContent=tr('loading');$('#start').classList.add('hidden');try{pool=await fetchAnime();if(!pool.length)throw new Error('作品データが0件でした。');$('#quizStatus').textContent=lang==='ja'?pool.length+'作品を読み込みました。クイズを開始できます。残りはバックグラウンドで追加します。':pool.length+' anime loaded. Ready to start; more are loading in the background.';$('#start').classList.remove('hidden');$('#start').textContent=tr('start')}catch(e){console.error('Anime data loading failed:',e);$('#quizStatus').textContent=lang==='ja'?('読み込み失敗：'+e.message+' 「再読み込みして開始」を押して再試行してください。'):('Load failed: '+e.message+' Press retry to try again.');$('#start').classList.remove('hidden');$('#start').textContent=tr('retry')}}
 function dateKey(d=new Date()){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function dailyOrder(list){const day=dateKey();const hash=s=>{let h=2166136261;for(const ch of s){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return h>>>0};return [...list].sort((a,b)=>hash(day+':'+a.id)-hash(day+':'+b.id))}
 function begin(){if(!pool.length){prepare();return}clearInterval(questionTimer);clearInterval(clockTimer);$('#setupControls').classList.add('hidden');$('#result').classList.add('hidden');reviewMode=false;missedQuestions=[];roundFailed=false;playMode=$('#playMode').value;const mode=$('#modeSelect').value;const eligible=mode==='mixed'?pool:usablePool(mode);if(!eligible.length){$('#quizStatus').textContent=lang==='ja'?'この形式で出題できる作品がありません。':'No eligible anime for this mode.';$('#setupControls').classList.remove('hidden');return}const ordered=playMode==='daily'?dailyOrder(eligible):shuffle(eligible);const count=playMode==='daily'?10:playMode==='endless'?ordered.length:Math.min(Number($('#questionCount').value)||10,ordered.length);questions=ordered.slice(0,count);index=0;points=0;combo=0;bestCombo=0;hintUsed=false;elapsedSeconds=0;startedAt=Date.now();$('#score').textContent=tr('score')+' 0';$('#quizArea').classList.remove('hidden');$('#start').classList.add('hidden');clockTimer=setInterval(()=>{elapsedSeconds=Math.floor((Date.now()-startedAt)/1000);$('#elapsedLabel').textContent=(lang==='ja'?'経過時間：':'Elapsed: ')+elapsedSeconds+(lang==='ja'?'秒':'s')},250);showQuestion()}
@@ -200,7 +237,7 @@ if(actualMode==='studio'){const studio=a.studios?.nodes?.[0]?.name;prompt=studio
 if(actualMode==='synonym'){const syn=(a.synonyms||[]).find(s=>validAlias(a,s));prompt=syn?qText('alias').replace('{v}',syn):qText('image');correct=titleOf(a);opts=makeTitleOptions(a)}
 if(actualMode==='titleYear'){prompt=titleOf(a)+qText('titleYear');correct=String(a.seasonYear);const years=[...new Set(pool.filter(x=>Number.isInteger(x.seasonYear)&&x.seasonYear>1900&&String(x.seasonYear)!==correct).map(x=>String(x.seasonYear)))];opts=shuffle([correct,...shuffle(years).slice(0,3)]).map(x=>({label:x,value:x}));$('#cover').classList.remove('hidden')}
 if(actualMode==='titleStudio'){const studio=a.studios?.nodes?.[0]?.name;prompt=titleOf(a)+qText('titleStudio');correct=studio||qText('unknown');const studios=[...new Set(pool.flatMap(x=>x.studios?.nodes?.map(n=>n.name)||[]).filter(x=>x&&x!==correct))];opts=shuffle([correct,...shuffle(studios).slice(0,3)]).map(x=>({label:x,value:x}));$('#cover').classList.remove('hidden')}
-if(actualMode==='synopsis'){prompt=qText('synopsis')+'\n\n'+synopsisText(a);$('#cover').classList.add('hidden');$('#answerPrompt').style.whiteSpace='pre-line';$('#answerPrompt').style.padding='16px';$('#answerPrompt').style.background='#f0f2f5';$('#answerPrompt').style.borderRadius='6px';correct=titleOf(a);opts=makeTitleOptions(a)}
+if(actualMode==='synopsis'){prompt=qText('synopsis')+'\n\n'+synopsisText(a);$('#cover').classList.add('hidden');$('#answerPrompt').style.whiteSpace='pre-line';$('#answerPrompt').style.padding='16px';$('#answerPrompt').style.background='#f0f2f5';$('#answerPrompt').style.borderRadius='6px';correct=titleOf(a);opts=makeSynopsisOptions(a,true)}
 if(actualMode==='titleSynopsis'){prompt=titleOf(a)+qText('titleSynopsis');$('#cover').classList.add('hidden');$('#answerPrompt').style.whiteSpace='normal';$('#answerPrompt').style.padding='0';$('#answerPrompt').style.background='transparent';$('#answerPrompt').style.borderRadius='0';correct=descriptionOf(a);opts=makeSynopsisOptions(a)}
 currentQuestionMode=actualMode;correctAnswer=correct;$('#answerPrompt').textContent=prompt;$('#answers').replaceChildren();$('#typedAnswerBox').classList.add('hidden');$('#typedAnswer').value='';$('#typedAnswer').disabled=false;$('#submitTypedAnswer').disabled=false;$('#toggleAnswerMode').disabled=false;$('#toggleAnswerMode').textContent=lang==='ja'?'入力で回答する':'Answer by typing';opts.forEach(o=>{const b=document.createElement('button');b.className='answer';b.textContent=o.label;b.dataset.value=String(o.value);b.onclick=()=>choose(b,o.value,correct);$('#answers').append(b)});secondsLeft=15;updateTimer();questionTimer=setInterval(()=>{secondsLeft--;updateTimer();if(secondsLeft<=0){clearInterval(questionTimer);if(!locked){const buttons=[...$('#answers').children];choose(null,'__timeout__',correct)}}},1000)}
 $('#toggleAnswerMode').onclick=()=>{const answerModeBox=$('#typedAnswerBox');answerModeBox.classList.toggle('hidden');const open=!answerModeBox.classList.contains('hidden');$('#toggleAnswerMode').textContent=open?(lang==='ja'?'四択で回答する':'Answer with choices'):(lang==='ja'?'入力で回答する':'Answer by typing');if(open)$('#typedAnswer').focus()};$('#submitTypedAnswer').onclick=()=>{if(locked)return;const value=$('#typedAnswer').value;if(!value.trim()){ $('#feedback').textContent=lang==='ja'?'回答を入力してください。':'Please enter an answer.';return}choose(null,value,correctAnswer,{typed:true,anime:questions[index],mode:currentQuestionMode})};$('#typedAnswer').addEventListener('keydown',e=>{if(e.key==='Enter')$('#submitTypedAnswer').click()});
@@ -222,6 +259,6 @@ function updateDailyProgress(points,mode){const today=dateKey();let d={date:toda
 function renderProgress(){const xp=Number(localStorage.getItem('aqw-xp')||0),runs=Number(localStorage.getItem('aqw-total-runs')||0);let items=[],st={count:0},d={plays:0,correct:0,dailyDone:false};try{items=JSON.parse(localStorage.getItem('aqw-collection')||'[]')}catch(e){}try{st=JSON.parse(localStorage.getItem('aqw-streak')||'null')||st}catch(e){}try{d=JSON.parse(localStorage.getItem('aqw-daily-progress')||'null')||d}catch(e){}if(d.date!==dateKey())d={plays:0,correct:0,dailyDone:false};const stats=[['レベル / Level',Math.floor(xp/250)+1],['経験値 / XP',xp],['プレイ回数 / Runs',runs],['連続日数 / Streak',st.count||0],['収集作品 / Collected',items.length]];$('#playerStats').replaceChildren();stats.forEach(([name,value])=>{const el=document.createElement('article');el.className='anime';el.style.padding='12px';const b=document.createElement('strong');b.textContent=name;const small=document.createElement('small');small.textContent=value;el.append(b,small);$('#playerStats').append(el)});const missions=lang==='ja'?[['クイズを1回プレイ',d.plays>=1],['今日10問正解',d.correct>=10],['デイリーチャレンジ完了',!!d.dailyDone]]:[['Play one quiz',d.plays>=1],['Get 10 correct today',d.correct>=10],['Complete daily challenge',!!d.dailyDone]];$('#dailyMissions').replaceChildren();missions.forEach(([name,done])=>{const el=document.createElement('article');el.className='anime';el.style.padding='12px';const b=document.createElement('strong');b.textContent=(done?'達成：':'未達成：')+name;el.append(b);$('#dailyMissions').append(el)});const achievements=lang==='ja'?[['初回プレイ',runs>=1],['10回プレイ',runs>=10],['50作品収集',items.length>=50],['レベル5',Math.floor(xp/250)+1>=5],['デイリー完了',!!d.dailyDone]]:[['First quiz',runs>=1],['10 quizzes',runs>=10],['Collect 50 anime',items.length>=50],['Reach level 5',Math.floor(xp/250)+1>=5],['Complete daily challenge',!!d.dailyDone]];$('#achievements').replaceChildren();achievements.forEach(([name,done])=>{const el=document.createElement('article');el.className='anime';el.style.padding='12px';el.textContent=(done?'達成：':'ロック：')+name;$('#achievements').append(el)});$('#collection').replaceChildren();items.slice().reverse().slice(0,60).forEach(a=>{const card=document.createElement('article');card.className='anime';if(a.image){const img=document.createElement('img');img.loading='lazy';img.src=a.image;img.alt=a.title;card.append(img)}const div=document.createElement('div'),b=document.createElement('strong'),small=document.createElement('small');b.textContent=a.title;small.textContent=[a.year,a.studio].filter(Boolean).join(' · ');div.append(b,small);card.append(div);$('#collection').append(card)});if(!items.length)$('#collection').textContent=lang==='ja'?'クイズに回答すると作品が記録されます。':'Anime you answer will be saved here.'}
 restoreLanguage();initAQWAuth();
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===b));$('#quiz').classList.toggle('hidden',b.dataset.tab!=='quiz');$('#search').classList.toggle('hidden',b.dataset.tab!=='search');$('#progressPanel').classList.toggle('hidden',b.dataset.tab!=='progressTab');$('#social').classList.toggle('hidden',b.dataset.tab!=='social');if(b.dataset.tab==='progressTab')renderProgress()});
-$('#resetProgress').onclick=()=>{const msg=lang==='ja'?'実績・コレクションとプレイ記録をすべてリセットします。この操作は取り消せません。続行しますか？':'Reset all achievements, collection, and play records? This cannot be undone.';if(!confirm(msg))return;['aqw-history','aqw-total-runs','aqw-xp','aqw-collection','aqw-daily-progress','aqw-streak'].forEach(k=>localStorage.removeItem(k));renderProgress();const hs=document.getElementById('historySummary');if(hs)hs.textContent='';const status=document.getElementById('resetDescription');if(status)status.textContent=lang==='ja'?'実績・コレクションとプレイ記録をリセットしました。':'Achievements, collection, and play records have been reset.'};
+$('#resetProgress').onclick=()=>{const msg=lang==='ja'?'実績・コレクションとプレイ記録をすべてリセットします。この操作は取り消せません。続行しますか？':'Reset all achievements, collection, and play records? This cannot be undone.';if(!confirm(msg))return;['aqw-history','aqw-total-runs','aqw-xp','aqw-collection','aqw-daily-progress','aqw-streak'].forEach(k=>localStorage.removeItem(k));Object.keys(localStorage).filter(k=>k.startsWith('aqw-best-')).forEach(k=>localStorage.removeItem(k));renderProgress();const hs=document.getElementById('historySummary');if(hs)hs.textContent='';const status=document.getElementById('resetDescription');if(status)status.textContent=lang==='ja'?'実績・コレクションとプレイ記録をリセットしました。':'Achievements, collection, and play records have been reset.'};
 $('#searchForm').onsubmit=async e=>{e.preventDefault();$('#searchStatus').textContent=tr('searching');$('#results').replaceChildren();try{const list=await fetchAnime({page:1,perPage:18,search:$('#query').value.trim()});if(!list.length){$('#searchStatus').textContent=tr('notFound');return}$('#searchStatus').textContent=list.length+tr('items');list.forEach(a=>{const card=document.createElement('article');card.className='anime';const img=document.createElement('img');img.loading='lazy';img.src=a.coverImage.large;img.alt=titleOf(a)+tr('titleAlt');const d=document.createElement('div');const strong=document.createElement('strong');strong.textContent=titleOf(a);const small=document.createElement('small');small.textContent=[a.seasonYear||tr('yearUnknown'),a.studios?.nodes?.[0]?.name||'',(a.synonyms||[])[0]||'',a.episodes?(a.episodes+(lang==='ja'?'話':' eps')):tr('episodesUnknown'),a.averageScore?tr('rating')+' '+a.averageScore+'/100':''].filter(Boolean).join(' · ');d.append(strong,small);card.append(img,d);$('#results').append(card)})}catch(err){$('#searchStatus').textContent=lang==='ja'?err.message:tr('apiError')}};
 </script></body></html>
