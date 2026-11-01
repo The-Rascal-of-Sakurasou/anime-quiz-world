@@ -425,7 +425,7 @@ items.slice().reverse().slice(0,60).forEach(a=>{const card=document.createElemen
 if(!items.length)$('#collection').textContent=t.empty
 }
 // Return to the main quiz screen from any section.
-function goHome(){const quizTab=document.getElementById('quizTab');if(quizTab)quizTab.click();window.scrollTo({top:0,behavior:'smooth'})}
+function goHome(){clearInterval(questionTimer);clearInterval(clockTimer);locked=true;const quizArea=document.getElementById('quizArea'),setupControls=document.getElementById('setupControls'),result=document.getElementById('result');if(quizArea)quizArea.classList.add('hidden');if(setupControls)setupControls.classList.remove('hidden');if(result)result.classList.add('hidden');const quizTab=document.getElementById('quizTab');if(quizTab)quizTab.click();window.scrollTo({top:0,behavior:'smooth'})}
 document.getElementById('homeButton')?.addEventListener('click',goHome);
 document.getElementById('homeLogo')?.addEventListener('click',goHome);
 // Bind primary navigation before asynchronous startup so one startup error cannot disable the other tabs.
