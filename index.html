@@ -203,7 +203,7 @@ const msgPanel=document.getElementById('aqwFriendMessagesPanel');if(msgPanel){co
 const legal=document.querySelectorAll('#social > .legal-links a');if(legal[0])legal[0].textContent=sl.termsLink;if(legal[1])legal[1].textContent=sl.privacyLink;
 const ph=document.getElementById('query');if(ph)ph.placeholder=lang==='ja'?'例：葬送のフリーレン':lang==='en'?'e.g. Frieren: Beyond Journey’s End':({ko:'예: 장송의 프리렌',zh:'例如：葬送的芙莉莲',es:'p. ej., Frieren',fr:'ex. : Frieren',pt:'ex.: Frieren',de:'z. B. Frieren'}[lang]||'Search anime');
 }
-const query=`query ($page:Int,$perPage:Int,$search:String) { Page(page:$page,perPage:$perPage) { media(type:ANIME,sort:POPULARITY_DESC,search:$search,isAdult:false) { id format title { romaji english native } description(asHtml:false) synonyms coverImage { large } episodes seasonYear averageScore genres studios(isMain:true) { nodes { name } } characters(sort:ROLE,perPage:5) { nodes { name { full native } } } } } }`;
+const query=`query ($page:Int,$perPage:Int,$search:String) { Page(page:$page,perPage:$perPage) { media(type:ANIME,sort:POPULARITY_DESC,search:$search,isAdult:false) { id format title { romaji english native } description(asHtml:false) synonyms coverImage { large } episodes seasonYear averageScore genres studios(isMain:true) { nodes { name } } characters(sort:ROLE,perPage:5) { nodes { name { full native } image { large } } } } } }`;
 function normalizeUnicode(value){if(typeof value==='string')return value.normalize('NFC');if(Array.isArray(value))return value.map(normalizeUnicode);if(value&&typeof value==='object'){const out={};for(const [key,item] of Object.entries(value))out[key]=normalizeUnicode(item);return out}return value}
 const $=s=>document.querySelector(s);let pool=[],questions=[],index=0,points=0,locked=false,questionTimer=null,clockTimer=null,secondsLeft=15,startedAt=0,elapsedSeconds=0,missedQuestions=[],reviewMode=false,playMode='normal',roundFailed=false,lastResultData=null,combo=0,bestCombo=0,choiceHintUsed=false,typedHintUsed=false,backgroundLoadPromise=null,requestedQuestionCount=10,rateLimitedUntil=0;
 async function fetchAnime(vars={}){
@@ -286,7 +286,7 @@ function hasJapanese(text){return /[ぁ-んァ-ヶ一-龯]/.test(String(text||''
 function titleUsable(a){return lang!=='ja'||hasJapanese(a.title?.native||'')}
 function synopsisText(a){const s=descriptionOf(a);return s.length>260?s.slice(0,257).trimEnd()+'…':s}
 function hasUsableSynopsis(a){const s=descriptionOf(a);if(s.length<45)return false;if(/^(no synopsis|no description|not available|tba|unknown|未定|あらすじなし|情報なし)\.?$/i.test(s.trim()))return false;if(lang==='ja'){const jp=(s.match(/[ぁ-んァ-ヶ一-龯]/g)||[]).length;return jp>=10&&jp/s.length>=0.16}if(lang==='ko'){const ko=(s.match(/[가-힣]/g)||[]).length;return ko>=10&&ko/s.length>=0.12}if(lang==='zh'){const zh=(s.match(/[\u3400-\u9fff]/g)||[]).length;return zh>=10&&zh/s.length>=0.16}if(lang==='en'){const latin=(s.match(/[A-Za-z]/g)||[]).length;const jp=(s.match(/[ぁ-んァ-ヶ]/g)||[]).length;return latin>=30&&jp/s.length<0.08}return s.length>=45}
-function characterNames(a){return [...new Set((a.characters?.nodes||[]).map(x=>x?.name?.full||x?.name?.native||'').map(x=>String(x).trim()).filter(Boolean))]}
+function characterDisplayName(character){const name=character?.name||{};const preferred=lang==='ja'?name.native:(name.full||name.native);return String(preferred||name.full||name.native||'').trim()}function characterNames(a){return [...new Set((a.characters?.nodes||[]).map(characterDisplayName).filter(Boolean))]}
 function typedTitleMaxLength(){return ({ja:25,en:60,ko:30,zh:20,es:60,fr:60,pt:60,de:60}[lang]||60)}function typedTitleEligible(a){return [...String(titleOf(a)||'').trim()].length<=typedTitleMaxLength()}
 function usablePool(mode,answerFormat=$('#answerFormatSelect')?.value||'choices'){return pool.filter(a=>{if(answerFormat==='typed'&&!typedTitleEligible(a))return false;if(['image','studio','synonym','titleYear','titleStudio','synopsis','titleSynopsis','character','titleCharacter'].includes(mode)&&!titleUsable(a))return false;if(mode==='studio'||mode==='titleStudio')return !!a.studios?.nodes?.[0]?.name;if(mode==='character'||mode==='titleCharacter')return characterNames(a).length>0;if(mode==='synonym')return aliasCandidates(a).length>0;if(mode==='titleYear')return Number.isInteger(a.seasonYear)&&a.seasonYear>1900;if(mode==='synopsis'||mode==='titleSynopsis')return hasUsableSynopsis(a);return true})}
 function extendQuestionsFromPool(items){
@@ -367,7 +367,7 @@ if(actualMode==='studio'){prompt=qText('studio');correct=a.studios?.nodes?.[0]?.
 if(actualMode==='synonym'){const syn=shuffle(aliasCandidates(a))[0];prompt=syn?qText('alias').replace('{v}',syn):qText('image');correct=titleOf(a);opts=makeTitleOptions(a)}
 if(actualMode==='titleYear'){prompt=titleOf(a)+qText('titleYear');correct=String(a.seasonYear);const years=[...new Set(pool.filter(x=>Number.isInteger(x.seasonYear)&&x.seasonYear>1900&&String(x.seasonYear)!==correct).map(x=>String(x.seasonYear)))];opts=shuffle([correct,...shuffle(years).slice(0,3)]).map(x=>({label:x,value:x}));$('#cover').classList.remove('hidden')}
 if(actualMode==='titleStudio'){const studio=a.studios?.nodes?.[0]?.name;prompt=titleOf(a)+qText('titleStudio');correct=studio||qText('unknown');const correctKey=normalizeAnswer(correct),seen=new Set([correctKey]),studios=[];for(const name of shuffle(pool.flatMap(x=>x.studios?.nodes?.map(n=>n.name)||[]).filter(Boolean))){const key=normalizeAnswer(name);if(key&&!seen.has(key)){seen.add(key);studios.push(name)}}opts=shuffle([correct,...studios.slice(0,3)]).map(x=>({label:x,value:x}));$('#cover').classList.remove('hidden')}
-if(actualMode==='character'){const character=characterNames(a)[0];prompt=({ja:'このキャラクターが登場する作品は？',en:'Which anime features this character?',ko:'이 캐릭터가 등장하는 애니메이션은 무엇인가요?',zh:'这名角色出现在哪部动画中？',es:'¿En qué anime aparece este personaje?',fr:'Dans quel anime apparaît ce personnage ?',pt:'Em qual anime este personagem aparece?',de:'In welchem Anime kommt diese Figur vor?'}[lang]||'Which anime features this character?')+'\n'+character;correct=titleOf(a);opts=makeTitleOptions(a);$('#cover').classList.add('hidden')}
+if(actualMode==='character'){const characterRecord=(a.characters?.nodes||[]).find(x=>characterDisplayName(x))||null;const character=characterDisplayName(characterRecord);prompt=({ja:'このキャラクターが登場する作品は？',en:'Which anime features this character?',ko:'이 캐릭터가 등장하는 애니메이션은 무엇인가요?',zh:'这名角色出现在哪部动画中？',es:'¿En qué anime aparece este personaje?',fr:'Dans quel anime apparaît ce personnage ?',pt:'Em qual anime este personagem aparece?',de:'In welchem Anime kommt diese Figur vor?'}[lang]||'Which anime features this character?')+'\n'+character;correct=titleOf(a);opts=makeTitleOptions(a);const characterImage=characterRecord?.image?.large||'';$('#cover').src=characterImage;$('#cover').alt=character;$('#cover').classList.toggle('hidden',!characterImage)}
 if(actualMode==='titleCharacter'){const names=characterNames(a);correct=names[0]||'';prompt=titleOf(a)+({ja:'に登場するキャラクターは？',en:' — name a character from this anime',ko:'에 등장하는 캐릭터는 누구인가요?',zh:'中登场的角色是谁？',es:' — ¿qué personaje aparece en este anime?',fr:' — quel personnage apparaît dans cet anime ?',pt:' — qual personagem aparece neste anime?',de:' — welche Figur kommt in diesem Anime vor?'}[lang]||' — name a character from this anime');const key=normalizeAnswer(correct),seen=new Set([key]),others=[];for(const name of shuffle(pool.flatMap(characterNames))){const k=normalizeAnswer(name);if(k&&!seen.has(k)){seen.add(k);others.push(name)}}opts=shuffle([correct,...others.slice(0,3)]).map(x=>({label:x,value:x}));$('#cover').classList.add('hidden')}
 if(actualMode==='synopsis'){prompt=qText('synopsis')+'\n\n'+synopsisText(a);$('#cover').classList.add('hidden');$('#answerPrompt').style.whiteSpace='pre-line';$('#answerPrompt').style.padding='16px';$('#answerPrompt').style.background='#f0f2f5';$('#answerPrompt').style.borderRadius='6px';correct=titleOf(a);opts=makeSynopsisOptions(a,true)}
 if(actualMode==='titleSynopsis'){prompt=titleOf(a)+qText('titleSynopsis');$('#cover').classList.add('hidden');correct=descriptionOf(a);opts=makeSynopsisOptions(a)}
@@ -428,23 +428,47 @@ if(!items.length)$('#collection').textContent=t.empty
 function goHome(){
  clearInterval(questionTimer);
  clearInterval(clockTimer);
+ // Abandon the active attempt without recording it as a completed run.
  locked=true;
+ questions=[];
+ index=0;
+ points=0;
+ combo=0;
+ bestCombo=0;
+ missedQuestions=[];
+ reviewMode=false;
+ roundFailed=false;
+ choiceHintUsed=false;
+ typedHintUsed=false;
+ elapsedSeconds=0;
+ startedAt=0;
+ lastResultData=null;
+ correctAnswer='';
+ currentQuestionMode='image';
  const quizArea=document.getElementById('quizArea');
  const setupControls=document.getElementById('setupControls');
  const result=document.getElementById('result');
  if(quizArea)quizArea.classList.add('hidden');
  if(setupControls)setupControls.classList.remove('hidden');
  if(result)result.classList.add('hidden');
- // Explicitly restore the quiz landing tab and its visible panel.
+ const startButton=document.getElementById('start');
+ if(startButton){startButton.classList.remove('hidden');startButton.disabled=false;startButton.textContent=tr('start')}
+ const score=document.getElementById('score');
+ if(score)score.textContent=tr('score')+' 0';
+ const progress=document.getElementById('progress');
+ if(progress)progress.textContent='0 / 0';
+ const progressBar=document.getElementById('quizProgressBar');
+ if(progressBar)progressBar.style.width='0%';
+ const feedback=document.getElementById('feedback');
+ if(feedback)feedback.textContent='';
+ const next=document.getElementById('next');
+ if(next)next.classList.add('hidden');
+ const answers=document.getElementById('answers');
+ if(answers)answers.replaceChildren();
  const tabs=[...document.querySelectorAll('.tab')];
- tabs.forEach(tab=>{
-   const active=tab.dataset.tab==='quiz';
-   tab.classList.toggle('active',active);
-   tab.setAttribute('aria-selected',String(active));
- });
+ tabs.forEach(tab=>{const active=tab.dataset.tab==='quiz';tab.classList.toggle('active',active);tab.setAttribute('aria-selected',String(active))});
  const panels={quiz:document.getElementById('quiz'),search:document.getElementById('search'),progressTab:document.getElementById('progressPanel'),social:document.getElementById('social')};
  Object.entries(panels).forEach(([key,panel])=>{if(panel)panel.classList.toggle('hidden',key!=='quiz')});
- // Refresh translated labels so the home screen does not retain stale tab text.
  try{applyLanguage()}catch(error){console.error('AQW home screen refresh failed:',error)}
  window.scrollTo({top:0,behavior:'smooth'});
 }
