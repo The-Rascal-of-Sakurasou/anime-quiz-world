@@ -304,7 +304,7 @@ function initSupabase(){
 async function authAction(kind){
  message(authMsg,'');
  const email=$s('aqwEmail').value.trim(),password=$s('aqwPassword').value;
- if(!$s('aqwAcceptTerms').checked){message(authMsg,'利用規約とプライバシーポリシーへの同意が必要です。');return}
+ if(kind==='signup'&&!$s('aqwAcceptTerms').checked){message(authMsg,'新規登録には利用規約とプライバシーポリシーへの同意が必要です。');return}
  try{
   if(kind==='signin'){
    const {error}=await sb.auth.signInWithPassword({email,password});if(error)throw error;
