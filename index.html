@@ -233,13 +233,13 @@ async function fetchAnime(vars={}){
  if(vars.search)return (await request({page:1,perPage:18,search:vars.search})).filter(isUsableAnime);
  const cacheKey='aqw-anime-pool-v9-characters-10000',targetCount=10000;
  // Use a clean cache version; each record keeps its AniList ID, title and cover together.
- let initial=[];
+ let initial=[],cacheSavedAt=0;
  try{
   const cached=await new Promise(resolve=>{try{const req=indexedDB.open('aqw-catalogue',1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('catalogues'))req.result.createObjectStore('catalogues')};req.onsuccess=()=>{const db=req.result;try{const get=db.transaction('catalogues','readonly').objectStore('catalogues').get(cacheKey);get.onsuccess=()=>resolve(get.result||null);get.onerror=()=>resolve(null)}catch(e){resolve(null)}};req.onerror=()=>resolve(null)}catch(e){resolve(null)}});
-  if(cached&&Array.isArray(cached.items))initial=[...new Map(cached.items.filter(isUsableAnime).map(a=>[Number(a.id),a])).values()];
-  if(!initial.length){const legacy=JSON.parse(localStorage.getItem('aqw-anime-pool-v7-linked')||'null');if(Array.isArray(legacy?.items))initial=[...new Map(legacy.items.filter(isUsableAnime).map(a=>[Number(a.id),a])).values()]}
+  if(cached&&Array.isArray(cached.items)){initial=[...new Map(cached.items.filter(isUsableAnime).map(a=>[Number(a.id),a])).values()];cacheSavedAt=Number(cached.savedAt)||0;}
+  if(!initial.length){const legacy=JSON.parse(localStorage.getItem('aqw-anime-pool-v7-linked')||'null');if(Array.isArray(legacy?.items)){initial=[...new Map(legacy.items.filter(isUsableAnime).map(a=>[Number(a.id),a])).values()];cacheSavedAt=Number(legacy.savedAt)||0;}}
  }catch(e){}
- if(initial.length>=targetCount)return initial;
+ if(initial.length>=targetCount&&Date.now()-cacheSavedAt<24*60*60*1000)return initial;
  if(!initial.length){
   const first=(await request({page:1,perPage:50},'POPULARITY_DESC')).filter(isUsableAnime);
   if(!first.length)throw new Error(lang==='ja'?'作品データを取得できませんでした。通信制限または接続障害の可能性があります。':'Could not load anime data. The connection may be blocked or temporarily unavailable.');
@@ -251,11 +251,13 @@ async function fetchAnime(vars={}){
   backgroundLoadPromise=(async()=>{
    const all=new Map(initial.map(a=>[a.id,a]));
    const tasks=[];
-   for(let page=2;page<=250;page++)tasks.push(['POPULARITY_DESC',page]);
-   for(const sort of ['TRENDING_DESC','SCORE_DESC','FAVOURITES_DESC','ID_DESC','START_DATE_DESC'])for(let page=1;page<=30;page++)tasks.push([sort,page]);
+   // Refresh trending and recently added anime at least once every 24 hours, even after the catalogue reaches 10,000.
+   const shouldRefresh=Date.now()-cacheSavedAt>=24*60*60*1000;
+   if(shouldRefresh){for(const sort of ['ID_DESC','START_DATE_DESC','TRENDING_DESC'])for(let page=1;page<=3;page++)tasks.push([sort,page,'refresh']);}
+   if(all.size<targetCount){for(let page=2;page<=250;page++)tasks.push(['POPULARITY_DESC',page,'fill']);for(const sort of ['SCORE_DESC','FAVOURITES_DESC'])for(let page=1;page<=30;page++)tasks.push([sort,page,'fill']);}
    let completed=0,failures=0;
-   for(const [sort,page] of tasks){
-    if(all.size>=targetCount)break;
+   for(const [sort,page,taskType] of tasks){
+    if(all.size>=targetCount&&taskType==='fill')break;
     await new Promise(resolve=>setTimeout(resolve,2200));
     try{
      const rows=await request({page,perPage:50},sort);
