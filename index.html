@@ -129,19 +129,19 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 <p id="socialDescription" class="muted">AQW独自のアカウントでフレンドを登録し、フレンド同士でコメントと返信ができます。フレンドは相互にフォローしているユーザーです。</p>
 <div class="social-status" id="aqwSocialStatus" role="status">AQWのSNSを準備しています…</div>
 <div id="aqwAuthPanel" class="auth-panel">
-<h3 id="aqwAuthHeading">新規登録 / ログイン</h3>
+<h3 id="aqwAuthHeading">ログイン / 新規登録</h3>
 <form id="aqwAuthForm"><div class="auth-grid">
-<label><span>ユーザー名（登録時）</span><input id="aqwUsername" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]+" autocomplete="username" placeholder="anime_fan"></label>
+<label id="aqwUsernameField" class="hidden"><span>ユーザー名（登録時）</span><input id="aqwUsername" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]+" autocomplete="username" placeholder="anime_fan"></label>
 <label><span>メールアドレス</span><input id="aqwEmail" type="email" autocomplete="email" required maxlength="254"></label>
 <label><span>パスワード</span><input id="aqwPassword" type="password" autocomplete="current-password" required minlength="8" maxlength="128"></label>
-<label><span>表示名（登録時）</span><input id="aqwDisplayName" maxlength="40" placeholder="アニメ好き"></label>
-</div><label class="auth-legal"><input type="checkbox" id="aqwAcceptTerms"><span>利用規約とプライバシーポリシーを確認し、同意します。</span></label>
-<div class="auth-actions"><button class="primary" id="aqwSignIn" type="submit">ログイン</button><button id="aqwSignUp" type="button">新規登録</button><button id="aqwSignOut" type="button" class="hidden">ログアウト</button></div></form>
+<label id="aqwDisplayNameField" class="hidden"><span>表示名（登録時）</span><input id="aqwDisplayName" maxlength="40" placeholder="アニメ好き"></label>
+</div><label class="auth-legal hidden" id="aqwTermsField"><input type="checkbox" id="aqwAcceptTerms"><span>利用規約とプライバシーポリシーを確認し、同意します。</span></label>
+<div class="auth-actions"><button class="primary" id="aqwSignIn" type="submit">ログイン</button><button id="aqwSignUp" type="button">新規登録はこちら</button><button id="aqwSignOut" type="button" class="hidden">ログアウト</button></div></form>
 <p id="aqwAuthMessage" class="auth-message" aria-live="polite"></p>
 </div>
 <div id="aqwMemberPanel" class="hidden">
 <div class="social-columns">
-<section class="social-box"><h3>プロフィール</h3><form id="aqwProfileForm"><label>ユーザー名<input id="aqwEditUsername" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]+" required></label><label>表示名<input id="aqwEditDisplayName" maxlength="40" required></label><label>自己紹介<textarea id="aqwBio" maxlength="280" rows="3"></textarea></label><button class="primary" type="submit">プロフィールを保存</button></form></section>
+<section class="social-box"><h3>プロフィール</h3><form id="aqwProfileForm"><label>ユーザー名<input id="aqwEditUsername" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]+" required></label><label>表示名<input id="aqwEditDisplayName" maxlength="40" required></label><label>自己紹介<textarea id="aqwBio" maxlength="280" rows="3"></textarea></label><button class="primary" type="submit">プロフィールを保存</button></form><hr style="border:0;border-top:1px solid var(--line);margin:20px 0"><h3>パスワード変更</h3><form id="aqwPasswordForm"><label>新しいパスワード<input id="aqwNewPassword" type="password" minlength="8" maxlength="128" autocomplete="new-password" required></label><label>新しいパスワード（確認）<input id="aqwConfirmPassword" type="password" minlength="8" maxlength="128" autocomplete="new-password" required></label><button class="primary" type="submit">パスワードを変更</button></form><p id="aqwPasswordMessage" class="auth-message" aria-live="polite"></p></section>
 <section class="social-box"><h3>ユーザー検索・フレンド登録</h3><p class="muted">お互いにフォローするとフレンドになり、コメントと返信ができるようになります。</p><form id="aqwUserSearchForm" class="searchbar"><input id="aqwUserSearch" placeholder="ユーザー名・表示名" maxlength="60" required><button type="submit">検索</button></form><div id="aqwUserResults"></div></section>
 </div>
 <section class="social-box" id="aqwFriendMessagesPanel" style="margin-top:18px"><h3>フレンドとのコメント・返信</h3><div class="social-columns"><div><h4>フレンド一覧</h4><p class="muted">相互にフォローしているユーザーが表示されます。</p><button id="aqwRefreshFriends" type="button">フレンド一覧を更新</button><div id="aqwFriends" class="aqw-feed"></div></div><div><h4 id="aqwConversationTitle">会話を選択してください</h4><div id="aqwMessages" class="aqw-feed" aria-live="polite"></div><form id="aqwMessageForm" class="aqw-reply-form"><input id="aqwMessageInput" maxlength="2000" placeholder="コメントを書く（最大2,000文字）" required disabled><button class="primary" id="aqwSendMessage" type="submit" disabled>送信</button></form><p id="aqwMessageStatus" class="auth-message" aria-live="polite"></p></div></div></section>
@@ -378,6 +378,20 @@ function initSupabase(){
  sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
  return true;
 }
+let signupMode=false;
+function setAuthMode(signup){
+ signupMode=signup;
+ $s('aqwUsernameField').classList.toggle('hidden',!signup);
+ $s('aqwDisplayNameField').classList.toggle('hidden',!signup);
+ $s('aqwTermsField').classList.toggle('hidden',!signup);
+ $s('aqwUsername').required=signup;
+ $s('aqwAcceptTerms').required=signup;
+ $s('aqwPassword').autocomplete=signup?'new-password':'current-password';
+ $s('aqwAuthHeading').textContent=signup?'新規登録':'ログイン';
+ $s('aqwSignIn').textContent=signup?'アカウントを作成':'ログイン';
+ $s('aqwSignUp').textContent=signup?'ログインに戻る':'新規登録はこちら';
+ message(authMsg,'');
+}
 async function authAction(kind){
  message(authMsg,'');
  const email=$s('aqwEmail').value.trim(),password=$s('aqwPassword').value;
@@ -530,8 +544,9 @@ async function sendFriendMessage(e){
 }
 
 if(!initSupabase())return;
-$s('aqwAuthForm').addEventListener('submit',e=>{e.preventDefault();authAction('signin')});
-$s('aqwSignUp').addEventListener('click',()=>authAction('signup'));
+$s('aqwAuthForm').addEventListener('submit',e=>{e.preventDefault();authAction(signupMode?'signup':'signin')});
+$s('aqwSignUp').addEventListener('click',()=>setAuthMode(!signupMode));
+$s('aqwPasswordForm').addEventListener('submit',async e=>{e.preventDefault();const next=$s('aqwNewPassword').value,confirmPassword=$s('aqwConfirmPassword').value;message($s('aqwPasswordMessage'),'');if(next.length<8){message($s('aqwPasswordMessage'),'パスワードは8文字以上にしてください。');return}if(next!==confirmPassword){message($s('aqwPasswordMessage'),'確認用パスワードが一致しません。');return}const button=$s('aqwPasswordForm').querySelector('button[type="submit"]');button.disabled=true;try{const {error}=await sb.auth.updateUser({password:next});if(error)throw error;$s('aqwNewPassword').value='';$s('aqwConfirmPassword').value='';message($s('aqwPasswordMessage'),'パスワードを変更しました。')}catch(err){message($s('aqwPasswordMessage'),'変更できませんでした：'+errText(err))}finally{button.disabled=false}});
 $s('aqwSignOut').addEventListener('click',async()=>{const {error}=await sb.auth.signOut();if(error)message(authMsg,errText(error));else message(authMsg,'ログアウトしました。')});
 sb.auth.onAuthStateChange((_event,session)=>{setTimeout(()=>refreshSession(session),0)});
 sb.auth.getSession().then(({data,error})=>{if(error)setStatus(errText(error));else refreshSession(data.session)});
