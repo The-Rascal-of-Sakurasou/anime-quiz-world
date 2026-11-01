@@ -448,9 +448,43 @@ function goHome(){
  const quizArea=document.getElementById('quizArea');
  const setupControls=document.getElementById('setupControls');
  const result=document.getElementById('result');
+ // Remove the !important inline display overrides applied while rendering a question.
+ // Otherwise the .hidden class may not hide the quiz area after returning home.
+ ['quizArea','answers','typedAnswerBox','typedAnswer','submitTypedAnswer','result'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.style.removeProperty('display');
+  el.style.removeProperty('visibility');
+  el.style.removeProperty('grid-template-columns');
+  el.style.removeProperty('gap');
+ });
  if(quizArea)quizArea.classList.add('hidden');
  if(setupControls)setupControls.classList.remove('hidden');
  if(result)result.classList.add('hidden');
+ const answerPrompt=document.getElementById('answerPrompt');
+ if(answerPrompt){answerPrompt.textContent='';answerPrompt.style.removeProperty('white-space');answerPrompt.style.removeProperty('padding');answerPrompt.style.removeProperty('background');answerPrompt.style.removeProperty('border-radius')}
+ const cover=document.getElementById('cover');
+ if(cover){cover.removeAttribute('src');cover.alt='';cover.classList.add('hidden')}
+ const typedAnswer=document.getElementById('typedAnswer');
+ if(typedAnswer){typedAnswer.value='';typedAnswer.disabled=false}
+ const typedHintButton=document.getElementById('typedHintButton');
+ if(typedHintButton){typedHintButton.disabled=false;typedHintButton.textContent=({ja:'入力用ヒント',en:'Typing hint',ko:'입력 힌트',zh:'输入提示',es:'Pista para escribir',fr:'Indice de saisie',pt:'Dica para digitação',de:'Eingabehinweis'}[lang]||'Typing hint')}
+ const hintButton=document.getElementById('hintButton');
+ if(hintButton)hintButton.disabled=false;
+ const timer=document.getElementById('timer');
+ if(timer)timer.textContent='';
+ const comboBadge=document.getElementById('comboBadge');
+ if(comboBadge)comboBadge.textContent='';
+ const hintBadge=document.getElementById('hintBadge');
+ if(hintBadge)hintBadge.textContent='';
+ const quizStatus=document.getElementById('quizStatus');
+ if(quizStatus)quizStatus.textContent='';
+ const typedUnknownAnswer=document.getElementById('typedUnknownAnswer');
+ if(typedUnknownAnswer)typedUnknownAnswer.disabled=false;
+ const typedBox=document.getElementById('typedAnswerBox');
+ if(typedBox)typedBox.classList.add('hidden');
+ const answersPanel=document.getElementById('answers');
+ if(answersPanel)answersPanel.classList.add('hidden');
  const startButton=document.getElementById('start');
  if(startButton){startButton.classList.remove('hidden');startButton.disabled=false;startButton.textContent=tr('start')}
  const score=document.getElementById('score');
