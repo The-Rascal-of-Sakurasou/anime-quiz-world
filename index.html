@@ -90,8 +90,8 @@ footer{padding:28px 0 36px;color:var(--muted);font-size:.82rem;line-height:1.7}
 <label><span>メールアドレス</span><input id="aqwEmail" type="email" autocomplete="email" required maxlength="254"></label>
 <label><span>パスワード</span><input id="aqwPassword" type="password" autocomplete="current-password" required minlength="8" maxlength="128"></label>
 <label><span>表示名（登録時）</span><input id="aqwDisplayName" maxlength="40" placeholder="アニメ好き"></label>
-</div><label class="auth-legal"><input type="checkbox" id="aqwAcceptTerms" required><span>利用規約とプライバシーポリシーを確認し、同意します。</span></label>
-<div class="auth-actions"><button class="primary" id="aqwSignIn" type="button">ログイン</button><button id="aqwSignUp" type="button">新規登録</button><button id="aqwSignOut" type="button" class="hidden">ログアウト</button></div></form>
+</div><label class="auth-legal"><input type="checkbox" id="aqwAcceptTerms"><span>利用規約とプライバシーポリシーを確認し、同意します。</span></label>
+<div class="auth-actions"><button class="primary" id="aqwSignIn" type="submit">ログイン</button><button id="aqwSignUp" type="button">新規登録</button><button id="aqwSignOut" type="button" class="hidden">ログアウト</button></div></form>
 <p id="aqwAuthMessage" class="auth-message" aria-live="polite"></p>
 </div>
 <div id="aqwMemberPanel" class="hidden">
@@ -411,7 +411,7 @@ async function loadNotifications(){
  for(const n of data){const row=document.createElement('div');row.className='aqw-notification';row.textContent=(n.actor?.display_name||n.actor?.username||'ユーザー')+({follow:'があなたをフォローしました',like:'があなたの投稿にいいねしました',reply:'があなたに返信しました'}[n.kind]||'がアクションしました')+' · '+stamp(n.created_at);if(!n.read_at){const b=document.createElement('button');b.textContent='既読';b.onclick=async()=>{b.disabled=true;const {error:updateError}=await sb.from('notifications').update({read_at:new Date().toISOString()}).eq('id',n.id).eq('recipient_id',currentUser.id);if(updateError){b.disabled=false;message(status,(localJa()?'通知を既読にできませんでした：':'Could not mark notification as read: ')+errText(updateError));return}row.style.opacity='.6';b.remove()};row.append(b)}box.append(row)}
 }
 if(!initSupabase())return;
-$s('aqwSignIn').addEventListener('click',()=>authAction('signin'));
+$s('aqwAuthForm').addEventListener('submit',e=>{e.preventDefault();authAction('signin')});
 $s('aqwSignUp').addEventListener('click',()=>authAction('signup'));
 $s('aqwSignOut').addEventListener('click',async()=>{const {error}=await sb.auth.signOut();if(error)message(authMsg,errText(error));else message(authMsg,'ログアウトしました。')});
 sb.auth.onAuthStateChange((_event,session)=>{setTimeout(()=>refreshSession(session),0)});
