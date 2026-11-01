@@ -104,7 +104,7 @@ const modeNames={image:'image',studio:'studio',synonym:'synonym',titleYear:'titl
 const foot=document.getElementById('footerText');if(foot&&lang!=='ja')foot.textContent=lang==='en'?'Anime data and images are provided by an external anime database service. This is an unofficial fan site; all rights belong to their respective owners. An internet connection is required.':({ko:'작품 데이터와 이미지는 외부 애니메이션 데이터베이스에서 제공합니다. 비공식 팬 사이트이며 모든 권리는 각 권리자에게 있습니다. 인터넷 연결이 필요합니다.',zh:'作品数据和图片来自外部动漫数据库。本网站为非官方粉丝网站，所有权利归各自权利人所有。需要连接互联网。',es:'Los datos e imágenes proceden de una base de datos externa. Este es un sitio de fans no oficial; los derechos pertenecen a sus respectivos titulares. Se requiere conexión a Internet.',fr:'Les données et images proviennent d’une base de données externe. Ce site de fans est non officiel ; tous les droits appartiennent à leurs détenteurs. Une connexion Internet est nécessaire.',pt:'Os dados e imagens vêm de uma base de dados externa. Este é um site de fãs não oficial; todos os direitos pertencem aos respetivos titulares. É necessária ligação à Internet.',de:'Anime-Daten und Bilder stammen aus einer externen Datenbank. Dies ist eine inoffizielle Fanseite; alle Rechte liegen bei den jeweiligen Rechteinhabern. Eine Internetverbindung ist erforderlich.'}[lang]||ui.heroDescription);const ph=document.getElementById('query');if(ph)ph.placeholder=lang==='ja'?'例：葬送のフリーレン':lang==='en'?'e.g. Frieren: Beyond Journey’s End':({ko:'예: 장송의 프리렌',zh:'例如：葬送的芙莉莲',es:'p. ej., Frieren',fr:'ex. : Frieren',pt:'ex.: Frieren',de:'z. B. Frieren'}[lang]||'Search anime');
 }
 const query=`query ($page:Int,$perPage:Int,$search:String) { Page(page:$page,perPage:$perPage) { media(type:ANIME,sort:POPULARITY_DESC,search:$search,isAdult:false) { id format title { romaji english native } description(asHtml:false) synonyms coverImage { large } episodes seasonYear averageScore genres studios(isMain:true) { nodes { name } } } } }`;
-const $=s=>document.querySelector(s);let pool=[],questions=[],index=0,points=0,locked=false,questionTimer=null,clockTimer=null,secondsLeft=15,startedAt=0,elapsedSeconds=0,missedQuestions=[],reviewMode=false,playMode='normal',roundFailed=false,lastResultData=null,combo=0,bestCombo=0,hintUsed=false,backgroundLoadPromise=null,requestedQuestionCount=10;
+const $=s=>document.querySelector(s);let pool=[],questions=[],index=0,points=0,locked=false,questionTimer=null,clockTimer=null,secondsLeft=15,startedAt=0,elapsedSeconds=0,missedQuestions=[],reviewMode=false,playMode='normal',roundFailed=false,lastResultData=null,combo=0,bestCombo=0,hintUsed=false,backgroundLoadPromise=null,requestedQuestionCount=10,rateLimitedUntil=0;
 async function fetchAnime(vars={}){
  const request=async(variables,sort='POPULARITY_DESC')=>{
   let lastError;
@@ -114,7 +114,9 @@ async function fetchAnime(vars={}){
     const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query:query.replace('sort:POPULARITY_DESC','sort:'+sort),variables}),signal:controller.signal});
     if(!response.ok){
      const err=new Error(response.status===429?'アクセスが集中しています（HTTP 429）。':('データサーバー応答エラー（HTTP '+response.status+'）。'));
-     if(response.status===429||response.status>=500){lastError=err;if(attempt===0)await new Promise(resolve=>setTimeout(resolve,1200));continue}
+     err.status=response.status;
+     if(response.status===429){const retrySeconds=Number(response.headers.get('Retry-After'))||30;rateLimitedUntil=Math.max(rateLimitedUntil,Date.now()+retrySeconds*1000);lastError=err;if(attempt===0)await new Promise(resolve=>setTimeout(resolve,Math.max(2200,rateLimitedUntil-Date.now())));continue}
+     if(response.status>=500){lastError=err;if(attempt===0)await new Promise(resolve=>setTimeout(resolve,1200));continue}
      throw err;
     }
     const json=await response.json();
@@ -164,7 +166,7 @@ async function fetchAnime(vars={}){
     completed++;
     const items=[...all.values()];
     pool=items;extendQuestionsFromPool(items);
-    try{localStorage.setItem(cacheKey,JSON.stringify({savedAt:Date.now(),items}))}catch(e){}
+    if(completed%3===0||all.size>=targetCount){try{localStorage.setItem(cacheKey,JSON.stringify({savedAt:Date.now(),items}))}catch(e){}}
     const status=document.getElementById('quizStatus');
     if(status){
      const message=lang==='ja'?'作品データを追加中… '+items.length+' / '+targetCount+'作品':'Adding anime… '+items.length+' / '+targetCount;
