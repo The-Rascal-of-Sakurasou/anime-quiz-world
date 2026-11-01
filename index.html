@@ -354,9 +354,13 @@ async function loadFeed(){
  const {data:posts,error}=await sb.from('posts').select('id,user_id,body,image_path,parent_post_id,quiz_result,created_at,profiles(username,display_name)').is('parent_post_id',null).order('created_at',{ascending:false}).limit(50);
  if(error){feed.textContent='タイムラインを読み込めませんでした：'+errText(error);return}
  if(!posts?.length){feed.innerHTML='<div class="aqw-empty">まだ投稿がありません。最初の投稿をしてみましょう。</div>';return}
- const rendered=[];for(let i=0;i<posts.length;i+=8){const batch=await Promise.all(posts.slice(i,i+8).map(renderPost));rendered.push(...batch)}const fragment=document.createDocumentFragment();rendered.forEach(node=>fragment.append(node));feed.append(fragment)
+ const postIds=posts.map(post=>post.id);
+ const {data:likeRows,error:likesError}=await sb.from('post_likes').select('post_id').in('post_id',postIds);
+ const likeCounts=new Map();
+ if(!likesError){for(const row of likeRows||[])likeCounts.set(row.post_id,(likeCounts.get(row.post_id)||0)+1)}
+ const rendered=[];for(let i=0;i<posts.length;i+=8){const batch=await Promise.all(posts.slice(i,i+8).map(post=>renderPost(post,likesError?undefined:(likeCounts.get(post.id)||0))));rendered.push(...batch)}const fragment=document.createDocumentFragment();rendered.forEach(node=>fragment.append(node));feed.append(fragment)
 }
-async function renderPost(post){
+async function renderPost(post,initialLikeCount){
  const article=document.createElement('article');article.className='aqw-post';
  const profile=post.profiles||{};
  const head=document.createElement('div');head.className='aqw-post-head';
@@ -368,7 +372,8 @@ async function renderPost(post){
  if(post.quiz_result){const result=document.createElement('p');result.className='muted';result.textContent='クイズ結果：'+JSON.stringify(post.quiz_result);article.append(result)}
  const actions=document.createElement('div');actions.className='aqw-post-actions';
  const like=document.createElement('button');like.type='button';like.textContent='いいね';
- const {count:likeCount}=await sb.from('post_likes').select('*',{count:'exact',head:true}).eq('post_id',post.id);
+ let likeCount=initialLikeCount;
+ if(likeCount===undefined){const result=await sb.from('post_likes').select('*',{count:'exact',head:true}).eq('post_id',post.id);likeCount=result.count}
  const count=document.createElement('small');count.textContent=' '+(likeCount||0);
  const replyBtn=document.createElement('button');replyBtn.type='button';replyBtn.textContent='返信を見る / 返信する';
  const deleteBtn=document.createElement('button');deleteBtn.type='button';deleteBtn.textContent='自分の投稿を削除';deleteBtn.className='danger-button';deleteBtn.classList.toggle('hidden',post.user_id!==currentUser?.id);
