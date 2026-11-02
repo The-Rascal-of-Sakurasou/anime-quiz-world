@@ -237,7 +237,7 @@ async function fetchAnime(vars={}){
  try{
   const cached=await new Promise(resolve=>{try{const req=indexedDB.open('aqw-catalogue',1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('catalogues'))req.result.createObjectStore('catalogues')};req.onsuccess=()=>{const db=req.result;try{const get=db.transaction('catalogues','readonly').objectStore('catalogues').get(cacheKey);get.onsuccess=()=>resolve(get.result||null);get.onerror=()=>resolve(null)}catch(e){resolve(null)}};req.onerror=()=>resolve(null)}catch(e){resolve(null)}});
   if(cached&&Array.isArray(cached.items)){initial=[...new Map(cached.items.filter(isUsableAnime).map(a=>[Number(a.id),a])).values()];cacheSavedAt=Number(cached.savedAt)||0;}
-  if(!initial.length){const legacy=JSON.parse(localStorage.getItem('aqw-anime-pool-v7-linked')||'null');if(Array.isArray(legacy?.items)){initial=[...new Map(legacy.items.filter(isUsableAnime).map(a=>[Number(a.id),a])).values()];cacheSavedAt=Number(legacy.savedAt)||0;}}
+  if(!initial.length){const legacy=JSON.parse(localStorage.getItem(cacheKey)||localStorage.getItem('aqw-anime-pool-v7-linked')||'null');if(Array.isArray(legacy?.items)){initial=[...new Map(legacy.items.filter(isUsableAnime).map(a=>[Number(a.id),a])).values()];cacheSavedAt=Number(legacy.savedAt)||0;}}
  }catch(e){}
  if(initial.length>=targetCount&&Date.now()-cacheSavedAt<24*60*60*1000)return initial;
  if(!initial.length){
