@@ -241,8 +241,33 @@ function compareLearnedWeightVariants(feedback){
  ];
  return variants.map(variant=>({...variant,...evaluateLearnedFeedback(feedback,variant)}));
 }
+function deduplicateRecommendationGroups(closeMatches,discoveries){
+ const seenIds=new Set(),seenTitles=new Set();
+ const normalizeTitle=value=>String(value||'').toLocaleLowerCase().normalize('NFKC').replace(/[\s\p{P}\p{S}]/gu,'');
+ const unique=items=>(Array.isArray(items)?items:[]).filter(anime=>{
+  const rawTitles=[anime?.title?.native,anime?.title?.english,anime?.title?.romaji,...(Array.isArray(anime?.synonyms)?anime.synonyms:[])];
+  const keys=[...new Set(rawTitles.map(normalizeTitle).filter(Boolean))];
+  const id=anime?.id==null?null:String(anime.id);
+  if(id!==null&&seenIds.has(id))return false;
+  if(keys.some(key=>seenTitles.has(key)))return false;
+  if(id!==null)seenIds.add(id);
+  keys.forEach(key=>seenTitles.add(key));
+  return true;
+ });
+ return {closeMatches:unique(closeMatches),discoveries:unique(discoveries)};
+}
+
 function runRecommendationSelfTests(){
  const tests=[];
+ const dedup=deduplicateRecommendationGroups(
+  [{id:1,title:{native:'作品A',english:'Title A',romaji:'Title A'}}],
+  [{id:2,title:{native:'作品B',english:'Title B',romaji:'Title B'}},{id:3,title:{native:'作品A',english:'Another Title',romaji:'Another Title'}}]
+ );
+ check('推薦2枠で同じ作品IDを重複表示しない',deduplicateRecommendationGroups([{id:7,title:{native:'A'}}],[{id:7,title:{native:'B'}}]).discoveries.length===0);
+ check('日本語・英語タイトルの表記違いを重複判定',deduplicateRecommendationGroups([{id:1,title:{native:'葬送のフリーレン'}}],[{id:2,title:{native:'',english:'Frieren: Beyond Journey’s End'}}]).discoveries.length===1);
+ check('記号・空白だけの違いを重複判定',deduplicateRecommendationGroups([{id:1,title:{native:'SPY×FAMILY'}}],[{id:2,title:{native:'SPY × FAMILY'}}]).discoveries.length===0);
+ check('AniListの別名も重複判定に利用',deduplicateRecommendationGroups([{id:1,title:{native:'作品A'},synonyms:['Alias A']}],[{id:2,title:{native:'Alias A'}}]).discoveries.length===0);
+ check('重複のない候補は両方の枠に残す',dedup.closeMatches.length===1&&dedup.discoveries.length===1);
  const check=(name,condition)=>tests.push({name,passed:Boolean(condition)});
  const sample=buildLearnedPreferences({
   one:{value:'like',genres:['Fantasy'],tags:['Magic']},
@@ -868,21 +893,8 @@ function renderFeedbackAnalytics(){
  diagnostics.append(run,output);root.append(diagnostics);
 }
 function renderCards(result){
- // ID・各言語タイトル・AniListの別名を横断し、推薦枠全体で重複を除外する。
- const seenIds=new Set(),seenTitles=new Set();
- const normalizeAnimeTitle=value=>String(value||'').toLocaleLowerCase().normalize('NFKC')
-  .replace(/[\\s\\p{P}\\p{S}]/gu,'');
- const unique=(items)=>items.filter(anime=>{
-  const rawTitles=[anime?.title?.native,anime?.title?.english,anime?.title?.romaji,...(Array.isArray(anime?.synonyms)?anime.synonyms:[])];
-  const keys=[...new Set(rawTitles.map(normalizeAnimeTitle).filter(Boolean))];
-  const id=anime?.id==null?null:String(anime.id);
-  if(id!==null&&seenIds.has(id))return false;
-  if(keys.some(key=>seenTitles.has(key)))return false;
-  if(id!==null)seenIds.add(id);
-  keys.forEach(key=>seenTitles.add(key));
-  return true;
- });
- result={...result,closeMatches:unique(result.closeMatches||[]),discoveries:unique(result.discoveries||[])};
+ const deduplicated=deduplicateRecommendationGroups(result.closeMatches||[],result.discoveries||[]);
+ result={...result,...deduplicated};
  if(typeof result.evaluationSessionId!=='string'||!result.evaluationSessionId)result.evaluationSessionId='session-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,9);
  latestResult=result;
  renderCardList('animeCards',result.closeMatches);
