@@ -279,7 +279,7 @@ const msgPanel=document.getElementById('aqwFriendMessagesPanel');if(msgPanel){co
 const legal=document.querySelectorAll('#social > .legal-links a');if(legal[0])legal[0].textContent=sl.termsLink;if(legal[1])legal[1].textContent=sl.privacyLink;
 const ph=document.getElementById('query');if(ph)ph.placeholder=lang==='ja'?'例：葬送のフリーレン':lang==='en'?'e.g. Frieren: Beyond Journey’s End':({ko:'예: 장송의 프리렌',zh:'例如：葬送的芙莉莲',es:'p. ej., Frieren',fr:'ex. : Frieren',pt:'ex.: Frieren',de:'z. B. Frieren'}[lang]||'Search anime');
 }
-const query=`query ($page:Int,$perPage:Int,$search:String,$id_in:[Int],$format_in:[MediaFormat]) { Page(page:$page,perPage:$perPage) { media(id_in:$id_in,format_in:$format_in,type:ANIME,sort:POPULARITY_DESC,search:$search,isAdult:false) { id format popularity title { romaji english native } description(asHtml:false) synonyms coverImage { large medium extraLarge } episodes seasonYear averageScore genres studios { nodes { name } } startDate { year } characters(sort:ROLE,perPage:5) { nodes { id name { full native } image { large } } } relations { edges { relationType node { id type } } } } } }`;
+const query=`query ($page:Int,$perPage:Int,$search:String,$id_in:[Int],$format_in:[MediaFormat],$startDate_greater:FuzzyDateInt,$startDate_lesser:FuzzyDateInt) { Page(page:$page,perPage:$perPage) { media(id_in:$id_in,format_in:$format_in,startDate_greater:$startDate_greater,startDate_lesser:$startDate_lesser,type:ANIME,sort:POPULARITY_DESC,search:$search,isAdult:false) { id format popularity title { romaji english native } description(asHtml:false) synonyms coverImage { large medium extraLarge } episodes seasonYear averageScore genres studios { nodes { name } } startDate { year } characters(sort:ROLE,perPage:5) { nodes { id name { full native } image { large } } } relations { edges { relationType node { id type } } } } } }`;
 function normalizeUnicode(value){if(typeof value==='string')return value.normalize('NFC');if(Array.isArray(value))return value.map(normalizeUnicode);if(value&&typeof value==='object'){const out={};for(const [key,item] of Object.entries(value))out[key]=normalizeUnicode(item);return out}return value}
 const $=s=>document.querySelector(s);let pool=[],questions=[],index=0,points=0,locked=false,questionTimer=null,clockTimer=null,secondsLeft=15,questionDeadline=0,pausedQuestionSeconds=0,isPaused=false,pausedAt=0,totalPausedMs=0,startedAt=0,elapsedSeconds=0,missedQuestions=[],reviewMode=false,playMode='normal',roundFailed=false,lastResultData=null,combo=0,bestCombo=0,choiceHintUsed=false,typedHintUsed=false,backgroundLoadPromise=null,requestedQuestionCount=10,rateLimitedUntil=0;
 async function fetchAnime(vars={}){
@@ -306,9 +306,9 @@ async function fetchAnime(vars={}){
   }
   throw lastError||new Error('データを取得できませんでした。');
  };
- const requestPageBatch=async(pages,sort,format)=>{
+ const requestPageBatch=async(pages,sort,format,yearStart,yearEnd)=>{
   const fields='id format popularity title { romaji english native } description(asHtml:false) synonyms coverImage { large medium extraLarge } episodes seasonYear averageScore genres studios(isMain:true) { nodes { name } } characters(sort:ROLE,perPage:5) { nodes { id name { full native } image { large } } } relations { edges { relationType node { id type } } }';
-  const formatArg=format?',format_in:['+format+']':'';
+  const formatArg=(format?',format_in:['+format+']':'')+(yearStart?',startDate_greater:'+(yearStart*10000+101)+',startDate_lesser:'+(yearEnd*10000+1231):'');
   const aliases=pages.map((page,index)=>'p'+index+': Page(page:'+page+',perPage:50) { pageInfo { hasNextPage } media(type:ANIME,sort:'+sort+',isAdult:false'+formatArg+') { '+fields+' } }').join(' ');
   const batchQuery='query { '+aliases+' }';
   let lastError;
@@ -330,7 +330,7 @@ async function fetchAnime(vars={}){
     if(attempt<3)await new Promise(resolve=>setTimeout(resolve,800*Math.pow(2,attempt)));
    }finally{clearTimeout(timeout)}
   }
-  if(lastError?.batchUnsupported)return Promise.all(pages.map(async page=>{const items=await request({page,perPage:50,format_in:format?[format]:undefined},sort);return {items,hasNextPage:items.length===50}}));
+  if(lastError?.batchUnsupported)return Promise.all(pages.map(async page=>{const items=await request({page,perPage:50,format_in:format?[format]:undefined,startDate_greater:yearStart?yearStart*10000+101:undefined,startDate_lesser:yearEnd?yearEnd*10000+1231:undefined},sort);return {items,hasNextPage:items.length===50}}));
   throw lastError||new Error('データをまとめて取得できませんでした。');
  };
  if(vars.search)return (await request({page:1,perPage:18,search:vars.search})).filter(isUsableAnime);
@@ -419,26 +419,36 @@ async function fetchAnime(vars={}){
    }
    let taskIndex=Number.isInteger(savedProgress?.taskIndex)?Math.max(0,Math.min(tasks.length,savedProgress.taskIndex)):0;
    if(taskIndex>=tasks.length&&Date.now()-Number(savedProgress?.updatedAt||0)>7*24*60*60*1000)taskIndex=0;
+   const existingDateScopes=new Set(tasks.filter(task=>task[4]!=null&&task[5]!=null).map(task=>task[0]+'|'+task[3]+'|'+task[4]+'|'+task[5]));
    let completed=taskIndex,failures=Number(savedProgress?.failures)||0;
    const saveProgress=async(items,nextIndex)=>{
     try{await new Promise(resolve=>{const req=indexedDB.open('aqw-catalogue',1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('catalogues'))req.result.createObjectStore('catalogues')};req.onsuccess=()=>{try{const tx=req.result.transaction('catalogues','readwrite'),store=tx.objectStore('catalogues');store.put({savedAt:Date.now(),items},cacheKey);store.put({tasks,taskIndex:nextIndex,failures,updatedAt:Date.now()},cacheKey+'-progress');tx.oncomplete=()=>resolve();tx.onerror=()=>resolve()}catch(e){resolve()}};req.onerror=()=>resolve()})}catch(e){}
    };
    for(;taskIndex<tasks.length;){
-    const [sort,page,taskType,format]=tasks[taskIndex];
+    const [sort,page,taskType,format,yearStart,yearEnd]=tasks[taskIndex];
     
     // Bundle two adjacent pages into one GraphQL request to reduce network round trips without increasing request frequency.
     const batch=[tasks[taskIndex]];
     if(taskType==='fill'&&taskIndex+1<tasks.length){
      const next=tasks[taskIndex+1];
-     if(next[2]==='fill'&&next[0]===sort&&next[1]===page+1&&next[3]===format)batch.push(next);
+     if(next[2]==='fill'&&next[0]===sort&&next[1]===page+1&&next[3]===format&&next[4]===yearStart&&next[5]===yearEnd)batch.push(next);
     }
     await new Promise(resolve=>setTimeout(resolve,2100));
+    let pageResults=[];
     try{
-     const pageResults=sort==='ID_IN'?[{items:await request({id_in:page,perPage:50}),hasNextPage:false}]:await requestPageBatch(batch.map(task=>task[1]),sort,format);
+     pageResults=sort==='ID_IN'?[{items:await request({id_in:page,perPage:50}),hasNextPage:false}]:await requestPageBatch(batch.map(task=>task[1]),sort,format,yearStart,yearEnd);
      pageResults.forEach(result=>(result.items||[]).forEach(a=>{if(isUsableAnime(a))all.set(a.id,a)}));
     }catch(err){failures+=batch.length;console.warn('Background anime page batch failed:',sort,page,err)}
+    if(format&&!yearStart&&batch.some(task=>task[1]===100)&&pageResults.some(result=>result.hasNextPage===true)){
+     for(let startYear=1900;startYear<=2030;startYear+=10){
+      const endYear=startYear+9,scope=sort+'|'+format+'|'+startYear+'|'+endYear;
+      if(existingDateScopes.has(scope))continue;
+      existingDateScopes.add(scope);
+      for(let datePage=1;datePage<=100;datePage++)tasks.push([sort,datePage,'fill',format,startYear,endYear]);
+     }
+    }
     let nextTaskIndex=taskIndex+batch.length;
-    if(pageResults.some(result=>result.hasNextPage===false))while(nextTaskIndex<tasks.length&&tasks[nextTaskIndex][0]===sort&&tasks[nextTaskIndex][3]===format&&tasks[nextTaskIndex][2]==='fill')nextTaskIndex++;
+    if(pageResults.some(result=>result.hasNextPage===false))while(nextTaskIndex<tasks.length&&tasks[nextTaskIndex][0]===sort&&tasks[nextTaskIndex][3]===format&&tasks[nextTaskIndex][4]===yearStart&&tasks[nextTaskIndex][5]===yearEnd&&tasks[nextTaskIndex][2]==='fill')nextTaskIndex++;
     taskIndex=nextTaskIndex;
     completed+=batch.length;
     const items=deduplicateQuestionPool([...all.values()]);
