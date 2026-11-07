@@ -258,7 +258,7 @@ function deduplicateAnimeSeries(items){
   const left=find(a),right=find(b);
   if(left!==right)parent.set(right,left);
  };
- const relatedTypes=new Set(['PREQUEL','SEQUEL','PARENT','SUMMARY','ALTERNATIVE','COMPILATION','CONTAINS']);
+ const relatedTypes=new Set(['PREQUEL','SEQUEL','PARENT','SUMMARY','ALTERNATIVE' ,'COMPILATION']);
  const titleOwners=new Map();
  for(const anime of list){
   if(anime?.id==null)continue;
@@ -300,6 +300,7 @@ function deduplicateRecommendationGroups(closeMatches,discoveries){
 
 function runRecommendationSelfTests(){
  const tests=[];
+ const check=(name,condition)=>tests.push({name,passed:Boolean(condition)});
  const dedup=deduplicateRecommendationGroups(
   [{id:1,title:{native:'作品A',english:'Title A',romaji:'Title A'}}],
   [{id:2,title:{native:'作品B',english:'Title B',romaji:'Title B'}},{id:3,title:{native:'作品A',english:'Another Title',romaji:'Another Title'}}]
@@ -325,11 +326,14 @@ function runRecommendationSelfTests(){
  check('無関係な作品は別々に残す',deduplicateAnimeSeries([
   {id:401,title:{native:'作品A'}},{id:402,title:{native:'作品B'}}
  ]).length===2);
+ check('包含関係だけの別作品は統合しない',deduplicateAnimeSeries([
+  {id:411,title:{native:'作品A'},relations:{edges:[{relationType:'CONTAINS',node:{id:412}}]}},
+  {id:412,title:{native:'作品B'}}
+ ]).length===2);
  check('推薦2枠をまたいだシリーズ重複も防ぐ',deduplicateRecommendationGroups(
   [{id:501,title:{native:'第1期'},relations:{edges:[{relationType:'SEQUEL',node:{id:502}}]}}],
   [{id:502,title:{native:'第2期'}}]
  ).discoveries.length===0);
- const check=(name,condition)=>tests.push({name,passed:Boolean(condition)});
  const sample=buildLearnedPreferences({
   one:{value:'like',genres:['Fantasy'],tags:['Magic']},
   two:{value:'like',genres:['Mystery'],tags:['Time']},
