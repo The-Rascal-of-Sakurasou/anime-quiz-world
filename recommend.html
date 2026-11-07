@@ -171,21 +171,25 @@ function calculateLearnedAdjustment(names,countsMap,cap){
  }
  return signals.length?signals.reduce((sum,value)=>sum+value,0)/signals.length:0;
 }
-function calculateLearnedTotalAdjustment(genres,tags,preferences){
- const total=calculateLearnedAdjustment(genres,preferences.genres,2.4)+calculateLearnedAdjustment(tags,preferences.tags,2);
- return Math.max(-4,Math.min(4,total));
+function calculateLearnedTotalAdjustment(genres,tags,preferences,weights={}){
+ const genreWeight=Number.isFinite(weights.genre)?weights.genre:2.4;
+ const tagWeight=Number.isFinite(weights.tag)?weights.tag:2;
+ const cap=Number.isFinite(weights.cap)?Math.max(0,weights.cap):4;
+ const total=calculateLearnedAdjustment(genres,preferences.genres,genreWeight)+calculateLearnedAdjustment(tags,preferences.tags,tagWeight);
+ return Math.max(-cap,Math.min(cap,total));
 }
 // 1件ずつ評価対象を学習データから外す簡易ホールドアウト検証。
-// これは推薦順位全体の精度ではなく、ジャンル・タグ学習の方向性だけを確認する参考指標。
-function evaluateLearnedFeedback(feedback){
+// 評価対象以外の履歴だけで学習し、ジャンル・タグ傾向の方向性を比較する参考指標。
+function evaluateLearnedFeedback(feedback,weights={}){
  const entries=Object.entries(feedback||{}).filter(([,item])=>item&&['like','dislike'].includes(item.value)&&(Array.isArray(item.genres)||Array.isArray(item.tags)));
  const totals={tested:0,decided:0,correct:0,predictedLike:0,predictedDislike:0,actualLike:0,actualDislike:0};
  const samples=[];
  for(const [heldOutId,item] of entries){
   const training=Object.fromEntries(Object.entries(feedback).filter(([id,other])=>id!==heldOutId&&other&&['like','dislike'].includes(other.value)));
   const preferences=buildLearnedPreferences(training);
-  const adjustment=calculateLearnedTotalAdjustment(item.genres||[],item.tags||[],preferences);
-  const prediction=adjustment>0.15?'like':adjustment< -0.15?'dislike':'neutral';
+  const adjustment=calculateLearnedTotalAdjustment(item.genres||[],item.tags||[],preferences,weights);
+  const threshold=Number.isFinite(weights.threshold)?Math.max(0,weights.threshold):0.15;
+  const prediction=adjustment>threshold?'like':adjustment< -threshold?'dislike':'neutral';
   totals.tested++;
   if(item.value==='like')totals.actualLike++;else totals.actualDislike++;
   if(prediction!=='neutral'){
@@ -196,6 +200,15 @@ function evaluateLearnedFeedback(feedback){
   samples.push({id:heldOutId,actual:item.value,prediction,adjustment});
  }
  return {...totals,samples};
+}
+function compareLearnedWeightVariants(feedback){
+ const variants=[
+  {id:'current',label:'現在の設定',genre:2.4,tag:2,cap:4,threshold:.15},
+  {id:'genre',label:'ジャンル重視',genre:3,tag:1.5,cap:4,threshold:.15},
+  {id:'tag',label:'タグ重視',genre:1.5,tag:3,cap:4,threshold:.15},
+  {id:'balanced',label:'均等配分',genre:2,tag:2,cap:4,threshold:.15}
+ ];
+ return variants.map(variant=>({...variant,...evaluateLearnedFeedback(feedback,variant)}));
 }
 function runRecommendationSelfTests(){
  const tests=[];
@@ -225,6 +238,8 @@ function runRecommendationSelfTests(){
  check('ホールドアウト評価の件数を正しく集計',holdout.tested===5);
  check('評価対象自身を学習データから除外',holdout.samples.find(x=>x.id==='target')?.adjustment>0);
  check('評価がない特徴は中立予測',evaluateLearnedFeedback({only:{value:'like',genres:['Fantasy']}}).samples[0]?.prediction==='neutral');
+ check('重み比較は4種類を返す',compareLearnedWeightVariants({}).length===4);
+ check('比較用の重み指定が現在の設定を変えない',calculateLearnedTotalAdjustment(['Fantasy'],[],{genres:new Map([['Fantasy',{likes:4,total:4}]]),tags:new Map()}, {genre:3,tag:1.5})!==calculateLearnedTotalAdjustment(['Fantasy'],[],{genres:new Map([['Fantasy',{likes:4,total:4}]]),tags:new Map()}));
  return tests;
 }
 
@@ -670,6 +685,7 @@ function renderFeedbackAnalytics(){
  learning.textContent='推薦への学習反映：ジャンル '+learnableGenres+' 種類、タグ '+learnableTags+' 種類（各2件以上の評価がある特徴）。評価が1件以下の特徴は、少数データによる偏りを避けるため、まだ順位調整に使いません。';
  root.append(learning);
  const validation=evaluateLearnedFeedback(readRecommendationFeedback());
+ const weightComparisons=compareLearnedWeightVariants(readRecommendationFeedback());
  const validationBox=document.createElement('div');validationBox.style.cssText='margin-top:14px;padding:12px;border:1px solid var(--line);border-radius:8px;background:#fff';
  const validationTitle=document.createElement('strong');validationTitle.textContent='学習ロジックの簡易ホールドアウト検証';validationBox.append(validationTitle);
  const validationText=document.createElement('p');validationText.className='status';
@@ -686,7 +702,25 @@ function renderFeedbackAnalytics(){
  validationBox.append(validationText);
  const validationNote=document.createElement('p');validationNote.className='status';validationNote.style.fontSize='.82rem';
  validationNote.textContent='各評価を1件ずつ学習データから除外して再計算する方式です。ジャンル・タグ傾向の簡易検証であり、候補作品の順位、診断全体の推薦精度、実際の視聴満足度を測定するものではありません。評価データの偏りや同一作品群の類似性も残るため、結果は参考値です。';
- validationBox.append(validationNote);root.append(validationBox);
+ validationBox.append(validationNote);
+ const compareTitle=document.createElement('strong');compareTitle.textContent='学習重みの比較（試験計算）';compareTitle.style.display='block';compareTitle.style.marginTop='14px';validationBox.append(compareTitle);
+ const compareText=document.createElement('p');compareText.className='status';
+ const enoughForCompare=validation.tested>=8&&validation.actualLike>=3&&validation.actualDislike>=3;
+ compareText.textContent=enoughForCompare
+  ?'同じ評価履歴を使い、評価対象を1件ずつ除外した条件で4種類の重みを比較します。'
+  :'比較結果は表示しますが、評価対象 '+validation.tested+' 件（肯定 '+validation.actualLike+'／否定 '+validation.actualDislike+'）のため、重みを選ぶ根拠としては不足しています。暫定的な最低条件は対象8件以上かつ肯定・否定が各3件以上です。';
+ validationBox.append(compareText);
+ const comparisonTable=document.createElement('div');comparisonTable.style.cssText='display:grid;gap:7px;margin-top:8px';
+ weightComparisons.forEach(result=>{
+  const row=document.createElement('div');row.style.cssText='display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:7px 0;border-top:1px solid var(--line)';
+  const name=document.createElement('span');name.textContent=result.label+'（ジャンル '+result.genre.toFixed(1)+'／タグ '+result.tag.toFixed(1)+'）';
+  const value=document.createElement('strong');value.textContent=result.correct+' / '+result.decided+' 件一致 · 判定 '+result.decided+' / '+result.tested+' 件';
+  row.append(name,value);comparisonTable.append(row);
+ });
+ validationBox.append(comparisonTable);
+ const compareCaveat=document.createElement('p');compareCaveat.className='status';compareCaveat.style.fontSize='.82rem';
+ compareCaveat.textContent='これは同じ履歴上での探索的な比較であり、重みを変更するものではありません。複数設定を同じデータで比較するため、最も良い数値が将来も優れるとは限りません。実際の推薦順位の品質を測る検証でもありません。';
+ validationBox.append(compareCaveat);root.append(validationBox);
  const note=document.createElement('p');note.className='status';note.style.fontSize='.82rem';
  note.textContent='集計対象：評価 '+rated.length+' 件。ジャンル・タグの内訳は詳細を保存した '+known.length+' 件のみです。これはこのブラウザ内に保存された本人の評価履歴の記述統計であり、他の利用者の評価は含みません。学習反映数は推薦精度の証明や因果関係を示すものではありません。';
  root.append(note);
