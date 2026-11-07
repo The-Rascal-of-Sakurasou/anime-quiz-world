@@ -70,33 +70,33 @@ window.addEventListener("unhandledrejection",event=>{const box=document.getEleme
 <script>
 const API='https://graphql.anilist.co';
 const questions=[
-{title:'どんなジャンルの物語に惹かれますか？',help:'最も見たいものを1つ選んでください。',options:[
+{title:'どんなジャンルの物語に惹かれますか？',help:'作品のジャンルとして最も見たいものを選んでください。',options:[
 {label:'異世界・冒険・ファンタジー',genres:['Fantasy','Adventure']},
 {label:'SF・ミステリー・サスペンス',genres:['Sci-Fi','Mystery','Thriller']},
 {label:'バトル・アクション',genres:['Action','Adventure']},
-{label:'ドラマ・コメディ・人間関係',genres:['Drama','Comedy','Romance','Slice of Life']}
+{label:'ドラマ・コメディ・日常',genres:['Drama','Comedy','Slice of Life']}
 ]},
-{title:'物語で特に重視するものは？',help:'作品を見続けたくなる要素を選んでください。',options:[
-{label:'伏線・謎・予想外の展開',tags:['Conspiracy','Survival','Psychological','Mystery']},
-{label:'感情を揺さぶるストーリー',genres:['Drama','Romance'],tags:['Tragedy','Coming of Age']},
-{label:'熱い戦闘や成長',genres:['Action','Adventure'],tags:['Super Power','Martial Arts','Revenge']},
-{label:'テンポのよい笑いや掛け合い',genres:['Comedy'],tags:['Parody','Gag Humor']}
+{title:'物語の中心にあるテーマは？',help:'ストーリーの主軸として惹かれるものを選んでください。',options:[
+{label:'謎や秘密を追い、真相に迫る',genres:['Mystery','Thriller'],tags:['Conspiracy','Investigation']},
+{label:'大切な人との絆や選択を描く',genres:['Drama'],tags:['Family','Friendship']},
+{label:'生き残りや強敵との対立を描く',genres:['Action','Thriller'],tags:['Survival','Battle Royale']},
+{label:'日常の出来事や社会を笑いに変える',genres:['Comedy'],tags:['Parody','Satire']}
 ]},
-{title:'好みの展開テンポは？',help:'最後まで見やすいと感じるペースに近いものを選んでください。',options:[
-{label:'序盤から展開が速い',genres:['Action','Thriller'],tags:['Fast-Paced','Survival']},
-{label:'伏線を積み重ねて中盤以降に加速',genres:['Mystery','Fantasy','Sci-Fi'],tags:['Conspiracy','Time Manipulation']},
-{label:'じっくり世界観や人物を描く',genres:['Drama','Fantasy'],tags:['World Building','Character Development']},
-{label:'短い話で気軽に楽しめる',genres:['Comedy','Slice of Life'],tags:['Episodic']}
+{title:'好みの展開テンポは？',help:'物語が進む速さについて、最も近いものを選んでください。',options:[
+{label:'序盤から次々と展開する',tags:['Fast-Paced']},
+{label:'一定のテンポで着実に進む',genres:['Adventure']},
+{label:'ゆっくりと時間をかけて進む',genres:['Drama','Slice of Life']},
+{label:'緩急が大きく、静と動の差がある',genres:['Thriller','Drama']}
 ]},
-{title:'作品全体の雰囲気はどれが好み？',help:'重さ・明るさのバランスを選んでください。',options:[
+{title:'作品全体の雰囲気はどれが好み？',help:'視聴中に感じたい作品の空気感を選んでください。',options:[
 {label:'シリアスで緊張感がある',genres:['Thriller','Psychological','Drama']},
 {label:'明るさとシリアスさの両方がある',genres:['Adventure','Fantasy','Sci-Fi']},
 {label:'明るく、気楽に楽しめる',genres:['Comedy','Slice of Life']},
-{label:'切なさや余韻が強く残る',genres:['Drama','Romance'],tags:['Tragedy','Coming of Age']}
+{label:'静かで落ち着いた雰囲気',genres:['Slice of Life','Drama']}
 ]},
-{title:'好みの舞台・世界観は？',help:'物語の舞台として惹かれるものを選んでください。',options:[
+{title:'好みの舞台・世界は？',help:'物語の舞台として惹かれるものを選んでください。',options:[
 {label:'異世界・魔法・未知の大陸',genres:['Fantasy','Adventure'],tags:['Magic','Isekai']},
-{label:'現代社会・学校・日常',genres:['Slice of Life','Drama','Romance']},
+{label:'現代社会・学校・日常',genres:['Slice of Life','Drama']},
 {label:'未来・宇宙・科学技術',genres:['Sci-Fi','Mecha'],tags:['Space','Cyberpunk']},
 {label:'歴史・伝承・和風世界',genres:['Historical','Fantasy'],tags:['Mythology','Samurai']}
 ]},
@@ -106,29 +106,29 @@ const questions=[
 {label:'長め：複数シーズン・長編',length:'long'},
 {label:'長さは気にしない',length:'any'}
 ]},
-{title:'登場人物に求めるものは？',help:'人物描写や関係性で特に惹かれるものを選んでください。',options:[
-{label:'大きく成長していく主人公',tags:['Character Development','Coming of Age']},
-{label:'個性の異なる仲間たちの群像劇',tags:['Ensemble Cast','Found Family']},
-{label:'複雑な心理や価値観のぶつかり合い',genres:['Psychological','Drama'],tags:['Philosophy','Psychological']},
-{label:'信念が強く、行動力のある人物',genres:['Action','Adventure'],tags:['Revenge','Leadership']}
+{title:'登場人物に求めるものは？',help:'人物の性格や魅力として特に惹かれるものを選んでください。',options:[
+{label:'困難を通じて大きく成長する人物',tags:['Character Development','Coming of Age']},
+{label:'個性や考え方が際立つ人物たち',tags:['Ensemble Cast','Unusual Characters']},
+{label:'複雑な心理や価値観を持つ人物',genres:['Psychological','Drama'],tags:['Philosophy','Psychological']},
+{label:'信念が強く、行動力のある人物',genres:['Action','Adventure'],tags:['Leadership','Revenge']}
 ]},
-{title:'物語の構成はどれが好み？',help:'見ていて特に面白いと感じる構成を選んでください。',options:[
-{label:'伏線がつながり、真相が明らかになる',genres:['Mystery','Thriller'],tags:['Conspiracy','Time Manipulation']},
-{label:'次々と困難が起こり、展開が加速する',genres:['Action','Adventure'],tags:['Survival','Battle Royale']},
-{label:'一話ごとの満足感があり、気軽に見られる',genres:['Comedy','Slice of Life'],tags:['Episodic']},
-{label:'大きな目的に向かって物語が積み重なる',genres:['Adventure','Fantasy'],tags:['World Building','Quest']}
+{title:'物語の複雑さはどれが好み？',help:'設定や情報を理解していく難しさについて選んでください。',options:[
+{label:'説明が分かりやすく、シンプル',tags:['Episodic']},
+{label:'適度な伏線や意外な展開がある',genres:['Mystery'],tags:['Conspiracy']},
+{label:'複数の出来事や視点が絡み合う',genres:['Psychological','Drama'],tags:['Politics','Ensemble Cast']},
+{label:'独自の設定や専門的な情報が多い',genres:['Sci-Fi','Fantasy'],tags:['World Building','Technology']}
 ]},
-{title:'作品に求める感情体験は？',help:'視聴後にどんな気持ちが残る作品が好みですか？',options:[
-{label:'緊張感や驚き、衝撃',genres:['Thriller','Mystery'],tags:['Psychological','Survival']},
-{label:'感動や切なさ、深い余韻',genres:['Drama'],tags:['Tragedy','Coming of Age']},
-{label:'爽快感や達成感',genres:['Action','Adventure'],tags:['Super Power','Revenge']},
-{label:'笑いや安心感、前向きな気分',genres:['Comedy'],tags:['Gag Humor','Found Family']}
+{title:'視聴後にどんな気持ちが残る作品が好み？',help:'見終わった後に得たい感情を選んでください。',options:[
+{label:'驚きや衝撃が残る',genres:['Thriller','Mystery'],tags:['Psychological']},
+{label:'感動や切なさ、深い余韻が残る',genres:['Drama'],tags:['Tragedy','Coming of Age']},
+{label:'爽快感や達成感が残る',genres:['Action','Adventure'],tags:['Super Power']},
+{label:'笑いや安心感、前向きな気分が残る',genres:['Comedy'],tags:['Gag Humor']}
 ]},
-{title:'世界観で重視するものは？',help:'設定や舞台の魅力として近いものを選んでください。',options:[
-{label:'独自のルールや緻密な設定',genres:['Fantasy','Sci-Fi'],tags:['World Building','Politics']},
-{label:'現実に近い社会や人間ドラマ',genres:['Drama','Psychological'],tags:['Crime','Philosophy']},
-{label:'未知の場所への冒険や探索',genres:['Adventure','Fantasy'],tags:['Travel','Survival']},
-{label:'科学技術・未来社会・宇宙',genres:['Sci-Fi','Mecha'],tags:['Space','Cyberpunk']}
+{title:'登場人物同士の関係性で惹かれるものは？',help:'作品の中で特に見たい人間関係を選んでください。',options:[
+{label:'仲間と協力し、絆を深めていく',tags:['Friendship','Teamwork','Found Family']},
+{label:'ライバル同士が競い合い、高め合う',tags:['Rivalry','Competition']},
+{label:'家族や身近な人との関係を描く',tags:['Family','Family Life']},
+{label:'恋愛や複雑な恋愛関係を描く',genres:['Romance'],tags:['Love Triangle']}
 ]}
 ];
 let step=0;const answers=Array(questions.length).fill(null);
