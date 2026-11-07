@@ -232,7 +232,7 @@ const msgPanel=document.getElementById('aqwFriendMessagesPanel');if(msgPanel){co
 const legal=document.querySelectorAll('#social > .legal-links a');if(legal[0])legal[0].textContent=sl.termsLink;if(legal[1])legal[1].textContent=sl.privacyLink;
 const ph=document.getElementById('query');if(ph)ph.placeholder=lang==='ja'?'例：葬送のフリーレン':lang==='en'?'e.g. Frieren: Beyond Journey’s End':({ko:'예: 장송의 프리렌',zh:'例如：葬送的芙莉莲',es:'p. ej., Frieren',fr:'ex. : Frieren',pt:'ex.: Frieren',de:'z. B. Frieren'}[lang]||'Search anime');
 }
-const query=`query ($page:Int,$perPage:Int,$search:String,$id_in:[Int]) { Page(page:$page,perPage:$perPage) { media(id_in:$id_in,type:ANIME,sort:POPULARITY_DESC,search:$search,isAdult:false) { id format popularity title { romaji english native } description(asHtml:false) synonyms coverImage { large } episodes seasonYear averageScore genres studios(isMain:true) { nodes { name } } characters(sort:ROLE,perPage:5) { nodes { name { full native } image { large } } } } } }`;
+const query=`query ($page:Int,$perPage:Int,$search:String,$id_in:[Int]) { Page(page:$page,perPage:$perPage) { media(id_in:$id_in,type:ANIME,sort:POPULARITY_DESC,search:$search,isAdult:false) { id format popularity title { romaji english native } description(asHtml:false) synonyms coverImage { large } episodes seasonYear averageScore genres studios(isMain:true) { nodes { name } } characters(sort:ROLE,perPage:5) { nodes { name { full native } image { large } } } relations { edges { relationType node { id type } } } } } }`;
 function normalizeUnicode(value){if(typeof value==='string')return value.normalize('NFC');if(Array.isArray(value))return value.map(normalizeUnicode);if(value&&typeof value==='object'){const out={};for(const [key,item] of Object.entries(value))out[key]=normalizeUnicode(item);return out}return value}
 const $=s=>document.querySelector(s);let pool=[],questions=[],index=0,points=0,locked=false,questionTimer=null,clockTimer=null,secondsLeft=15,startedAt=0,elapsedSeconds=0,missedQuestions=[],reviewMode=false,playMode='normal',roundFailed=false,lastResultData=null,combo=0,bestCombo=0,choiceHintUsed=false,typedHintUsed=false,backgroundLoadPromise=null,requestedQuestionCount=10,rateLimitedUntil=0;
 async function fetchAnime(vars={}){
@@ -337,12 +337,19 @@ async function fetchAnime(vars={}){
 function isUsableAnime(a){return !!(a&&a.id&&a.coverImage?.large&&titleOf(a)&&['TV','TV_SHORT','MOVIE','OVA','ONA','SPECIAL'].includes(a.format)&&!((a.genres||[]).includes('Hentai')))}
 function deduplicateQuestionPool(items){
  const sorted=[...(items||[])].filter(isUsableAnime).sort((a,b)=>(Number(b.popularity)||0)-(Number(a.popularity)||0)||(Number(b.averageScore)||0)-(Number(a.averageScore)||0)||Number(a.id)-Number(b.id));
- const seenIds=new Set(),seenTitles=new Set(),result=[];
+ const parent=new Map();
+ const find=id=>{if(!parent.has(id))parent.set(id,id);let root=id;while(parent.get(root)!==root)root=parent.get(root);let current=id;while(parent.get(current)!==current){const next=parent.get(current);parent.set(current,root);current=next}return root};
+ const unite=(a,b)=>{const ra=find(a),rb=find(b);if(ra!==rb)parent.set(rb,ra)};
+ const ids=new Set(sorted.map(a=>Number(a.id)).filter(Number.isFinite));
+ const relatedTypes=new Set(['PREQUEL','SEQUEL','PARENT','SUMMARY','ALTERNATIVE','COMPILATION']);
+ for(const anime of sorted){const id=Number(anime.id);find(id);for(const edge of anime.relations?.edges||[]){const relatedId=Number(edge?.node?.id);if(ids.has(relatedId)&&relatedTypes.has(edge.relationType))unite(id,relatedId)}}
+ const seenGroups=new Set(),seenIds=new Set(),seenTitles=new Set(),result=[];
  for(const anime of sorted){
   const id=Number(anime.id);if(!Number.isFinite(id)||seenIds.has(id))continue;
   const titles=[anime.title?.native,anime.title?.english,anime.title?.romaji].filter(Boolean).map(normalizeAnswer).filter(Boolean);
-  if(titles.some(title=>seenTitles.has(title)))continue;
-  seenIds.add(id);titles.forEach(title=>seenTitles.add(title));result.push(anime);
+  const group=find(id);
+  if(seenGroups.has(group)||titles.some(title=>seenTitles.has(title)))continue;
+  seenIds.add(id);seenGroups.add(group);titles.forEach(title=>seenTitles.add(title));result.push(anime);
  }
  return result;
 }
