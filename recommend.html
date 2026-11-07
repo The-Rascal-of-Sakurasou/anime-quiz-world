@@ -174,13 +174,13 @@ async function getRecommendations(profile){
   }
   throw lastError||new Error('AniListから作品データを取得できませんでした。');
  };
- // ジャンルで候補を絞らず、4種類の並び順から各3ページ（最大600件）を取得。
+ // ジャンルで候補を絞らず、4種類の並び順から各5ページ（最大1,000件）を取得。
  // 一部のページ取得に失敗しても、成功したページの作品で診断を続行する。
  const sortModes=['POPULARITY_DESC','SCORE_DESC','TRENDING_DESC','START_DATE_DESC'];
  const pages=[];let failedPages=0;
  for(let i=0;i<sortModes.length;i++){
   const sort=sortModes[i];
-  const batch=await Promise.allSettled([1,2,3].map(page=>fetchPage(page,sort)));
+  const batch=await Promise.allSettled([1,2,3,4,5].map(page=>fetchPage(page,sort)));
   for(const result of batch){
    if(result.status==='fulfilled')pages.push(result.value);
    else{failedPages++;console.warn('Recommendation page failed:',sort,result.reason);}
@@ -188,7 +188,13 @@ async function getRecommendations(profile){
   $('loading').textContent='作品データを取得中… '+(i+1)+' / '+sortModes.length+' グループ（取得失敗 '+failedPages+' ページ）';
  }
  if(!pages.length)throw new Error('AniListから作品データを取得できませんでした。通信状態を確認して、もう一度お試しください。');
- const items=[...new Map(pages.flat().map(a=>[a.id,a]).filter(([id])=>id!=null)).values()];
+ const byId=new Map();
+ for(const anime of pages.flat()){
+  if(anime?.id==null)continue;
+  const previous=byId.get(anime.id);
+  if(!previous||(Number(anime.averageScore)||0)>(Number(previous.averageScore)||0))byId.set(anime.id,anime);
+ }
+ const items=[...byId.values()];
  if(!items.length)throw new Error('取得できた作品データがありませんでした。時間をおいて再診断してください。');
  const [favoriteNames,dislikedNames]=[parseTitleInput('favoriteTitles'),parseTitleInput('dislikedTitles')];
  const favoriteSeeds=[],dislikedSeeds=[];
@@ -252,6 +258,17 @@ async function getRecommendations(profile){
   // 人気度・評価は好みとの一致点に加算せず、同点時の並べ替えだけに使う。
   return {...a,_score:score,_reasonDetails:details,_quality:Number(a.averageScore)||0,_popularity:Number(a.popularity)||0};
  }).filter(a=>!favoriteIds.has(a.id)&&!dislikedIds.has(a.id)).sort((a,b)=>b._score-a._score||b._quality-a._quality||b._popularity-a._popularity);
+  // AniList may list the same work under alternate scripts or title aliases.
+  const titleKeyForDedup=anime=>[anime?.title?.native,anime?.title?.english,anime?.title?.romaji]
+   .filter(Boolean).map(title=>String(title).toLocaleLowerCase().normalize('NFKC').replace(/[\\s・：:!！?？。、,.'’"「」『』()（）［］【】]/g,''));
+  const usedIds=new Set(),usedTitles=new Set(),uniqueScored=[];
+  for(const anime of scored){
+   if(usedIds.has(anime.id))continue;
+   const keys=titleKeyForDedup(anime);
+   if(keys.some(key=>key&&usedTitles.has(key)))continue;
+   usedIds.add(anime.id);keys.forEach(key=>{if(key)usedTitles.add(key)});uniqueScored.push(anime);
+  }
+  scored.splice(0,scored.length,...uniqueScored);
  const closeMatches=scored.slice(0,4);
  const selectedIds=new Set(closeMatches.map(a=>a.id));
  const bestScore=scored[0]?scored[0]._score:0;
@@ -401,6 +418,17 @@ async function saveShareImage(){
  },'image/png');
 }
 function renderCards(result){
+ const seenIds=new Set(),seenTitles=new Set();
+ const unique=(items)=>items.filter(anime=>{
+  const keys=[anime?.title?.native,anime?.title?.english,anime?.title?.romaji].filter(Boolean)
+   .map(title=>String(title).toLocaleLowerCase().normalize('NFKC').replace(/[\\s・：:!！?？。、,.'’"「」『』()（）［］【】]/g,''));
+  if(anime?.id!=null&&seenIds.has(anime.id))return false;
+  if(keys.some(key=>key&&seenTitles.has(key)))return false;
+  if(anime?.id!=null)seenIds.add(anime.id);
+  keys.forEach(key=>{if(key)seenTitles.add(key)});
+  return true;
+ });
+ result={...result,closeMatches:unique(result.closeMatches||[]),discoveries:unique(result.discoveries||[])};
  latestResult=result;
  renderCardList('animeCards',result.closeMatches);
  renderCardList('discoveryCards',result.discoveries);
