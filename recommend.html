@@ -150,7 +150,7 @@ async function findSeedAnime(title){
  }catch(_){return null}
 }
 function titleKey(media){
- return [media?.title?.native,media?.title?.english,media?.title?.romaji].filter(Boolean).map(x=>x.toLocaleLowerCase().replace(/[\\s・：:!！?？]/g,''));
+ return [media?.title?.native,media?.title?.english,media?.title?.romaji].filter(Boolean).map(x=>x.toLocaleLowerCase().replace(/[\s・：:!！?？]/g,''));
 }
 async function getRecommendations(profile){
  const query='query ($page:Int,$sort:[MediaSort]) { Page(page:$page,perPage:50) { media(type:ANIME,sort:$sort,isAdult:false) { id format title { romaji english native } description(asHtml:false) coverImage { extraLarge large } episodes seasonYear averageScore popularity genres tags { name rank isMediaSpoiler } siteUrl } } }';
@@ -260,7 +260,7 @@ async function getRecommendations(profile){
  }).filter(a=>!favoriteIds.has(a.id)&&!dislikedIds.has(a.id)).sort((a,b)=>b._score-a._score||b._quality-a._quality||b._popularity-a._popularity);
   // AniList may list the same work under alternate scripts or title aliases.
   const titleKeyForDedup=anime=>[anime?.title?.native,anime?.title?.english,anime?.title?.romaji]
-   .filter(Boolean).map(title=>String(title).toLocaleLowerCase().normalize('NFKC').replace(/[\\s・：:!！?？。、,.'’"「」『』()（）［］【】]/g,''));
+   .filter(Boolean).map(title=>String(title).toLocaleLowerCase().normalize('NFKC').replace(/[\s・：:!！?？。、,.'’"「」『』()（）［］【】]/g,''));
   const usedIds=new Set(),usedTitles=new Set(),uniqueScored=[];
   for(const anime of scored){
    if(usedIds.has(anime.id))continue;
@@ -421,7 +421,7 @@ function renderCards(result){
  const seenIds=new Set(),seenTitles=new Set();
  const unique=(items)=>items.filter(anime=>{
   const keys=[anime?.title?.native,anime?.title?.english,anime?.title?.romaji].filter(Boolean)
-   .map(title=>String(title).toLocaleLowerCase().normalize('NFKC').replace(/[\\s・：:!！?？。、,.'’"「」『』()（）［］【】]/g,''));
+   .map(title=>String(title).toLocaleLowerCase().normalize('NFKC').replace(/[\s・：:!！?？。、,.'’"「」『』()（）［］【】]/g,''));
   if(anime?.id!=null&&seenIds.has(anime.id))return false;
   if(keys.some(key=>key&&seenTitles.has(key)))return false;
   if(anime?.id!=null)seenIds.add(anime.id);
