@@ -174,6 +174,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
  <p class="muted aqw-rush-board-desc" id="aqwPlayerBoardDescription">クイズの獲得XP・プレイ回数・正答率でプレイヤーを比較できます。ランキングはログイン中のプレイから集計されます。</p>
  <p class="aqw-rush-board-status" id="aqwPlayerBoardStatus" role="status" aria-live="polite">ランキングを読み込んでいます…</p>
  <div class="aqw-rush-board-scroll"><table><thead><tr><th id="aqwPlayerRankHeading">順位</th><th id="aqwPlayerNameHeading">プレイヤー</th><th id="aqwPlayerMetricHeading">総合XP</th><th id="aqwPlayerDetailHeading">プレイ回数・正答数</th></tr></thead><tbody id="aqwPlayerBoardRows"></tbody></table></div>
+ <p class="muted aqw-rush-board-status" id="aqwMyPlayerRank" role="status" aria-live="polite"></p>
 </section>
 </section>
 <section id="social" class="card hidden">
@@ -738,8 +739,8 @@ const aqwRushText={
 };
 const aqwRushT=key=>(aqwRushText[lang]||aqwRushText.en)[key]||aqwRushText.en[key]||key;
 const aqwPlayerBoardText={
- ja:{title:'プレイヤー総合ランキング',description:'クイズの獲得XP・プレイ回数・正答率でプレイヤーを比較できます。ランキングはログイン中のプレイから集計されます。',sort:'集計方法',xp:'総合XP',runs:'プレイ回数',accuracy:'正答率（10問以上）',refresh:'更新',loading:'ランキングを読み込んでいます…',empty:'まだランキング記録がありません。ログインしてクイズに挑戦すると登録されます。',error:'ランキングを読み込めませんでした：',rank:'順位',player:'プレイヤー',metric:'記録',detail:'プレイ回数・正答数',plays:'プレイ',correct:'正解',needLogin:'プレイ記録をランキングに反映するにはAQWアカウントでログインしてください。',saved:'プレイ記録をランキングに反映しました。',duplicate:'このプレイ記録は登録済みです。',submitError:'プレイ記録を登録できませんでした：',unverified:'記録は自己申告制です。公式認証済みの競技記録ではありません。',minAccuracy:'正答率ランキングは累計10問以上のプレイヤーが対象です。'},
- en:{title:'Player Leaderboard',description:'Compare players by total XP, quiz plays, and accuracy. Only quizzes completed while signed in are counted.',sort:'Sort by',xp:'Total XP',runs:'Quiz plays',accuracy:'Accuracy (10+ questions)',refresh:'Refresh',loading:'Loading player rankings…',empty:'No player records yet. Sign in and complete a quiz to appear here.',error:'Could not load player rankings: ',rank:'Rank',player:'Player',metric:'Record',detail:'Plays · Correct',plays:'Plays',correct:'Correct',needLogin:'Sign in to add this quiz to the player leaderboard.',saved:'Your quiz result was added to the leaderboard.',duplicate:'This quiz result was already submitted.',submitError:'Could not submit quiz result: ',unverified:'Self-reported records; not officially verified.',minAccuracy:'Accuracy rankings include players with at least 10 questions answered.'},
+ ja:{title:'プレイヤー総合ランキング',description:'クイズの獲得XP・プレイ回数・正答率でプレイヤーを比較できます。ランキングはログイン中のプレイから集計されます。',sort:'集計方法',xp:'総合XP',runs:'プレイ回数',accuracy:'正答率（10問以上）',refresh:'更新',loading:'ランキングを読み込んでいます…',empty:'まだランキング記録がありません。ログインしてクイズに挑戦すると登録されます。',error:'ランキングを読み込めませんでした：',rank:'順位',player:'プレイヤー',metric:'記録',detail:'プレイ回数・正答数',plays:'プレイ',correct:'正解',needLogin:'プレイ記録をランキングに反映するにはAQWアカウントでログインしてください。',saved:'プレイ記録をランキングに反映しました。',duplicate:'このプレイ記録は登録済みです。',submitError:'プレイ記録を登録できませんでした：',unverified:'記録は自己申告制です。公式認証済みの競技記録ではありません。',minAccuracy:'正答率ランキングは累計10問以上のプレイヤーが対象です。',myRank:'あなたの順位：',loginRank:'ログインすると自分の順位を確認できます。',rankUnavailable:'自分の順位を取得できませんでした：'},
+ en:{title:'Player Leaderboard',description:'Compare players by total XP, quiz plays, and accuracy. Only quizzes completed while signed in are counted.',sort:'Sort by',xp:'Total XP',runs:'Quiz plays',accuracy:'Accuracy (10+ questions)',refresh:'Refresh',loading:'Loading player rankings…',empty:'No player records yet. Sign in and complete a quiz to appear here.',error:'Could not load player rankings: ',rank:'Rank',player:'Player',metric:'Record',detail:'Plays · Correct',plays:'Plays',correct:'Correct',needLogin:'Sign in to add this quiz to the player leaderboard.',saved:'Your quiz result was added to the leaderboard.',duplicate:'This quiz result was already submitted.',submitError:'Could not submit quiz result: ',unverified:'Self-reported records; not officially verified.',minAccuracy:'Accuracy rankings include players with at least 10 questions answered.',myRank:'Your rank: ',loginRank:'Sign in to view your personal rank.',rankUnavailable:'Could not load your personal rank: '},
  ko:{title:'플레이어 종합 랭킹',description:'총 XP, 퀴즈 플레이 횟수, 정답률로 플레이어를 비교합니다. 로그인 상태에서 완료한 퀴즈만 집계됩니다.',sort:'정렬 기준',xp:'총 XP',runs:'플레이 횟수',accuracy:'정답률(10문제 이상)',refresh:'새로고침',loading:'랭킹을 불러오는 중…',empty:'아직 기록이 없습니다. 로그인하고 퀴즈를 완료하세요.',error:'랭킹을 불러오지 못했습니다: ',rank:'순위',player:'플레이어',metric:'기록',detail:'플레이 · 정답',plays:'플레이',correct:'정답',needLogin:'랭킹에 기록하려면 로그인하세요.',saved:'퀴즈 기록을 랭킹에 반영했습니다.',duplicate:'이미 등록된 플레이 기록입니다.',submitError:'퀴즈 기록을 제출하지 못했습니다: ',unverified:'자기 신고 기록이며 공식 인증되지 않았습니다.',minAccuracy:'정답률 랭킹은 누적 10문제 이상인 플레이어만 포함합니다.'},
  zh:{title:'玩家综合排行榜',description:'按总经验值、游戏次数和正确率比较玩家。仅统计登录状态下完成的答题。',sort:'排序方式',xp:'总经验值',runs:'游戏次数',accuracy:'正确率（至少10题）',refresh:'刷新',loading:'正在加载排行榜…',empty:'暂无玩家记录。登录并完成答题即可上榜。',error:'无法加载排行榜：',rank:'排名',player:'玩家',metric:'记录',detail:'次数 · 正确数',plays:'次数',correct:'正确',needLogin:'登录后才能将本次答题计入排行榜。',saved:'答题记录已计入排行榜。',duplicate:'这条答题记录已经提交过。',submitError:'无法提交答题记录：',unverified:'记录由玩家自行提交，未经官方验证。',minAccuracy:'正确率榜仅包含累计答题至少10题的玩家。'},
  es:{title:'Clasificación general de jugadores',description:'Compara a los jugadores por XP total, partidas y precisión. Solo cuentan las partidas completadas con la sesión iniciada.',sort:'Ordenar por',xp:'XP total',runs:'Partidas',accuracy:'Precisión (10+ preguntas)',refresh:'Actualizar',loading:'Cargando clasificación…',empty:'Aún no hay registros. Inicia sesión y completa un cuestionario.',error:'No se pudo cargar la clasificación: ',rank:'Puesto',player:'Jugador',metric:'Registro',detail:'Partidas · Aciertos',plays:'Partidas',correct:'Aciertos',needLogin:'Inicia sesión para añadir esta partida a la clasificación.',saved:'Tu resultado se añadió a la clasificación.',duplicate:'Este resultado ya se había enviado.',submitError:'No se pudo enviar el resultado: ',unverified:'Registros autodeclarados; sin verificación oficial.',minAccuracy:'La clasificación de precisión requiere al menos 10 preguntas respondidas.'},
@@ -808,6 +809,23 @@ function applyPlayerLeaderboardLanguage(){
  const select=$s('aqwPlayerBoardSort');
  if(select){const values=['xp','runs','accuracy'];for(const value of values){const option=select.querySelector('option[value="'+value+'"]');if(option)option.textContent=aqwPlayerT(value)}}
 }
+async function loadMyPlayerRank(mode){
+ const el=$s('aqwMyPlayerRank');if(!el)return;
+ if(!currentUser){message(el,aqwPlayerT('loginRank'));return}
+ const fields=mode==='runs'?'total_runs,total_xp':mode==='accuracy'?'total_questions,accuracy_rate':'total_xp,total_runs';
+ const {data:mine,error:mineError}=await sb.from('aqw_player_stats').select(fields).eq('user_id',currentUser.id).maybeSingle();
+ if(mineError){message(el,aqwPlayerT('rankUnavailable')+errText(mineError));return}
+ if(!mine){message(el,aqwPlayerT('loginRank'));return}
+ let countQuery=sb.from('aqw_player_stats').select('user_id',{count:'exact',head:true});
+ if(mode==='accuracy'){
+  if(Number(mine.total_questions)<10){message(el,aqwPlayerT('minAccuracy'));return}
+  countQuery=countQuery.gte('total_questions',10).gt('accuracy_rate',mine.accuracy_rate);
+ }else if(mode==='runs')countQuery=countQuery.gt('total_runs',mine.total_runs);
+ else countQuery=countQuery.gt('total_xp',mine.total_xp);
+ const {count,error}=await countQuery;
+ if(error){message(el,aqwPlayerT('rankUnavailable')+errText(error));return}
+ message(el,aqwPlayerT('myRank')+(Number(count||0)+1).toLocaleString()+'位（同点時は同順位）');
+}
 function renderPlayerLeaderboard(){
  const rows=$s('aqwPlayerBoardRows'),statusEl=$s('aqwPlayerBoardStatus');if(!rows||!statusEl)return;
  const mode=$s('aqwPlayerBoardSort')?.value||'xp';
@@ -848,6 +866,7 @@ async function loadPlayerLeaderboard(){
  if(error){playerLeaderboardCache=[];message(statusEl,aqwPlayerT('error')+errText(error));return}
  playerLeaderboardCache=data||[];
  renderPlayerLeaderboard();
+ await loadMyPlayerRank(mode);
 }
 async function submitPlayerRun(result){
  if(!result||!result.runId||!Number.isInteger(result.correctCount)||!Number.isInteger(result.questionCount)||![10,15].includes(result.xpMultiplier))return;
