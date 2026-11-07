@@ -432,15 +432,29 @@ function matchesSeedTitle(media,title){
  return aliases.some(alias=>normalizeSeedTitle(alias)===wanted);
 }
 async function findSeedAnime(title){
- const query='query ($search:String) { Page(perPage:10) { media(search:$search,type:ANIME,isAdult:false,sort:SEARCH_MATCH) { id title { romaji english native } synonyms genres tags { name rank isMediaSpoiler } } } }';
- try{
-  const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query,variables:{search:title}}),signal:AbortSignal.timeout(10000)});
-  const json=await response.json().catch(()=>null);
-  if(!response.ok||json?.errors?.length)return null;
-  const candidates=json?.data?.Page?.media||[];
-  // 日本語・英語・ローマ字タイトルに加え、AniList登録の別名も完全一致で照合する。
-  return candidates.find(media=>matchesSeedTitle(media,title))||null;
- }catch(_){return null}
+ const query='query ($search:String) { Page(perPage:25) { media(search:$search,type:ANIME,isAdult:false,sort:SEARCH_MATCH) { id title { romaji english native } synonyms genres tags { name rank isMediaSpoiler } } } }';
+ let lastError=null;
+ for(let attempt=0;attempt<3;attempt++){
+  try{
+   const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query,variables:{search:title}}),signal:AbortSignal.timeout(12000)});
+   const json=await response.json().catch(()=>null);
+   if(response.ok&&!json?.errors?.length&&json?.data?.Page){
+    const candidates=json.data.Page.media||[];
+    // 検索結果を25件まで確認し、別名を含む完全一致だけを採用する。
+    return candidates.find(media=>matchesSeedTitle(media,title))||null;
+   }
+   const apiMessage=(json?.errors||[]).map(error=>error.message).filter(Boolean).join(' / ');
+   const error=new Error('タイトル検索に失敗しました（HTTP '+response.status+'）'+(apiMessage?'：'+apiMessage:'。'));
+   error.retryable=response.status===429||response.status>=500;
+   if(!error.retryable)throw error;
+   lastError=error;
+  }catch(error){
+   lastError=error;
+   if(error.retryable===false)throw error;
+  }
+  if(attempt<2)await new Promise(resolve=>setTimeout(resolve,800*(attempt+1)));
+ }
+ throw lastError||new Error('タイトル検索に失敗しました。');
 }
 async function getRecommendations(profile){
  const query='query ($page:Int,$sort:[MediaSort]) { Page(page:$page,perPage:50) { media(type:ANIME,sort:$sort,isAdult:false) { id format title { romaji english native } description(asHtml:false) coverImage { extraLarge large } episodes seasonYear averageScore popularity genres tags { name rank isMediaSpoiler } relations { edges { relationType node { id type } } } siteUrl } } }';
@@ -491,9 +505,15 @@ async function getRecommendations(profile){
  // 評価履歴からジャンル・タグごとの傾向を集計し、少数評価を抑制した補正値を算出する。
  const learnedPreferences=buildLearnedPreferences(recommendationFeedback);
  const favoriteSeeds=[],dislikedSeeds=[];
- const seedReport={unresolvedFavorites:[],unresolvedDislikes:[],conflicts:[],resolvedFavorites:[],resolvedDislikes:[]};
- for(const name of favoriteNames){const found=await findSeedAnime(name);if(found){favoriteSeeds.push({...found,_requestedTitle:name});seedReport.resolvedFavorites.push({requested:name,resolved:found.title?.native||found.title?.english||found.title?.romaji||'タイトル不明'})}else seedReport.unresolvedFavorites.push(name)}
- for(const name of dislikedNames){const found=await findSeedAnime(name);if(found){dislikedSeeds.push({...found,_requestedTitle:name});seedReport.resolvedDislikes.push({requested:name,resolved:found.title?.native||found.title?.english||found.title?.romaji||'タイトル不明'})}else seedReport.unresolvedDislikes.push(name)}
+ const seedReport={unresolvedFavorites:[],unresolvedDislikes:[],conflicts:[],resolvedFavorites:[],resolvedDislikes:[],lookupErrors:[]};
+ for(const name of favoriteNames){
+  try{const found=await findSeedAnime(name);if(found){favoriteSeeds.push({...found,_requestedTitle:name});seedReport.resolvedFavorites.push({requested:name,resolved:found.title?.native||found.title?.english||found.title?.romaji||'タイトル不明'})}else seedReport.unresolvedFavorites.push(name)}
+  catch(error){seedReport.lookupErrors.push({type:'好きな作品',title:name,message:error.message||'検索に失敗しました'})}
+ }
+ for(const name of dislikedNames){
+  try{const found=await findSeedAnime(name);if(found){dislikedSeeds.push({...found,_requestedTitle:name});seedReport.resolvedDislikes.push({requested:name,resolved:found.title?.native||found.title?.english||found.title?.romaji||'タイトル不明'})}else seedReport.unresolvedDislikes.push(name)}
+  catch(error){seedReport.lookupErrors.push({type:'苦手な作品',title:name,message:error.message||'検索に失敗しました'})}
+ }
  const favoriteIdsAll=new Set(favoriteSeeds.map(x=>x.id)),dislikedIdsAll=new Set(dislikedSeeds.map(x=>x.id));
  const conflictingIds=new Set([...favoriteIdsAll].filter(id=>dislikedIdsAll.has(id)));
  seedReport.conflicts=[...favoriteSeeds.filter(x=>conflictingIds.has(x.id)).map(x=>x.title?.native||x.title?.english||x.title?.romaji||x._requestedTitle)];
@@ -974,6 +994,7 @@ function renderCards(result){
  if(report.unresolvedFavorites?.length)notices.push('完全一致で確認できなかった「好きな作品」：'+report.unresolvedFavorites.join('、'));
  if(report.unresolvedDislikes?.length)notices.push('完全一致で確認できなかった「苦手な作品」：'+report.unresolvedDislikes.join('、'));
  if(report.conflicts?.length)notices.push('好き・苦手の両方に入力された作品は、傾向分析から除外しました：'+report.conflicts.join('、'));
+ if(report.lookupErrors?.length)notices.push('作品タイトルの検索中に通信・APIエラーが発生したため、分析に反映できなかった入力：'+report.lookupErrors.map(x=>x.title+'（'+x.message+'）').join('、'));
  const allRecommended=[...(result.closeMatches||[]),...(result.discoveries||[])];
  const uniqueGenres=new Set(allRecommended.flatMap(a=>Array.isArray(a.genres)?a.genres:[]));
  const uniqueTags=new Set(allRecommended.flatMap(a=>(a.tags||[]).filter(t=>!t.isMediaSpoiler&&t.rank>=40).map(t=>t.name)));
