@@ -355,8 +355,7 @@ async function fetchAnime(vars={}){
    cacheSavedAt=Date.now();
   }
   try{
-   for(let i=0;i<safeStorage.length;i++){
-    const key=safeStorage.key(i);
+   for(const key of safeStorage.keys()){
     if(!key||!new RegExp('^aqw-anime-pool-v\\d+.*-20000$').test(key))continue;
     const legacy=JSON.parse(safeStorage.getItem(key)||'null');
     if(Array.isArray(legacy?.items))initial.push(...legacy.items.filter(isUsableAnime));
