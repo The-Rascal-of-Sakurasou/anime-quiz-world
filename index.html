@@ -379,7 +379,7 @@ function difficultyModes(){return $('#difficultySelect')?.value||'normal'}
 let difficultyTierById=new Map(),difficultyThresholds={p05:Infinity,p20:Infinity,p50:Infinity,p80:Infinity,total:0};
 function prepareDifficultyTiers(items=pool){
  const ranked=(items||[]).filter(a=>Number.isFinite(Number(a?.id))&&Number.isFinite(Number(a?.popularity))&&Number(a.popularity)>0).sort((a,b)=>Number(b.popularity)-Number(a.popularity)||Number(a.id)-Number(b.id));
- const total=ranked.length,cutoffs=[0.05,0.20,0.50,0.80].map(p=>total?Math.max(1,Math.ceil(total*p)):0);
+ const total=ranked.length,cutoffs=[0.07,0.23,0.47,0.77].map(p=>total?Math.max(1,Math.ceil(total*p)):0);
  const tiers=new Map();
  ranked.forEach((a,i)=>tiers.set(Number(a.id),i<cutoffs[0]?'veryEasy':i<cutoffs[1]?'easy':i<cutoffs[2]?'normal':i<cutoffs[3]?'hard':'veryHard'));
  difficultyTierById=tiers;
@@ -401,8 +401,8 @@ function difficultyDistractors(excludeId){return pool.filter(item=>Number(item?.
 function updateDifficultyUI(){
  const select=$('#difficultySelect'),label=$('#difficultyLabel'),help=$('#difficultyHelp');if(!select||!label)return;
  const names={
- ja:{label:'難易度',veryEasy:'とても簡単',easy:'簡単',normal:'ふつう',hard:'難しい',veryHard:'とても難しい',desc:{veryEasy:'収録作品の人気度上位5%から出題します。',easy:'収録作品の人気度上位5〜20%から出題します。',normal:'収録作品の人気度上位20〜50%から出題します。',hard:'収録作品の人気度上位50〜80%から出題します。',veryHard:'収録作品の人気度下位20%から出題します。',disabled:'すべての出題形式で難易度を選択できます。'}},
- en:{label:'Difficulty',veryEasy:'Very easy',easy:'Easy',normal:'Normal',hard:'Hard',veryHard:'Very hard',desc:{veryEasy:'Top 5% by popularity in the loaded catalogue.',easy:'Top 5–20% by popularity.',normal:'Top 20–50% by popularity.',hard:'Top 50–80% by popularity.',veryHard:'Bottom 20% by popularity.',disabled:'Difficulty can be selected for every question type.'}},
+ ja:{label:'難易度',veryEasy:'とても簡単',easy:'簡単',normal:'ふつう',hard:'難しい',veryHard:'とても難しい',desc:{veryEasy:'収録作品の人気度上位7%から出題します。',easy:'収録作品の人気度上位7〜23%から出題します。',normal:'収録作品の人気度上位23〜47%から出題します。',hard:'収録作品の人気度上位47〜77%から出題します。',veryHard:'収録作品の人気度下位23%から出題します。',disabled:'すべての出題形式で難易度を選択できます。'}},
+ en:{label:'Difficulty',veryEasy:'Very easy',easy:'Easy',normal:'Normal',hard:'Hard',veryHard:'Very hard',desc:{veryEasy:'Top 7% by popularity in the loaded catalogue.',easy:'Top 7–23% by popularity.',normal:'Top 23–47% by popularity.',hard:'Top 47–77% by popularity.',veryHard:'Bottom 23% by popularity.',disabled:'Difficulty can be selected for every question type.'}},
  ko:{label:'난이도',veryEasy:'매우 쉬움',easy:'쉬움',normal:'보통',hard:'어려움',veryHard:'매우 어려움',desc:{veryEasy:'불러온 작품 중 인기도 상위 5%.',easy:'인기도 상위 5~20%.',normal:'인기도 상위 20~50%.',hard:'인기도 상위 50~80%.',veryHard:'인기도 하위 20%.',disabled:'모든 문제 유형에서 난이도를 선택할 수 있습니다.'}},
  zh:{label:'难度',veryEasy:'非常简单',easy:'简单',normal:'普通',hard:'困难',veryHard:'非常困难',desc:{veryEasy:'已加载作品中 人气排名前 5%。',easy:'人气排名前 5% 至 20%。',normal:'人气排名前 20% 至 50%。',hard:'人气排名前 50% 至 80%。',veryHard:'人气排名后 20%。',disabled:'所有题目类型均可选择难度。'}},
  es:{label:'Dificultad',veryEasy:'Muy fácil',easy:'Fácil',normal:'Normal',hard:'Difícil',veryHard:'Muy difícil',desc:{veryEasy:'5% superior de popularidad.',easy:'Del 5% al 20% superior de popularidad.',normal:'Del 20% al 50% superior.',hard:'Del 50% al 80% superior.',veryHard:'20% inferior de popularidad.',disabled:'La dificultad está disponible para todos los tipos de preguntas.'}},
