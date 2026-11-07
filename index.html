@@ -382,11 +382,6 @@ async function fetchAnime(vars={}){
     }
    }
    const progress=document.getElementById('animePoolProgress');
-     if(progress)progress.textContent=lang==='ja'?('取得状況：'+items.length.toLocaleString()+' / '+targetCount.toLocaleString()+'作品（'+percent+'%）・ページ '+completed+' / '+tasks.length+'・失敗 '+failures+'件'):('Catalogue: '+items.length.toLocaleString()+' / '+targetCount.toLocaleString()+' ('+percent+'%) · pages '+completed+' / '+tasks.length+' · failures '+failures);
-     status.textContent=lang==='ja'?'作品データを追加中… '+items.length.toLocaleString()+' / '+targetCount.toLocaleString()+'作品':'Adding anime… '+items.length.toLocaleString()+' / '+targetCount.toLocaleString();
-    }
-   }
-   const progress=document.getElementById('animePoolProgress');
    const stoppedAtLimit=all.size>=targetCount;
    if(progress)progress.textContent=lang==='ja'?('最終取得数：'+all.size.toLocaleString()+'作品・取得ページ '+completed+' / '+tasks.length+'・失敗 '+failures+'件。データはこのブラウザに保存されます。'):('Final catalogue: '+all.size.toLocaleString()+' anime · pages '+completed+' / '+tasks.length+' · failures '+failures+'. Saved in this browser.');
    if(all.size<targetCount){
