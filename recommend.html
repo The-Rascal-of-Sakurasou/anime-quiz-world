@@ -303,7 +303,7 @@ function restoreSavedDiagnosis(){
   answers.splice(0,answers.length,...restoredAnswers);$('favoriteTitles').value=data.favorite;$('dislikedTitles').value=data.disliked;
   step=Math.max(0,answers.findIndex(n=>n===null));if(!answers.includes(null))step=questions.length-1;
   if(data.result&&Array.isArray(data.result.closeMatches)&&Array.isArray(data.result.discoveries)&&!answers.includes(null)){
-   const profile=profileFromAnswers();buildProfile(profile);renderCards(data.result);$('resultIntro').textContent='保存された前回の診断結果です。';$('diagnosis').classList.add('hidden');$('results').classList.remove('hidden');return true;
+   const profile=profileFromAnswers();buildProfile(profile);renderCards(data.result);saveDiagnosis(latestResult);$('resultIntro').textContent='保存された前回の診断結果です。';$('diagnosis').classList.add('hidden');$('results').classList.remove('hidden');return true;
   }
   render();return true;
  }catch(_){return false}
