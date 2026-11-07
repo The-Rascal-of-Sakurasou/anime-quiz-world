@@ -1066,7 +1066,7 @@ async function uploadAvatar(file){
 }
 async function removeStoredAvatar(path){if(!path||/^https?:\/\//i.test(path))return;const {error}=await sb.storage.from('aqw-social').remove([path]);if(error)console.warn('Could not remove previous avatar:',error.message)}
 function updateAvatarPreview(path){
- const image=$s('aqwAvatarPreviewImage'),fallback=$s('aqwAvatarFallback');
+ const image=$s('aqwAvatarPreviewImage'),fallback=$s('aqwAvatarFallback');$s('aqwRemoveAvatar').disabled=!path;
  if(path){image.src=avatarPublicUrl(path);image.classList.remove('hidden');fallback.classList.add('hidden');image.onerror=()=>{image.classList.add('hidden');fallback.classList.remove('hidden')}}
  else{image.removeAttribute('src');image.classList.add('hidden');fallback.classList.remove('hidden')}
 }
