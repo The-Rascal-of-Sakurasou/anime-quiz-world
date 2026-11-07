@@ -210,7 +210,7 @@ function parseTitleInput(id){
 }
 function normalizeSeedTitle(value){
  return String(value||'').toLocaleLowerCase().normalize('NFKC')
-  .replace(/[\\s・：:!！?？。、,.'’"「」『』()（）［］【】_ーｰ-]/g,'');
+  .replace(/[\s・：:!！?？。、,.'’"「」『』()（）［］【】_ｰ-]/g,'');
 }
 async function findSeedAnime(title){
  const query='query ($search:String) { Page(perPage:10) { media(search:$search,type:ANIME,isAdult:false,sort:SEARCH_MATCH) { id title { romaji english native } genres tags { name rank isMediaSpoiler } } } }';
