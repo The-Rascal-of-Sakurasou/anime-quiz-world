@@ -1085,7 +1085,7 @@ async function authAction(kind){
  }catch(e){message(authMsg,errText(e))}
 }
 async function refreshSession(session){
- currentUser=session?.user||null;currentProfile=null;
+ currentUser=session?.user||null;currentProfile=null;await syncFollowRealtime();
  $s('aqwAuthPanel').classList.remove('hidden');
  $s('aqwMemberPanel').classList.toggle('hidden',!currentUser);
  $s('aqwSignOut').classList.toggle('hidden',!currentUser);
@@ -1239,6 +1239,18 @@ async function loadNotifications(){
 }
 
 let selectedFriendId=null,selectedFriendName='',friendMessageChannel=null;
+let followRealtimeChannel=null,followRealtimeUserId=null;
+async function syncFollowRealtime(){
+ const uid=currentUser?.id||null;
+ if(followRealtimeUserId===uid&&followRealtimeChannel)return;
+ if(followRealtimeChannel){try{await sb.removeChannel(followRealtimeChannel)}catch(e){}followRealtimeChannel=null}
+ followRealtimeUserId=uid;if(!uid)return;
+ const refresh=()=>{loadFriends();const term=$s('aqwUserSearch')?.value?.trim()||'';if(term.length>=2)searchUsers({preventDefault(){}})};
+ followRealtimeChannel=sb.channel('aqw-follow-state-'+uid)
+  .on('postgres_changes',{event:'*',schema:'public',table:'follows',filter:'follower_id=eq.'+uid},refresh)
+  .on('postgres_changes',{event:'*',schema:'public',table:'follows',filter:'following_id=eq.'+uid},refresh)
+  .subscribe();
+}
 async function closeFriendConversation(){
  selectedFriendId=null;selectedFriendName='';
  if(friendMessageChannel){try{await sb.removeChannel(friendMessageChannel)}catch(e){}friendMessageChannel=null}
