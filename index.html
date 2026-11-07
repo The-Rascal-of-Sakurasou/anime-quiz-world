@@ -330,7 +330,7 @@ async function fetchAnime(vars={}){
    for(;taskIndex<tasks.length;taskIndex++){
     const [sort,page,taskType]=tasks[taskIndex];
     if(all.size>=targetCount&&taskType==='fill')break;
-    await new Promise(resolve=>setTimeout(resolve,2600));
+    await new Promise(resolve=>setTimeout(resolve,2100));
     try{
      const rows=sort==='ID_IN'?await request({id_in:page,perPage:50}):await request({page,perPage:50},sort);
      rows.forEach(a=>{if(isUsableAnime(a))all.set(a.id,a)});
