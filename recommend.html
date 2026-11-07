@@ -88,8 +88,8 @@ function profileFromAnswers(){
 }
 function escapeHTML(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 async function getRecommendations(profile){
- const query='query { Page(page:1,perPage:100) { media(type:ANIME,sort:POPULARITY_DESC,isAdult:false) { id format title { romaji english native } description(asHtml:false) coverImage { extraLarge large } episodes seasonYear averageScore popularity genres tags { name rank isMediaSpoiler } siteUrl } } }';
- const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query}),signal:AbortSignal.timeout(15000)});
+ const query='query ($genres:[String]) { Page(page:1,perPage:100) { media(type:ANIME,sort:POPULARITY_DESC,isAdult:false,genre_in:$genres) { id format title { romaji english native } description(asHtml:false) coverImage { extraLarge large } episodes seasonYear averageScore popularity genres tags { name rank isMediaSpoiler } siteUrl } } }';
+ const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query,variables:{genres:Object.keys(profile.genres)}}),signal:AbortSignal.timeout(15000)});
  if(!response.ok)throw new Error('作品データの取得に失敗しました（HTTP '+response.status+'）。時間をおいて再試行してください。');
  const json=await response.json();if(json.errors?.length)throw new Error('作品データの取得に失敗しました。');
  const items=json.data?.Page?.media||[];
