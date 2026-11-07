@@ -149,18 +149,32 @@ function writeRecommendationFeedback(id,value,context={}){
 function readRecommendationEvaluationHistory(){
  try{const value=JSON.parse(localStorage.getItem(EVALUATION_HISTORY_KEY)||'[]');return Array.isArray(value)?value.filter(item=>item&&['like','dislike'].includes(item.value)&&typeof item.sessionId==='string'):[]}catch(_){return []}
 }
-function appendRecommendationEvaluation(event){
- const history=readRecommendationEvaluationHistory();
- history.push({...event,recordedAt:Date.now()});
+function writeRecommendationEvaluation(event){
+ const history=readRecommendationEvaluationHistory().filter(item=>!(item.sessionId===event.sessionId&&item.animeId===event.animeId));
+ if(['like','dislike'].includes(event.value))history.push({...event,recordedAt:Date.now()});
  try{localStorage.setItem(EVALUATION_HISTORY_KEY,JSON.stringify(history.slice(-1000)));return true}catch(_){return false}
 }
 function calculateSessionNdcg(events,group){
  const judged=events.filter(item=>['like','dislike'].includes(item.value)&&item.group===group&&Number.isInteger(Number(item.rank))&&Number(item.rank)>0);
  if(judged.length<2)return {count:judged.length,ndcg:null};
- const dcg=items=>items.reduce((sum,item,index)=>sum+(item.value==='like'?1:0)/Math.log2(index+2),0);
- const actual=dcg([...judged].sort((a,b)=>a.rank-b.rank));
- const ideal=dcg([...judged].sort((a,b)=>(a.value==='like'?0:1)-(b.value==='like'?0:1)||a.rank-b.rank));
+ const actual=judged.reduce((sum,item)=>sum+(item.value==='like'?1:0)/Math.log2(Number(item.rank)+1),0);
+ const ideal=[...judged].sort((a,b)=>(a.value==='like'?0:1)-(b.value==='like'?0:1)).reduce((sum,item,index)=>sum+(item.value==='like'?1:0)/Math.log2(index+2),0);
  return {count:judged.length,ndcg:ideal?actual/ideal:null};
+}
+function renderSessionNdcgAnalytics(root){
+ const sessions=new Map();
+ readRecommendationEvaluationHistory().forEach(event=>{if(!sessions.has(event.sessionId))sessions.set(event.sessionId,[]);sessions.get(event.sessionId).push(event)});
+ const sessionGroups=[...sessions.values()].flatMap(events=>['close','discovery'].map(group=>({group,...calculateSessionNdcg(events,group)})));
+ const closeScores=sessionGroups.filter(item=>item.group==='close'&&item.ndcg!==null);
+ const discoveryScores=sessionGroups.filter(item=>item.group==='discovery'&&item.ndcg!==null);
+ const meanNdcg=items=>items.length?(items.reduce((sum,item)=>sum+item.ndcg,0)/items.length).toFixed(3):'算出不可';
+ const section=document.createElement('div');section.style.cssText='margin-top:12px';
+ const title=document.createElement('strong');title.textContent='診断単位の順位評価';section.append(title);
+ const summary=document.createElement('p');summary.className='status';
+ summary.textContent='好みにかなり近い作品：平均NDCG '+meanNdcg(closeScores)+'（対象 '+closeScores.length+' 診断）。意外なおすすめ：平均NDCG '+meanNdcg(discoveryScores)+'（対象 '+discoveryScores.length+' 診断）。';section.append(summary);
+ const note=document.createElement('p');note.className='status';note.style.fontSize='.82rem';
+ note.textContent='NDCGは評価済み作品だけを対象に、肯定評価を関連あり・否定評価を関連なしとして計算します。未評価作品は除外され、各グループ2件以上の評価がある診断だけを集計します。全推薦候補の順位品質や一般的な推薦精度を示すものではありません。';section.append(note);
+ root.append(section);
 }
 function buildLearnedPreferences(feedback){
  const preferences={genres:new Map(),tags:new Map()};
@@ -270,6 +284,7 @@ function runRecommendationSelfTests(){
  const ndcg=calculateSessionNdcg([{value:'like',group:'close',rank:1},{value:'dislike',group:'close',rank:2}],'close');
  check('理想順位のNDCGは1',ndcg.ndcg===1);
  check('逆順位のNDCGは1未満',calculateSessionNdcg([{value:'dislike',group:'close',rank:1},{value:'like',group:'close',rank:2}],'close').ndcg<1);
+ check('順位の間に未評価作品があっても位置を保持',calculateSessionNdcg([{value:'like',group:'close',rank:1},{value:'dislike',group:'close',rank:4}],'close').ndcg===1);
  check('評価作品が1件の診断はNDCG対象外',calculateSessionNdcg([{value:'like',group:'close',rank:1}],'close').ndcg===null);
  check('推薦グループをまたいで順位を混ぜない',calculateSessionNdcg([{value:'like',group:'close',rank:1},{value:'dislike',group:'discovery',rank:1}],'close').ndcg===null);
  return tests;
@@ -569,10 +584,10 @@ function renderCardList(containerId,items){
   const link=document.createElement('a');link.href=a.siteUrl||'https://anilist.co/anime/'+a.id;link.target='_blank';link.rel='noopener noreferrer';link.textContent='作品情報を見る ↗';
   const feedback=document.createElement('div');feedback.className='recommend-feedback';feedback.style.cssText='display:flex;gap:7px;flex-wrap:wrap;margin-top:10px';
   const feedbackLabel=document.createElement('small');feedbackLabel.textContent='このおすすめは好みに合っていますか？';feedbackLabel.style.cssText='display:block;width:100%;color:var(--muted)';
-  let currentFeedback=readRecommendationFeedback()[String(a.id)]?.value||'';
+  const currentSessionId=latestResult?.evaluationSessionId||'';const currentFeedback=readRecommendationEvaluationHistory().filter(item=>item.sessionId===currentSessionId&&item.animeId===String(a.id)).sort((a,b)=>(b.recordedAt||0)-(a.recordedAt||0))[0]?.value||'';
   const like=document.createElement('button');like.type='button';like.textContent=currentFeedback==='like'?'✓ 合っている':'合っている';like.setAttribute('aria-pressed',String(currentFeedback==='like'));like.style.cssText='padding:6px 9px;font-size:.8rem';
   const dislike=document.createElement('button');dislike.type='button';dislike.textContent=currentFeedback==='dislike'?'✓ 合っていない':'合っていない';dislike.setAttribute('aria-pressed',String(currentFeedback==='dislike'));dislike.style.cssText='padding:6px 9px;font-size:.8rem';
-  const updateFeedback=(value)=>{const next=currentFeedback===value?'':value;const context={genres:Array.isArray(a.genres)?a.genres:[],tags:(a.tags||[]).filter(t=>!t.isMediaSpoiler&&t.rank>=40).map(t=>t.name).slice(0,30),rank:i+1,group,evaluationMetrics:a._evaluationMetrics&&typeof a._evaluationMetrics==='object'?a._evaluationMetrics:null};const ok=writeRecommendationFeedback(a.id,next||'neutral',context);if(next){appendRecommendationEvaluation({sessionId:latestResult?.evaluationSessionId||'legacy-session',animeId:String(a.id),value:next,rank:i+1,group,genres:context.genres,tags:context.tags})}if(!ok){$('shareStatus').textContent='評価を保存できませんでした。ブラウザの保存設定を確認してください。';return}like.textContent=next==='like'?'✓ 合っている':'合っている';dislike.textContent=next==='dislike'?'✓ 合っていない':'合っていない';currentFeedback=next;like.setAttribute('aria-pressed',String(next==='like'));dislike.setAttribute('aria-pressed',String(next==='dislike'));$('shareStatus').textContent='評価を保存しました。次回の診断から推薦順位の調整に使います。';renderFeedbackAnalytics()};
+  const updateFeedback=(value)=>{const next=currentFeedback===value?'':value;const context={genres:Array.isArray(a.genres)?a.genres:[],tags:(a.tags||[]).filter(t=>!t.isMediaSpoiler&&t.rank>=40).map(t=>t.name).slice(0,30),rank:i+1,group,evaluationMetrics:a._evaluationMetrics&&typeof a._evaluationMetrics==='object'?a._evaluationMetrics:null};const ok=writeRecommendationFeedback(a.id,next||'neutral',context);if(!ok){$('shareStatus').textContent='評価を保存できませんでした。ブラウザの保存設定を確認してください。';return}const historyOk=writeRecommendationEvaluation({sessionId:latestResult?.evaluationSessionId||'legacy-session',animeId:String(a.id),value:next,rank:i+1,group,genres:context.genres,tags:context.tags});like.textContent=next==='like'?'✓ 合っている':'合っている';dislike.textContent=next==='dislike'?'✓ 合っていない':'合っていない';currentFeedback=next;like.setAttribute('aria-pressed',String(next==='like'));dislike.setAttribute('aria-pressed',String(next==='dislike'));$('shareStatus').textContent=historyOk?'評価を保存しました。次回の診断から推薦順位の調整に使います。':'評価は保存しましたが、診断別の評価履歴を保存できませんでした。';renderFeedbackAnalytics()};
   like.addEventListener('click',()=>updateFeedback('like'));dislike.addEventListener('click',()=>updateFeedback('dislike'));
   feedback.append(feedbackLabel,like,dislike);
   body.append(h,meta,score,breakdown,reasonList,desc,link,feedback);card.append(img,body);container.append(card);
@@ -715,6 +730,7 @@ function renderFeedbackAnalytics(){
   uncertainty.textContent='肯定率の95%信頼区間（目安）：'+Math.round(Math.max(0,center-margin)*100)+'〜'+Math.round(Math.min(1,center+margin)*100)+'%。評価件数が少ない間は幅が広くなります。';
   root.append(uncertainty);
  }
+ renderSessionNdcgAnalytics(root);
  if(!rated.length){
   const empty=document.createElement('p');empty.className='status';empty.textContent='まだ評価データがありません。作品カードから評価すると、ここに集計が表示されます。';root.append(empty);return;
  }
@@ -741,21 +757,6 @@ function renderFeedbackAnalytics(){
  addBreakdown('物語タグ別の評価（最大6件）',tagCounts);
  addBreakdown('表示位置別の評価',rankCounts);
  addBreakdown('推薦グループ別の評価',groupCounts);
- const evaluationHistory=readRecommendationEvaluationHistory();
- const sessions=new Map();
- evaluationHistory.forEach(event=>{if(!sessions.has(event.sessionId))sessions.set(event.sessionId,[]);sessions.get(event.sessionId).push(event)});
- const sessionGroups=[...sessions.values()].flatMap(events=>['close','discovery'].map(group=>({group,...calculateSessionNdcg(events,group)})));
- const closeScores=sessionGroups.filter(item=>item.group==='close'&&item.ndcg!==null);
- const discoveryScores=sessionGroups.filter(item=>item.group==='discovery'&&item.ndcg!==null);
- const meanNdcg=items=>items.length?(items.reduce((sum,item)=>sum+item.ndcg,0)/items.length).toFixed(3):'算出不可';
- const sessionSection=document.createElement('div');sessionSection.style.cssText='margin-top:12px';
- const sessionTitle=document.createElement('strong');sessionTitle.textContent='診断単位の順位評価';sessionSection.append(sessionTitle);
- const sessionText=document.createElement('p');sessionText.className='status';
- sessionText.textContent='好みにかなり近い作品：平均NDCG '+meanNdcg(closeScores)+'（対象 '+closeScores.length+' 診断）。意外なおすすめ：平均NDCG '+meanNdcg(discoveryScores)+'（対象 '+discoveryScores.length+' 診断）。';
- sessionSection.append(sessionText);
- const sessionNote=document.createElement('p');sessionNote.className='status';sessionNote.style.fontSize='.82rem';
- sessionNote.textContent='NDCGは評価済み作品だけを対象に、肯定評価を関連あり・否定評価を関連なしとして計算します。未評価作品は除外され、評価件数が少ない診断は対象外です。これは本人の評価に基づく参考値であり、全推薦候補の順位品質や一般的な推薦精度を示すものではありません。過去の評価履歴にはさかのぼって適用されません。';
- sessionSection.append(sessionNote);root.append(sessionSection);
  const rankMetricSection=document.createElement('div');rankMetricSection.style.cssText='margin-top:12px';
  const rankMetricTitle=document.createElement('strong');rankMetricTitle.textContent='順位を考慮した評価指標';rankMetricSection.append(rankMetricTitle);
  const closeWeighted=calculateRankWeightedFeedback(rated,'close');
