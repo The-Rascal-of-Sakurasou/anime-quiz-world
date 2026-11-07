@@ -154,8 +154,8 @@ function appendRecommendationEvaluation(event){
  history.push({...event,recordedAt:Date.now()});
  try{localStorage.setItem(EVALUATION_HISTORY_KEY,JSON.stringify(history.slice(-1000)));return true}catch(_){return false}
 }
-function calculateSessionNdcg(events){
- const judged=events.filter(item=>['like','dislike'].includes(item.value)&&Number.isInteger(Number(item.rank))&&Number(item.rank)>0);
+function calculateSessionNdcg(events,group){
+ const judged=events.filter(item=>['like','dislike'].includes(item.value)&&item.group===group&&Number.isInteger(Number(item.rank))&&Number(item.rank)>0);
  if(judged.length<2)return {count:judged.length,ndcg:null};
  const dcg=items=>items.reduce((sum,item,index)=>sum+(item.value==='like'?1:0)/Math.log2(index+2),0);
  const actual=dcg([...judged].sort((a,b)=>a.rank-b.rank));
@@ -267,10 +267,11 @@ function runRecommendationSelfTests(){
  check('順位加重評価は上位の肯定評価を強く反映',weighted.weightedRate>0.5);
  check('推薦グループを分けて集計',calculateRankWeightedFeedback([{value:'like',group:'discovery',rank:1}],'close').count===0);
  check('順位情報のない評価は除外',calculateRankWeightedFeedback([{value:'like',group:'close'}],'close').count===0);
- const ndcg=calculateSessionNdcg([{value:'like',rank:1},{value:'dislike',rank:2}]);
+ const ndcg=calculateSessionNdcg([{value:'like',group:'close',rank:1},{value:'dislike',group:'close',rank:2}],'close');
  check('理想順位のNDCGは1',ndcg.ndcg===1);
- check('逆順位のNDCGは1未満',calculateSessionNdcg([{value:'dislike',rank:1},{value:'like',rank:2}]).ndcg<1);
- check('評価作品が1件の診断はNDCG対象外',calculateSessionNdcg([{value:'like',rank:1}]).ndcg===null);
+ check('逆順位のNDCGは1未満',calculateSessionNdcg([{value:'dislike',group:'close',rank:1},{value:'like',group:'close',rank:2}],'close').ndcg<1);
+ check('評価作品が1件の診断はNDCG対象外',calculateSessionNdcg([{value:'like',group:'close',rank:1}],'close').ndcg===null);
+ check('推薦グループをまたいで順位を混ぜない',calculateSessionNdcg([{value:'like',group:'close',rank:1},{value:'dislike',group:'discovery',rank:1}],'close').ndcg===null);
  return tests;
 }
 
@@ -743,13 +744,14 @@ function renderFeedbackAnalytics(){
  const evaluationHistory=readRecommendationEvaluationHistory();
  const sessions=new Map();
  evaluationHistory.forEach(event=>{if(!sessions.has(event.sessionId))sessions.set(event.sessionId,[]);sessions.get(event.sessionId).push(event)});
- const sessionScores=[...sessions.values()].map(calculateSessionNdcg).filter(item=>item.ndcg!==null);
+ const sessionGroups=[...sessions.values()].flatMap(events=>['close','discovery'].map(group=>({group,...calculateSessionNdcg(events,group)})));
+ const closeScores=sessionGroups.filter(item=>item.group==='close'&&item.ndcg!==null);
+ const discoveryScores=sessionGroups.filter(item=>item.group==='discovery'&&item.ndcg!==null);
+ const meanNdcg=items=>items.length?(items.reduce((sum,item)=>sum+item.ndcg,0)/items.length).toFixed(3):'算出不可';
  const sessionSection=document.createElement('div');sessionSection.style.cssText='margin-top:12px';
  const sessionTitle=document.createElement('strong');sessionTitle.textContent='診断単位の順位評価';sessionSection.append(sessionTitle);
  const sessionText=document.createElement('p');sessionText.className='status';
- sessionText.textContent=sessionScores.length
-  ?'評価作品2件以上の診断 '+sessionScores.length+' 回。診断別NDCGの平均 '+(sessionScores.reduce((sum,item)=>sum+item.ndcg,0)/sessionScores.length).toFixed(3)+'。'
-  :'診断単位の順位評価はまだ算出できません。今後、同じ診断結果内で2作品以上を評価すると集計されます。';
+ sessionText.textContent='好みにかなり近い作品：平均NDCG '+meanNdcg(closeScores)+'（対象 '+closeScores.length+' 診断）。意外なおすすめ：平均NDCG '+meanNdcg(discoveryScores)+'（対象 '+discoveryScores.length+' 診断）。';
  sessionSection.append(sessionText);
  const sessionNote=document.createElement('p');sessionNote.className='status';sessionNote.style.fontSize='.82rem';
  sessionNote.textContent='NDCGは評価済み作品だけを対象に、肯定評価を関連あり・否定評価を関連なしとして計算します。未評価作品は除外され、評価件数が少ない診断は対象外です。これは本人の評価に基づく参考値であり、全推薦候補の順位品質や一般的な推薦精度を示すものではありません。過去の評価履歴にはさかのぼって適用されません。';
