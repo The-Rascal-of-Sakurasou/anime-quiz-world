@@ -238,15 +238,15 @@ const $=s=>document.querySelector(s);let pool=[],questions=[],index=0,points=0,l
 async function fetchAnime(vars={}){
  const request=async(variables,sort='POPULARITY_DESC')=>{
   let lastError;
-  for(let attempt=0;attempt<2;attempt++){
+  for(let attempt=0;attempt<5;attempt++){
    const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),10000);
    try{
     const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query:query.replace('sort:POPULARITY_DESC','sort:'+sort),variables}),signal:controller.signal});
     if(!response.ok){
      const err=new Error(response.status===429?'アクセスが集中しています（HTTP 429）。':('データサーバー応答エラー（HTTP '+response.status+'）。'));
      err.status=response.status;
-     if(response.status===429){const retrySeconds=Number(response.headers.get('Retry-After'))||30;rateLimitedUntil=Math.max(rateLimitedUntil,Date.now()+retrySeconds*1000);lastError=err;if(attempt===0)await new Promise(resolve=>setTimeout(resolve,Math.max(2200,rateLimitedUntil-Date.now())));continue}
-     if(response.status>=500){lastError=err;if(attempt===0)await new Promise(resolve=>setTimeout(resolve,1200));continue}
+     if(response.status===429){const retrySeconds=Number(response.headers.get('Retry-After'))||30;rateLimitedUntil=Math.max(rateLimitedUntil,Date.now()+retrySeconds*1000);lastError=err;await new Promise(resolve=>setTimeout(resolve,Math.max(5000*(attempt+1),rateLimitedUntil-Date.now())));continue}
+     if(response.status>=500){lastError=err;await new Promise(resolve=>setTimeout(resolve,1500*Math.pow(2,attempt)));continue}
      throw err;
     }
     const json=await response.json();
@@ -254,7 +254,7 @@ async function fetchAnime(vars={}){
     return normalizeUnicode(json.data?.Page?.media||[]);
    }catch(error){
     lastError=error.name==='AbortError'?new Error('データ取得がタイムアウトしました。'):error;
-    if(attempt===0)await new Promise(resolve=>setTimeout(resolve,500));
+    if(attempt<4)await new Promise(resolve=>setTimeout(resolve,700*Math.pow(2,attempt)));
    }finally{clearTimeout(timeout)}
   }
   throw lastError||new Error('データを取得できませんでした。');
@@ -262,9 +262,10 @@ async function fetchAnime(vars={}){
  if(vars.search)return (await request({page:1,perPage:18,search:vars.search})).filter(isUsableAnime);
  const cacheKey='aqw-anime-pool-v10-characters-20000',targetCount=20000;
  // Reuse the previous catalogue cache when available; continue expanding it toward the new 20,000-item target.
- let initial=[],cacheSavedAt=0;
+ let initial=[],cacheSavedAt=0,savedProgress=null;
  try{
-  const cached=await new Promise(resolve=>{try{const req=indexedDB.open('aqw-catalogue',1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('catalogues'))req.result.createObjectStore('catalogues')};req.onsuccess=()=>{const db=req.result;try{const store=db.transaction('catalogues','readonly').objectStore('catalogues'),get=store.get(cacheKey);get.onsuccess=()=>{if(get.result){resolve(get.result);return}const legacyGet=store.get('aqw-anime-pool-v9-characters-10000');legacyGet.onsuccess=()=>resolve(legacyGet.result||null);legacyGet.onerror=()=>resolve(null)};get.onerror=()=>resolve(null)}catch(e){resolve(null)}};req.onerror=()=>resolve(null)}catch(e){resolve(null)}});
+  const stored=await new Promise(resolve=>{try{const req=indexedDB.open('aqw-catalogue',1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('catalogues'))req.result.createObjectStore('catalogues')};req.onsuccess=()=>{const db=req.result;try{const store=db.transaction('catalogues','readonly').objectStore('catalogues'),get=store.get(cacheKey),progressGet=store.get(cacheKey+'-progress');let cached=null,progress=null,done=0;const finish=()=>{if(++done===2)resolve({cached,progress})};get.onsuccess=()=>{cached=get.result||null;finish()};get.onerror=finish;progressGet.onsuccess=()=>{progress=progressGet.result||null;finish()};progressGet.onerror=finish}catch(e){resolve({cached:null,progress:null})}};req.onerror=()=>resolve({cached:null,progress:null})}catch(e){resolve({cached:null,progress:null})}});
+  const cached=stored?.cached;savedProgress=stored?.progress;
   if(cached&&Array.isArray(cached.items)){initial=[...new Map(cached.items.filter(isUsableAnime).map(a=>[Number(a.id),a])).values()];cacheSavedAt=Number(cached.savedAt)||0;}
   if(!initial.length){const legacy=JSON.parse(localStorage.getItem(cacheKey)||localStorage.getItem('aqw-anime-pool-v9-characters-10000')||localStorage.getItem('aqw-anime-pool-v7-linked')||'null');if(Array.isArray(legacy?.items)){initial=[...new Map(legacy.items.filter(isUsableAnime).map(a=>[Number(a.id),a])).values()];cacheSavedAt=Number(legacy.savedAt)||0;}}
  }catch(e){}
@@ -279,15 +280,27 @@ async function fetchAnime(vars={}){
  if(!backgroundLoadPromise){
   backgroundLoadPromise=(async()=>{
    const all=new Map(initial.map(a=>[a.id,a]));
-   const tasks=[];
-   // Refresh trending and recently added anime at least once every 24 hours, even after the catalogue reaches 20,000.
-   const shouldRefresh=Date.now()-cacheSavedAt>=24*60*60*1000;
-   if(shouldRefresh){for(const sort of ['ID_DESC','START_DATE_DESC','TRENDING_DESC'])for(let page=1;page<=3;page++)tasks.push([sort,page,'refresh']);}
-   if(all.size<targetCount){for(let page=2;page<=250;page++)tasks.push(['POPULARITY_DESC',page,'fill']);for(let page=1;page<=125;page++)tasks.push(['ID',page,'fill']);for(let page=1;page<=125;page++)tasks.push(['ID_DESC',page,'fill']);for(const sort of ['SCORE_DESC','FAVOURITES_DESC'])for(let page=1;page<=30;page++)tasks.push([sort,page,'fill']);}
-   let completed=0,failures=0;
-   for(const [sort,page,taskType] of tasks){
+   const makeTasks=()=>{
+    const list=[];
+    // Broaden coverage across popularity, IDs, score, favourites, trending and release recency.
+    for(let page=2;page<=250;page++)list.push(['POPULARITY_DESC',page,'fill']);
+    for(let page=1;page<=180;page++)list.push(['ID',page,'fill']);
+    for(let page=1;page<=180;page++)list.push(['ID_DESC',page,'fill']);
+    for(const sort of ['SCORE_DESC','FAVOURITES_DESC'])for(let page=1;page<=80;page++)list.push([sort,page,'fill']);
+    for(const sort of ['TRENDING_DESC','START_DATE_DESC'])for(let page=1;page<=60;page++)list.push([sort,page,'fill']);
+    return list;
+   };
+   // Keep the exact task plan and cursor in IndexedDB so reloading the page resumes rather than restarting.
+   const tasks=Array.isArray(savedProgress?.tasks)&&savedProgress.tasks.length?savedProgress.tasks:makeTasks();
+   let taskIndex=Number.isInteger(savedProgress?.taskIndex)?Math.max(0,Math.min(tasks.length,savedProgress.taskIndex)):0;
+   let completed=taskIndex,failures=Number(savedProgress?.failures)||0;
+   const saveProgress=async(items,nextIndex)=>{
+    try{await new Promise(resolve=>{const req=indexedDB.open('aqw-catalogue',1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('catalogues'))req.result.createObjectStore('catalogues')};req.onsuccess=()=>{try{const tx=req.result.transaction('catalogues','readwrite'),store=tx.objectStore('catalogues');store.put({savedAt:Date.now(),items},cacheKey);store.put({tasks,taskIndex:nextIndex,failures,updatedAt:Date.now()},cacheKey+'-progress');tx.oncomplete=()=>resolve();tx.onerror=()=>resolve()}catch(e){resolve()}};req.onerror=()=>resolve()})}catch(e){}
+   };
+   for(;taskIndex<tasks.length;taskIndex++){
+    const [sort,page,taskType]=tasks[taskIndex];
     if(all.size>=targetCount&&taskType==='fill')break;
-    await new Promise(resolve=>setTimeout(resolve,2200));
+    await new Promise(resolve=>setTimeout(resolve,2600));
     try{
      const rows=await request({page,perPage:50},sort);
      rows.forEach(a=>{if(isUsableAnime(a))all.set(a.id,a)});
@@ -295,7 +308,16 @@ async function fetchAnime(vars={}){
     completed++;
     const items=[...all.values()];
     pool=items;extendQuestionsFromPool(items);
-    if(completed%3===0||all.size>=targetCount){try{await new Promise(resolve=>{const req=indexedDB.open('aqw-catalogue',1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('catalogues'))req.result.createObjectStore('catalogues')};req.onsuccess=()=>{try{const tx=req.result.transaction('catalogues','readwrite');tx.objectStore('catalogues').put({savedAt:Date.now(),items},cacheKey);tx.oncomplete=()=>resolve();tx.onerror=()=>resolve()}catch(e){resolve()}};req.onerror=()=>resolve()})}catch(e){try{localStorage.setItem(cacheKey,JSON.stringify({savedAt:Date.now(),items:items.slice(0,500)}))}catch(ignore){}}}
+    // Save after every page; this also checkpoints the next page before a tab is closed.
+    await saveProgress(items,taskIndex+1);
+    const status=document.getElementById('quizStatus');
+    if(status){
+     const percent=Math.min(100,Math.floor(items.length/targetCount*100));
+     const progress=document.getElementById('animePoolProgress');
+     if(progress)progress.textContent=lang==='ja'?('取得状況：'+items.length.toLocaleString()+' / '+targetCount.toLocaleString()+'作品（'+percent+'%）・ページ '+completed+' / '+tasks.length+'・失敗 '+failures+'件'):('Catalogue: '+items.length.toLocaleString()+' / '+targetCount.toLocaleString()+' ('+percent+'%) · pages '+completed+' / '+tasks.length+' · failures '+failures);
+     status.textContent=lang==='ja'?'作品データを追加中… '+items.length.toLocaleString()+' / '+targetCount.toLocaleString()+'作品':'Adding anime… '+items.length.toLocaleString()+' / '+targetCount.toLocaleString();
+    }
+   }
     const status=document.getElementById('quizStatus');
     if(status){
      const percent=Math.min(100,Math.floor(items.length/targetCount*100));
@@ -306,11 +328,13 @@ async function fetchAnime(vars={}){
     }
    }
    const progress=document.getElementById('animePoolProgress');
+   const stoppedAtLimit=all.size>=targetCount;
    if(progress)progress.textContent=lang==='ja'?('最終取得数：'+all.size.toLocaleString()+'作品・取得ページ '+completed+' / '+tasks.length+'・失敗 '+failures+'件。データはこのブラウザに保存されます。'):('Final catalogue: '+all.size.toLocaleString()+' anime · pages '+completed+' / '+tasks.length+' · failures '+failures+'. Saved in this browser.');
    if(all.size<targetCount){
     const status=document.getElementById('quizStatus');
-    if(status)status.textContent=lang==='ja'?('現在'+all.size.toLocaleString()+'作品を利用できます。目標の2万件には未到達です。取得済みデータは保存され、次回アクセス時に追加取得します。'):('Currently '+all.size.toLocaleString()+' anime are available. The 20,000 target was not reached; cached data will be reused next visit.');
-   }else{const status=document.getElementById('quizStatus');if(status)status.textContent=lang==='ja'?'作品データ '+all.size.toLocaleString()+'件の取得が完了しました。':'Catalogue complete: '+all.size.toLocaleString()+' anime.';}
+    if(status)status.textContent=lang==='ja'?('現在'+all.size.toLocaleString()+'作品を利用できます。取得可能なページを確認しました。取得済みデータと進捗は保存され、次回アクセス時は続きから再開します。'):('Currently '+all.size.toLocaleString()+' anime are available. Saved data and progress will resume on the next visit.');
+   }else{const status=document.getElementById('quizStatus');if(status)status.textContent=lang==='ja'?'作品データ '+all.size.toLocaleString()+'件を準備しました。':'Catalogue ready: '+all.size.toLocaleString()+' anime.';}
+   if(stoppedAtLimit){await saveProgress([...all.values()],tasks.length);}
    return {count:all.size,failures,completed};
   })().finally(()=>{backgroundLoadPromise=null});
  }
