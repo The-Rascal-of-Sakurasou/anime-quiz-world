@@ -287,14 +287,11 @@ function deduplicateAnimeSeries(items){
 function deduplicateRecommendationGroups(closeMatches,discoveries){
  const closeInput=Array.isArray(closeMatches)?closeMatches:[];
  const discoveryInput=Array.isArray(discoveries)?discoveries:[];
- const combined=[...closeInput,...discoveryInput];
- const unique=deduplicateAnimeSeries(combined);
- const keptIds=new Set(unique.map(anime=>String(anime?.id)));
- const close=closeInput.filter(anime=>anime?.id==null||keptIds.has(String(anime.id)));
- const closeIds=new Set(close.map(anime=>anime?.id==null?null:String(anime.id)));
- const discoveriesOut=discoveryInput.filter(anime=>
-  anime?.id==null||(!closeIds.has(String(anime.id))&&keptIds.has(String(anime.id)))
- );
+ const uniqueCombined=deduplicateAnimeSeries([...closeInput,...discoveryInput]);
+ // 先に表示する「一致度の高い作品」を優先し、同一IDの重複も含めて後続枠から除外する。
+ const close=uniqueCombined.filter(anime=>closeInput.includes(anime));
+ const closeRefs=new Set(close);
+ const discoveriesOut=uniqueCombined.filter(anime=>!closeRefs.has(anime));
  return {closeMatches:close,discoveries:discoveriesOut};
 }
 
@@ -306,6 +303,9 @@ function runRecommendationSelfTests(){
   [{id:2,title:{native:'作品B',english:'Title B',romaji:'Title B'}},{id:3,title:{native:'作品A',english:'Another Title',romaji:'Another Title'}}]
  );
  check('推薦2枠で同じ作品IDを重複表示しない',deduplicateRecommendationGroups([{id:7,title:{native:'A'}}],[{id:7,title:{native:'B'}}]).discoveries.length===0);
+ check('同じ推薦グループ内の同一IDも1回だけ表示',deduplicateRecommendationGroups([
+  {id:8,title:{native:'作品A'}},{id:8,title:{native:'作品A'}}
+ ],[]).closeMatches.length===1);
  check('日本語・英語タイトルの表記違いを重複判定',deduplicateRecommendationGroups([{id:1,title:{native:'葬送のフリーレン'}}],[{id:2,title:{native:'',english:'Frieren: Beyond Journey’s End'}}]).discoveries.length===1);
  check('記号・空白だけの違いを重複判定',deduplicateRecommendationGroups([{id:1,title:{native:'SPY×FAMILY'}}],[{id:2,title:{native:'SPY × FAMILY'}}]).discoveries.length===0);
  check('AniListの別名も重複判定に利用',deduplicateRecommendationGroups([{id:1,title:{native:'作品A'},synonyms:['Alias A']}],[{id:2,title:{native:'Alias A'}}]).discoveries.length===0);
