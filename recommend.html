@@ -18,8 +18,8 @@
 <main class="panel">
 <div id="diagnosis">
 <div class="progress" aria-label="診断の進行状況"><div id="progressBar"></div></div>
-<div class="question"><div class="eyebrow" id="stepLabel">QUESTION 1 / 6</div><h2 id="questionTitle"></h2><p id="questionHelp"></p></div>
-<div class="choices" id="choices"></div>
+<div class="question"><div class="eyebrow" id="stepLabel">QUESTION 1 / 6</div><h2 id="questionTitle">どんなジャンルの物語に惹かれますか？</h2><p id="questionHelp">最も見たいものを1つ選んでください。</p></div>
+<div class="choices" id="choices"><button class="choice" type="button" disabled><span class="n">A</span><span>異世界・冒険・ファンタジー</span></button><button class="choice" type="button" disabled><span class="n">B</span><span>SF・ミステリー・サスペンス</span></button><button class="choice" type="button" disabled><span class="n">C</span><span>バトル・アクション</span></button><button class="choice" type="button" disabled><span class="n">D</span><span>ドラマ・コメディ・人間関係</span></button></div>
 <div class="preference-inputs" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:22px">
 <label style="display:block;font-weight:700;font-size:.92rem">好きなアニメ（任意）
 <input id="favoriteTitles" type="text" maxlength="180" placeholder="例：シュタインズ・ゲート、青ブタ" style="display:block;width:100%;margin-top:6px;padding:11px;border:1px solid var(--line);border-radius:8px;font:inherit;font-weight:400">
@@ -58,6 +58,10 @@
 </main>
 <p class="foot">診断は回答内容とAniListの作品ジャンル・タグなどを使った、ルールベースの娯楽向け推薦です。好きな作品のタグ一致度や候補群内でのタグの希少性も参考にするため、ジャンルが異なる作品が候補に入る場合があります。推薦理由は作品データとの一致を示すもので、作品の優劣や視聴体験を保証しません。入力した作品名はAniListへの検索リクエストに使われます。回答内容はアカウントには保存しません。作品情報：AniList。</p>
 </div>
+<script>
+window.addEventListener("error",event=>{const box=document.getElementById("error");if(box){box.textContent="診断画面の初期化中にエラーが発生しました："+(event.message||"詳細不明")+"。ページを再読み込みしてください。";box.classList.remove("hidden");}});
+window.addEventListener("unhandledrejection",event=>{const box=document.getElementById("error");if(box){const reason=event.reason;box.textContent="診断処理でエラーが発生しました："+(reason&&reason.message?reason.message:String(reason||"詳細不明"));box.classList.remove("hidden");}});
+</script>
 <script>
 const API='https://graphql.anilist.co';
 const questions=[
