@@ -285,7 +285,7 @@ async function fetchAnime(vars={}){
   throw lastError||new Error('データを取得できませんでした。');
  };
  if(vars.search)return (await request({page:1,perPage:18,search:vars.search})).filter(isUsableAnime);
- const cacheKey='aqw-anime-pool-v12-popularity-20000',targetCount=20000;
+ const cacheKey='aqw-anime-pool-v13-franchise-complete-20000',targetCount=20000;
  // Reuse the previous catalogue cache when available; continue expanding it toward the new 20,000-item target.
  let initial=[],cacheSavedAt=0,savedProgress=null;
  try{
@@ -311,9 +311,11 @@ async function fetchAnime(vars={}){
     const missingPopularity=[...all.values()].filter(a=>!Number.isFinite(Number(a.popularity))||Number(a.popularity)<=0).map(a=>Number(a.id)).filter(Number.isFinite);
     for(let i=0;i<missingPopularity.length;i+=50)list.push(['ID_IN',missingPopularity.slice(i,i+50),'enrich']);
     // Broaden coverage across popularity, IDs, score, favourites, trending and release recency.
-    for(let page=2;page<=250;page++)list.push(['POPULARITY_DESC',page,'fill']);
-    for(let page=1;page<=180;page++)list.push(['ID',page,'fill']);
-    for(let page=1;page<=180;page++)list.push(['ID_DESC',page,'fill']);
+    // AniList Page depth is limited; with perPage=50, keep page numbers at or below 100.
+    // Start each sort at page 1 so the rebuilt catalogue also recovers entries omitted by older deduplication.
+    for(let page=1;page<=100;page++)list.push(['POPULARITY_DESC',page,'fill']);
+    for(let page=1;page<=100;page++)list.push(['ID',page,'fill']);
+    for(let page=1;page<=100;page++)list.push(['ID_DESC',page,'fill']);
     for(const sort of ['SCORE_DESC','FAVOURITES_DESC'])for(let page=1;page<=80;page++)list.push([sort,page,'fill']);
     for(const sort of ['TRENDING_DESC','START_DATE_DESC'])for(let page=1;page<=60;page++)list.push([sort,page,'fill']);
     return list;
@@ -361,20 +363,14 @@ async function fetchAnime(vars={}){
 }
 function isUsableAnime(a){const titleImage=a?.coverImage?.large||a?.coverImage?.medium||a?.coverImage?.extraLarge||'';return !!(a&&a.id&&titleImage&&titleOf(a)&&['TV','TV_SHORT','MOVIE','OVA','ONA','SPECIAL'].includes(a.format)&&!((a.genres||[]).includes('Hentai')))}
 function deduplicateQuestionPool(items){
+ // Keep every distinct AniList entry. Seasons, sequels, movies, OVAs and remakes
+ // are separate quiz subjects; only repeated copies of the same AniList ID are removed.
  const sorted=[...(items||[])].filter(isUsableAnime).sort((a,b)=>(Number(b.popularity)||0)-(Number(a.popularity)||0)||(Number(b.averageScore)||0)-(Number(a.averageScore)||0)||Number(a.id)-Number(b.id));
- const parent=new Map();
- const find=id=>{if(!parent.has(id))parent.set(id,id);let root=id;while(parent.get(root)!==root)root=parent.get(root);let current=id;while(parent.get(current)!==current){const next=parent.get(current);parent.set(current,root);current=next}return root};
- const unite=(a,b)=>{const ra=find(a),rb=find(b);if(ra!==rb)parent.set(rb,ra)};
- const ids=new Set(sorted.map(a=>Number(a.id)).filter(Number.isFinite));
- const relatedTypes=new Set(['PREQUEL','SEQUEL','PARENT','SUMMARY','ALTERNATIVE','COMPILATION']);
- for(const anime of sorted){const id=Number(anime.id);find(id);for(const edge of anime.relations?.edges||[]){const relatedId=Number(edge?.node?.id);if(ids.has(relatedId)&&relatedTypes.has(edge.relationType))unite(id,relatedId)}}
- const seenGroups=new Set(),seenIds=new Set(),seenTitles=new Set(),result=[];
+ const seenIds=new Set(),result=[];
  for(const anime of sorted){
-  const id=Number(anime.id);if(!Number.isFinite(id)||seenIds.has(id))continue;
-  const titles=[anime.title?.native,anime.title?.english,anime.title?.romaji].filter(Boolean).map(normalizeAnswer).filter(Boolean);
-  const group=find(id);
-  if(seenGroups.has(group)||titles.some(title=>seenTitles.has(title)))continue;
-  seenIds.add(id);seenGroups.add(group);titles.forEach(title=>seenTitles.add(title));result.push(anime);
+  const id=Number(anime.id);
+  if(!Number.isFinite(id)||seenIds.has(id))continue;
+  seenIds.add(id);result.push(anime);
  }
  return result;
 }
