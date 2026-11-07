@@ -803,9 +803,13 @@ function renderPlayerLeaderboard(){
 }
 async function loadPlayerLeaderboard(){
  if(!sb)return;
- const statusEl=$s('aqwPlayerBoardStatus'),rows=$s('aqwPlayerBoardRows');
+ const statusEl=$s('aqwPlayerBoardStatus'),rows=$s('aqwPlayerBoardRows'),mode=$s('aqwPlayerBoardSort')?.value||'xp';
  message(statusEl,aqwPlayerT('loading'));rows.replaceChildren();
- const {data,error}=await sb.from('aqw_player_stats').select('user_id,total_xp,total_runs,total_correct,total_questions,updated_at,profiles(username,display_name)').order('total_xp',{ascending:false}).limit(1000);
+ let query=sb.from('aqw_player_stats').select('user_id,total_xp,total_runs,total_correct,total_questions,accuracy_rate,updated_at,profiles(username,display_name)');
+ if(mode==='runs')query=query.order('total_runs',{ascending:false}).order('total_xp',{ascending:false});
+ else if(mode==='accuracy')query=query.gte('total_questions',10).order('accuracy_rate',{ascending:false}).order('total_questions',{ascending:false});
+ else query=query.order('total_xp',{ascending:false}).order('total_runs',{ascending:false});
+ const {data,error}=await query.limit(20);
  if(error){playerLeaderboardCache=[];message(statusEl,aqwPlayerT('error')+errText(error));return}
  playerLeaderboardCache=data||[];
  renderPlayerLeaderboard();
@@ -1045,7 +1049,7 @@ $s('aqwUserSearchForm').addEventListener('submit',searchUsers);
 $s('aqwNotificationsButton').addEventListener('click',loadNotifications);
 $s('aqwRushBoardRefresh').addEventListener('click',loadRushLeaderboard);
 $s('aqwPlayerBoardRefresh').addEventListener('click',loadPlayerLeaderboard);
-$s('aqwPlayerBoardSort').addEventListener('change',renderPlayerLeaderboard);
+$s('aqwPlayerBoardSort').addEventListener('change',loadPlayerLeaderboard);
 $s('aqwRushBoardShare').addEventListener('click',shareRushBoardImage);
 $s('aqwRushBoardSave').addEventListener('click',saveRushBoardImage);
 document.getElementById('languageSelect')?.addEventListener('change',()=>{applyRushLeaderboardLanguage();applyPlayerLeaderboardLanguage();renderPlayerLeaderboard()});
