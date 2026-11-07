@@ -695,7 +695,8 @@ document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',e=>{
  document.querySelectorAll('.tab').forEach(x=>{x.classList.toggle('active',x===b);x.setAttribute('aria-selected',String(x===b))});
  const panels={quiz:$('#quiz'),search:$('#search'),progressTab:$('#progressPanel'),social:$('#social'),ranking:$('#ranking')};
  Object.entries(panels).forEach(([key,panel])=>{if(panel)panel.classList.toggle('hidden',key!==tab)});
- if(tab==='progressTab')renderProgress();\n if(tab==='ranking'){loadRushLeaderboard();loadPlayerLeaderboard()}
+ if(tab==='progressTab')renderProgress();
+ if(tab==='ranking'){loadRushLeaderboard();loadPlayerLeaderboard()}
 }));
 try{restoreLanguage()}catch(e){console.error('AQW language initialization failed:',e);const status=document.getElementById('quizStatus');if(status)status.textContent='画面の初期化に失敗しました。ページを再読み込みしてください。'}
 
