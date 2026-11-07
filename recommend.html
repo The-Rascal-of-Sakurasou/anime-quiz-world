@@ -269,8 +269,15 @@ async function getRecommendations(profile){
  // 評価履歴からジャンル・タグごとの傾向を集計し、少数評価を抑制した補正値を算出する。
  const learnedPreferences=buildLearnedPreferences(recommendationFeedback);
  const favoriteSeeds=[],dislikedSeeds=[];
- for(const name of favoriteNames){const found=await findSeedAnime(name);if(found)favoriteSeeds.push(found)}
- for(const name of dislikedNames){const found=await findSeedAnime(name);if(found)dislikedSeeds.push(found)}
+ const seedReport={unresolvedFavorites:[],unresolvedDislikes:[],conflicts:[],resolvedFavorites:[],resolvedDislikes:[]};
+ for(const name of favoriteNames){const found=await findSeedAnime(name);if(found){favoriteSeeds.push({...found,_requestedTitle:name});seedReport.resolvedFavorites.push({requested:name,resolved:found.title?.native||found.title?.english||found.title?.romaji||'タイトル不明'})}else seedReport.unresolvedFavorites.push(name)}
+ for(const name of dislikedNames){const found=await findSeedAnime(name);if(found){dislikedSeeds.push({...found,_requestedTitle:name});seedReport.resolvedDislikes.push({requested:name,resolved:found.title?.native||found.title?.english||found.title?.romaji||'タイトル不明'})}else seedReport.unresolvedDislikes.push(name)}
+ const favoriteIdsAll=new Set(favoriteSeeds.map(x=>x.id)),dislikedIdsAll=new Set(dislikedSeeds.map(x=>x.id));
+ const conflictingIds=new Set([...favoriteIdsAll].filter(id=>dislikedIdsAll.has(id)));
+ seedReport.conflicts=[...favoriteSeeds.filter(x=>conflictingIds.has(x.id)).map(x=>x.title?.native||x.title?.english||x.title?.romaji||x._requestedTitle)];
+ const activeFavoriteSeeds=favoriteSeeds.filter(x=>!conflictingIds.has(x.id));
+ const activeDislikedSeeds=dislikedSeeds.filter(x=>!conflictingIds.has(x.id));
+ const excludedSeedIds=new Set([...favoriteIdsAll,...dislikedIdsAll]);
  const genreEntries=Object.entries(profile.genres),tagEntries=Object.entries(profile.tags);
  const tagFrequency=new Map();
  for(const anime of items){
@@ -282,18 +289,26 @@ async function getRecommendations(profile){
   const rarity=1-Math.log(frequency+1)/Math.log(items.length+1);
   return 0.7+Math.max(0,Math.min(1,rarity))*0.8;
  };
+ const genreFrequency=new Map();
+ for(const anime of items)for(const genre of new Set(anime.genres||[]))genreFrequency.set(genre,(genreFrequency.get(genre)||0)+1);
+ const genreRarity=genre=>1-Math.min(1,(genreFrequency.get(genre)||0)/Math.max(1,items.length));
+ // 入力作品数に比例して補正が膨らまないよう、最良一致を中心に集約する。
  const seedScore=(candidate,seeds)=>{
-  let total=0,matchedGenres=[],matchedTags=[];
   const candidateTags=new Map((candidate.tags||[]).filter(t=>!t.isMediaSpoiler&&t.rank>=40).map(t=>[t.name,t]));
+  const perSeed=[];const matchedGenres=[],matchedTags=[];
   for(const seed of seeds){
    const sharedGenres=(seed.genres||[]).filter(g=>(candidate.genres||[]).includes(g));
    const sharedTags=(seed.tags||[]).filter(t=>!t.isMediaSpoiler&&t.rank>=40&&candidateTags.has(t.name));
    const tagPoints=sharedTags.reduce((sum,t)=>sum+(Math.max(0,Math.min(100,Number(t.rank)||0))/100)*rarityWeight(t.name),0);
-   total+=Math.min(10,tagPoints*2)+Math.min(2,sharedGenres.length*0.8);
-   matchedGenres.push(...sharedGenres.slice(0,3));
+   const tagScore=Math.min(6,tagPoints*1.5);
+   const genreScore=Math.min(2,sharedGenres.reduce((sum,g)=>sum+0.35+genreRarity(g)*0.65,0));
+   perSeed.push(tagScore+genreScore);
+   matchedGenres.push(...sharedGenres);
    matchedTags.push(...sharedTags.sort((a,b)=>b.rank-a.rank).slice(0,5).map(t=>t.name));
   }
-  return {score:Math.min(total,24),matchedGenres:[...new Set(matchedGenres)],matchedTags:[...new Set(matchedTags)]};
+  if(!perSeed.length)return {score:0,matchedGenres:[],matchedTags:[]};
+  const best=Math.max(...perSeed),average=perSeed.reduce((sum,value)=>sum+value,0)/perSeed.length;
+  return {score:Math.min(8.5,best*0.7+average*0.3),matchedGenres:[...new Set(matchedGenres)],matchedTags:[...new Set(matchedTags)]};
  };
  const favoriteIds=new Set(favoriteSeeds.map(x=>x.id)),dislikedIds=new Set(dislikedSeeds.map(x=>x.id));
  const scored=items.filter(a=>a.coverImage?.large&&a.title&&(a.format==='TV'||a.format==='TV_SHORT'||a.format==='MOVIE'||a.format==='ONA'||a.format==='OVA'||a.format==='SPECIAL')).map(a=>{
@@ -314,8 +329,8 @@ async function getRecommendations(profile){
   if(profile.length==='short'){if(a.format==='MOVIE'){score+=5;lengthReason='映画';}else if(a.episodes&&a.episodes<=13){score+=4;lengthReason='1クール程度';}else if(a.episodes&&a.episodes>26){score-=5;lengthAdjustment='希望より長め（26話超）';}}
   if(profile.length==='medium'){if(a.episodes>=12&&a.episodes<=39){score+=3;lengthReason='2〜3クール程度';}else if(a.episodes>60){score-=2;lengthAdjustment='希望より長め（60話超）';}}
   if(profile.length==='long'){if(a.episodes>=40){score+=5;lengthReason='長編';}else if(a.episodes&&a.episodes<=13){score-=2;lengthAdjustment='希望より短め（13話以下）';}}
-  const fav=seedScore(a,favoriteSeeds),dis=seedScore(a,dislikedSeeds);
-  score+=fav.score-dis.score;
+  const fav=seedScore(a,activeFavoriteSeeds),dis=seedScore(a,activeDislikedSeeds);
+  score+=fav.score-dis.score*0.75;
   const learnedTotalAdjustment=calculateLearnedTotalAdjustment(animeGenres,animeTags.filter(t=>!t.isMediaSpoiler&&t.rank>=40).map(t=>t.name),learnedPreferences);
   score+=learnedTotalAdjustment;
   const priorFeedback=recommendationFeedback[String(a.id)];
@@ -337,7 +352,7 @@ async function getRecommendations(profile){
   // 入力された作品そのものは推薦候補から外す。
   // 人気度・評価は好みとの一致点に加算せず、同点時の並べ替えだけに使う。
   return {...a,_score:score,_reasonDetails:details,_quality:Number(a.averageScore)||0,_popularity:Number(a.popularity)||0};
- }).filter(a=>!favoriteIds.has(a.id)&&!dislikedIds.has(a.id)).sort((a,b)=>b._score-a._score||b._quality-a._quality||b._popularity-a._popularity);
+ }).filter(a=>!excludedSeedIds.has(a.id)).sort((a,b)=>b._score-a._score||b._quality-a._quality||b._popularity-a._popularity);
   // AniList may list the same work under alternate scripts or title aliases.
   const titleKeyForDedup=anime=>[anime?.title?.native,anime?.title?.english,anime?.title?.romaji]
    .filter(Boolean).map(title=>String(title).toLocaleLowerCase().normalize('NFKC').replace(/[\s・：:!！?？。、,.'’"「」『』()（）［］【】]/g,''));
@@ -382,7 +397,7 @@ async function getRecommendations(profile){
  const discoveryPool=scored.filter(a=>!selectedIds.has(a.id)&&a._score>=minimumDiscoveryScore)
   .sort((a,b)=>a._popularity-b._popularity||b._score-a._score||b._quality-a._quality);
  const discoveries=selectDiverse(discoveryPool,4,true);
- return {closeMatches,discoveries};
+ return {closeMatches,discoveries,seedReport};
 }
 function buildProfile(profile){
  const top=Object.entries(profile.genres).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]);
@@ -609,7 +624,12 @@ function renderCards(result){
  if(!result.closeMatches.length&&!result.discoveries.length){$('resultStatus').textContent='条件に合う作品を十分に取得できませんでした。回答を変えて再診断してください。';return}
  if(!result.closeMatches.length)$('animeCards').innerHTML='<p class="status">一致度の高い候補は見つかりませんでした。</p>';
  if(!result.discoveries.length)$('discoveryCards').innerHTML='<p class="status">今回の候補群では、相性を保った意外な作品を見つけられませんでした。</p>';
- $('resultStatus').textContent='相性スコアは推薦処理内の比較用数値で、百分率や客観的な作品評価ではありません。「意外なおすすめ」は候補群内で人気度が比較的低い作品です。人気度はAniListの登録・利用状況に基づく目安で、作品の質を示すものではありません。';
+ const report=result.seedReport||{};
+ const notices=[];
+ if(report.unresolvedFavorites?.length)notices.push('検索できなかった「好きな作品」：'+report.unresolvedFavorites.join('、'));
+ if(report.unresolvedDislikes?.length)notices.push('検索できなかった「苦手な作品」：'+report.unresolvedDislikes.join('、'));
+ if(report.conflicts?.length)notices.push('好き・苦手の両方に入力された作品は、傾向分析から除外しました：'+report.conflicts.join('、'));
+ $('resultStatus').textContent='相性スコアは推薦処理内の比較用数値で、百分率や客観的な作品評価ではありません。「意外なおすすめ」は候補群内で人気度が比較的低い作品です。人気度はAniListの登録・利用状況に基づく目安で、作品の質を示すものではありません。'+(notices.length?' 入力作品の確認：'+notices.join('／'):' 入力された好き・苦手の作品はAniListで検索し、推薦傾向に反映しました。');
 }
 async function finish(){
  $('diagnosis').classList.add('hidden');$('error').classList.add('hidden');$('loading').classList.remove('hidden');
