@@ -277,7 +277,7 @@ async function copyResultLink(){
 function buildShareText(){
  const close=(latestResult?.closeMatches||[]).slice(0,3).map(a=>a.title.native||a.title.english||a.title.romaji).filter(Boolean);
  const discovery=(latestResult?.discoveries||[]).slice(0,2).map(a=>a.title.native||a.title.english||a.title.romaji).filter(Boolean);
- return 'Anime Quiz Worldでアニメの好みを診断！\\n私のタイプは「'+($('profileTitle').textContent||'アニメ好き')+'」でした。\\nおすすめ：'+(close.join('、')||'診断結果をチェック')+(discovery.length?'\\n意外なおすすめ：'+discovery.join('、'):'')+'\\nあなたも診断してみてください！\\n'+getShareUrl()+'\\n#AnimeQuizWorld';
+ return 'Anime Quiz Worldでアニメの好みを診断！\n私のタイプは「'+($('profileTitle').textContent||'アニメ好き')+'」でした。\nおすすめ：'+(close.join('、')||'診断結果をチェック')+(discovery.length?'\n意外なおすすめ：'+discovery.join('、'):'')+'\nあなたも診断してみてください！\n'+getShareUrl()+'\n#AnimeQuizWorld';
 }
 async function copyShareText(){
  try{await navigator.clipboard.writeText(buildShareText());$('shareStatus').textContent='共有文をコピーしました。';}
