@@ -127,7 +127,13 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .aqw-rush-board th,.aqw-rush-board td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
 .aqw-rush-board th{font-size:.86rem;color:var(--muted)}
 .aqw-rush-board tr.is-me{background:color-mix(in srgb,var(--accent,#4776b8) 10%,transparent)}
+.aqw-rush-board tr.podium-1{background:color-mix(in srgb,#e6b83f 13%,transparent)}
+.aqw-rush-board tr.podium-2{background:color-mix(in srgb,#9aa7b8 13%,transparent)}
+.aqw-rush-board tr.podium-3{background:color-mix(in srgb,#b8794b 12%,transparent)}
 .aqw-rush-board .rank-cell{font-weight:800;width:52px}
+.aqw-rush-board .rank-cell.podium-1{color:#b8860b}
+.aqw-rush-board .rank-cell.podium-2{color:#7b8794}
+.aqw-rush-board .rank-cell.podium-3{color:#a65e32}
 .aqw-rush-board .player-name{font-weight:700}
 .aqw-rush-board .player-handle{display:block;font-size:.82rem;color:var(--muted)}
 .aqw-rush-board-status{min-height:1.5em;margin:8px 0;color:var(--muted);font-size:.9rem}
@@ -595,10 +601,15 @@ async function loadRushLeaderboard(){
  if(error){message(statusEl,aqwRushT('error')+errText(error));return}
  if(!data?.length){message(statusEl,aqwRushT('empty'));return}
  message(statusEl,'');
+ let previousScore=null,previousTime=null,currentRank=0;
  data.forEach((item,index)=>{
   const profile=Array.isArray(item.profiles)?item.profiles[0]:item.profiles;
-  const trEl=document.createElement('tr');if(currentUser?.id===item.user_id)trEl.classList.add('is-me');
-  const rank=document.createElement('td');rank.className='rank-cell';rank.textContent=String(index+1);
+  if(item.correct_count!==previousScore||item.elapsed_ms!==previousTime)currentRank=index+1;
+  previousScore=item.correct_count;previousTime=item.elapsed_ms;
+  const trEl=document.createElement('tr');
+  if(currentUser?.id===item.user_id)trEl.classList.add('is-me');
+  if(currentRank<=3)trEl.classList.add('podium-'+currentRank);
+  const rank=document.createElement('td');rank.className='rank-cell'+(currentRank<=3?' podium-'+currentRank:'');rank.textContent=String(currentRank);
   const player=document.createElement('td');
   const name=document.createElement('span');name.className='player-name';name.textContent=profile?.display_name||profile?.username||aqwRushT('player');
   const handle=document.createElement('span');handle.className='player-handle';handle.textContent='@'+(profile?.username||'user')+(currentUser?.id===item.user_id?' · '+aqwRushT('you'):'');
