@@ -288,13 +288,39 @@ async function getRecommendations(profile){
    usedIds.add(anime.id);keys.forEach(key=>{if(key)usedTitles.add(key)});uniqueScored.push(anime);
   }
   scored.splice(0,scored.length,...uniqueScored);
- const closeMatches=scored.slice(0,4);
+ // 一致度を保ちながら、同じジャンル・タグに偏りすぎないよう逐次選択する。
+ const selectDiverse=(candidates,count,discovery=false)=>{
+  const pool=[...candidates],selected=[];
+  const maxPopularity=Math.max(2,...pool.map(x=>(Number(x._popularity)||0)+1));
+  while(pool.length&&selected.length<count){
+   let bestIndex=0,bestValue=-Infinity;
+   for(let i=0;i<pool.length;i++){
+    const candidate=pool[i];
+    const genres=new Set(candidate.genres||[]);
+    const tags=new Set((candidate.tags||[]).filter(t=>!t.isMediaSpoiler&&t.rank>=40).map(t=>t.name));
+    let overlap=0;
+    for(const chosen of selected){
+     const sharedGenres=(chosen.genres||[]).filter(g=>genres.has(g)).length;
+     const chosenTags=new Set((chosen.tags||[]).filter(t=>!t.isMediaSpoiler&&t.rank>=40).map(t=>t.name));
+     let sharedTags=0;for(const tag of tags)if(chosenTags.has(tag))sharedTags++;
+     overlap+=sharedGenres*1.15+sharedTags*0.22;
+    }
+    const popularity=Number(candidate._popularity)||0;
+    const novelty=discovery?Math.max(0,1-Math.log(popularity+1)/Math.log(maxPopularity)):0;
+    const value=candidate._score-overlap+novelty*0.8;
+    if(value>bestValue){bestValue=value;bestIndex=i}
+   }
+   selected.push(pool.splice(bestIndex,1)[0]);
+  }
+  return selected;
+ };
+ const closeMatches=selectDiverse(scored,4);
  const selectedIds=new Set(closeMatches.map(a=>a.id));
  const bestScore=scored[0]?scored[0]._score:0;
  const minimumDiscoveryScore=bestScore>0?bestScore*0.55:bestScore-5;
- const discoveries=scored.filter(a=>!selectedIds.has(a.id)&&a._score>=minimumDiscoveryScore)
-  .sort((a,b)=>a._popularity-b._popularity||b._score-a._score||b._quality-a._quality)
-  .slice(0,4);
+ const discoveryPool=scored.filter(a=>!selectedIds.has(a.id)&&a._score>=minimumDiscoveryScore)
+  .sort((a,b)=>a._popularity-b._popularity||b._score-a._score||b._quality-a._quality);
+ const discoveries=selectDiverse(discoveryPool,4,true);
  return {closeMatches,discoveries};
 }
 function buildProfile(profile){
