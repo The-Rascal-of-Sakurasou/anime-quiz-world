@@ -334,8 +334,8 @@ async function fetchAnime(vars={}){
   throw lastError||new Error('データをまとめて取得できませんでした。');
  };
  if(vars.search)return (await request({page:1,perPage:18,search:vars.search})).filter(isUsableAnime);
- const cacheKey='aqw-anime-pool-v14-startdate-allstudios-20000',targetCount=20000;
- // Reuse the previous catalogue cache when available; continue expanding it toward the new 20,000-item target.
+ const cacheKey='aqw-anime-pool-v15-unbounded-catalogue';
+ // Merge every older local catalogue cache; the application no longer imposes an item-count target.
  let initial=[],cacheSavedAt=0,savedProgress=null;
  try{
   const stored=await new Promise(resolve=>{
@@ -349,7 +349,7 @@ async function fetchAnime(vars={}){
       const keysReq=store.getAllKeys();
       keysReq.onsuccess=()=>{
        const keys=keysReq.result||[];
-       const catalogueKeys=keys.filter(key=>typeof key==='string'&&new RegExp('^aqw-anime-pool-v\\d+.*-20000$').test(key));
+       const catalogueKeys=keys.filter(key=>typeof key==='string'&&new RegExp('^aqw-anime-pool-v\\d+').test(key));
        const readKeys=[...new Set([...catalogueKeys,cacheKey])];
        const results=[];
        let pending=readKeys.length+1,progress=null;
@@ -372,7 +372,7 @@ async function fetchAnime(vars={}){
   }
   try{
    for(const key of safeStorage.keys()){
-    if(!key||!new RegExp('^aqw-anime-pool-v\\d+.*-20000$').test(key))continue;
+    if(!key||!new RegExp('^aqw-anime-pool-v\\d+').test(key))continue;
     const legacy=JSON.parse(safeStorage.getItem(key)||'null');
     if(Array.isArray(legacy?.items))initial.push(...legacy.items.filter(isUsableAnime));
     if(Number(legacy?.savedAt)>cacheSavedAt)cacheSavedAt=Number(legacy.savedAt);
@@ -382,7 +382,7 @@ async function fetchAnime(vars={}){
 
  }catch(e){}
  initial=deduplicateQuestionPool(initial);
- if(initial.length>=targetCount&&Date.now()-cacheSavedAt<24*60*60*1000)return initial;
+ 
  if(!initial.length){
   const first=(await request({page:1,perPage:50},'POPULARITY_DESC')).filter(isUsableAnime);
   if(!first.length)throw new Error(lang==='ja'?'作品データを取得できませんでした。通信制限または接続障害の可能性があります。':'Could not load anime data. The connection may be blocked or temporarily unavailable.');
@@ -397,9 +397,9 @@ async function fetchAnime(vars={}){
     const list=[];
     const missingPopularity=[...all.values()].filter(a=>!Number.isFinite(Number(a.popularity))||Number(a.popularity)<=0).map(a=>Number(a.id)).filter(Number.isFinite);
     for(let i=0;i<missingPopularity.length;i+=50)list.push(['ID_IN',missingPopularity.slice(i,i+50),'enrich']);
-    // Broaden coverage across popularity, IDs, score, favourites, trending and release recency.
-    // AniList Page depth is limited; with perPage=50, keep page numbers at or below 100.
-    // Start each sort at page 1 so the rebuilt catalogue also recovers entries omitted by older deduplication.
+    // Query all pages available to the public AniList API across complementary sort orders.
+    // AniList limits page depth; use its full accessible range for each sort, with no app-level item cap.
+    // Start at page 1 so older catalogues are fully backfilled.
     for(let page=1;page<=100;page++)list.push(['POPULARITY_DESC',page,'fill']);
     for(let page=1;page<=100;page++)list.push(['ID',page,'fill']);
     for(let page=1;page<=100;page++)list.push(['ID_DESC',page,'fill']);
@@ -410,13 +410,14 @@ async function fetchAnime(vars={}){
    // Keep the exact task plan and cursor in IndexedDB so reloading the page resumes rather than restarting.
    const tasks=Array.isArray(savedProgress?.tasks)&&savedProgress.tasks.length?savedProgress.tasks:makeTasks();
    let taskIndex=Number.isInteger(savedProgress?.taskIndex)?Math.max(0,Math.min(tasks.length,savedProgress.taskIndex)):0;
+   if(taskIndex>=tasks.length&&Date.now()-Number(savedProgress?.updatedAt||0)>7*24*60*60*1000)taskIndex=0;
    let completed=taskIndex,failures=Number(savedProgress?.failures)||0;
    const saveProgress=async(items,nextIndex)=>{
     try{await new Promise(resolve=>{const req=indexedDB.open('aqw-catalogue',1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('catalogues'))req.result.createObjectStore('catalogues')};req.onsuccess=()=>{try{const tx=req.result.transaction('catalogues','readwrite'),store=tx.objectStore('catalogues');store.put({savedAt:Date.now(),items},cacheKey);store.put({tasks,taskIndex:nextIndex,failures,updatedAt:Date.now()},cacheKey+'-progress');tx.oncomplete=()=>resolve();tx.onerror=()=>resolve()}catch(e){resolve()}};req.onerror=()=>resolve()})}catch(e){}
    };
    for(;taskIndex<tasks.length;){
     const [sort,page,taskType]=tasks[taskIndex];
-    if(all.size>=targetCount&&taskType==='fill')break;
+    
     // Bundle two adjacent pages into one GraphQL request to reduce network round trips without increasing request frequency.
     const batch=[tasks[taskIndex]];
     if(taskType==='fill'&&taskIndex+1<tasks.length){
@@ -436,20 +437,17 @@ async function fetchAnime(vars={}){
     await saveProgress(items,taskIndex);
     const status=document.getElementById('quizStatus');
     if(status){
-     const percent=Math.min(100,Math.floor(items.length/targetCount*100));
      const progress=document.getElementById('animePoolProgress');
-     if(progress)progress.textContent=lang==='ja'?('取得状況：'+items.length.toLocaleString()+' / '+targetCount.toLocaleString()+'作品（'+percent+'%）・ページ '+completed+' / '+tasks.length+'・失敗 '+failures+'件'):('Catalogue: '+items.length.toLocaleString()+' / '+targetCount.toLocaleString()+' ('+percent+'%) · pages '+completed+' / '+tasks.length+' · failures '+failures);
-     status.textContent=lang==='ja'?'作品データを追加中… '+items.length.toLocaleString()+' / '+targetCount.toLocaleString()+'作品':'Adding anime… '+items.length.toLocaleString()+' / '+targetCount.toLocaleString();
+     if(progress)progress.textContent=lang==='ja'?('取得中：'+items.length.toLocaleString()+'作品・取得ページ '+completed+' / '+tasks.length+'・失敗 '+failures+'件'):('Loading: '+items.length.toLocaleString()+' anime · pages '+completed+' / '+tasks.length+' · failures '+failures);
+     status.textContent=lang==='ja'?'作品データを追加中… '+items.length.toLocaleString()+'作品':'Adding anime… '+items.length.toLocaleString()+' anime';
     }
    }
    const progress=document.getElementById('animePoolProgress');
-   const stoppedAtLimit=all.size>=targetCount;
+   
    if(progress)progress.textContent=lang==='ja'?('最終取得数：'+all.size.toLocaleString()+'作品・取得ページ '+completed+' / '+tasks.length+'・失敗 '+failures+'件。データはこのブラウザに保存されます。'):('Final catalogue: '+all.size.toLocaleString()+' anime · pages '+completed+' / '+tasks.length+' · failures '+failures+'. Saved in this browser.');
-   if(all.size<targetCount){
-    const status=document.getElementById('quizStatus');
-    if(status)status.textContent=lang==='ja'?('現在'+all.size.toLocaleString()+'作品を利用できます。取得可能なページを確認しました。取得済みデータと進捗は保存され、次回アクセス時は続きから再開します。'):('Currently '+all.size.toLocaleString()+' anime are available. Saved data and progress will resume on the next visit.');
-   }else{const status=document.getElementById('quizStatus');if(status)status.textContent=lang==='ja'?'作品データ '+all.size.toLocaleString()+'件を準備しました。':'Catalogue ready: '+all.size.toLocaleString()+' anime.';}
-   if(stoppedAtLimit){await saveProgress([...all.values()],tasks.length);}
+   const status=document.getElementById('quizStatus');
+   if(status)status.textContent=lang==='ja'?('取得可能なページの確認が完了しました。現在'+all.size.toLocaleString()+'作品を利用できます。取得済みデータはこのブラウザに保存されています。'):('All configured AniList pages have been checked. '+all.size.toLocaleString()+' anime are available and saved in this browser.');
+   await saveProgress([...all.values()],tasks.length);
    return {count:all.size,failures,completed};
   })().finally(()=>{backgroundLoadPromise=null});
  }
@@ -566,7 +564,7 @@ function titleOf(a){return lang==='ja'?(a.title.native||a.title.english||a.title
 function randomInt(maxExclusive){if(!Number.isSafeInteger(maxExclusive)||maxExclusive<=1)return 0;const cryptoSource=globalThis.crypto;if(cryptoSource?.getRandomValues){try{const range=0x100000000,limit=Math.floor(range/maxExclusive)*maxExclusive,buffer=new Uint32Array(1);do{cryptoSource.getRandomValues(buffer)}while(buffer[0]>=limit);return buffer[0]%maxExclusive}catch(e){}}return Math.floor(Math.random()*maxExclusive)}
 // Fisher–Yates: uniform shuffle without replacement over the currently loaded eligible catalogue.
 function shuffle(a){const out=[...a];for(let i=out.length-1;i>0;i--){const j=randomInt(i+1);[out[i],out[j]]=[out[j],out[i]]}return out}
-let animeLoadPromise=null;async function prepare(){if(animeLoadPromise)return animeLoadPromise;animeLoadPromise=(async()=>{ $('#quizStatus').textContent=tr('loading');$('#start').classList.add('hidden');try{pool=await fetchAnime();if(!pool.length)throw new Error('作品データが0件でした。');const poolProgress=$('#animePoolProgress');if(poolProgress)poolProgress.textContent=lang==='ja'?('現在利用可能：'+pool.length.toLocaleString()+' / 20,000作品。追加取得の進捗はここに表示されます。'):('Currently available: '+pool.length.toLocaleString()+' / 20,000 anime. Background progress will appear here.');$('#quizStatus').textContent=lang==='ja'?pool.length+'作品を読み込みました。クイズを開始できます。残りはバックグラウンドで追加します。':pool.length+' anime loaded. Ready to start; more are loading in the background.';$('#start').classList.remove('hidden');$('#start').textContent=tr('start');return pool}catch(e){console.error('Anime data loading failed:',e);$('#quizStatus').textContent=lang==='ja'?('読み込み失敗：'+e.message+' 「再読み込みして開始」を押して再試行してください。'):('Load failed: '+e.message+' Press retry to try again.');$('#start').classList.remove('hidden');$('#start').textContent=tr('retry');return []}finally{animeLoadPromise=null}})();return animeLoadPromise}
+let animeLoadPromise=null;async function prepare(){if(animeLoadPromise)return animeLoadPromise;animeLoadPromise=(async()=>{ $('#quizStatus').textContent=tr('loading');$('#start').classList.add('hidden');try{pool=await fetchAnime();if(!pool.length)throw new Error('作品データが0件でした。');const poolProgress=$('#animePoolProgress');if(poolProgress)poolProgress.textContent=lang==='ja'?('現在利用可能：'+pool.length.toLocaleString()+'作品。取得可能な作品をバックグラウンドで追加します。'):('Currently available: '+pool.length.toLocaleString()+' anime. More available entries are loading in the background.');$('#quizStatus').textContent=lang==='ja'?pool.length+'作品を読み込みました。クイズを開始できます。残りはバックグラウンドで追加します。':pool.length+' anime loaded. Ready to start; more are loading in the background.';$('#start').classList.remove('hidden');$('#start').textContent=tr('start');return pool}catch(e){console.error('Anime data loading failed:',e);$('#quizStatus').textContent=lang==='ja'?('読み込み失敗：'+e.message+' 「再読み込みして開始」を押して再試行してください。'):('Load failed: '+e.message+' Press retry to try again.');$('#start').classList.remove('hidden');$('#start').textContent=tr('retry');return []}finally{animeLoadPromise=null}})();return animeLoadPromise}
 function dateKey(d=new Date()){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function dailyOrder(list){const day=dateKey();const hash=s=>{let h=2166136261;for(const ch of s){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return h>>>0};return [...list].sort((a,b)=>hash(day+':'+a.id)-hash(day+':'+b.id))}
 let startRetryInProgress=false;function begin(){if(!pool.length){if(startRetryInProgress)return;startRetryInProgress=true;const status=$('#quizStatus');status.textContent=lang==='ja'?'作品データを読み込んでいます。完了したらクイズを自動的に開始します。':'Loading anime data. The quiz will start automatically when loading finishes.';$('#start').disabled=true;$('#start').textContent=tr('loading');prepare().then(()=>{if(pool.length)begin()}).finally(()=>{startRetryInProgress=false;$('#start').disabled=false});return}clearInterval(questionTimer);clearInterval(clockTimer);isPaused=false;pausedAt=0;totalPausedMs=0;pausedQuestionSeconds=0;$('#quizArea').inert=false;$('#pauseButton').classList.remove('hidden');$('#quitQuizButton').classList.remove('hidden');$('#pauseNotice').classList.add('hidden');$('#pauseButton').textContent=pauseButtonLabel(false);$('#setupControls').classList.add('hidden');$('#result').classList.add('hidden');reviewMode=false;missedQuestions=[];roundFailed=false;playMode=$('#playMode').value;prepareDifficultyTiers(pool);const mode=$('#modeSelect').value,format=(playMode==='daily'||playMode==='rush')?'choices':$('#answerFormatSelect').value;const eligible=(mode==='mixed'?pool.filter(a=>isUsableAnime(a)&&titleUsable(a)&&questionModeHasFourChoices(a,'image')):usablePool(mode,format)).filter(a=>matchesDifficulty(a,format)).filter(a=>format!=='typed'||typedTitleEligible(a));if(!eligible.length){clearInterval(questionTimer);clearInterval(clockTimer);locked=true;questions=[];index=0;isPaused=false;pausedAt=0;totalPausedMs=0;pausedQuestionSeconds=0;$('#quizArea').inert=false;$('#quizArea').classList.add('hidden');$('#pauseButton').classList.add('hidden');$('#quitQuizButton').classList.add('hidden');$('#pauseNotice').classList.add('hidden');$('#setupControls').classList.remove('hidden');$('#start').classList.remove('hidden');$('#start').disabled=false;$('#start').textContent=tr('start');$('#quizStatus').textContent=lang==='ja'?'この形式で出題できる作品がありません。出題形式や難易度を変更してください。':'No anime are available for this format. Change the question type or difficulty.';return}const ordered=playMode==='daily'?dailyOrder(eligible):shuffle(eligible);requestedQuestionCount=playMode==='endless'?Infinity:(playMode==='daily'||playMode==='rush')?10:(Number($('#questionCount').value)||10);const count=(playMode==='daily'||playMode==='rush')?Math.min(10,ordered.length):playMode==='endless'?ordered.length:Math.min(requestedQuestionCount,ordered.length);questions=ordered.slice(0,count);index=0;points=0;combo=0;bestCombo=0;choiceHintUsed=false;typedHintUsed=false;elapsedSeconds=0;startedAt=Date.now();$('#score').textContent=tr('score')+' 0';$('#quizArea').classList.remove('hidden');$('#start').classList.add('hidden');clockTimer=setInterval(()=>{elapsedSeconds=Math.floor((Date.now()-startedAt-totalPausedMs)/1000);$('#elapsedLabel').textContent=({ja:'経過時間：',en:'Elapsed: ',ko:'경과 시간: ',zh:'已用时间：',es:'Tiempo transcurrido: ',fr:'Temps écoulé : ',pt:'Tempo decorrido: ',de:'Verstrichene Zeit: '}[lang]||'Elapsed: ')+elapsedSeconds+({ja:'秒',en:'s',ko:'초',zh:'秒',es:' s',fr:' s',pt:' s',de:' s'}[lang]||'s')},250);showQuestion()}
