@@ -303,6 +303,10 @@ function runRecommendationSelfTests(){
   [{id:2,title:{native:'作品B',english:'Title B',romaji:'Title B'}},{id:3,title:{native:'作品A',english:'Another Title',romaji:'Another Title'}}]
  );
  check('推薦2枠で同じ作品IDを重複表示しない',deduplicateRecommendationGroups([{id:7,title:{native:'A'}}],[{id:7,title:{native:'B'}}]).discoveries.length===0);
+ check('好きな作品の日本語タイトルを完全一致で照合',matchesSeedTitle({title:{native:'葬送のフリーレン'}},'葬送のフリーレン'));
+ check('好きな作品の英語タイトルを完全一致で照合',matchesSeedTitle({title:{english:'Frieren: Beyond Journey’s End'}},'Frieren: Beyond Journey’s End'));
+ check('AniList登録の別名でも照合',matchesSeedTitle({title:{native:'作品A'},synonyms:['Alias A']},'Alias A'));
+ check('部分一致だけでは別作品を照合しない',!matchesSeedTitle({title:{native:'作品A 外伝'}},'作品A'));
  check('同じ推薦グループ内の同一IDも1回だけ表示',deduplicateRecommendationGroups([
   {id:8,title:{native:'作品A'}},{id:8,title:{native:'作品A'}}
  ],[]).closeMatches.length===1);
@@ -419,19 +423,23 @@ function parseTitleInput(id){
 }
 function normalizeSeedTitle(value){
  return String(value||'').toLocaleLowerCase().normalize('NFKC')
-  .replace(/[\s・：:!！?？。、,.'’"「」『』()（）［］【】_ｰ-]/g,'');
+  .replace(/[\\s・：:!！?？。、,.'’"「」『』()（）［］【】_ｰ-]/g,'');
+}
+function matchesSeedTitle(media,title){
+ const wanted=normalizeSeedTitle(title);
+ if(!wanted)return false;
+ const aliases=[media?.title?.native,media?.title?.english,media?.title?.romaji,...(Array.isArray(media?.synonyms)?media.synonyms:[])];
+ return aliases.some(alias=>normalizeSeedTitle(alias)===wanted);
 }
 async function findSeedAnime(title){
- const query='query ($search:String) { Page(perPage:10) { media(search:$search,type:ANIME,isAdult:false,sort:SEARCH_MATCH) { id title { romaji english native } genres tags { name rank isMediaSpoiler } } } }';
+ const query='query ($search:String) { Page(perPage:10) { media(search:$search,type:ANIME,isAdult:false,sort:SEARCH_MATCH) { id title { romaji english native } synonyms genres tags { name rank isMediaSpoiler } } } }';
  try{
   const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query,variables:{search:title}}),signal:AbortSignal.timeout(10000)});
   const json=await response.json().catch(()=>null);
   if(!response.ok||json?.errors?.length)return null;
   const candidates=json?.data?.Page?.media||[];
-  const wanted=normalizeSeedTitle(title);
-  // 検索順位だけで別作品を採用しないよう、タイトル完全一致だけを使用する。
-  return candidates.find(media=>[media?.title?.native,media?.title?.english,media?.title?.romaji]
-   .some(alias=>normalizeSeedTitle(alias)===wanted))||null;
+  // 日本語・英語・ローマ字タイトルに加え、AniList登録の別名も完全一致で照合する。
+  return candidates.find(media=>matchesSeedTitle(media,title))||null;
  }catch(_){return null}
 }
 async function getRecommendations(profile){
