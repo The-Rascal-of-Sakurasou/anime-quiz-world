@@ -840,12 +840,16 @@ function renderPlayerLeaderboard(){
  rows.replaceChildren();
  if(!data.length){message(statusEl,aqwPlayerT('empty'));return}
  message(statusEl,aqwPlayerT('unverified')+(mode==='accuracy'?' '+aqwPlayerT('minAccuracy'):''));
+ let previousMetric=null,currentRank=0;
  data.slice(0,20).forEach((item,index)=>{
+  const currentMetric=metric(item);
+  if(currentMetric!==previousMetric)currentRank=index+1;
+  previousMetric=currentMetric;
   const profile={username:item.username,display_name:item.display_name};
   const trEl=document.createElement('tr');
   if(currentUser?.id===item.user_id)trEl.classList.add('is-me');
-  if(index<3)trEl.classList.add('podium-'+(index+1));
-  const rank=document.createElement('td');rank.className='rank-cell'+(index<3?' podium-'+(index+1):'');rank.textContent=String(index+1);
+  if(currentRank<=3)trEl.classList.add('podium-'+currentRank);
+  const rank=document.createElement('td');rank.className='rank-cell'+(currentRank<=3?' podium-'+currentRank:'');rank.textContent=String(currentRank);
   const player=document.createElement('td');
   const name=document.createElement('span');name.className='player-name';name.textContent=profile?.display_name||profile?.username||aqwPlayerT('player');
   const handle=document.createElement('span');handle.className='player-handle';handle.textContent='@'+(profile?.username||'user')+(currentUser?.id===item.user_id?' · '+aqwRushT('you'):'');
