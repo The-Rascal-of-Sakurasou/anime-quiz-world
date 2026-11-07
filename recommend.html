@@ -34,8 +34,11 @@
 <section id="results" class="hidden">
 <div class="results-head"><div class="eyebrow">YOUR ANIME PROFILE</div><h2>診断結果</h2><p id="resultIntro"></p></div>
 <div class="profile"><strong id="profileTitle"></strong><span id="profileDescription"></span><div class="chips" id="profileChips"></div></div>
-<h2>おすすめ作品</h2><p class="status" id="resultStatus">診断結果との相性をもとに並べています。</p>
+<h2>好みにかなり近い作品</h2><p class="status">診断との一致度が高い作品を中心に選んでいます。</p>
 <div class="cards" id="animeCards"></div>
+<h2 style="margin-top:30px">意外なおすすめ</h2><p class="status">好みとの共通点を保ちつつ、人気度が比較的低い作品から選んでいます。知らない作品との出会いを目的とした枠です。</p>
+<div class="cards" id="discoveryCards"></div>
+<p class="status" id="resultStatus">診断結果との相性をもとに並べています。</p>
 <div class="actions"><button id="retry" type="button">もう一度診断する</button><a href="./index.html">クイズに戻る</a></div>
 </section>
 <div id="error" class="status hidden" role="alert"></div>
@@ -164,7 +167,14 @@ async function getRecommendations(profile){
   // 人気度・評価は好みとの一致点に加算せず、同点時の並べ替えだけに使う。
   return {...a,_score:score,_reasons:reasons,_quality:Number(a.averageScore)||0,_popularity:Number(a.popularity)||0};
  }).filter(a=>!favoriteIds.has(a.id)&&!dislikedIds.has(a.id)).sort((a,b)=>b._score-a._score||b._quality-a._quality||b._popularity-a._popularity);
- return scored.slice(0,8);
+ const closeMatches=scored.slice(0,4);
+ const selectedIds=new Set(closeMatches.map(a=>a.id));
+ const bestScore=scored[0]?scored[0]._score:0;
+ const minimumDiscoveryScore=bestScore>0?bestScore*0.55:bestScore-5;
+ const discoveries=scored.filter(a=>!selectedIds.has(a.id)&&a._score>=minimumDiscoveryScore)
+  .sort((a,b)=>a._popularity-b._popularity||b._score-a._score||b._quality-a._quality)
+  .slice(0,4);
+ return {closeMatches,discoveries};
 }
 function buildProfile(profile){
  const top=Object.entries(profile.genres).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]);
@@ -175,15 +185,21 @@ function buildProfile(profile){
  $('profileChips').replaceChildren();
  [...top.map(g=>names[g]||g),...traits].forEach(t=>{const span=document.createElement('span');span.className='chip';span.textContent=t;$('profileChips').append(span)});
 }
-function renderCards(items){
- $('animeCards').replaceChildren();
- if(!items.length){$('resultStatus').textContent='条件に合う作品を十分に取得できませんでした。回答を変えて再診断してください。';return}
- $('resultStatus').textContent='回答との相性をもとにした候補です。順位は作品の優劣を示すものではありません。';
- items.forEach((a,i)=>{const card=document.createElement('article');card.className='anime';const img=document.createElement('img');img.loading='lazy';img.src=a.coverImage.extraLarge||a.coverImage.large;img.alt=(a.title.native||a.title.english||a.title.romaji||'Anime')+' cover';const body=document.createElement('div');body.className='anime-body';const h=document.createElement('h3');h.textContent=(i+1)+'. '+(a.title.native||a.title.english||a.title.romaji);const meta=document.createElement('small');meta.textContent=[a.seasonYear||'年不明',a.format,a.episodes?(a.episodes+'話'):'話数不明',a.averageScore?'評価 '+a.averageScore+'/100':null].filter(Boolean).join(' · ');const score=document.createElement('div');score.className='score';score.textContent='好みとの一致度 '+a._score.toFixed(1);const reason=document.createElement('p');reason.className='match-reason';reason.textContent=a._reasons?.length?a._reasons.join('。')+'。':'選択した条件と作品データをもとに選出';const desc=document.createElement('p');desc.textContent=String(a.description||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').slice(0,220);const link=document.createElement('a');link.href=a.siteUrl||'https://anilist.co/anime/'+a.id;link.target='_blank';link.rel='noopener noreferrer';link.textContent='作品情報を見る ↗';body.append(h,meta,score,reason,desc,link);card.append(img,body);$('animeCards').append(card)});
+function renderCardList(containerId,items){
+ const container=$(containerId);container.replaceChildren();
+ items.forEach((a,i)=>{const card=document.createElement('article');card.className='anime';const img=document.createElement('img');img.loading='lazy';img.src=a.coverImage.extraLarge||a.coverImage.large;img.alt=(a.title.native||a.title.english||a.title.romaji||'Anime')+' cover';const body=document.createElement('div');body.className='anime-body';const h=document.createElement('h3');h.textContent=(i+1)+'. '+(a.title.native||a.title.english||a.title.romaji);const meta=document.createElement('small');meta.textContent=[a.seasonYear||'年不明',a.format,a.episodes?(a.episodes+'話'):'話数不明',a.averageScore?'評価 '+a.averageScore+'/100':null].filter(Boolean).join(' · ');const score=document.createElement('div');score.className='score';score.textContent='好みとの一致度 '+a._score.toFixed(1);const reason=document.createElement('p');reason.className='match-reason';reason.textContent=a._reasons?.length?a._reasons.join('。')+'。':'選択した条件と作品データをもとに選出';const desc=document.createElement('p');desc.textContent=String(a.description||'').replace(/<[^>]*>/g,' ').replace(/\\s+/g,' ').slice(0,220);const link=document.createElement('a');link.href=a.siteUrl||'https://anilist.co/anime/'+a.id;link.target='_blank';link.rel='noopener noreferrer';link.textContent='作品情報を見る ↗';body.append(h,meta,score,reason,desc,link);card.append(img,body);container.append(card)});
+}
+function renderCards(result){
+ renderCardList('animeCards',result.closeMatches);
+ renderCardList('discoveryCards',result.discoveries);
+ if(!result.closeMatches.length&&!result.discoveries.length){$('resultStatus').textContent='条件に合う作品を十分に取得できませんでした。回答を変えて再診断してください。';return}
+ if(!result.closeMatches.length)$('animeCards').innerHTML='<p class="status">一致度の高い候補は見つかりませんでした。</p>';
+ if(!result.discoveries.length)$('discoveryCards').innerHTML='<p class="status">今回の候補群では、相性を保った意外な作品を見つけられませんでした。</p>';
+ $('resultStatus').textContent='「意外なおすすめ」は候補群内で人気度が比較的低い作品です。人気度はAniListの登録・利用状況に基づく目安で、作品の質を示すものではありません。';
 }
 async function finish(){
  $('diagnosis').classList.add('hidden');$('error').classList.add('hidden');$('loading').classList.remove('hidden');
- try{const profile=profileFromAnswers();buildProfile(profile);const items=await getRecommendations(profile);renderCards(items);const favCount=parseTitleInput('favoriteTitles').length,disCount=parseTitleInput('dislikedTitles').length;$('resultIntro').textContent='6つの回答'+(favCount||disCount?'と、入力された好き・苦手な作品':'')+'をもとに分析しました。各作品の推薦理由も確認できます。';$('loading').classList.add('hidden');$('results').classList.remove('hidden');window.scrollTo({top:0,behavior:'smooth'})}
+ try{const profile=profileFromAnswers();buildProfile(profile);const result=await getRecommendations(profile);renderCards(result);const favCount=parseTitleInput('favoriteTitles').length,disCount=parseTitleInput('dislikedTitles').length;$('resultIntro').textContent='6つの回答'+(favCount||disCount?'と、入力された好き・苦手な作品':'')+'をもとに分析しました。各作品の推薦理由も確認できます。';$('loading').classList.add('hidden');$('results').classList.remove('hidden');window.scrollTo({top:0,behavior:'smooth'})}
  catch(e){$('loading').classList.add('hidden');$('diagnosis').classList.remove('hidden');$('error').textContent=e.message||'予期しないエラーが発生しました。';$('error').classList.remove('hidden')}
 }
 $('back').addEventListener('click',()=>{if(step>0){step--;render()}});
