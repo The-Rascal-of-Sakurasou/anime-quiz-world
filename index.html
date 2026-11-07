@@ -344,7 +344,7 @@ function matchesDifficulty(a,format){const tier=difficultyModes();return tier===
 function updateDifficultyUI(){
  const select=$('#difficultySelect'),label=$('#difficultyLabel'),help=$('#difficultyHelp');if(!select||!label)return;
  const names={
- ja:{label:'作品の知名度',all:'すべて',easy:'超高知名度',medium:'高知名度',hard:'その他',desc:{all:'知名度を問わず出題します。',easy:'AniList人気値150,000以上。幅広く知られる定番作品が中心です。',medium:'AniList人気値30,000以上100,000未満。人気作・話題作が中心です。',hard:'AniList人気値30,000未満。中小規模の人気作や知る人ぞ知る作品が含まれます。',disabled:'知名度設定は「ランダム出題」でのみ有効です。'}},
+ ja:{label:'作品の知名度',all:'すべて',easy:'超高知名度',medium:'高知名度',hard:'その他',desc:{all:'知名度を問わず出題します。',easy:'AniList人気値150,000以上。幅広く知られる定番作品が中心です。',medium:'AniList人気値15,000以上150,000未満。人気作から中堅作品までが対象です。',hard:'AniList人気値15,000未満。知る人ぞ知る作品が中心です。',disabled:'知名度設定は「ランダム出題」でのみ有効です。'}},
  en:{label:'Popularity',all:'All',easy:'Very popular',medium:'Popular',hard:'Other',desc:{all:'All popularity levels.',easy:'AniList popularity: 150,000 or more.',medium:'AniList popularity: 15,000–149,999.',hard:'AniList popularity: below 15,000.',disabled:'Difficulty is available only in random mode.'}},
  ko:{label:'인지도',all:'전체',easy:'매우 높음',medium:'높음',hard:'그 외',desc:{all:'모든 인지도 작품을 출제합니다.',easy:'AniList 인기도 150,000 이상.',medium:'AniList 인기도 15,000~149,999.',hard:'AniList 인기도 15,000 미만.',disabled:'난이도는 무작위 모드에서만 사용할 수 있습니다.'}},
  zh:{label:'知名度',all:'全部',easy:'极高',medium:'高',hard:'其他',desc:{all:'包含所有知名度的作品。',easy:'AniList人气值150,000以上。',medium:'AniList人气值15,000至149,999。',hard:'AniList人气值低于15,000。',disabled:'难度设置仅在随机出题模式下生效。'}},
