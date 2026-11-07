@@ -114,15 +114,20 @@ function titleKey(media){
  return [media?.title?.native,media?.title?.english,media?.title?.romaji].filter(Boolean).map(x=>x.toLocaleLowerCase().replace(/[\\s・：:!！?？]/g,''));
 }
 async function getRecommendations(profile){
- const query='query ($page:Int,$genres:[String]) { Page(page:$page,perPage:50) { media(type:ANIME,sort:POPULARITY_DESC,isAdult:false,genre_in:$genres) { id format title { romaji english native } description(asHtml:false) coverImage { extraLarge large } episodes seasonYear averageScore popularity genres tags { name rank isMediaSpoiler } siteUrl } } }';
- const fetchPage=async page=>{
-  const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query,variables:{page,genres:Object.keys(profile.genres)}}),signal:AbortSignal.timeout(15000)});
+ const query='query ($page:Int,$genres:[String],$sort:[MediaSort]) { Page(page:$page,perPage:50) { media(type:ANIME,sort:$sort,isAdult:false,genre_in:$genres) { id format title { romaji english native } description(asHtml:false) coverImage { extraLarge large } episodes seasonYear averageScore popularity genres tags { name rank isMediaSpoiler } siteUrl } } }';
+ const fetchPage=async (page,sort)=>{
+  const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query,variables:{page,sort:[sort],genres:Object.keys(profile.genres)}}),signal:AbortSignal.timeout(15000)});
   const json=await response.json().catch(()=>null);
   if(!response.ok||json?.errors?.length||!json?.data?.Page)throw new Error('作品データの取得に失敗しました（HTTP '+response.status+'）。時間をおいて再試行してください。');
   return json.data.Page.media||[];
  };
- // AniListのPage.perPage上限は50。4ページから最大200作品を候補にし、ID重複を除く。
- const pages=await Promise.all([1,2,3,4].map(fetchPage));
+ // 4種類の並び順から各3ページ（最大600件）を取得。1回につき3リクエストに抑え、重複IDを統合する。
+ const sortModes=['POPULARITY_DESC','SCORE_DESC','TRENDING_DESC','START_DATE_DESC'];
+ const pages=[];
+ for(const sort of sortModes){
+  const batch=await Promise.all([1,2,3].map(page=>fetchPage(page,sort)));
+  pages.push(...batch);
+ }
  const items=[...new Map(pages.flat().map(a=>[a.id,a])).values()];
  const [favoriteNames,dislikedNames]=[parseTitleInput('favoriteTitles'),parseTitleInput('dislikedTitles')];
  const favoriteSeeds=[],dislikedSeeds=[];
