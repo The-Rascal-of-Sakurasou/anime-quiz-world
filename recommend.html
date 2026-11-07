@@ -75,6 +75,12 @@ window.addEventListener("error",event=>{const box=document.getElementById("error
 window.addEventListener("unhandledrejection",event=>{const box=document.getElementById("error");if(box){const reason=event.reason;box.textContent="診断処理でエラーが発生しました："+(reason&&reason.message?reason.message:String(reason||"詳細不明"));box.classList.remove("hidden");}});
 </script>
 <script>
+const safeStorage={
+ getItem(key){try{return window.localStorage.getItem(key)}catch(_){return null}},
+ setItem(key,value){try{window.localStorage.setItem(key,String(value));return true}catch(_){return false}},
+ removeItem(key){try{window.localStorage.removeItem(key);return true}catch(_){return false}},
+ keys(){try{return Object.keys(window.localStorage)}catch(_){return []}}
+};
 const API='https://graphql.anilist.co';
 const questions=[
 {title:'どんなジャンルの物語に惹かれますか？',help:'作品のジャンルとして最も見たいものを選んでください。',options:[
@@ -143,7 +149,7 @@ const SAVE_KEY='aqw-recommendation-v1';
 const FEEDBACK_KEY='aqw-recommendation-feedback-v1';
 const EVALUATION_HISTORY_KEY='aqw-recommendation-evaluation-history-v1';
 function readRecommendationFeedback(){
- try{const value=JSON.parse(localStorage.getItem(FEEDBACK_KEY)||'{}');return value&&typeof value==='object'&&!Array.isArray(value)?value:{}}
+ try{const value=JSON.parse(safeStorage.getItem(FEEDBACK_KEY)||'{}');return value&&typeof value==='object'&&!Array.isArray(value)?value:{}}
  catch(_){return {}}
 }
 function writeRecommendationFeedback(id,value,context={}){
@@ -151,15 +157,15 @@ function writeRecommendationFeedback(id,value,context={}){
  const previous=feedback[String(id)]||{};
  feedback[String(id)]={...previous,...context,value,updatedAt:Date.now()};
  const entries=Object.entries(feedback).sort((a,b)=>(b[1]?.updatedAt||0)-(a[1]?.updatedAt||0)).slice(0,300);
- try{localStorage.setItem(FEEDBACK_KEY,JSON.stringify(Object.fromEntries(entries)));return true}catch(_){return false}
+ try{safeStorage.setItem(FEEDBACK_KEY,JSON.stringify(Object.fromEntries(entries)));return true}catch(_){return false}
 }
 function readRecommendationEvaluationHistory(){
- try{const value=JSON.parse(localStorage.getItem(EVALUATION_HISTORY_KEY)||'[]');return Array.isArray(value)?value.filter(item=>item&&['like','dislike'].includes(item.value)&&typeof item.sessionId==='string'):[]}catch(_){return []}
+ try{const value=JSON.parse(safeStorage.getItem(EVALUATION_HISTORY_KEY)||'[]');return Array.isArray(value)?value.filter(item=>item&&['like','dislike'].includes(item.value)&&typeof item.sessionId==='string'):[]}catch(_){return []}
 }
 function writeRecommendationEvaluation(event){
  const history=readRecommendationEvaluationHistory().filter(item=>!(item.sessionId===event.sessionId&&item.animeId===event.animeId));
  if(['like','dislike'].includes(event.value))history.push({...event,recordedAt:Date.now()});
- try{localStorage.setItem(EVALUATION_HISTORY_KEY,JSON.stringify(history.slice(-1000)));return true}catch(_){return false}
+ try{safeStorage.setItem(EVALUATION_HISTORY_KEY,JSON.stringify(history.slice(-1000)));return true}catch(_){return false}
 }
 function calculateSessionNdcg(events,group){
  const judged=events.filter(item=>['like','dislike'].includes(item.value)&&item.group===group&&Number.isInteger(Number(item.rank))&&Number(item.rank)>0);
@@ -392,12 +398,12 @@ function runRecommendationSelfTests(){
 }
 
 function saveDiagnosis(result=null){
- try{const data={v:2,savedAt:new Date().toISOString(),answers:[...answers],favorite:$('favoriteTitles').value.slice(0,180),disliked:$('dislikedTitles').value.slice(0,180),result};localStorage.setItem(SAVE_KEY,JSON.stringify(data));}
+ try{const data={v:2,savedAt:new Date().toISOString(),answers:[...answers],favorite:$('favoriteTitles').value.slice(0,180),disliked:$('dislikedTitles').value.slice(0,180),result};safeStorage.setItem(SAVE_KEY,JSON.stringify(data));}
  catch(e){$('shareStatus').textContent='保存できませんでした。ブラウザの保存容量や設定を確認してください。';}
 }
 function restoreSavedDiagnosis(){
  try{
-  const raw=localStorage.getItem(SAVE_KEY);if(!raw)return false;
+  const raw=safeStorage.getItem(SAVE_KEY);if(!raw)return false;
   const data=JSON.parse(raw);
   if(![1,2].includes(data?.v)||!Array.isArray(data.answers)||![6,10].includes(data.answers.length)||data.answers.length>questions.length||!data.answers.every((n,i)=>n===null||(Number.isInteger(n)&&n>=0&&n<questions[i].options.length))||typeof data.favorite!=='string'||typeof data.disliked!=='string')return false;
   const restoredAnswers=[...data.answers,...Array(questions.length-data.answers.length).fill(null)];
@@ -410,7 +416,7 @@ function restoreSavedDiagnosis(){
  }catch(_){return false}
 }
 function clearSavedDiagnosis(){
- try{localStorage.removeItem(SAVE_KEY);answers.fill(null);step=0;$('favoriteTitles').value='';$('dislikedTitles').value='';$('results').classList.add('hidden');$('diagnosis').classList.remove('hidden');$('error').classList.add('hidden');$('progressBar').style.width='0%';history.replaceState(null,'',location.pathname+location.search);render();$('shareStatus').textContent='このブラウザに保存された診断データを削除しました。';}
+ try{safeStorage.removeItem(SAVE_KEY);answers.fill(null);step=0;$('favoriteTitles').value='';$('dislikedTitles').value='';$('results').classList.add('hidden');$('diagnosis').classList.remove('hidden');$('error').classList.add('hidden');$('progressBar').style.width='0%';history.replaceState(null,'',location.pathname+location.search);render();$('shareStatus').textContent='このブラウザに保存された診断データを削除しました。';}
  catch(_){$('shareStatus').textContent='保存データを削除できませんでした。';}
 }
 const $=id=>document.getElementById(id);
