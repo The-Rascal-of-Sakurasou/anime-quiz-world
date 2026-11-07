@@ -243,6 +243,9 @@ function runRecommendationSelfTests(){
  const metrics={favoriteSimilarity:3,dislikedSimilarity:1,favoriteGenreMatches:2,favoriteTagMatches:3,selectedGenreMatches:1,selectedTagMatches:2};
  check('類似度メトリクスは数値として保存可能',Object.values(metrics).every(Number.isFinite));
  check('類似度スコアの範囲は0〜8.5',metrics.favoriteSimilarity>=0&&metrics.favoriteSimilarity<=8.5);
+ const jaccard=(a,b)=>{const left=new Set(a),right=new Set(b),union=new Set([...left,...right]);return union.size?[...left].filter(x=>right.has(x)).length/union.size:0};
+ check('多様性指標は完全一致で1',jaccard(['Fantasy','Action'],['Fantasy','Action'])===1);
+ check('多様性指標は共通要素なしで0',jaccard(['Fantasy'],['Comedy'])===0);
  return tests;
 }
 
@@ -463,16 +466,28 @@ async function getRecommendations(profile){
     const candidate=pool[i];
     const genres=new Set(candidate.genres||[]);
     const tags=new Set((candidate.tags||[]).filter(t=>!t.isMediaSpoiler&&t.rank>=40).map(t=>t.name));
-    let overlap=0;
+    let maxSimilarity=0,genreConcentration=0;
     for(const chosen of selected){
-     const sharedGenres=(chosen.genres||[]).filter(g=>genres.has(g)).length;
+     const chosenGenres=new Set(chosen.genres||[]);
      const chosenTags=new Set((chosen.tags||[]).filter(t=>!t.isMediaSpoiler&&t.rank>=40).map(t=>t.name));
-     let sharedTags=0;for(const tag of tags)if(chosenTags.has(tag))sharedTags++;
-     overlap+=sharedGenres*1.15+sharedTags*0.22;
+     const sharedGenres=[...genres].filter(g=>chosenGenres.has(g)).length;
+     const sharedTags=[...tags].filter(t=>chosenTags.has(t)).length;
+     const genreUnion=new Set([...genres,...chosenGenres]).size;
+     const tagUnion=new Set([...tags,...chosenTags]).size;
+     const genreSimilarity=genreUnion?sharedGenres/genreUnion:0;
+     const tagSimilarity=tagUnion?sharedTags/tagUnion:0;
+     const similarity=genreSimilarity*0.65+tagSimilarity*0.35;
+     maxSimilarity=Math.max(maxSimilarity,similarity);
+    }
+    for(const genre of genres){
+     const occurrences=selected.filter(chosen=>(chosen.genres||[]).includes(genre)).length;
+     genreConcentration=Math.max(genreConcentration,occurrences);
     }
     const popularity=Number(candidate._popularity)||0;
     const novelty=discovery?Math.max(0,1-Math.log(popularity+1)/Math.log(maxPopularity)):0;
-    const value=candidate._score-overlap+novelty*0.8;
+    // 生の共通数ではなく集合の重なり率を使い、作品ごとのタグ数の差を補正する。
+    const redundancyPenalty=maxSimilarity*5.5+genreConcentration*0.7;
+    const value=candidate._score-redundancyPenalty+novelty*0.8;
     if(value>bestValue){bestValue=value;bestIndex=i}
    }
    selected.push(pool.splice(bestIndex,1)[0]);
@@ -813,7 +828,15 @@ function renderCards(result){
  if(report.unresolvedFavorites?.length)notices.push('完全一致で確認できなかった「好きな作品」：'+report.unresolvedFavorites.join('、'));
  if(report.unresolvedDislikes?.length)notices.push('完全一致で確認できなかった「苦手な作品」：'+report.unresolvedDislikes.join('、'));
  if(report.conflicts?.length)notices.push('好き・苦手の両方に入力された作品は、傾向分析から除外しました：'+report.conflicts.join('、'));
- $('resultStatus').textContent='相性スコアは推薦処理内の比較用数値で、百分率や客観的な作品評価ではありません。「意外なおすすめ」は候補群内で人気度が比較的低い作品です。人気度は作品データ上の登録・利用状況に基づく目安で、作品の質を示すものではありません。'+(notices.length?' 入力作品の確認：'+notices.join('／'):' 入力された好き・苦手の作品はタイトル完全一致で照合し、推薦傾向に反映しました。');
+ const allRecommended=[...(result.closeMatches||[]),...(result.discoveries||[])];
+ const uniqueGenres=new Set(allRecommended.flatMap(a=>Array.isArray(a.genres)?a.genres:[]));
+ const uniqueTags=new Set(allRecommended.flatMap(a=>(a.tags||[]).filter(t=>!t.isMediaSpoiler&&t.rank>=40).map(t=>t.name)));
+ const genreCounts=new Map();allRecommended.forEach(a=>(a.genres||[]).forEach(g=>genreCounts.set(g,(genreCounts.get(g)||0)+1)));
+ const mostCommonGenre=[...genreCounts.entries()].sort((a,b)=>b[1]-a[1])[0];
+ const diversityNote=allRecommended.length
+  ?' 推薦8枠の実際の分布：ジャンル '+uniqueGenres.size+'種類、物語タグ '+uniqueTags.size+'種類。'+(mostCommonGenre?'最多ジャンル「'+mostCommonGenre[0]+'」は '+mostCommonGenre[1]+'作品に含まれます。':'')
+  :'';
+ $('resultStatus').textContent='相性スコアは推薦処理内の比較用数値で、百分率や客観的な作品評価ではありません。「意外なおすすめ」は候補群内で人気度が比較的低い作品です。人気度は作品データ上の登録・利用状況に基づく目安で、作品の質を示すものではありません。'+diversityNote+(notices.length?' 入力作品の確認：'+notices.join('／'):' 入力された好き・苦手の作品はタイトル完全一致で照合し、推薦傾向に反映しました。');
 }
 async function finish(){
  $('diagnosis').classList.add('hidden');$('error').classList.add('hidden');$('loading').classList.remove('hidden');
