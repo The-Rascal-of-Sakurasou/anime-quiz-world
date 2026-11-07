@@ -403,8 +403,8 @@ async function fetchAnime(vars={}){
     for(let page=1;page<=100;page++)list.push(['POPULARITY_DESC',page,'fill']);
     for(let page=1;page<=100;page++)list.push(['ID',page,'fill']);
     for(let page=1;page<=100;page++)list.push(['ID_DESC',page,'fill']);
-    for(const sort of ['SCORE_DESC','FAVOURITES_DESC'])for(let page=1;page<=80;page++)list.push([sort,page,'fill']);
-    for(const sort of ['TRENDING_DESC','START_DATE_DESC'])for(let page=1;page<=60;page++)list.push([sort,page,'fill']);
+    for(const sort of ['SCORE_DESC','FAVOURITES_DESC'])for(let page=1;page<=100;page++)list.push([sort,page,'fill']);
+    for(const sort of ['TRENDING_DESC','START_DATE_DESC'])for(let page=1;page<=100;page++)list.push([sort,page,'fill']);
     return list;
    };
    // Keep the exact task plan and cursor in IndexedDB so reloading the page resumes rather than restarting.
