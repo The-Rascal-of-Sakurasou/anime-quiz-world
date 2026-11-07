@@ -8,7 +8,7 @@
 <title>おすすめアニメ診断 | Anime Quiz World</title>
 <style>
 :root{color-scheme:light;--bg:#f5f6f8;--panel:#fff;--text:#20242b;--muted:#68717d;--accent:#315b9a;--line:#dfe3e8;--soft:#edf3fb}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Noto Sans JP","Yu Gothic",Meiryo,sans-serif;line-height:1.65}button,select{font:inherit}button{cursor:pointer;border:1px solid var(--line);border-radius:8px;padding:11px 16px;background:#fff;color:var(--text);font-weight:650}button:hover{background:var(--soft);border-color:#b7c5d9}button:disabled{opacity:.55;cursor:default}.wrap{width:min(1000px,calc(100% - 32px));margin:auto}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:20px 0;border-bottom:1px solid var(--line)}.brand{font-weight:800;font-size:1.25rem}.brand span{color:var(--accent)}a{color:var(--accent)}.hero{padding:28px 0 20px}.eyebrow{font-size:.82rem;color:var(--muted);font-weight:750;letter-spacing:.08em}.hero h1{font-size:clamp(1.8rem,4vw,2.5rem);line-height:1.25;margin:8px 0}.hero p{color:var(--muted);max-width:720px;margin:0}.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:clamp(18px,3vw,30px);box-shadow:0 2px 8px #1d293908}.progress{height:7px;border-radius:9px;background:#e9edf2;overflow:hidden;margin:0 0 24px}.progress>div{height:100%;width:0;background:var(--accent);transition:width .2s}.question{margin:0 0 20px}.question h2{font-size:1.18rem;margin:0 0 5px}.question p{color:var(--muted);margin:0;font-size:.94rem}.choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:18px}.choice{min-height:74px;text-align:left;padding:14px 16px;display:flex;gap:12px;align-items:center}.choice .n{display:grid;place-items:center;width:30px;height:30px;flex:0 0 30px;border-radius:50%;background:var(--soft);color:var(--accent);font-weight:800}.choice.selected{border-color:var(--accent);background:var(--soft);box-shadow:inset 0 0 0 1px var(--accent)}.actions{display:flex;justify-content:space-between;gap:10px;margin-top:24px}.save-note{font-size:.86rem;color:var(--muted);margin:14px 0 4px}.primary{background:var(--accent);border-color:var(--accent);color:white}.primary:hover{background:#254879}.hidden{display:none!important}.status{color:var(--muted);margin:12px 0}.results-head{margin-bottom:20px}.results-head h2{margin:5px 0}.profile{background:var(--soft);border-radius:10px;padding:16px;margin:16px 0}.profile strong{display:block;font-size:1.08rem}.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}.chip{border:1px solid #d4deeb;background:#fff;color:#38557e;border-radius:30px;padding:4px 10px;font-size:.84rem}.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.anime{min-width:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}.anime img{width:100%;aspect-ratio:2/3;object-fit:cover;display:block;background:#e9edf2}.anime-body{padding:11px}.anime h3{font-size:.96rem;line-height:1.4;margin:0 0 7px}.anime small{color:var(--muted)}.score{font-size:.82rem;color:var(--accent);font-weight:750}.anime p{font-size:.84rem;color:var(--muted);margin:8px 0 0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.reason-details{display:grid;gap:8px;margin-top:10px}.reason-detail{padding:8px;border-radius:7px;background:#f2f6fb}.reason-detail.adjustment{background:#fbf4ed}.reason-detail strong{font-size:.78rem;display:block;margin-bottom:5px}.reason-chips{display:flex;flex-wrap:wrap;gap:5px}.reason-chip{font-size:.75rem;border:1px solid #d7e0eb;border-radius:20px;padding:2px 7px;background:#fff;color:#46566b}.anime a{display:inline-block;margin-top:10px;font-size:.85rem;font-weight:700}.share-panel{margin:22px 0;padding:16px;border:1px solid var(--line);border-radius:10px;background:#f8faff}.share-panel>strong{font-size:1rem}.share-panel>p{font-size:.88rem;color:var(--muted);margin:5px 0 12px}.share-actions{display:flex;flex-wrap:wrap;gap:8px}.share-panel .status{min-height:1.4em;margin:8px 0 0}.foot{color:var(--muted);font-size:.82rem;margin:20px 0 34px}.loading{padding:32px;text-align:center;color:var(--muted)}@media(max-width:620px){.preference-inputs{grid-template-columns:1fr!important}}@media(max-width:720px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:480px){.choices{grid-template-columns:1fr}.wrap{width:calc(100% - 20px)}.top{padding:14px 0}.cards{gap:9px}.anime-body{padding:9px}.anime h3{font-size:.9rem}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Noto Sans JP","Yu Gothic",Meiryo,sans-serif;line-height:1.65}button,select{font:inherit}button{cursor:pointer;border:1px solid var(--line);border-radius:8px;padding:11px 16px;background:#fff;color:var(--text);font-weight:650}button:hover{background:var(--soft);border-color:#b7c5d9}button:disabled{opacity:.55;cursor:default}.wrap{width:min(1000px,calc(100% - 32px));margin:auto}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:20px 0;border-bottom:1px solid var(--line)}.brand{font-weight:800;font-size:1.25rem}.brand span{color:var(--accent)}a{color:var(--accent)}.hero{padding:28px 0 20px}.eyebrow{font-size:.82rem;color:var(--muted);font-weight:750;letter-spacing:.08em}.hero h1{font-size:clamp(1.8rem,4vw,2.5rem);line-height:1.25;margin:8px 0}.hero p{color:var(--muted);max-width:720px;margin:0}.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:clamp(18px,3vw,30px);box-shadow:0 2px 8px #1d293908}.progress{height:7px;border-radius:9px;background:#e9edf2;overflow:hidden;margin:0 0 24px}.progress>div{height:100%;width:0;background:var(--accent);transition:width .2s}.question{margin:0 0 20px}.question h2{font-size:1.18rem;margin:0 0 5px}.question p{color:var(--muted);margin:0;font-size:.94rem}.choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:18px}.choice{min-height:74px;text-align:left;padding:14px 16px;display:flex;gap:12px;align-items:center}.choice .n{display:grid;place-items:center;width:30px;height:30px;flex:0 0 30px;border-radius:50%;background:var(--soft);color:var(--accent);font-weight:800}.choice.selected{border-color:var(--accent);background:var(--soft);box-shadow:inset 0 0 0 1px var(--accent)}.actions{display:flex;justify-content:space-between;gap:10px;margin-top:24px}.save-note{font-size:.86rem;color:var(--muted);margin:14px 0 4px}.primary{background:var(--accent);border-color:var(--accent);color:white}.primary:hover{background:#254879}.hidden{display:none!important}.status{color:var(--muted);margin:12px 0}.results-head{margin-bottom:20px}.results-head h2{margin:5px 0}.profile{background:var(--soft);border-radius:10px;padding:16px;margin:16px 0}.profile strong{display:block;font-size:1.08rem}.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}.chip{border:1px solid #d4deeb;background:#fff;color:#38557e;border-radius:30px;padding:4px 10px;font-size:.84rem}.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.anime{min-width:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}.anime img{width:100%;aspect-ratio:2/3;object-fit:cover;display:block;background:#e9edf2}.anime-body{padding:11px}.anime h3{font-size:.96rem;line-height:1.4;margin:0 0 7px}.anime small{color:var(--muted)}.score{font-size:.82rem;color:var(--accent);font-weight:750}.anime p{font-size:.84rem;color:var(--muted);margin:8px 0 0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.reason-details{display:grid;gap:8px;margin-top:10px}.reason-detail{padding:8px;border-radius:7px;background:#f2f6fb}.reason-detail.adjustment{background:#fbf4ed}.reason-detail strong{font-size:.78rem;display:block;margin-bottom:5px}.reason-chips{display:flex;flex-wrap:wrap;gap:5px}.reason-chip{font-size:.75rem;border:1px solid #d7e0eb;border-radius:20px;padding:2px 7px;background:#fff;color:#46566b}.anime a{display:inline-block;margin-top:10px;font-size:.85rem;font-weight:700}.share-panel{margin:22px 0;padding:16px;border:1px solid var(--line);border-radius:10px;background:#f8faff}.share-panel ul{color:var(--muted);font-size:.88rem}.share-panel li{margin:3px 0}.share-panel>strong{font-size:1rem}.share-panel>p{font-size:.88rem;color:var(--muted);margin:5px 0 12px}.share-actions{display:flex;flex-wrap:wrap;gap:8px}.share-panel .status{min-height:1.4em;margin:8px 0 0}.foot{color:var(--muted);font-size:.82rem;margin:20px 0 34px}.loading{padding:32px;text-align:center;color:var(--muted)}@media(max-width:620px){.preference-inputs{grid-template-columns:1fr!important}}@media(max-width:720px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:480px){.choices{grid-template-columns:1fr}.wrap{width:calc(100% - 20px)}.top{padding:14px 0}.cards{gap:9px}.anime-body{padding:9px}.anime h3{font-size:.9rem}}
 </style>
 </head>
 <body>
@@ -41,6 +41,11 @@
 <h2 style="margin-top:30px">意外なおすすめ</h2><p class="status">好みとの共通点を保ちつつ、人気度が比較的低い作品から選んでいます。知らない作品との出会いを目的とした枠です。</p>
 <div class="cards" id="discoveryCards"></div>
 <p class="status" id="resultStatus">診断結果との相性をもとに並べています。</p><p class="status" style="font-size:.82rem">各作品の「合っている／合っていない」を評価すると、次回以降のおすすめ順位に反映されます。この評価はこのブラウザ内に保存されます。</p>
+<section id="feedbackAnalytics" class="share-panel" aria-labelledby="feedbackAnalyticsTitle">
+ <strong id="feedbackAnalyticsTitle">推薦の分析</strong>
+ <p>評価した作品の傾向を集計します。評価数が少ない場合は参考値です。過去の評価のうち、詳細情報がないものは全体数にのみ含めます。</p>
+ <div id="feedbackAnalyticsContent" aria-live="polite"></div>
+</section>
 <div class="share-panel">
  <strong>診断結果をシェア</strong>
  <p>リンクを開くと、同じ回答内容で診断を再実行して結果を表示します。AniListのデータ更新により、作品候補が変わる場合があります。</p>
@@ -109,9 +114,10 @@ function readRecommendationFeedback(){
  try{const value=JSON.parse(localStorage.getItem(FEEDBACK_KEY)||'{}');return value&&typeof value==='object'&&!Array.isArray(value)?value:{}}
  catch(_){return {}}
 }
-function writeRecommendationFeedback(id,value){
+function writeRecommendationFeedback(id,value,context={}){
  const feedback=readRecommendationFeedback();
- feedback[String(id)]={value,updatedAt:Date.now()};
+ const previous=feedback[String(id)]||{};
+ feedback[String(id)]={...previous,...context,value,updatedAt:Date.now()};
  const entries=Object.entries(feedback).sort((a,b)=>(b[1]?.updatedAt||0)-(a[1]?.updatedAt||0)).slice(0,300);
  try{localStorage.setItem(FEEDBACK_KEY,JSON.stringify(Object.fromEntries(entries)));return true}catch(_){return false}
 }
@@ -334,6 +340,7 @@ function buildProfile(profile){
 }
 function renderCardList(containerId,items){
  const container=$(containerId);container.replaceChildren();
+ const group=containerId==='animeCards'?'close':'discovery';
  items.forEach((a,i)=>{
   const card=document.createElement('article');card.className='anime';
   const img=document.createElement('img');img.loading='lazy';img.src=a.coverImage.extraLarge||a.coverImage.large;img.alt=(a.title.native||a.title.english||a.title.romaji||'Anime')+' cover';
@@ -358,7 +365,7 @@ function renderCardList(containerId,items){
   let currentFeedback=readRecommendationFeedback()[String(a.id)]?.value||'';
   const like=document.createElement('button');like.type='button';like.textContent=currentFeedback==='like'?'✓ 合っている':'合っている';like.setAttribute('aria-pressed',String(currentFeedback==='like'));like.style.cssText='padding:6px 9px;font-size:.8rem';
   const dislike=document.createElement('button');dislike.type='button';dislike.textContent=currentFeedback==='dislike'?'✓ 合っていない':'合っていない';dislike.setAttribute('aria-pressed',String(currentFeedback==='dislike'));dislike.style.cssText='padding:6px 9px;font-size:.8rem';
-  const updateFeedback=(value)=>{const next=currentFeedback===value?'':value;const ok=writeRecommendationFeedback(a.id,next||'neutral');if(!ok){$('shareStatus').textContent='評価を保存できませんでした。ブラウザの保存設定を確認してください。';return}like.textContent=next==='like'?'✓ 合っている':'合っている';dislike.textContent=next==='dislike'?'✓ 合っていない':'合っていない';currentFeedback=next;like.setAttribute('aria-pressed',String(next==='like'));dislike.setAttribute('aria-pressed',String(next==='dislike'));$('shareStatus').textContent='評価を保存しました。次回の診断から推薦順位の調整に使います。'};
+  const updateFeedback=(value)=>{const next=currentFeedback===value?'':value;const context={genres:Array.isArray(a.genres)?a.genres:[],tags:(a.tags||[]).filter(t=>!t.isMediaSpoiler&&t.rank>=40).map(t=>t.name).slice(0,30),rank:i+1,group};const ok=writeRecommendationFeedback(a.id,next||'neutral',context);if(!ok){$('shareStatus').textContent='評価を保存できませんでした。ブラウザの保存設定を確認してください。';return}like.textContent=next==='like'?'✓ 合っている':'合っている';dislike.textContent=next==='dislike'?'✓ 合っていない':'合っていない';currentFeedback=next;like.setAttribute('aria-pressed',String(next==='like'));dislike.setAttribute('aria-pressed',String(next==='dislike'));$('shareStatus').textContent='評価を保存しました。次回の診断から推薦順位の調整に使います。';renderFeedbackAnalytics()};
   like.addEventListener('click',()=>updateFeedback('like'));dislike.addEventListener('click',()=>updateFeedback('dislike'));
   feedback.append(feedbackLabel,like,dislike);
   body.append(h,meta,score,reasonList,desc,link,feedback);card.append(img,body);container.append(card);
@@ -470,6 +477,47 @@ async function saveShareImage(){
   $('shareStatus').textContent='カバー画像付きの診断結果カードを保存しました。';
  },'image/png');
 }
+function renderFeedbackAnalytics(){
+ const feedback=Object.values(readRecommendationFeedback());
+ const rated=feedback.filter(item=>item&&['like','dislike'].includes(item.value));
+ const likes=rated.filter(item=>item.value==='like').length;
+ const dislikes=rated.length-likes;
+ const known=rated.filter(item=>Array.isArray(item.genres)||Array.isArray(item.tags));
+ const root=$('feedbackAnalyticsContent');if(!root)return;
+ root.replaceChildren();
+ const summary=document.createElement('p');
+ summary.className='status';
+ summary.textContent='評価 '+rated.length+' 件（合っている '+likes+' 件／合っていない '+dislikes+' 件）'+(rated.length?' · 肯定率 '+Math.round(likes/rated.length*100)+'%':'');
+ root.append(summary);
+ if(!rated.length){
+  const empty=document.createElement('p');empty.className='status';empty.textContent='まだ評価データがありません。作品カードから評価すると、ここに集計が表示されます。';root.append(empty);return;
+ }
+ const addBreakdown=(heading,items)=>{
+  const section=document.createElement('div');section.style.cssText='margin-top:12px';
+  const title=document.createElement('strong');title.textContent=heading;section.append(title);
+  const list=document.createElement('ul');list.style.cssText='margin:6px 0 0;padding-left:22px';
+  const sorted=Object.entries(items).sort((a,b)=>(b[1].like+b[1].dislike)-(a[1].like+a[1].dislike)).slice(0,6);
+  if(!sorted.length){const li=document.createElement('li');li.textContent='集計可能なデータはまだありません。';list.append(li)}
+  sorted.forEach(([name,count])=>{const li=document.createElement('li');li.textContent=name+'：合っている '+count.like+'／合っていない '+count.dislike+'（計 '+(count.like+count.dislike)+'）';list.append(li)});
+  section.append(list);root.append(section);
+ };
+ const genreCounts={},tagCounts={},rankCounts={},groupCounts={};
+ const add=(map,key,value)=>{if(!key)return;map[key]??={like:0,dislike:0};map[key][value]++};
+ rated.forEach(item=>{
+  (item.genres||[]).forEach(name=>add(genreCounts,name,item.value));
+  (item.tags||[]).forEach(name=>add(tagCounts,name,item.value));
+  const rank=Number(item.rank);
+  const rankLabel=Number.isInteger(rank)&&rank>0?(item.group==='discovery'?'意外なおすすめ':rank<=2?'近い作品 1〜2位':'近い作品 3〜4位'):'順位不明';
+  add(rankCounts,rankLabel,item.value);
+  add(groupCounts,item.group==='discovery'?'意外なおすすめ':item.group==='close'?'好みにかなり近い作品':'区分不明',item.value);
+ });
+ addBreakdown('ジャンル別の評価（最大6件）',genreCounts);
+ addBreakdown('物語タグ別の評価（最大6件）',tagCounts);
+ addBreakdown('表示位置別の評価',rankCounts);
+ const note=document.createElement('p');note.className='status';note.style.fontSize='.82rem';
+ note.textContent='集計対象：評価 '+rated.length+' 件。ジャンル・タグの内訳は詳細を保存した '+known.length+' 件のみです。これは利用者自身の評価履歴の記述統計であり、推薦精度の証明や因果関係を示すものではありません。';
+ root.append(note);
+}
 function renderCards(result){
  const seenIds=new Set(),seenTitles=new Set();
  const unique=(items)=>items.filter(anime=>{
@@ -485,6 +533,7 @@ function renderCards(result){
  latestResult=result;
  renderCardList('animeCards',result.closeMatches);
  renderCardList('discoveryCards',result.discoveries);
+ renderFeedbackAnalytics();
  if(!result.closeMatches.length&&!result.discoveries.length){$('resultStatus').textContent='条件に合う作品を十分に取得できませんでした。回答を変えて再診断してください。';return}
  if(!result.closeMatches.length)$('animeCards').innerHTML='<p class="status">一致度の高い候補は見つかりませんでした。</p>';
  if(!result.discoveries.length)$('discoveryCards').innerHTML='<p class="status">今回の候補群では、相性を保った意外な作品を見つけられませんでした。</p>';
