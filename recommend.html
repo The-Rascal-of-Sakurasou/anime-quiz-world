@@ -95,20 +95,25 @@ async function getRecommendations(profile){
   if(!response.ok||json?.errors?.length||!json?.data?.Page)throw new Error('作品データの取得に失敗しました（HTTP '+response.status+'）。時間をおいて再試行してください。');
   return json.data.Page.media||[];
  };
- // AniListのPage.perPage上限は50。2ページ取得して最大100作品を候補にする。
- const pages=await Promise.all([fetchPage(1),fetchPage(2)]);
- const items=[...pages[0],...pages[1]];
+ // AniListのPage.perPage上限は50。4ページから最大200作品を候補にし、ID重複を除く。
+ const pages=await Promise.all([1,2,3,4].map(fetchPage));
+ const items=[...new Map(pages.flat().map(a=>[a.id,a])).values()];
  const genreEntries=Object.entries(profile.genres),tagEntries=Object.entries(profile.tags);
  const scored=items.filter(a=>a.coverImage?.large&&a.title&&(a.format==='TV'||a.format==='TV_SHORT'||a.format==='MOVIE'||a.format==='ONA'||a.format==='OVA'||a.format==='SPECIAL')).map(a=>{
   let score=0,matched=[];
-  for(const [g,w] of genreEntries)if((a.genres||[]).includes(g)){score+=w*4;matched.push(g)}
-  for(const [t,w] of tagEntries){const found=(a.tags||[]).find(x=>x.name===t&&!x.isMediaSpoiler&&x.rank>=35);if(found){score+=w*(1.2+found.rank/100);matched.push(t)}}
+  const animeGenres=a.genres||[];
+  const animeTags=a.tags||[];
+  for(const [g,w] of genreEntries)if(animeGenres.includes(g)){score+=w*5.5;matched.push(g)}
+  for(const [t,w] of tagEntries){
+   const found=animeTags.find(x=>x.name===t&&!x.isMediaSpoiler&&x.rank>=35);
+   if(found){score+=w*(1.5+found.rank/100);matched.push(t)}
+  }
   if(profile.length==='short'){if(a.format==='MOVIE')score+=5;else if(a.episodes&&a.episodes<=13)score+=4;else if(a.episodes&&a.episodes>26)score-=5}
-  if(profile.length==='medium'&&a.episodes>=12&&a.episodes<=39)score+=3;
-  if(profile.length==='long'&&a.episodes>=40)score+=5;
-  score+=(Number(a.averageScore)||0)/25+Math.log10((Number(a.popularity)||1)+1)*.6;
-  return {...a,_score:score,_matched:[...new Set(matched)]};
- }).sort((a,b)=>b._score-a._score);
+  if(profile.length==='medium'){if(a.episodes>=12&&a.episodes<=39)score+=3;else if(a.episodes>60)score-=2}
+  if(profile.length==='long'){if(a.episodes>=40)score+=5;else if(a.episodes&&a.episodes<=13)score-=2}
+  // 人気度・評価は好みとの一致点に加算せず、同点時の並べ替えだけに使う。
+  return {...a,_score:score,_matched:[...new Set(matched)],_quality:Number(a.averageScore)||0,_popularity:Number(a.popularity)||0};
+ }).sort((a,b)=>b._score-a._score||b._quality-a._quality||b._popularity-a._popularity);
  return scored.slice(0,8);
 }
 function buildProfile(profile){
@@ -124,7 +129,7 @@ function renderCards(items){
  $('animeCards').replaceChildren();
  if(!items.length){$('resultStatus').textContent='条件に合う作品を十分に取得できませんでした。回答を変えて再診断してください。';return}
  $('resultStatus').textContent='回答との相性をもとにした候補です。順位は作品の優劣を示すものではありません。';
- items.forEach((a,i)=>{const card=document.createElement('article');card.className='anime';const img=document.createElement('img');img.loading='lazy';img.src=a.coverImage.extraLarge||a.coverImage.large;img.alt=(a.title.native||a.title.english||a.title.romaji||'Anime')+' cover';const body=document.createElement('div');body.className='anime-body';const h=document.createElement('h3');h.textContent=(i+1)+'. '+(a.title.native||a.title.english||a.title.romaji);const meta=document.createElement('small');meta.textContent=[a.seasonYear||'年不明',a.format,a.episodes?(a.episodes+'話'):'話数不明',a.averageScore?'評価 '+a.averageScore+'/100':null].filter(Boolean).join(' · ');const score=document.createElement('div');score.className='score';score.textContent='診断スコア '+a._score.toFixed(1);const desc=document.createElement('p');desc.textContent=String(a.description||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').slice(0,220);const link=document.createElement('a');link.href=a.siteUrl||'https://anilist.co/anime/'+a.id;link.target='_blank';link.rel='noopener noreferrer';link.textContent='作品情報を見る ↗';body.append(h,meta,score,desc,link);card.append(img,body);$('animeCards').append(card)});
+ items.forEach((a,i)=>{const card=document.createElement('article');card.className='anime';const img=document.createElement('img');img.loading='lazy';img.src=a.coverImage.extraLarge||a.coverImage.large;img.alt=(a.title.native||a.title.english||a.title.romaji||'Anime')+' cover';const body=document.createElement('div');body.className='anime-body';const h=document.createElement('h3');h.textContent=(i+1)+'. '+(a.title.native||a.title.english||a.title.romaji);const meta=document.createElement('small');meta.textContent=[a.seasonYear||'年不明',a.format,a.episodes?(a.episodes+'話'):'話数不明',a.averageScore?'評価 '+a.averageScore+'/100':null].filter(Boolean).join(' · ');const score=document.createElement('div');score.className='score';score.textContent='好みとの一致度 '+a._score.toFixed(1);const reason=document.createElement('small');reason.className='match-reason';reason.textContent=a._matched.length?'一致した傾向：'+a._matched.slice(0,4).join('・'):'ジャンル・長さなどの条件から選出';const desc=document.createElement('p');desc.textContent=String(a.description||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').slice(0,220);const link=document.createElement('a');link.href=a.siteUrl||'https://anilist.co/anime/'+a.id;link.target='_blank';link.rel='noopener noreferrer';link.textContent='作品情報を見る ↗';body.append(h,meta,score,reason,desc,link);card.append(img,body);$('animeCards').append(card)});
 }
 async function finish(){
  $('diagnosis').classList.add('hidden');$('error').classList.add('hidden');$('loading').classList.remove('hidden');
