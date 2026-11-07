@@ -18,7 +18,7 @@
 <main class="panel">
 <div id="diagnosis">
 <div class="progress" aria-label="診断の進行状況"><div id="progressBar"></div></div>
-<div class="question"><div class="eyebrow" id="stepLabel">QUESTION 1 / 6</div><h2 id="questionTitle">どんなジャンルの物語に惹かれますか？</h2><p id="questionHelp">最も見たいものを1つ選んでください。</p></div>
+<div class="question"><div class="eyebrow" id="stepLabel">QUESTION 1 / 10</div><h2 id="questionTitle">どんなジャンルの物語に惹かれますか？</h2><p id="questionHelp">最も見たいものを1つ選んでください。</p></div>
 <div class="choices" id="choices"><button class="choice" type="button" disabled><span class="n">A</span><span>異世界・冒険・ファンタジー</span></button><button class="choice" type="button" disabled><span class="n">B</span><span>SF・ミステリー・サスペンス</span></button><button class="choice" type="button" disabled><span class="n">C</span><span>バトル・アクション</span></button><button class="choice" type="button" disabled><span class="n">D</span><span>ドラマ・コメディ・人間関係</span></button></div>
 <div class="preference-inputs" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:22px">
 <label style="display:block;font-weight:700;font-size:.92rem">好きなアニメ（任意）
@@ -868,14 +868,18 @@ function renderFeedbackAnalytics(){
  diagnostics.append(run,output);root.append(diagnostics);
 }
 function renderCards(result){
+ // ID・各言語タイトル・AniListの別名を横断し、推薦枠全体で重複を除外する。
  const seenIds=new Set(),seenTitles=new Set();
+ const normalizeAnimeTitle=value=>String(value||'').toLocaleLowerCase().normalize('NFKC')
+  .replace(/[\\s\\p{P}\\p{S}]/gu,'');
  const unique=(items)=>items.filter(anime=>{
-  const keys=[anime?.title?.native,anime?.title?.english,anime?.title?.romaji].filter(Boolean)
-   .map(title=>String(title).toLocaleLowerCase().normalize('NFKC').replace(/[\s・：:!！?？。、,.'’"「」『』()（）［］【】]/g,''));
-  if(anime?.id!=null&&seenIds.has(anime.id))return false;
-  if(keys.some(key=>key&&seenTitles.has(key)))return false;
-  if(anime?.id!=null)seenIds.add(anime.id);
-  keys.forEach(key=>{if(key)seenTitles.add(key)});
+  const rawTitles=[anime?.title?.native,anime?.title?.english,anime?.title?.romaji,...(Array.isArray(anime?.synonyms)?anime.synonyms:[])];
+  const keys=[...new Set(rawTitles.map(normalizeAnimeTitle).filter(Boolean))];
+  const id=anime?.id==null?null:String(anime.id);
+  if(id!==null&&seenIds.has(id))return false;
+  if(keys.some(key=>seenTitles.has(key)))return false;
+  if(id!==null)seenIds.add(id);
+  keys.forEach(key=>seenTitles.add(key));
   return true;
  });
  result={...result,closeMatches:unique(result.closeMatches||[]),discoveries:unique(result.discoveries||[])};
