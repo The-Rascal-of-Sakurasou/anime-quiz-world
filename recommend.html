@@ -8,7 +8,7 @@
 <title>おすすめアニメ診断 | Anime Quiz World</title>
 <style>
 :root{color-scheme:light;--bg:#f5f6f8;--panel:#fff;--text:#20242b;--muted:#68717d;--accent:#315b9a;--line:#dfe3e8;--soft:#edf3fb}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Noto Sans JP","Yu Gothic",Meiryo,sans-serif;line-height:1.65}button,select{font:inherit}button{cursor:pointer;border:1px solid var(--line);border-radius:8px;padding:11px 16px;background:#fff;color:var(--text);font-weight:650}button:hover{background:var(--soft);border-color:#b7c5d9}button:disabled{opacity:.55;cursor:default}.wrap{width:min(1000px,calc(100% - 32px));margin:auto}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:20px 0;border-bottom:1px solid var(--line)}.brand{font-weight:800;font-size:1.25rem}.brand span{color:var(--accent)}a{color:var(--accent)}.hero{padding:28px 0 20px}.eyebrow{font-size:.82rem;color:var(--muted);font-weight:750;letter-spacing:.08em}.hero h1{font-size:clamp(1.8rem,4vw,2.5rem);line-height:1.25;margin:8px 0}.hero p{color:var(--muted);max-width:720px;margin:0}.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:clamp(18px,3vw,30px);box-shadow:0 2px 8px #1d293908}.progress{height:7px;border-radius:9px;background:#e9edf2;overflow:hidden;margin:0 0 24px}.progress>div{height:100%;width:0;background:var(--accent);transition:width .2s}.question{margin:0 0 20px}.question h2{font-size:1.18rem;margin:0 0 5px}.question p{color:var(--muted);margin:0;font-size:.94rem}.choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:18px}.choice{min-height:74px;text-align:left;padding:14px 16px;display:flex;gap:12px;align-items:center}.choice .n{display:grid;place-items:center;width:30px;height:30px;flex:0 0 30px;border-radius:50%;background:var(--soft);color:var(--accent);font-weight:800}.choice.selected{border-color:var(--accent);background:var(--soft);box-shadow:inset 0 0 0 1px var(--accent)}.actions{display:flex;justify-content:space-between;gap:10px;margin-top:24px}.primary{background:var(--accent);border-color:var(--accent);color:white}.primary:hover{background:#254879}.hidden{display:none!important}.status{color:var(--muted);margin:12px 0}.results-head{margin-bottom:20px}.results-head h2{margin:5px 0}.profile{background:var(--soft);border-radius:10px;padding:16px;margin:16px 0}.profile strong{display:block;font-size:1.08rem}.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}.chip{border:1px solid #d4deeb;background:#fff;color:#38557e;border-radius:30px;padding:4px 10px;font-size:.84rem}.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.anime{min-width:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}.anime img{width:100%;aspect-ratio:2/3;object-fit:cover;display:block;background:#e9edf2}.anime-body{padding:11px}.anime h3{font-size:.96rem;line-height:1.4;margin:0 0 7px}.anime small{color:var(--muted)}.score{font-size:.82rem;color:var(--accent);font-weight:750}.anime p{font-size:.84rem;color:var(--muted);margin:8px 0 0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.anime a{display:inline-block;margin-top:10px;font-size:.85rem;font-weight:700}.foot{color:var(--muted);font-size:.82rem;margin:20px 0 34px}.loading{padding:32px;text-align:center;color:var(--muted)}@media(max-width:620px){.preference-inputs{grid-template-columns:1fr!important}}@media(max-width:720px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:480px){.choices{grid-template-columns:1fr}.wrap{width:calc(100% - 20px)}.top{padding:14px 0}.cards{gap:9px}.anime-body{padding:9px}.anime h3{font-size:.9rem}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Noto Sans JP","Yu Gothic",Meiryo,sans-serif;line-height:1.65}button,select{font:inherit}button{cursor:pointer;border:1px solid var(--line);border-radius:8px;padding:11px 16px;background:#fff;color:var(--text);font-weight:650}button:hover{background:var(--soft);border-color:#b7c5d9}button:disabled{opacity:.55;cursor:default}.wrap{width:min(1000px,calc(100% - 32px));margin:auto}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:20px 0;border-bottom:1px solid var(--line)}.brand{font-weight:800;font-size:1.25rem}.brand span{color:var(--accent)}a{color:var(--accent)}.hero{padding:28px 0 20px}.eyebrow{font-size:.82rem;color:var(--muted);font-weight:750;letter-spacing:.08em}.hero h1{font-size:clamp(1.8rem,4vw,2.5rem);line-height:1.25;margin:8px 0}.hero p{color:var(--muted);max-width:720px;margin:0}.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:clamp(18px,3vw,30px);box-shadow:0 2px 8px #1d293908}.progress{height:7px;border-radius:9px;background:#e9edf2;overflow:hidden;margin:0 0 24px}.progress>div{height:100%;width:0;background:var(--accent);transition:width .2s}.question{margin:0 0 20px}.question h2{font-size:1.18rem;margin:0 0 5px}.question p{color:var(--muted);margin:0;font-size:.94rem}.choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:18px}.choice{min-height:74px;text-align:left;padding:14px 16px;display:flex;gap:12px;align-items:center}.choice .n{display:grid;place-items:center;width:30px;height:30px;flex:0 0 30px;border-radius:50%;background:var(--soft);color:var(--accent);font-weight:800}.choice.selected{border-color:var(--accent);background:var(--soft);box-shadow:inset 0 0 0 1px var(--accent)}.actions{display:flex;justify-content:space-between;gap:10px;margin-top:24px}.primary{background:var(--accent);border-color:var(--accent);color:white}.primary:hover{background:#254879}.hidden{display:none!important}.status{color:var(--muted);margin:12px 0}.results-head{margin-bottom:20px}.results-head h2{margin:5px 0}.profile{background:var(--soft);border-radius:10px;padding:16px;margin:16px 0}.profile strong{display:block;font-size:1.08rem}.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}.chip{border:1px solid #d4deeb;background:#fff;color:#38557e;border-radius:30px;padding:4px 10px;font-size:.84rem}.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.anime{min-width:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}.anime img{width:100%;aspect-ratio:2/3;object-fit:cover;display:block;background:#e9edf2}.anime-body{padding:11px}.anime h3{font-size:.96rem;line-height:1.4;margin:0 0 7px}.anime small{color:var(--muted)}.score{font-size:.82rem;color:var(--accent);font-weight:750}.anime p{font-size:.84rem;color:var(--muted);margin:8px 0 0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.reason-details{display:grid;gap:8px;margin-top:10px}.reason-detail{padding:8px;border-radius:7px;background:#f2f6fb}.reason-detail.adjustment{background:#fbf4ed}.reason-detail strong{font-size:.78rem;display:block;margin-bottom:5px}.reason-chips{display:flex;flex-wrap:wrap;gap:5px}.reason-chip{font-size:.75rem;border:1px solid #d7e0eb;border-radius:20px;padding:2px 7px;background:#fff;color:#46566b}.anime a{display:inline-block;margin-top:10px;font-size:.85rem;font-weight:700}.foot{color:var(--muted);font-size:.82rem;margin:20px 0 34px}.loading{padding:32px;text-align:center;color:var(--muted)}@media(max-width:620px){.preference-inputs{grid-template-columns:1fr!important}}@media(max-width:720px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:480px){.choices{grid-template-columns:1fr}.wrap{width:calc(100% - 20px)}.top{padding:14px 0}.cards{gap:9px}.anime-body{padding:9px}.anime h3{font-size:.9rem}}
 </style>
 </head>
 <body>
@@ -146,20 +146,17 @@ async function getRecommendations(profile){
   return 0.7+Math.max(0,Math.min(1,rarity))*0.8;
  };
  const seedScore=(candidate,seeds)=>{
-  let total=0,matched=[];
+  let total=0,matchedGenres=[],matchedTags=[];
   const candidateTags=new Map((candidate.tags||[]).filter(t=>!t.isMediaSpoiler&&t.rank>=40).map(t=>[t.name,t]));
   for(const seed of seeds){
    const sharedGenres=(seed.genres||[]).filter(g=>(candidate.genres||[]).includes(g));
    const sharedTags=(seed.tags||[]).filter(t=>!t.isMediaSpoiler&&t.rank>=40&&candidateTags.has(t.name));
-   const tagPoints=sharedTags.reduce((sum,t)=>{
-    const rank=Math.max(0,Math.min(100,Number(t.rank)||0))/100;
-    return sum+rank*rarityWeight(t.name);
-   },0);
-   // ジャンル一致よりも、作品固有のタグ一致を重視する。各シード作品の加点は上限を設ける。
+   const tagPoints=sharedTags.reduce((sum,t)=>sum+(Math.max(0,Math.min(100,Number(t.rank)||0))/100)*rarityWeight(t.name),0);
    total+=Math.min(10,tagPoints*2)+Math.min(2,sharedGenres.length*0.8);
-   matched.push(...sharedGenres.slice(0,2),...sharedTags.sort((a,b)=>b.rank-a.rank).slice(0,3).map(t=>t.name));
+   matchedGenres.push(...sharedGenres.slice(0,3));
+   matchedTags.push(...sharedTags.sort((a,b)=>b.rank-a.rank).slice(0,5).map(t=>t.name));
   }
-  return {score:Math.min(total,24),matched:[...new Set(matched)]};
+  return {score:Math.min(total,24),matchedGenres:[...new Set(matchedGenres)],matchedTags:[...new Set(matchedTags)]};
  };
  const favoriteIds=new Set(favoriteSeeds.map(x=>x.id)),dislikedIds=new Set(dislikedSeeds.map(x=>x.id));
  const scored=items.filter(a=>a.coverImage?.large&&a.title&&(a.format==='TV'||a.format==='TV_SHORT'||a.format==='MOVIE'||a.format==='ONA'||a.format==='OVA'||a.format==='SPECIAL')).map(a=>{
@@ -168,26 +165,32 @@ async function getRecommendations(profile){
   const animeTags=a.tags||[];
   const genreNames={Fantasy:'ファンタジー',Adventure:'冒険',Action:'アクション','Sci-Fi':'SF',Mystery:'ミステリー',Thriller:'サスペンス',Drama:'ドラマ',Comedy:'コメディ',Romance:'恋愛','Slice of Life':'日常',Psychological:'心理',Historical:'歴史',Mecha:'メカ'};
   const tagNames={'Conspiracy':'陰謀・謎','Survival':'サバイバル','Psychological':'心理描写','Mystery':'謎解き','Tragedy':'悲劇','Coming of Age':'成長','Super Power':'特殊能力','Martial Arts':'格闘','Revenge':'復讐','Parody':'パロディ','Gag Humor':'ギャグ','Fast-Paced':'テンポの速い展開','Time Manipulation':'時間操作','World Building':'世界観の構築','Character Development':'人物の成長','Episodic':'各話完結','Magic':'魔法','Isekai':'異世界','Space':'宇宙','Cyberpunk':'サイバーパンク','Mythology':'神話','Samurai':'侍'};
-  const matchedGenres=genreEntries.filter(([g])=>animeGenres.includes(g)).map(([g])=>genreNames[g]||g);
-  if(matchedGenres.length){score+=genreEntries.filter(([g])=>animeGenres.includes(g)).reduce((n,[,w])=>n+w*5.5,0);reasons.push('選んだジャンルと一致：'+matchedGenres.slice(0,3).join('・'))}
-  const matchedTags=[];
+  const matchedGenreKeys=genreEntries.filter(([g])=>animeGenres.includes(g)).map(([g])=>g);
+  const matchedGenres=matchedGenreKeys.map(g=>genreNames[g]||g);
+  if(matchedGenreKeys.length)score+=genreEntries.filter(([g])=>animeGenres.includes(g)).reduce((n,[,w])=>n+w*5.5,0);
+  const matchedTagKeys=[];
   for(const [t,w] of tagEntries){
    const found=animeTags.find(x=>x.name===t&&!x.isMediaSpoiler&&x.rank>=35);
-   if(found){score+=w*(1.5+found.rank/100);matchedTags.push(tagNames[t]||t)}
+   if(found){score+=w*(1.5+found.rank/100);matchedTagKeys.push(t)}
   }
-  if(matchedTags.length)reasons.push('重視する物語要素と一致：'+matchedTags.slice(0,3).join('・'));
-  let lengthReason='';
-  if(profile.length==='short'){if(a.format==='MOVIE'){score+=5;lengthReason='映画';}else if(a.episodes&&a.episodes<=13){score+=4;lengthReason='1クール程度';}else if(a.episodes&&a.episodes>26)score-=5}
-  if(profile.length==='medium'){if(a.episodes>=12&&a.episodes<=39){score+=3;lengthReason='2〜3クール程度';}else if(a.episodes>60)score-=2}
-  if(profile.length==='long'){if(a.episodes>=40){score+=5;lengthReason='長編';}else if(a.episodes&&a.episodes<=13)score-=2}
-  if(lengthReason)reasons.push('希望する長さに近い：'+lengthReason);
+  let lengthReason='',lengthAdjustment='';
+  if(profile.length==='short'){if(a.format==='MOVIE'){score+=5;lengthReason='映画';}else if(a.episodes&&a.episodes<=13){score+=4;lengthReason='1クール程度';}else if(a.episodes&&a.episodes>26){score-=5;lengthAdjustment='希望より長め（26話超）';}}
+  if(profile.length==='medium'){if(a.episodes>=12&&a.episodes<=39){score+=3;lengthReason='2〜3クール程度';}else if(a.episodes>60){score-=2;lengthAdjustment='希望より長め（60話超）';}}
+  if(profile.length==='long'){if(a.episodes>=40){score+=5;lengthReason='長編';}else if(a.episodes&&a.episodes<=13){score-=2;lengthAdjustment='希望より短め（13話以下）';}}
   const fav=seedScore(a,favoriteSeeds),dis=seedScore(a,dislikedSeeds);
   score+=fav.score-dis.score;
-  if(fav.matched.length)reasons.push('好きな作品と共通する要素：'+fav.matched.slice(0,3).map(x=>tagNames[x]||genreNames[x]||x).join('・'));
-  if(dis.score>0)reasons.push('苦手な作品と共通する要素があるため評価を調整');
+  const details=[];
+  if(matchedGenreKeys.length)details.push({label:'選んだジャンルとの一致',items:matchedGenres.slice(0,4),kind:'positive'});
+  if(matchedTagKeys.length)details.push({label:'重視する物語要素との一致',items:matchedTagKeys.slice(0,5).map(t=>tagNames[t]||t),kind:'positive'});
+  if(fav.matchedTags.length)details.push({label:'好きな作品と共通する物語タグ',items:fav.matchedTags.slice(0,5).map(t=>tagNames[t]||t),kind:'positive'});
+  if(fav.matchedGenres.length)details.push({label:'好きな作品と共通するジャンル',items:fav.matchedGenres.slice(0,4).map(g=>genreNames[g]||g),kind:'positive'});
+  if(lengthReason)details.push({label:'希望する作品の長さ',items:[lengthReason],kind:'positive'});
+  if(lengthAdjustment)details.push({label:'長さによる調整',items:[lengthAdjustment],kind:'adjustment'});
+  if(dis.matchedTags.length)details.push({label:'苦手な作品と共通する物語タグ',items:dis.matchedTags.slice(0,4).map(t=>tagNames[t]||t),kind:'adjustment'});
+  if(dis.matchedGenres.length)details.push({label:'苦手な作品と共通するジャンル',items:dis.matchedGenres.slice(0,3).map(g=>genreNames[g]||g),kind:'adjustment'});
   // 入力された作品そのものは推薦候補から外す。
   // 人気度・評価は好みとの一致点に加算せず、同点時の並べ替えだけに使う。
-  return {...a,_score:score,_reasons:reasons,_quality:Number(a.averageScore)||0,_popularity:Number(a.popularity)||0};
+  return {...a,_score:score,_reasonDetails:details,_quality:Number(a.averageScore)||0,_popularity:Number(a.popularity)||0};
  }).filter(a=>!favoriteIds.has(a.id)&&!dislikedIds.has(a.id)).sort((a,b)=>b._score-a._score||b._quality-a._quality||b._popularity-a._popularity);
  const closeMatches=scored.slice(0,4);
  const selectedIds=new Set(closeMatches.map(a=>a.id));
@@ -209,7 +212,27 @@ function buildProfile(profile){
 }
 function renderCardList(containerId,items){
  const container=$(containerId);container.replaceChildren();
- items.forEach((a,i)=>{const card=document.createElement('article');card.className='anime';const img=document.createElement('img');img.loading='lazy';img.src=a.coverImage.extraLarge||a.coverImage.large;img.alt=(a.title.native||a.title.english||a.title.romaji||'Anime')+' cover';const body=document.createElement('div');body.className='anime-body';const h=document.createElement('h3');h.textContent=(i+1)+'. '+(a.title.native||a.title.english||a.title.romaji);const meta=document.createElement('small');meta.textContent=[a.seasonYear||'年不明',a.format,a.episodes?(a.episodes+'話'):'話数不明',a.averageScore?'評価 '+a.averageScore+'/100':null].filter(Boolean).join(' · ');const score=document.createElement('div');score.className='score';score.textContent='好みとの一致度 '+a._score.toFixed(1);const reason=document.createElement('p');reason.className='match-reason';reason.textContent=a._reasons?.length?a._reasons.join('。')+'。':'選択した条件と作品データをもとに選出';const desc=document.createElement('p');desc.textContent=String(a.description||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').slice(0,220);const link=document.createElement('a');link.href=a.siteUrl||'https://anilist.co/anime/'+a.id;link.target='_blank';link.rel='noopener noreferrer';link.textContent='作品情報を見る ↗';body.append(h,meta,score,reason,desc,link);card.append(img,body);container.append(card)});
+ items.forEach((a,i)=>{
+  const card=document.createElement('article');card.className='anime';
+  const img=document.createElement('img');img.loading='lazy';img.src=a.coverImage.extraLarge||a.coverImage.large;img.alt=(a.title.native||a.title.english||a.title.romaji||'Anime')+' cover';
+  const body=document.createElement('div');body.className='anime-body';
+  const h=document.createElement('h3');h.textContent=(i+1)+'. '+(a.title.native||a.title.english||a.title.romaji);
+  const meta=document.createElement('small');meta.textContent=[a.seasonYear||'年不明',a.format,a.episodes?(a.episodes+'話'):'話数不明',a.averageScore?'評価 '+a.averageScore+'/100':null].filter(Boolean).join(' · ');
+  const score=document.createElement('div');score.className='score';score.textContent='相性スコア '+a._score.toFixed(1);
+  const reasonList=document.createElement('div');reasonList.className='reason-details';
+  if(a._reasonDetails?.length){
+   a._reasonDetails.forEach(detail=>{
+    const section=document.createElement('div');section.className='reason-detail '+detail.kind;
+    const label=document.createElement('strong');label.textContent=detail.label;
+    const chips=document.createElement('div');chips.className='reason-chips';
+    detail.items.forEach(item=>{const chip=document.createElement('span');chip.className='reason-chip';chip.textContent=item;chips.append(chip)});
+    section.append(label,chips);reasonList.append(section);
+   });
+  }else{const empty=document.createElement('p');empty.className='match-reason';empty.textContent='選択した条件との明確な一致点は少なめです。';reasonList.append(empty)}
+  const desc=document.createElement('p');desc.textContent=String(a.description||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').slice(0,220);
+  const link=document.createElement('a');link.href=a.siteUrl||'https://anilist.co/anime/'+a.id;link.target='_blank';link.rel='noopener noreferrer';link.textContent='作品情報を見る ↗';
+  body.append(h,meta,score,reasonList,desc,link);card.append(img,body);container.append(card);
+ });
 }
 function renderCards(result){
  renderCardList('animeCards',result.closeMatches);
