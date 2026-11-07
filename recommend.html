@@ -260,7 +260,7 @@ async function getRecommendations(profile){
   }
   $('loading').textContent='作品データを取得中… '+(i+1)+' / '+sortModes.length+' グループ（取得失敗 '+failedPages+' ページ）';
  }
- if(!pages.length)throw new Error('AniListから作品データを取得できませんでした。通信状態を確認して、もう一度お試しください。');
+ if(!pages.length)throw new Error('作品データを取得できませんでした。通信状態を確認して、もう一度お試しください。');
  const byId=new Map();
  for(const anime of pages.flat()){
   if(anime?.id==null)continue;
