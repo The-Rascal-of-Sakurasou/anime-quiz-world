@@ -834,7 +834,7 @@ function renderCards(result){
  const genreCounts=new Map();allRecommended.forEach(a=>(a.genres||[]).forEach(g=>genreCounts.set(g,(genreCounts.get(g)||0)+1)));
  const mostCommonGenre=[...genreCounts.entries()].sort((a,b)=>b[1]-a[1])[0];
  const diversityNote=allRecommended.length
-  ?' 推薦8枠の実際の分布：ジャンル '+uniqueGenres.size+'種類、物語タグ '+uniqueTags.size+'種類。'+(mostCommonGenre?'最多ジャンル「'+mostCommonGenre[0]+'」は '+mostCommonGenre[1]+'作品に含まれます。':'')
+  ?' 推薦結果 '+allRecommended.length+'作品の分布：ジャンル '+uniqueGenres.size+'種類、物語タグ '+uniqueTags.size+'種類。'+(mostCommonGenre?'最多ジャンル「'+mostCommonGenre[0]+'」は '+mostCommonGenre[1]+'作品に含まれます。':'')
   :'';
  $('resultStatus').textContent='相性スコアは推薦処理内の比較用数値で、百分率や客観的な作品評価ではありません。「意外なおすすめ」は候補群内で人気度が比較的低い作品です。人気度は作品データ上の登録・利用状況に基づく目安で、作品の質を示すものではありません。'+diversityNote+(notices.length?' 入力作品の確認：'+notices.join('／'):' 入力された好き・苦手の作品はタイトル完全一致で照合し、推薦傾向に反映しました。');
 }
