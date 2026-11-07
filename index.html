@@ -761,7 +761,7 @@ const aqwPlayerBoardText={
 };
 const aqwPlayerT=key=>(aqwPlayerBoardText[lang]||aqwPlayerBoardText.en)[key]||aqwPlayerBoardText.en[key]||key;
 aqwPlayerBoardText.en.noPeriodRank='No record in this period yet.';aqwPlayerBoardText.ja.noPeriodRank='この期間の記録はまだありません。';
-let pendingPlayerRun=null,playerLeaderboardCache=[];
+let pendingPlayerRun=null,playerLeaderboardCache=[],leaderboardProfiles=new Map();
 let pendingRushResult=null;
 function applyRushLeaderboardLanguage(){
  const map={aqwRushBoardTitle:'title',aqwRushBoardDescription:'description',aqwRushBoardRefresh:'refresh',aqwRushBoardShare:'share',aqwRushBoardSave:'save',aqwRushRankHeading:'rank',aqwRushPlayerHeading:'player',aqwRushScoreHeading:'score',aqwRushTimeHeading:'time'};
@@ -918,10 +918,9 @@ function renderPlayerLeaderboard(){
   if(currentUser?.id===item.user_id)trEl.classList.add('is-me');
   if(currentRank<=3)trEl.classList.add('podium-'+currentRank);
   const rank=document.createElement('td');rank.className='rank-cell'+(currentRank<=3?' podium-'+currentRank:'');rank.textContent=String(currentRank);
-  const player=document.createElement('td');
+  const player=document.createElement('td');player.className='aqw-player-cell';player.append(makeAvatarElement(leaderboardProfiles.get(item.user_id)?.avatar_path,profile?.display_name||profile?.username||aqwPlayerT('player')));const meta=document.createElement('span');meta.className='player-meta';
   const name=document.createElement('span');name.className='player-name';name.textContent=profile?.display_name||profile?.username||aqwPlayerT('player');
-  const handle=document.createElement('span');handle.className='player-handle';handle.textContent='@'+(profile?.username||'user')+(currentUser?.id===item.user_id?' · '+aqwRushT('you'):'');
-  player.append(name,handle);
+  const handle=document.createElement('span');handle.className='player-handle';handle.textContent='@'+(profile?.username||'user')+(currentUser?.id===item.user_id?' · '+aqwRushT('you'):'');meta.append(name,handle);player.append(meta);
   const value=document.createElement('td');
   const detail=document.createElement('td');
   if(mode==='runs'){value.textContent=Number(item.total_runs||0).toLocaleString();detail.textContent=Number(item.total_xp||0).toLocaleString()+' XP'}
@@ -936,7 +935,7 @@ async function loadPlayerLeaderboard(){
  message(statusEl,aqwPlayerT('loading'));rows.replaceChildren();
  const {data,error}=await sb.rpc('get_aqw_player_leaderboard',{p_period:period,p_metric:mode});
  if(error){playerLeaderboardCache=[];message(statusEl,aqwPlayerT('error')+errText(error));return}
- playerLeaderboardCache=data||[];
+ playerLeaderboardCache=data||[];const {data:avatarProfiles}=data.length?await sb.from('profiles').select('id,avatar_path').in('id',data.map(x=>x.user_id)):{data:[]};leaderboardProfiles=new Map((avatarProfiles||[]).map(x=>[x.id,x]));
  renderPlayerLeaderboard();
  await loadMyPlayerRank(mode,period);
 }
@@ -964,6 +963,7 @@ async function loadRushLeaderboard(){
  const {data,error}=await sb.rpc('get_aqw_speed_rush_leaderboard',{p_period:period});
  if(error){message(statusEl,aqwRushT('error')+errText(error));return}
  if(!data?.length){message(statusEl,aqwRushT('empty'));await loadMyRushRank(period);return}
+ const {data:avatarProfiles}=await sb.from('profiles').select('id,avatar_path').in('id',data.map(x=>x.user_id));leaderboardProfiles=new Map((avatarProfiles||[]).map(x=>[x.id,x]));
  message(statusEl,'');
  let previousScore=null,previousTime=null,currentRank=0;
  data.forEach((item,index)=>{
@@ -973,10 +973,9 @@ async function loadRushLeaderboard(){
   if(currentUser?.id===item.user_id)trEl.classList.add('is-me');
   if(currentRank<=3)trEl.classList.add('podium-'+currentRank);
   const rank=document.createElement('td');rank.className='rank-cell'+(currentRank<=3?' podium-'+currentRank:'');rank.textContent=String(currentRank);
-  const player=document.createElement('td');
+  const player=document.createElement('td');player.className='aqw-player-cell';player.append(makeAvatarElement(leaderboardProfiles.get(item.user_id)?.avatar_path,item.display_name||item.username||aqwRushT('player')));const meta=document.createElement('span');meta.className='player-meta';
   const name=document.createElement('span');name.className='player-name';name.textContent=item.display_name||item.username||aqwRushT('player');
-  const handle=document.createElement('span');handle.className='player-handle';handle.textContent='@'+(item.username||'user')+(currentUser?.id===item.user_id?' · '+aqwRushT('you'):'');
-  player.append(name,handle);
+  const handle=document.createElement('span');handle.className='player-handle';handle.textContent='@'+(item.username||'user')+(currentUser?.id===item.user_id?' · '+aqwRushT('you'):'');meta.append(name,handle);player.append(meta);
   const score=document.createElement('td');score.textContent=String(item.correct_count)+'/10';
   const time=document.createElement('td');time.textContent=formatRushTime(item.elapsed_ms);
   trEl.append(rank,player,score,time);rows.append(trEl);
