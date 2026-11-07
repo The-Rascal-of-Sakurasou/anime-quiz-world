@@ -318,7 +318,7 @@ async function fetchAnime(vars={}){
   throw lastError||new Error('データをまとめて取得できませんでした。');
  };
  if(vars.search)return (await request({page:1,perPage:18,search:vars.search})).filter(isUsableAnime);
- const cacheKey='aqw-anime-pool-v13-franchise-complete-20000',targetCount=20000;
+ const cacheKey='aqw-anime-pool-v14-startdate-allstudios-20000',targetCount=20000;
  // Reuse the previous catalogue cache when available; continue expanding it toward the new 20,000-item target.
  let initial=[],cacheSavedAt=0,savedProgress=null;
  try{
