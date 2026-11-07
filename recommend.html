@@ -216,6 +216,30 @@ async function getRecommendations(profile){
  if(!items.length)throw new Error('取得できた作品データがありませんでした。時間をおいて再診断してください。');
  const [favoriteNames,dislikedNames]=[parseTitleInput('favoriteTitles'),parseTitleInput('dislikedTitles')];
  const recommendationFeedback=readRecommendationFeedback();
+ // 過去の評価からジャンル・タグごとの傾向を学習する。少数評価の過剰反応を避けるため平滑化し、補正幅も制限する。
+ const learnedPreferences={genres:new Map(),tags:new Map()};
+ for(const item of Object.values(recommendationFeedback)){
+  if(!item||!['like','dislike'].includes(item.value))continue;
+  const weight=item.value==='like'?1:0;
+  for(const [kind,names] of [['genres',item.genres],['tags',item.tags]]){
+   if(!Array.isArray(names))continue;
+   for(const name of new Set(names.filter(x=>typeof x==='string'&&x))){
+    const counts=learnedPreferences[kind].get(name)||{likes:0,total:0};
+    counts.likes+=weight;counts.total++;learnedPreferences[kind].set(name,counts);
+   }
+  }
+ }
+ const learnedAdjustment=(names,countsMap,cap)=>{
+  const signals=[];
+  for(const name of new Set(names||[])){
+   const counts=countsMap.get(name);
+   if(!counts||counts.total<2)continue;
+   const rate=(counts.likes+1)/(counts.total+2);
+   const confidence=counts.total/(counts.total+4);
+   signals.push((rate-.5)*2*confidence*cap);
+  }
+  return signals.length?signals.reduce((sum,value)=>sum+value,0)/signals.length:0;
+ };
  const favoriteSeeds=[],dislikedSeeds=[];
  for(const name of favoriteNames){const found=await findSeedAnime(name);if(found)favoriteSeeds.push(found)}
  for(const name of dislikedNames){const found=await findSeedAnime(name);if(found)dislikedSeeds.push(found)}
@@ -264,13 +288,18 @@ async function getRecommendations(profile){
   if(profile.length==='long'){if(a.episodes>=40){score+=5;lengthReason='長編';}else if(a.episodes&&a.episodes<=13){score-=2;lengthAdjustment='希望より短め（13話以下）';}}
   const fav=seedScore(a,favoriteSeeds),dis=seedScore(a,dislikedSeeds);
   score+=fav.score-dis.score;
-   const priorFeedback=recommendationFeedback[String(a.id)];
-   if(priorFeedback?.value==='like')score+=4;
-   else if(priorFeedback?.value==='dislike')score-=8;
+  const learnedGenreAdjustment=learnedAdjustment(animeGenres,learnedPreferences.genres,2.4);
+  const learnedTagAdjustment=learnedAdjustment(animeTags.filter(t=>!t.isMediaSpoiler&&t.rank>=40).map(t=>t.name),learnedPreferences.tags,2);
+  const learnedTotalAdjustment=Math.max(-4,Math.min(4,learnedGenreAdjustment+learnedTagAdjustment));
+  score+=learnedTotalAdjustment;
+  const priorFeedback=recommendationFeedback[String(a.id)];
+  if(priorFeedback?.value==='like')score+=4;
+  else if(priorFeedback?.value==='dislike')score-=8;
 
   const details=[];
    if(priorFeedback?.value==='like')details.push({label:'過去の推薦評価',items:['以前「合っている」と評価'],kind:'positive'});
    else if(priorFeedback?.value==='dislike')details.push({label:'過去の推薦評価',items:['以前「合っていない」と評価'],kind:'adjustment'});
+  if(Math.abs(learnedTotalAdjustment)>=0.35)details.push({label:'これまでの評価傾向による調整',items:[learnedTotalAdjustment>0?'過去に好評だったジャンル・タグを少し優先':'過去に不評だったジャンル・タグを少し抑制'],kind:learnedTotalAdjustment>0?'positive':'adjustment'});
   if(matchedGenreKeys.length)details.push({label:'選んだジャンルとの一致',items:matchedGenres.slice(0,4),kind:'positive'});
   if(matchedTagKeys.length)details.push({label:'重視する物語要素との一致',items:matchedTagKeys.slice(0,5).map(t=>tagNames[t]||t),kind:'positive'});
   if(fav.matchedTags.length)details.push({label:'好きな作品と共通する物語タグ',items:fav.matchedTags.slice(0,5).map(t=>tagNames[t]||t),kind:'positive'});
