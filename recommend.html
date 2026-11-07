@@ -259,10 +259,12 @@ async function getRecommendations(profile){
   const fav=seedScore(a,favoriteSeeds),dis=seedScore(a,dislikedSeeds);
   score+=fav.score-dis.score;
    const priorFeedback=recommendationFeedback[String(a.id)];
-   if(priorFeedback?.value==='like'){score+=4;details.push({label:'過去の推薦評価',items:['以前「合っている」と評価'],kind:'positive'})}
-   else if(priorFeedback?.value==='dislike'){score-=8;details.push({label:'過去の推薦評価',items:['以前「合っていない」と評価'],kind:'adjustment'})}
+   if(priorFeedback?.value==='like')score+=4;
+   else if(priorFeedback?.value==='dislike')score-=8;
 
   const details=[];
+   if(priorFeedback?.value==='like')details.push({label:'過去の推薦評価',items:['以前「合っている」と評価'],kind:'positive'});
+   else if(priorFeedback?.value==='dislike')details.push({label:'過去の推薦評価',items:['以前「合っていない」と評価'],kind:'adjustment'});
   if(matchedGenreKeys.length)details.push({label:'選んだジャンルとの一致',items:matchedGenres.slice(0,4),kind:'positive'});
   if(matchedTagKeys.length)details.push({label:'重視する物語要素との一致',items:matchedTagKeys.slice(0,5).map(t=>tagNames[t]||t),kind:'positive'});
   if(fav.matchedTags.length)details.push({label:'好きな作品と共通する物語タグ',items:fav.matchedTags.slice(0,5).map(t=>tagNames[t]||t),kind:'positive'});
@@ -327,10 +329,10 @@ function renderCardList(containerId,items){
   const link=document.createElement('a');link.href=a.siteUrl||'https://anilist.co/anime/'+a.id;link.target='_blank';link.rel='noopener noreferrer';link.textContent='作品情報を見る ↗';
   const feedback=document.createElement('div');feedback.className='recommend-feedback';feedback.style.cssText='display:flex;gap:7px;flex-wrap:wrap;margin-top:10px';
   const feedbackLabel=document.createElement('small');feedbackLabel.textContent='このおすすめは好みに合っていますか？';feedbackLabel.style.cssText='display:block;width:100%;color:var(--muted)';
-  const currentFeedback=readRecommendationFeedback()[String(a.id)]?.value||'';
+  let currentFeedback=readRecommendationFeedback()[String(a.id)]?.value||'';
   const like=document.createElement('button');like.type='button';like.textContent=currentFeedback==='like'?'✓ 合っている':'合っている';like.setAttribute('aria-pressed',String(currentFeedback==='like'));like.style.cssText='padding:6px 9px;font-size:.8rem';
   const dislike=document.createElement('button');dislike.type='button';dislike.textContent=currentFeedback==='dislike'?'✓ 合っていない':'合っていない';dislike.setAttribute('aria-pressed',String(currentFeedback==='dislike'));dislike.style.cssText='padding:6px 9px;font-size:.8rem';
-  const updateFeedback=(value)=>{const next=currentFeedback===value?'':value;const ok=next?writeRecommendationFeedback(a.id,next):writeRecommendationFeedback(a.id,'neutral');if(!ok){$('shareStatus').textContent='評価を保存できませんでした。ブラウザの保存設定を確認してください。';return}like.textContent=next==='like'?'✓ 合っている':'合っている';dislike.textContent=next==='dislike'?'✓ 合っていない':'合っていない';like.setAttribute('aria-pressed',String(next==='like'));dislike.setAttribute('aria-pressed',String(next==='dislike'));$('shareStatus').textContent='評価を保存しました。次回の診断から推薦順位の調整に使います。'};
+  const updateFeedback=(value)=>{const next=currentFeedback===value?'':value;const ok=writeRecommendationFeedback(a.id,next||'neutral');if(!ok){$('shareStatus').textContent='評価を保存できませんでした。ブラウザの保存設定を確認してください。';return}like.textContent=next==='like'?'✓ 合っている':'合っている';dislike.textContent=next==='dislike'?'✓ 合っていない':'合っていない';currentFeedback=next;like.setAttribute('aria-pressed',String(next==='like'));dislike.setAttribute('aria-pressed',String(next==='dislike'));$('shareStatus').textContent='評価を保存しました。次回の診断から推薦順位の調整に使います。'};
   like.addEventListener('click',()=>updateFeedback('like'));dislike.addEventListener('click',()=>updateFeedback('dislike'));
   feedback.append(feedbackLabel,like,dislike);
   body.append(h,meta,score,reasonList,desc,link,feedback);card.append(img,body);container.append(card);
