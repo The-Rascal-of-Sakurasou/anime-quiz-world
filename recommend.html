@@ -48,7 +48,7 @@
 </section>
 <div class="share-panel">
  <strong>診断結果をシェア</strong>
- <p>リンクを開くと、同じ回答内容で診断を再実行して結果を表示します。AniListのデータ更新により、作品候補が変わる場合があります。</p>
+ <p>リンクを開くと、同じ回答内容で診断を再実行して結果を表示します。作品データの更新により、候補が変わる場合があります。</p>
  <div class="share-actions">
   <button id="shareX" type="button" class="primary">Xで共有</button>
   <button id="copyResultLink" type="button">診断結果リンクをコピー</button>
@@ -61,7 +61,7 @@
 </section>
 <div id="error" class="status hidden" role="alert"></div>
 </main>
-<p class="foot">診断は回答内容とAniListの作品ジャンル・タグなどを使った、ルールベースの娯楽向け推薦です。好きな作品のタグ一致度や候補群内でのタグの希少性も参考にするため、ジャンルが異なる作品が候補に入る場合があります。推薦理由は作品データとの一致を示すもので、作品の優劣や視聴体験を保証しません。入力した作品名はAniListへの検索リクエストに使われます。回答内容はアカウントには保存しません。作品情報：AniList。</p>
+<p class="foot">診断は回答内容と作品データのジャンル・タグなどを使った、ルールベースの娯楽向け推薦です。好きな作品のタグ一致度や候補群内でのタグの希少性も参考にするため、ジャンルが異なる作品が候補に入る場合があります。推薦理由は作品データとの一致を示すもので、作品の優劣や視聴体験を保証しません。入力した作品名は作品検索に使われます。回答内容はアカウントには保存しません。作品情報は作品データに基づきます。</p>
 </div>
 <script>
 window.addEventListener("error",event=>{const box=document.getElementById("error");if(box){box.textContent="診断画面の初期化中にエラーが発生しました："+(event.message||"詳細不明")+"。ページを再読み込みしてください。";box.classList.remove("hidden");}});
@@ -235,7 +235,7 @@ async function getRecommendations(profile){
     const json=await response.json().catch(()=>null);
     if(response.ok&&!json?.errors?.length&&json?.data?.Page)return json.data.Page.media||[];
     const apiMessage=(json?.errors||[]).map(error=>error.message).filter(Boolean).join(' / ');
-    const error=new Error('AniList APIエラー（HTTP '+response.status+'）'+(apiMessage?'：'+apiMessage:'。'));
+    const error=new Error('作品データ取得エラー（HTTP '+response.status+'）'+(apiMessage?'：'+apiMessage:'。'));
     error.retryable=response.status===429||response.status>=500;
     if(!error.retryable)throw error;
     lastError=error;
@@ -245,7 +245,7 @@ async function getRecommendations(profile){
    }
    if(attempt<2)await new Promise(resolve=>setTimeout(resolve,1200*(attempt+1)));
   }
-  throw lastError||new Error('AniListから作品データを取得できませんでした。');
+  throw lastError||new Error('作品データを取得できませんでした。');
  };
  // ジャンルで候補を絞らず、4種類の並び順から各5ページ（最大1,000件）を取得。
  // 一部のページ取得に失敗しても、成功したページの作品で診断を続行する。
@@ -543,7 +543,7 @@ async function saveShareImage(){
  const discoveryText=discoveries.map(getTitle).join('  ／  ')||'今回は該当作品なし';
  fitText(discoveryText,250,540,860,'19px system-ui,sans-serif','#42536b');
  ctx.fillStyle='#8793a5';ctx.font='15px system-ui,sans-serif';ctx.fillText('診断結果はエンターテインメント向けの参考情報です。',72,574);
- ctx.fillStyle='#8793a5';ctx.font='14px system-ui,sans-serif';ctx.fillText('the-rascal-of-sakurasou.github.io/anime-quiz-world/',72,598);
+ ctx.fillStyle='#8793a5';ctx.font='14px system-ui,sans-serif';
  canvas.toBlob(blob=>{
   if(!blob){$('shareStatus').textContent='画像を保存できませんでした。';return}
   const link=document.createElement('a'),objectUrl=URL.createObjectURL(blob);
@@ -636,7 +636,7 @@ function renderCards(result){
  if(report.unresolvedFavorites?.length)notices.push('完全一致で確認できなかった「好きな作品」：'+report.unresolvedFavorites.join('、'));
  if(report.unresolvedDislikes?.length)notices.push('完全一致で確認できなかった「苦手な作品」：'+report.unresolvedDislikes.join('、'));
  if(report.conflicts?.length)notices.push('好き・苦手の両方に入力された作品は、傾向分析から除外しました：'+report.conflicts.join('、'));
- $('resultStatus').textContent='相性スコアは推薦処理内の比較用数値で、百分率や客観的な作品評価ではありません。「意外なおすすめ」は候補群内で人気度が比較的低い作品です。人気度はAniListの登録・利用状況に基づく目安で、作品の質を示すものではありません。'+(notices.length?' 入力作品の確認：'+notices.join('／'):' 入力された好き・苦手の作品はタイトル完全一致で照合し、推薦傾向に反映しました。');
+ $('resultStatus').textContent='相性スコアは推薦処理内の比較用数値で、百分率や客観的な作品評価ではありません。「意外なおすすめ」は候補群内で人気度が比較的低い作品です。人気度は作品データ上の登録・利用状況に基づく目安で、作品の質を示すものではありません。'+(notices.length?' 入力作品の確認：'+notices.join('／'):' 入力された好き・苦手の作品はタイトル完全一致で照合し、推薦傾向に反映しました。');
 }
 async function finish(){
  $('diagnosis').classList.add('hidden');$('error').classList.add('hidden');$('loading').classList.remove('hidden');
