@@ -197,9 +197,9 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 <div id="aqwMemberPanel" class="hidden">
 <div class="social-columns">
 <section class="social-box"><h3>プロフィール</h3><form id="aqwProfileForm"><div class="aqw-avatar-editor"><div class="aqw-avatar-preview" id="aqwAvatarPreview"><span id="aqwAvatarFallback">?</span><img id="aqwAvatarPreviewImage" alt="プロフィールアイコンのプレビュー" class="hidden"></div><div class="aqw-avatar-controls"><label>プロフィールアイコン<input id="aqwAvatarFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></label><small class="muted">JPEG・PNG・WebP・GIF、5MB以下</small><button id="aqwRemoveAvatar" type="button">アイコンを削除</button></div></div><label>ユーザー名<input id="aqwEditUsername" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]+" required></label><label>表示名<input id="aqwEditDisplayName" maxlength="40" required></label><label>自己紹介<textarea id="aqwBio" maxlength="280" rows="3"></textarea></label><button class="primary" type="submit">プロフィールを保存</button></form><hr style="border:0;border-top:1px solid var(--line);margin:20px 0"><h3>パスワード変更</h3><form id="aqwPasswordForm"><label>新しいパスワード<input id="aqwNewPassword" type="password" minlength="8" maxlength="128" autocomplete="new-password" required></label><label>新しいパスワード（確認）<input id="aqwConfirmPassword" type="password" minlength="8" maxlength="128" autocomplete="new-password" required></label><button class="primary" type="submit">パスワードを変更</button></form><p id="aqwPasswordMessage" class="auth-message" aria-live="polite"></p></section>
-<section class="social-box"><h3>ユーザー検索・フレンド登録</h3><p class="muted">お互いにフォローするとフレンドになり、コメントと返信ができるようになります。</p><form id="aqwUserSearchForm" class="searchbar"><input id="aqwUserSearch" placeholder="ユーザー名・表示名" maxlength="60" required><button type="submit">検索</button></form><div id="aqwUserResults"></div></section>
+<section class="social-box"><h3>ユーザー検索・フレンド登録</h3><p class="muted">相手をフォローできます。お互いにフォローするとフレンドになり、1対1のチャットができます。</p><form id="aqwUserSearchForm" class="searchbar"><input id="aqwUserSearch" placeholder="ユーザー名・表示名" maxlength="60" required><button type="submit">検索</button></form><div id="aqwUserResults"></div></section>
 </div>
-<section class="social-box" id="aqwFriendMessagesPanel" style="margin-top:18px"><h3>フレンドとのコメント・返信</h3><div class="social-columns"><div><h4>フレンド一覧</h4><p class="muted">相互にフォローしているユーザーが表示されます。</p><button id="aqwRefreshFriends" type="button">フレンド一覧を更新</button><div id="aqwFriends" class="aqw-feed"></div></div><div><h4 id="aqwConversationTitle">会話を選択してください</h4><div id="aqwMessages" class="aqw-feed" aria-live="polite"></div><form id="aqwMessageForm" class="aqw-reply-form"><input id="aqwMessageInput" maxlength="2000" placeholder="コメントを書く（最大2,000文字）" required disabled><button class="primary" id="aqwSendMessage" type="submit" disabled>送信</button></form><p id="aqwMessageStatus" class="auth-message" aria-live="polite"></p></div></div></section>
+<section class="social-box" id="aqwFriendMessagesPanel" style="margin-top:18px"><h3>フレンドとのチャット</h3><div class="social-columns"><div><h4>フレンド一覧</h4><p class="muted">相互にフォローしているユーザーが表示されます。</p><button id="aqwRefreshFriends" type="button">フレンド一覧を更新</button><div id="aqwFriends" class="aqw-feed"></div></div><div><h4 id="aqwConversationTitle">チャットする相手を選択してください</h4><div id="aqwMessages" class="aqw-feed" aria-live="polite"></div><form id="aqwMessageForm" class="aqw-reply-form"><input id="aqwMessageInput" maxlength="2000" placeholder="メッセージを書く（最大2,000文字）" required disabled><button class="primary" id="aqwSendMessage" type="submit" disabled>送信</button></form><p id="aqwMessageStatus" class="auth-message" aria-live="polite"></p></div></div></section>
 <div id="aqwPostForm" class="hidden"><textarea id="aqwPostBody"></textarea><input id="aqwPostImage" type="file"><button id="aqwShareQuiz" type="button"></button></div><p id="aqwPostMessage" class="hidden"></p><button id="aqwRefreshFeed" type="button" class="hidden"></button><div id="aqwFeed" class="hidden"></div><button id="aqwNotificationsButton" type="button" class="hidden"></button><div id="aqwNotifications" class="hidden"></div>
 </div>
 <div class="legal-links"><a href="./terms.html">利用規約</a><a href="./privacy.html">プライバシーポリシー</a></div>
@@ -241,8 +241,8 @@ tab:'AQW',heading:'AQW — Anime fan community',description:'Use an AQW account 
 const play=document.getElementById('playMode');if(play)[...play.options].forEach(o=>{const k={normal:'normal',daily:'daily',endless:'endless',rush:'rush'}[o.value];if(ui[k])o.textContent=ui[k]});
 const modeNames={image:'image',studio:'studio',synonym:'synonym',titleYear:'titleYear',titleStudio:'titleStudio',synopsis:'synopsis',titleSynopsis:'titleSynopsis',mixed:'mixed',typed:'typed'};const modeSel=document.getElementById('modeSelect');if(modeSel)[...modeSel.options].forEach(o=>{if(ui[modeNames[o.value]])o.textContent=ui[modeNames[o.value]]});
 const foot=document.getElementById('footerText');if(foot&&lang!=='ja')foot.textContent=lang==='en'?'Anime data and images are provided by an external anime database service. This is an unofficial fan site; all rights belong to their respective owners. An internet connection is required.':({ko:'작품 데이터와 이미지는 외부 애니메이션 데이터베이스에서 제공합니다. 비공식 팬 사이트이며 모든 권리는 각 권리자에게 있습니다. 인터넷 연결이 필요합니다.',zh:'作品数据和图片来自外部动漫数据库。本网站为非官方粉丝网站，所有权利归各自权利人所有。需要连接互联网。',es:'Los datos e imágenes proceden de una base de datos externa. Este es un sitio de fans no oficial; los derechos pertenecen a sus respectivos titulares. Se requiere conexión a Internet.',fr:'Les données et images proviennent d’une base de données externe. Ce site de fans est non officiel ; tous les droits appartiennent à leurs détenteurs. Une connexion Internet est nécessaire.',pt:'Os dados e imagens vêm de uma base de dados externa. Este é um site de fãs não oficial; todos os direitos pertencem aos respetivos titulares. É necessária ligação à Internet.',de:'Anime-Daten und Bilder stammen aus einer externen Datenbank. Dies ist eine inoffizielle Fanseite; alle Rechte liegen bei den jeweiligen Rechteinhabern. Eine Internetverbindung ist erforderlich.'}[lang]||ui.heroDescription);const socialUI={
-ja:{heading:'AQW — アニメ好きのための交流スペース',description:'AQW独自のアカウントで投稿、返信、フォロー、いいね、クイズ結果の共有ができます。Animeciaとはアカウント・データを共有しません。',status:'AQWのSNSを準備しています…',auth:'ログイン / 新規登録',username:'ユーザー名（登録時）',email:'メールアドレス',password:'パスワード',display:'表示名（登録時）',terms:'利用規約とプライバシーポリシーを確認し、同意します。',signin:'ログイン',signup:'新規登録はこちら',signout:'ログアウト',profile:'プロフィール',saveProfile:'プロフィールを保存',newPassword:'新しいパスワード',confirmPassword:'新しいパスワード（確認）',changePassword:'パスワードを変更',userSearch:'ユーザー検索・フレンド登録',userSearchDesc:'お互いにフォローするとフレンドになり、コメントと返信ができるようになります。',searchPlaceholder:'ユーザー名・表示名',search:'検索',friends:'フレンドとのコメント・返信',friendList:'フレンド一覧',friendDesc:'相互にフォローしているユーザーが表示されます。',refreshFriends:'フレンド一覧を更新',chooseConversation:'会話を選択してください',messagePlaceholder:'コメントを書く（最大2,000文字）',send:'送信',termsLink:'利用規約',privacyLink:'プライバシーポリシー'},
-en:{heading:'AQW — Anime fan community',description:'Use an AQW account to post, reply, follow users, like posts, and share quiz results. Accounts and data are separate from Animecia.',status:'Preparing AQW community…',auth:'Sign in / Create account',username:'Username (registration)',email:'Email address',password:'Password',display:'Display name (registration)',terms:'I have read and agree to the Terms of Use and Privacy Policy.',signin:'Sign in',signup:'Create an account',signout:'Sign out',profile:'Profile',saveProfile:'Save profile',newPassword:'New password',confirmPassword:'Confirm new password',changePassword:'Change password',userSearch:'Find users and add friends',userSearchDesc:'Follow each other to become friends and exchange comments and replies.',searchPlaceholder:'Username or display name',search:'Search',friends:'Friend comments and replies',friendList:'Friends',friendDesc:'Users who follow each other appear here.',refreshFriends:'Refresh friends',chooseConversation:'Select a conversation',messagePlaceholder:'Write a comment (up to 2,000 characters)',send:'Send',termsLink:'Terms of Use',privacyLink:'Privacy Policy'},
+ja:{heading:'AQW — アニメ好きのための交流スペース',description:'AQW独自のアカウントで投稿、返信、フォロー、いいね、クイズ結果の共有ができます。Animeciaとはアカウント・データを共有しません。',status:'AQWのSNSを準備しています…',auth:'ログイン / 新規登録',username:'ユーザー名（登録時）',email:'メールアドレス',password:'パスワード',display:'表示名（登録時）',terms:'利用規約とプライバシーポリシーを確認し、同意します。',signin:'ログイン',signup:'新規登録はこちら',signout:'ログアウト',profile:'プロフィール',saveProfile:'プロフィールを保存',newPassword:'新しいパスワード',confirmPassword:'新しいパスワード（確認）',changePassword:'パスワードを変更',userSearch:'ユーザー検索・フレンド登録',userSearchDesc:'相手をフォローできます。お互いにフォローするとフレンドになり、1対1のチャットができます。',searchPlaceholder:'ユーザー名・表示名',search:'検索',friends:'フレンドとのチャット',friendList:'フレンド一覧',friendDesc:'相互にフォローしているユーザーが表示されます。',refreshFriends:'フレンド一覧を更新',chooseConversation:'チャットする相手を選択してください',messagePlaceholder:'メッセージを書く（最大2,000文字）',send:'送信',termsLink:'利用規約',privacyLink:'プライバシーポリシー'},
+en:{heading:'AQW — Anime fan community',description:'Use an AQW account to post, reply, follow users, like posts, and share quiz results. Accounts and data are separate from Animecia.',status:'Preparing AQW community…',auth:'Sign in / Create account',username:'Username (registration)',email:'Email address',password:'Password',display:'Display name (registration)',terms:'I have read and agree to the Terms of Use and Privacy Policy.',signin:'Sign in',signup:'Create an account',signout:'Sign out',profile:'Profile',saveProfile:'Save profile',newPassword:'New password',confirmPassword:'Confirm new password',changePassword:'Change password',userSearch:'Find users and add friends',userSearchDesc:'Follow users. When you follow each other, you become friends and can chat one-to-one.',searchPlaceholder:'Username or display name',search:'Search',friends:'Chat with friends',friendList:'Friends',friendDesc:'Users who follow each other appear here.',refreshFriends:'Refresh friends',chooseConversation:'Select someone to chat with',messagePlaceholder:'Write a message (up to 2,000 characters)',send:'Send',termsLink:'Terms of Use',privacyLink:'Privacy Policy'},
 ko:{heading:'AQW — 애니메이션 팬 커뮤니티',description:'AQW 계정으로 게시물 작성, 답글, 팔로우, 좋아요, 퀴즈 결과 공유를 할 수 있습니다. Animecia와 계정 및 데이터는 별도로 관리됩니다.',status:'AQW 커뮤니티 준비 중…',auth:'로그인 / 회원가입',username:'사용자 이름(가입 시)',email:'이메일 주소',password:'비밀번호',display:'표시 이름(가입 시)',terms:'이용약관과 개인정보 처리방침을 읽고 동의합니다.',signin:'로그인',signup:'회원가입',signout:'로그아웃',profile:'프로필',saveProfile:'프로필 저장',newPassword:'새 비밀번호',confirmPassword:'새 비밀번호 확인',changePassword:'비밀번호 변경',userSearch:'사용자 검색 및 친구 추가',userSearchDesc:'서로 팔로우하면 친구가 되어 댓글과 답글을 주고받을 수 있습니다.',searchPlaceholder:'사용자 이름 또는 표시 이름',search:'검색',friends:'친구 댓글 및 답글',friendList:'친구 목록',friendDesc:'서로 팔로우하는 사용자가 표시됩니다.',refreshFriends:'친구 목록 새로고침',chooseConversation:'대화를 선택하세요',messagePlaceholder:'댓글 작성(최대 2,000자)',send:'전송',termsLink:'이용약관',privacyLink:'개인정보 처리방침'},
 zh:{heading:'AQW — 动漫爱好者社区',description:'使用 AQW 独立账号发布内容、回复、关注用户、点赞并分享答题结果。AQW 与 Animecia 的账号和数据相互独立。',status:'正在准备 AQW 社区…',auth:'登录 / 注册',username:'用户名（注册时填写）',email:'电子邮箱',password:'密码',display:'显示名称（注册时填写）',terms:'我已阅读并同意使用条款和隐私政策。',signin:'登录',signup:'创建账号',signout:'退出登录',profile:'个人资料',saveProfile:'保存个人资料',newPassword:'新密码',confirmPassword:'确认新密码',changePassword:'修改密码',userSearch:'搜索用户并添加好友',userSearchDesc:'互相关注后即可成为好友并互相评论、回复。',searchPlaceholder:'用户名或显示名称',search:'搜索',friends:'好友评论与回复',friendList:'好友列表',friendDesc:'这里会显示互相关注的用户。',refreshFriends:'刷新好友列表',chooseConversation:'请选择会话',messagePlaceholder:'写评论（最多 2,000 字）',send:'发送',termsLink:'使用条款',privacyLink:'隐私政策'},
 es:{heading:'AQW — Comunidad de fans del anime',description:'Usa una cuenta de AQW para publicar, responder, seguir usuarios, indicar que te gustan las publicaciones y compartir resultados. Las cuentas y los datos son independientes de Animecia.',status:'Preparando la comunidad AQW…',auth:'Iniciar sesión / Registrarse',username:'Nombre de usuario (registro)',email:'Correo electrónico',password:'Contraseña',display:'Nombre visible (registro)',terms:'He leído y acepto los Términos de uso y la Política de privacidad.',signin:'Iniciar sesión',signup:'Crear cuenta',signout:'Cerrar sesión',profile:'Perfil',saveProfile:'Guardar perfil',newPassword:'Nueva contraseña',confirmPassword:'Confirmar nueva contraseña',changePassword:'Cambiar contraseña',userSearch:'Buscar usuarios y añadir amigos',userSearchDesc:'Seguidse mutuamente para ser amigos e intercambiar comentarios y respuestas.',searchPlaceholder:'Usuario o nombre visible',search:'Buscar',friends:'Comentarios y respuestas entre amigos',friendList:'Lista de amigos',friendDesc:'Aquí aparecen los usuarios que se siguen mutuamente.',refreshFriends:'Actualizar amigos',chooseConversation:'Selecciona una conversación',messagePlaceholder:'Escribe un comentario (máx. 2.000 caracteres)',send:'Enviar',termsLink:'Términos de uso',privacyLink:'Política de privacidad'},
@@ -1091,7 +1091,7 @@ async function refreshSession(session){
  $s('aqwSignOut').classList.toggle('hidden',!currentUser);
  $s('aqwSignIn').classList.toggle('hidden',!!currentUser);
  $s('aqwSignUp').classList.toggle('hidden',!!currentUser);
- if(!currentUser){setStatus(localJa()?'ログインするとフレンド登録とコメント機能を利用できます。':'Sign in to follow users and exchange comments.');await Promise.all([loadRushLeaderboard(),loadPlayerLeaderboard()]);return}
+ if(!currentUser){await closeFriendConversation();setStatus(localJa()?'ログインするとフォローとフレンドとのチャットを利用できます。':'Sign in to follow users and chat with friends.');await Promise.all([loadRushLeaderboard(),loadPlayerLeaderboard()]);return}
  try{
   const {data,error}=await sb.from('profiles').select('*').eq('id',currentUser.id).single();if(error)throw error;
   currentProfile=data;
@@ -1180,15 +1180,55 @@ async function doPost(bodyOverride){
  try{let image_path=null;if(file)image_path=await uploadImage(file);const {error}=await sb.from('posts').insert({user_id:currentUser.id,body,image_path});if(error)throw error;$s('aqwPostBody').value='';$s('aqwPostImage').value='';message(postMsg,localJa()?'投稿しました。':'Post published.');await loadFeed()}catch(e){message(postMsg,(localJa()?'投稿できませんでした：':'Could not publish: ')+errText(e))}
 }
 async function searchUsers(e){
- e.preventDefault();const term=$s('aqwUserSearch').value.trim();const box=$s('aqwUserResults');box.textContent=localJa()?'検索中…':'Searching…';
+ e?.preventDefault?.();
+ const term=$s('aqwUserSearch').value.trim(),box=$s('aqwUserResults');
+ box.textContent=localJa()?'検索中…':'Searching…';
  if(term.length<2){box.textContent=localJa()?'2文字以上入力してください。':'Enter at least 2 characters.';return}
- const {data,error}=await sb.from('profiles').select('id,username,display_name,bio,avatar_path').or('username.ilike.%'+term.replace(/[,%()]/g,'')+'%,display_name.ilike.%'+term.replace(/[,%()]/g,'')+'%').limit(20);
- if(error){box.textContent=errText(error);return}box.replaceChildren();
- if(!data.length){box.textContent=localJa()?'ユーザーが見つかりません。':'No users found.';return}
- let followedIds=new Set();let followLookupFailed=false;
- if(currentUser){const {data:followRows,error:followError}=await sb.from('follows').select('following_id').eq('follower_id',currentUser.id).in('following_id',data.map(p=>p.id));if(followError)followLookupFailed=true;else followedIds=new Set((followRows||[]).map(f=>f.following_id))}
- for(const p of data){const row=document.createElement('div');row.className='aqw-user-row';row.append(makeAvatarElement(p.avatar_path,p.display_name||p.username));const label=document.createElement('span');label.className='user-label';label.textContent=(p.display_name||p.username)+' @'+p.username+' — '+(p.bio||'');row.append(label);
- if(currentUser&&p.id!==currentUser.id){const b=document.createElement('button');b.type='button';let isFollowing=followLookupFailed?false:followedIds.has(p.id);if(followLookupFailed){const {data:follow}=await sb.from('follows').select('following_id').eq('follower_id',currentUser.id).eq('following_id',p.id).maybeSingle();isFollowing=!!follow}b.textContent=isFollowing?(localJa()?'フォロー解除':'Unfollow'):(localJa()?'フォロー':'Follow');b.onclick=async()=>{b.disabled=true;const q=isFollowing?await sb.from('follows').delete().eq('follower_id',currentUser.id).eq('following_id',p.id):await sb.from('follows').insert({follower_id:currentUser.id,following_id:p.id});if(q.error){b.disabled=false;message(authMsg,errText(q.error));return}await searchUsers(new Event('submit'));await loadFriends()};row.append(b)}box.append(row)}
+ const safeTerm=term.replace(/[,%()]/g,'');
+ const {data,error}=await sb.from('profiles').select('id,username,display_name,bio,avatar_path').or('username.ilike.%'+safeTerm+'%,display_name.ilike.%'+safeTerm+'%').limit(20);
+ if(error){box.textContent=errText(error);return}
+ box.replaceChildren();
+ const people=(data||[]).filter(p=>p.id!==currentUser?.id);
+ if(!people.length){box.textContent=localJa()?'ユーザーが見つかりません。':'No users found.';return}
+ const ids=people.map(p=>p.id);
+ let outgoing=new Set(),incoming=new Set();
+ if(currentUser){
+  const [out,incomingResult]=await Promise.all([
+   sb.from('follows').select('following_id').eq('follower_id',currentUser.id).in('following_id',ids),
+   sb.from('follows').select('follower_id').eq('following_id',currentUser.id).in('follower_id',ids)
+  ]);
+  if(out.error||incomingResult.error){box.textContent=errText(out.error||incomingResult.error);return}
+  outgoing=new Set((out.data||[]).map(x=>x.following_id));
+  incoming=new Set((incomingResult.data||[]).map(x=>x.follower_id));
+ }
+ for(const p of people){
+  const row=document.createElement('div');row.className='aqw-user-row';
+  row.append(makeAvatarElement(p.avatar_path,p.display_name||p.username));
+  const label=document.createElement('span');label.className='user-label';
+  label.textContent=(p.display_name||p.username)+' @'+p.username+(p.bio?' — '+p.bio:'');
+  row.append(label);
+  if(!currentUser){
+   const status=document.createElement('small');status.className='muted';status.textContent=localJa()?'フォローするにはログインしてください。':'Sign in to follow this user.';row.append(status);
+  }else{
+   const isFollowing=outgoing.has(p.id),followsYou=incoming.has(p.id),isFriend=isFollowing&&followsYou;
+   const state=document.createElement('small');state.className='muted';
+   state.textContent=isFriend?(localJa()?'相互フォロー・フレンド': 'Friends · mutual follow'):isFollowing?(localJa()?'フォロー中': 'Following'):followsYou?(localJa()?'フォローされています': 'Follows you'):'';
+   if(state.textContent)row.append(state);
+   const action=document.createElement('button');action.type='button';
+   action.textContent=isFriend?(localJa()?'チャットを開く':'Open chat'):isFollowing?(localJa()?'フォロー解除':'Unfollow'):(followsYou?(localJa()?'フォロー返し':'Follow back'):(localJa()?'フォロー':'Follow'));
+   action.onclick=async()=>{
+    action.disabled=true;
+    const result=isFollowing
+     ?await sb.from('follows').delete().eq('follower_id',currentUser.id).eq('following_id',p.id)
+     :await sb.from('follows').insert({follower_id:currentUser.id,following_id:p.id});
+    if(result.error){action.disabled=false;message(authMsg,errText(result.error));return}
+    await Promise.all([searchUsers({preventDefault(){}}),loadFriends()]);
+   };
+   if(isFriend)action.onclick=()=>openFriendConversation(p.id,(p.display_name||p.username)+' @'+p.username);
+   row.append(action);
+  }
+  box.append(row);
+ }
 }
 async function loadNotifications(){
  const box=$s('aqwNotifications');box.textContent=localJa()?'読み込み中…':'Loading…';
@@ -1198,25 +1238,50 @@ async function loadNotifications(){
  for(const n of data){const row=document.createElement('div');row.className='aqw-notification';row.textContent=(n.actor?.display_name||n.actor?.username|| (localJa()?'ユーザー':'User'))+(localJa()?({follow:'があなたをフォローしました',like:'があなたの投稿にいいねしました',reply:'があなたに返信しました'}[n.kind]||'がアクションしました'):({follow:' followed you',like:' liked your post',reply:' replied to you'}[n.kind]||' performed an action'))+' · '+stamp(n.created_at);if(!n.read_at){const b=document.createElement('button');b.textContent=localJa()?'既読':'Mark as read';b.onclick=async()=>{b.disabled=true;const {error:updateError}=await sb.from('notifications').update({read_at:new Date().toISOString()}).eq('id',n.id).eq('recipient_id',currentUser.id);if(updateError){b.disabled=false;message(status,(localJa()?'通知を既読にできませんでした：':'Could not mark notification as read: ')+errText(updateError));return}row.style.opacity='.6';b.remove()};row.append(b)}box.append(row)}
 }
 
-let selectedFriendId=null,selectedFriendName='';
+let selectedFriendId=null,selectedFriendName='',friendMessageChannel=null;
+async function closeFriendConversation(){
+ selectedFriendId=null;selectedFriendName='';
+ if(friendMessageChannel){try{await sb.removeChannel(friendMessageChannel)}catch(e){}friendMessageChannel=null}
+ const title=$s('aqwConversationTitle'),messages=$s('aqwMessages'),input=$s('aqwMessageInput'),send=$s('aqwSendMessage');
+ if(title)title.textContent=localJa()?'チャットする相手を選択してください':'Select a conversation';
+ if(messages)messages.replaceChildren();if(input)input.disabled=true;if(send)send.disabled=true;
+}
 async function loadFriends(){
  const box=$s('aqwFriends');if(!box||!currentUser)return;box.textContent=localJa()?'フレンドを読み込み中…':'Loading friends…';
  const {data:outgoing,error:e1}=await sb.from('follows').select('following_id').eq('follower_id',currentUser.id);
  if(e1){box.textContent=errText(e1);return}
  const ids=(outgoing||[]).map(x=>x.following_id).filter(id=>id!==currentUser.id);
- if(!ids.length){box.textContent=localJa()?'まだフレンドがいません。ユーザー検索で相手を探し、お互いにフォローしてください。':'No friends yet. Search for a user and follow each other.';return}
+ if(!ids.length){box.textContent=localJa()?'まだフレンドがいません。ユーザー検索で相手を探し、お互いにフォローしてください。':'No friends yet. Search for a user and follow each other.';if(selectedFriendId)await closeFriendConversation();return}
  const {data:incoming,error:e2}=await sb.from('follows').select('follower_id').eq('following_id',currentUser.id).in('follower_id',ids);
  if(e2){box.textContent=errText(e2);return}
  const mutual=(incoming||[]).map(x=>x.follower_id);
- if(!mutual.length){box.textContent=localJa()?'相互フォローのフレンドはいません。':'No mutual follows yet.';return}
+ if(!mutual.length){box.textContent=localJa()?'相互フォローのフレンドはいません。':'No mutual follows yet.';if(selectedFriendId)await closeFriendConversation();return}
  const {data:profiles,error:e3}=await sb.from('profiles').select('id,username,display_name,avatar_path').in('id',mutual).order('username');
  if(e3){box.textContent=errText(e3);return}
  box.replaceChildren();
- profiles.forEach(p=>{const row=document.createElement('div');row.className='aqw-user-row';row.append(makeAvatarElement(p.avatar_path,p.display_name||p.username));const label=document.createElement('span');label.className='user-label';label.textContent=(p.display_name||p.username)+' @'+p.username;const btn=document.createElement('button');btn.type='button';btn.textContent=localJa()?'コメントを開く':'Open chat';btn.onclick=()=>openFriendConversation(p.id,(p.display_name||p.username)+' @'+p.username);row.append(label,btn);box.append(row)});
- if(selectedFriendId&&!mutual.includes(selectedFriendId)){selectedFriendId=null;selectedFriendName='';$s('aqwConversationTitle').textContent=localJa()?'会話を選択してください':'Select a conversation';$s('aqwMessages').replaceChildren();$s('aqwMessageInput').disabled=true;$s('aqwSendMessage').disabled=true}
+ profiles.forEach(p=>{const row=document.createElement('div');row.className='aqw-user-row';row.append(makeAvatarElement(p.avatar_path,p.display_name||p.username));const label=document.createElement('span');label.className='user-label';label.textContent=(p.display_name||p.username)+' @'+p.username;const btn=document.createElement('button');btn.type='button';btn.textContent=localJa()?'チャットを開く':'Open chat';btn.onclick=()=>openFriendConversation(p.id,(p.display_name||p.username)+' @'+p.username);row.append(label,btn);box.append(row)});
+ if(selectedFriendId&&!mutual.includes(selectedFriendId))await closeFriendConversation();
 }
 async function openFriendConversation(friendId,friendName){
- selectedFriendId=friendId;selectedFriendName=friendName;$s('aqwConversationTitle').textContent=friendName;$s('aqwMessageInput').disabled=false;$s('aqwSendMessage').disabled=false;await loadMessages();
+ if(!currentUser)return;
+ const input=$s('aqwMessageInput'),send=$s('aqwSendMessage');
+ input.disabled=true;send.disabled=true;message($s('aqwMessageStatus'),localJa()?'フレンド状態を確認中…':'Checking friendship…');
+ const [outgoing,incoming]=await Promise.all([
+  sb.from('follows').select('following_id').eq('follower_id',currentUser.id).eq('following_id',friendId).maybeSingle(),
+  sb.from('follows').select('follower_id').eq('follower_id',friendId).eq('following_id',currentUser.id).maybeSingle()
+ ]);
+ if(outgoing.error||incoming.error){message($s('aqwMessageStatus'),errText(outgoing.error||incoming.error));return}
+ if(!outgoing.data||!incoming.data){await closeFriendConversation();message($s('aqwMessageStatus'),localJa()?'相互フォローが成立していないため、チャットできません。':'Chat is available only between mutual follows.');return}
+ if(friendMessageChannel){try{await sb.removeChannel(friendMessageChannel)}catch(e){}friendMessageChannel=null}
+ selectedFriendId=friendId;selectedFriendName=friendName;
+ $s('aqwConversationTitle').textContent=friendName;input.disabled=false;send.disabled=false;
+ const uid=currentUser.id;
+ friendMessageChannel=sb.channel('aqw-friend-chat-'+uid+'-'+friendId)
+  .on('postgres_changes',{event:'*',schema:'public',table:'friend_messages',filter:'sender_id=eq.'+uid},payload=>{if(selectedFriendId===friendId)loadMessages()})
+  .on('postgres_changes',{event:'*',schema:'public',table:'friend_messages',filter:'recipient_id=eq.'+uid},payload=>{if(selectedFriendId===friendId)loadMessages()})
+  .subscribe();
+ message($s('aqwMessageStatus'),localJa()?'リアルタイムチャットに接続しています。':'Connecting to live chat…');
+ await loadMessages();
 }
 async function loadMessages(){
  const box=$s('aqwMessages');if(!selectedFriendId||!currentUser){box.textContent=localJa()?'フレンドを選択してください。':'Select a friend.';return}
