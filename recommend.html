@@ -258,25 +258,68 @@ function shareOnX(){
  const url='https://twitter.com/intent/tweet?text='+encodeURIComponent(buildShareText());
  window.open(url,'_blank','noopener,noreferrer');
 }
-function saveShareImage(){
+async function saveShareImage(){
  const canvas=document.createElement('canvas');canvas.width=1200;canvas.height=630;
  const ctx=canvas.getContext('2d');if(!ctx){$('shareStatus').textContent='画像を作成できませんでした。';return}
- ctx.fillStyle='#f3f6fb';ctx.fillRect(0,0,1200,630);ctx.fillStyle='#244b80';ctx.fillRect(0,0,1200,18);
- ctx.fillStyle='#202a39';ctx.font='bold 34px system-ui, sans-serif';ctx.fillText('ANIME QUIZ WORLD',72,100);
- ctx.fillStyle='#315b9a';ctx.font='bold 26px system-ui, sans-serif';ctx.fillText('YOUR ANIME PROFILE',72,155);
- ctx.fillStyle='#20242b';ctx.font='bold 48px "Noto Sans JP", sans-serif';ctx.fillText('あなたのアニメタイプ',72,235);
- ctx.fillStyle='#315b9a';ctx.font='bold 46px "Noto Sans JP", sans-serif';
- ctx.fillText(($('profileTitle').textContent||'アニメ好き').slice(0,18),72,315);
- const picks=(latestResult?.closeMatches||[]).slice(0,3).map(a=>a.title.native||a.title.english||a.title.romaji).filter(Boolean);
- ctx.fillStyle='#4b5563';ctx.font='26px "Noto Sans JP", sans-serif';ctx.fillText('おすすめ作品',72,390);
- ctx.fillStyle='#20242b';ctx.font='bold 29px "Noto Sans JP", sans-serif';
- picks.forEach((name,i)=>ctx.fillText((i+1)+'. '+name.slice(0,24),90,445+i*45));
- ctx.fillStyle='#68717d';ctx.font='20px system-ui, sans-serif';ctx.fillText('エンターテインメント向けの診断結果です。',72,590);
+ const close=(latestResult?.closeMatches||[]).slice(0,3);
+ const discoveries=(latestResult?.discoveries||[]).slice(0,2);
+ const getTitle=a=>a?.title?.native||a?.title?.english||a?.title?.romaji||'タイトル不明';
+ const loadCover=src=>new Promise(resolve=>{
+  if(!src){resolve(null);return}
+  const img=new Image();img.crossOrigin='anonymous';img.onload=()=>resolve(img);img.onerror=()=>resolve(null);img.src=src;
+ });
+ const covers=await Promise.all(close.map(a=>loadCover(a.coverImage?.extraLarge||a.coverImage?.large)));
+ const rounded=(x,y,w,h,r)=>{
+  ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+ };
+ const fitText=(text,x,y,maxWidth,font,color)=>{
+  ctx.font=font;ctx.fillStyle=color;
+  let value=String(text||'');
+  while(value.length>2&&ctx.measureText(value).width>maxWidth)value=value.slice(0,-2)+'…';
+  ctx.fillText(value,x,y);
+ };
+ ctx.fillStyle='#eef3fb';ctx.fillRect(0,0,1200,630);
+ ctx.fillStyle='#203f70';ctx.fillRect(0,0,1200,14);
+ ctx.fillStyle='#ffffff';rounded(38,36,1124,558,24);ctx.fill();
+ ctx.fillStyle='#203f70';ctx.font='bold 27px system-ui,sans-serif';ctx.fillText('ANIME QUIZ WORLD',72,91);
+ ctx.fillStyle='#6d7f99';ctx.font='bold 17px system-ui,sans-serif';ctx.fillText('YOUR ANIME PROFILE',72,127);
+ ctx.fillStyle='#243247';ctx.font='bold 38px system-ui,sans-serif';ctx.fillText('あなたのアニメタイプ',72,181);
+ fitText($('profileTitle').textContent||'アニメ好き',72,238,1040,'bold 43px system-ui,sans-serif','#315b9a');
+ ctx.fillStyle='#dce6f4';rounded(72,266,1056,2,1);ctx.fill();
+ ctx.fillStyle='#243247';ctx.font='bold 22px system-ui,sans-serif';ctx.fillText('あなたにおすすめの作品',72,310);
+ const cardW=320,cardY=329,cardH=168,gap=24;
+ close.forEach((a,i)=>{
+  const x=72+i*(cardW+gap);
+  ctx.fillStyle='#f4f7fc';rounded(x,cardY,cardW,cardH,13);ctx.fill();
+  const cover=covers[i];
+  if(cover){
+   const iw=cover.naturalWidth,ih=cover.naturalHeight,scale=Math.max(104/iw,138/ih);
+   const sw=104/scale,sh=138/scale,sx=(iw-sw)/2,sy=(ih-sh)/2;
+   ctx.save();rounded(x+12,cardY+15,104,138,8);ctx.clip();ctx.drawImage(cover,sx,sy,sw,sh,x+12,cardY+15,104,138);ctx.restore();
+  }else{
+   ctx.fillStyle='#dce6f4';rounded(x+12,cardY+15,104,138,8);ctx.fill();
+   ctx.fillStyle='#6b7d98';ctx.font='bold 19px system-ui,sans-serif';ctx.fillText('ANIME',x+29,cardY+91);
+  }
+  ctx.fillStyle='#315b9a';ctx.font='bold 16px system-ui,sans-serif';ctx.fillText('RECOMMEND '+(i+1),x+130,cardY+43);
+  fitText(getTitle(a),x+130,cardY+83,174,'bold 21px system-ui,sans-serif','#253247');
+  const meta=[a.seasonYear||'',a.format||'',a.episodes?(a.episodes+'話'):''].filter(Boolean).join(' · ');
+  fitText(meta,x+130,cardY+119,174,'15px system-ui,sans-serif','#68778c');
+ });
+ if(!close.length){
+  ctx.fillStyle='#f4f7fc';rounded(72,329,1056,168,13);ctx.fill();
+  ctx.fillStyle='#66758b';ctx.font='21px system-ui,sans-serif';ctx.fillText('おすすめ作品はありませんでした。',96,420);
+ }
+ ctx.fillStyle='#243247';ctx.font='bold 18px system-ui,sans-serif';ctx.fillText('意外なおすすめ',72,540);
+ const discoveryText=discoveries.map(getTitle).join('  ／  ')||'今回は該当作品なし';
+ fitText(discoveryText,250,540,860,'19px system-ui,sans-serif','#42536b');
+ ctx.fillStyle='#8793a5';ctx.font='15px system-ui,sans-serif';ctx.fillText('診断結果はエンターテインメント向けの参考情報です。',72,574);
+ ctx.fillStyle='#8793a5';ctx.font='14px system-ui,sans-serif';ctx.fillText('the-rascal-of-sakurasou.github.io/anime-quiz-world/',72,598);
  canvas.toBlob(blob=>{
   if(!blob){$('shareStatus').textContent='画像を保存できませんでした。';return}
   const link=document.createElement('a'),objectUrl=URL.createObjectURL(blob);
-  link.href=objectUrl;link.download='anime-quiz-world-result.png';document.body.append(link);link.click();link.remove();URL.revokeObjectURL(objectUrl);
-  $('shareStatus').textContent='診断結果の画像を保存しました。';
+  link.href=objectUrl;link.download='anime-quiz-world-result.png';document.body.append(link);link.click();link.remove();
+  setTimeout(()=>URL.revokeObjectURL(objectUrl),1000);
+  $('shareStatus').textContent='カバー画像付きの診断結果カードを保存しました。';
  },'image/png');
 }
 function renderCards(result){
