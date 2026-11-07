@@ -208,17 +208,22 @@ function escapeHTML(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':
 function parseTitleInput(id){
  return $(id).value.split(/[、,，;；]/).map(x=>x.trim()).filter(Boolean).slice(0,3);
 }
+function normalizeSeedTitle(value){
+ return String(value||'').toLocaleLowerCase().normalize('NFKC')
+  .replace(/[\\s・：:!！?？。、,.'’"「」『』()（）［］【】_ーｰ-]/g,'');
+}
 async function findSeedAnime(title){
- const query='query ($search:String) { Media(search:$search,type:ANIME,isAdult:false) { id title { romaji english native } genres tags { name rank isMediaSpoiler } } }';
+ const query='query ($search:String) { Page(perPage:10) { media(search:$search,type:ANIME,isAdult:false,sort:SEARCH_MATCH) { id title { romaji english native } genres tags { name rank isMediaSpoiler } } } }';
  try{
   const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query,variables:{search:title}}),signal:AbortSignal.timeout(10000)});
   const json=await response.json().catch(()=>null);
   if(!response.ok||json?.errors?.length)return null;
-  return json?.data?.Media||null;
+  const candidates=json?.data?.Page?.media||[];
+  const wanted=normalizeSeedTitle(title);
+  // 検索順位だけで別作品を採用しないよう、タイトル完全一致だけを使用する。
+  return candidates.find(media=>[media?.title?.native,media?.title?.english,media?.title?.romaji]
+   .some(alias=>normalizeSeedTitle(alias)===wanted))||null;
  }catch(_){return null}
-}
-function titleKey(media){
- return [media?.title?.native,media?.title?.english,media?.title?.romaji].filter(Boolean).map(x=>x.toLocaleLowerCase().replace(/[\s・：:!！?？]/g,''));
 }
 async function getRecommendations(profile){
  const query='query ($page:Int,$sort:[MediaSort]) { Page(page:$page,perPage:50) { media(type:ANIME,sort:$sort,isAdult:false) { id format title { romaji english native } description(asHtml:false) coverImage { extraLarge large } episodes seasonYear averageScore popularity genres tags { name rank isMediaSpoiler } siteUrl } } }';
@@ -626,10 +631,12 @@ function renderCards(result){
  if(!result.discoveries.length)$('discoveryCards').innerHTML='<p class="status">今回の候補群では、相性を保った意外な作品を見つけられませんでした。</p>';
  const report=result.seedReport||{};
  const notices=[];
- if(report.unresolvedFavorites?.length)notices.push('検索できなかった「好きな作品」：'+report.unresolvedFavorites.join('、'));
- if(report.unresolvedDislikes?.length)notices.push('検索できなかった「苦手な作品」：'+report.unresolvedDislikes.join('、'));
+ if(report.resolvedFavorites?.length)notices.push('好きな作品の照合結果：'+report.resolvedFavorites.map(x=>x.requested+' → '+x.resolved).join('、'));
+ if(report.resolvedDislikes?.length)notices.push('苦手な作品の照合結果：'+report.resolvedDislikes.map(x=>x.requested+' → '+x.resolved).join('、'));
+ if(report.unresolvedFavorites?.length)notices.push('完全一致で確認できなかった「好きな作品」：'+report.unresolvedFavorites.join('、'));
+ if(report.unresolvedDislikes?.length)notices.push('完全一致で確認できなかった「苦手な作品」：'+report.unresolvedDislikes.join('、'));
  if(report.conflicts?.length)notices.push('好き・苦手の両方に入力された作品は、傾向分析から除外しました：'+report.conflicts.join('、'));
- $('resultStatus').textContent='相性スコアは推薦処理内の比較用数値で、百分率や客観的な作品評価ではありません。「意外なおすすめ」は候補群内で人気度が比較的低い作品です。人気度はAniListの登録・利用状況に基づく目安で、作品の質を示すものではありません。'+(notices.length?' 入力作品の確認：'+notices.join('／'):' 入力された好き・苦手の作品はAniListで検索し、推薦傾向に反映しました。');
+ $('resultStatus').textContent='相性スコアは推薦処理内の比較用数値で、百分率や客観的な作品評価ではありません。「意外なおすすめ」は候補群内で人気度が比較的低い作品です。人気度はAniListの登録・利用状況に基づく目安で、作品の質を示すものではありません。'+(notices.length?' 入力作品の確認：'+notices.join('／'):' 入力された好き・苦手の作品はタイトル完全一致で照合し、推薦傾向に反映しました。');
 }
 async function finish(){
  $('diagnosis').classList.add('hidden');$('error').classList.add('hidden');$('loading').classList.remove('hidden');
