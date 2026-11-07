@@ -301,13 +301,14 @@ async function fetchAnime(vars={}){
      throw err;
     }
     const json=await response.json();
-    if(json.errors?.length)throw new Error(json.errors.map(e=>e.message).join(' / '));
+    if(json.errors?.length){const error=new Error(json.errors.map(e=>e.message).join(' / '));error.batchUnsupported=true;throw error}
     return pages.map((_,index)=>normalizeUnicode(json.data?.['p'+index]?.media||[]));
    }catch(error){
     lastError=error.name==='AbortError'?new Error('データ取得がタイムアウトしました。'):error;
     if(attempt<3)await new Promise(resolve=>setTimeout(resolve,800*Math.pow(2,attempt)));
    }finally{clearTimeout(timeout)}
   }
+  if(lastError?.batchUnsupported)return Promise.all(pages.map(page=>request({page,perPage:50},sort)));
   throw lastError||new Error('データをまとめて取得できませんでした。');
  };
  if(vars.search)return (await request({page:1,perPage:18,search:vars.search})).filter(isUsableAnime);
