@@ -168,6 +168,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
  <p class="muted aqw-rush-board-desc" id="aqwRushBoardDescription">ログインして記録を登録できます。各ユーザーの自己ベストを表示します。</p>
  <p class="aqw-rush-board-status" id="aqwRushBoardStatus" role="status" aria-live="polite">ランキングを読み込んでいます…</p>
  <div class="aqw-rush-board-scroll"><table><thead><tr><th id="aqwRushRankHeading">順位</th><th id="aqwRushPlayerHeading">プレイヤー</th><th id="aqwRushScoreHeading">正解数</th><th id="aqwRushTimeHeading">タイム</th></tr></thead><tbody id="aqwRushBoardRows"></tbody></table></div>
+ <p class="muted aqw-rush-board-status" id="aqwMyRushRank" role="status" aria-live="polite"></p>
 </section>
 <section id="aqwPlayerLeaderboard" class="social-box aqw-rush-board" aria-labelledby="aqwPlayerBoardTitle">
  <div class="aqw-rush-board-head"><h3 id="aqwPlayerBoardTitle">プレイヤー総合ランキング</h3><div class="aqw-rush-board-actions"><label class="aqw-player-sort-label" for="aqwPlayerBoardSort"><span id="aqwPlayerBoardSortLabel">集計方法</span><select id="aqwPlayerBoardSort"><option value="xp">総合XP</option><option value="runs">プレイ回数</option><option value="accuracy">正答率（10問以上）</option></select></label><button id="aqwPlayerBoardRefresh" type="button">更新</button></div></div>
@@ -728,8 +729,8 @@ const rt=key=>(aqwRuntimeText[lang]||aqwRuntimeText.en)[key]||aqwRuntimeText.en[
 const stamp=s=>{try{return new Date(s).toLocaleString(localJa()?'ja-JP':undefined)}catch{return s||''}};
 const setStatus=t=>message(status,t);
 const aqwRushText={
- ja:{title:'スピードラッシュ・世界ランキング',description:'ログインして記録を登録できます。各ユーザーの自己ベストを表示します。記録は自己申告制のため、不正を完全には防げません。',refresh:'更新',loading:'ランキングを読み込んでいます…',empty:'まだ記録がありません。最初の記録を登録しましょう。',error:'ランキングを読み込めませんでした：',rank:'順位',player:'プレイヤー',score:'正解数',time:'タイム',needLogin:'記録を登録するにはAQWアカウントでログインしてください。',saved:'自己ベストをランキングに登録しました。',notBetter:'今回の記録は自己ベストを更新しませんでした。',submitError:'記録を登録できませんでした：',needTen:'10問すべて完了した記録のみ登録できます。',you:'あなた',share:'ランキングを共有',save:'画像を保存',shareError:'ランキング画像を作成できませんでした：',shareOpened:'共有メニューを開きました。',savedImage:'ランキング画像を保存しました。',emptyShare:'共有できるランキング記録がありません。',unverified:'自己申告記録・公式認証なし'},
- en:{title:'Speed Rush · Global Leaderboard',description:'Sign in to submit a score. Each player’s personal best is shown. Scores are self-reported and cannot be fully verified.',refresh:'Refresh',loading:'Loading leaderboard…',empty:'No scores yet. Set the first record!',error:'Could not load leaderboard: ',rank:'Rank',player:'Player',score:'Correct',time:'Time',needLogin:'Sign in with your AQW account to submit this score.',saved:'Your personal best was added to the leaderboard.',notBetter:'This run did not beat your personal best.',submitError:'Could not submit score: ',needTen:'Only completed 10-question runs can be submitted.',you:'YOU',share:'Share leaderboard',save:'Save image',shareError:'Could not create leaderboard image: ',shareOpened:'Share menu opened.',savedImage:'Leaderboard image saved.',emptyShare:'There are no leaderboard scores to share.',unverified:'Self-reported scores · Not officially verified'},
+ ja:{title:'スピードラッシュ・世界ランキング',description:'ログインして記録を登録できます。各ユーザーの自己ベストを表示します。記録は自己申告制のため、不正を完全には防げません。',refresh:'更新',loading:'ランキングを読み込んでいます…',empty:'まだ記録がありません。最初の記録を登録しましょう。',error:'ランキングを読み込めませんでした：',rank:'順位',player:'プレイヤー',score:'正解数',time:'タイム',needLogin:'記録を登録するにはAQWアカウントでログインしてください。',saved:'自己ベストをランキングに登録しました。',notBetter:'今回の記録は自己ベストを更新しませんでした。',submitError:'記録を登録できませんでした：',needTen:'10問すべて完了した記録のみ登録できます。',you:'あなた',share:'ランキングを共有',save:'画像を保存',shareError:'ランキング画像を作成できませんでした：',shareOpened:'共有メニューを開きました。',savedImage:'ランキング画像を保存しました。',emptyShare:'共有できるランキング記録がありません。',unverified:'自己申告記録・公式認証なし',myRank:'あなたの順位：',rankSuffix:'位（同点時は同順位）',loginRank:'ログインすると自分の順位を確認できます。',rankUnavailable:'自分の順位を取得できませんでした：'},
+ en:{title:'Speed Rush · Global Leaderboard',description:'Sign in to submit a score. Each player’s personal best is shown. Scores are self-reported and cannot be fully verified.',refresh:'Refresh',loading:'Loading leaderboard…',empty:'No scores yet. Set the first record!',error:'Could not load leaderboard: ',rank:'Rank',player:'Player',score:'Correct',time:'Time',needLogin:'Sign in with your AQW account to submit this score.',saved:'Your personal best was added to the leaderboard.',notBetter:'This run did not beat your personal best.',submitError:'Could not submit score: ',needTen:'Only completed 10-question runs can be submitted.',you:'YOU',share:'Share leaderboard',save:'Save image',shareError:'Could not create leaderboard image: ',shareOpened:'Share menu opened.',savedImage:'Leaderboard image saved.',emptyShare:'There are no leaderboard scores to share.',unverified:'Self-reported scores · Not officially verified',myRank:'Your rank: ',rankSuffix:' (ties share a rank)',loginRank:'Sign in to view your personal rank.',rankUnavailable:'Could not load your personal rank: '},
  ko:{title:'스피드 러시 · 세계 랭킹',description:'로그인하여 기록을 등록할 수 있습니다. 플레이어별 최고 기록을 표시합니다. 기록은 사용자 제출 방식이며 부정행위를 완전히 방지할 수 없습니다.',refresh:'새로고침',loading:'랭킹을 불러오는 중…',empty:'아직 기록이 없습니다.',error:'랭킹을 불러오지 못했습니다: ',rank:'순위',player:'플레이어',score:'정답 수',time:'기록',needLogin:'기록을 등록하려면 AQW 계정으로 로그인하세요.',saved:'최고 기록을 랭킹에 등록했습니다.',notBetter:'이번 기록은 개인 최고 기록을 갱신하지 못했습니다.',submitError:'기록 등록 실패: ',needTen:'10문제를 모두 완료한 기록만 등록할 수 있습니다.',you:'나',share:'랭킹 공유',save:'이미지 저장',shareError:'랭킹 이미지를 만들 수 없습니다: ',shareOpened:'공유 메뉴를 열었습니다.',savedImage:'랭킹 이미지를 저장했습니다.',emptyShare:'공유할 랭킹 기록이 없습니다.',unverified:'사용자 제출 기록 · 공식 인증 없음'},
  zh:{title:'极速挑战 · 全球排行榜',description:'登录后即可提交成绩。榜单显示每位玩家的最佳成绩。成绩由玩家自行提交，无法完全验证。',refresh:'刷新',loading:'正在加载排行榜…',empty:'还没有成绩，来创造第一条记录吧。',error:'无法加载排行榜：',rank:'排名',player:'玩家',score:'答对数',time:'用时',needLogin:'请登录 AQW 账号以提交成绩。',saved:'个人最佳成绩已加入排行榜。',notBetter:'本次成绩未刷新个人最佳。',submitError:'无法提交成绩：',needTen:'仅可提交完成全部10题的成绩。',you:'你',share:'分享排行榜',save:'保存图片',shareError:'无法生成排行榜图片：',shareOpened:'已打开分享菜单。',savedImage:'排行榜图片已保存。',emptyShare:'没有可分享的排行榜记录。',unverified:'玩家自行提交 · 未经官方验证'},
  es:{title:'Speed Rush · Clasificación mundial',description:'Inicia sesión para enviar tu marca. Se muestra el mejor resultado de cada jugador. Las marcas son autodeclaradas y no se pueden verificar por completo.',refresh:'Actualizar',loading:'Cargando clasificación…',empty:'Aún no hay marcas.',error:'No se pudo cargar la clasificación: ',rank:'Puesto',player:'Jugador',score:'Aciertos',time:'Tiempo',needLogin:'Inicia sesión con tu cuenta AQW para enviar el resultado.',saved:'Tu mejor marca se añadió a la clasificación.',notBetter:'Esta partida no superó tu mejor marca.',submitError:'No se pudo enviar la marca: ',needTen:'Solo se pueden enviar partidas completas de 10 preguntas.',you:'TÚ',share:'Compartir ranking',save:'Guardar imagen',shareError:'No se pudo crear la imagen: ',shareOpened:'Se abrió el menú para compartir.',savedImage:'Imagen del ranking guardada.',emptyShare:'No hay resultados para compartir.',unverified:'Marcas autodeclaradas · Sin verificación oficial'},
@@ -877,6 +878,17 @@ async function submitPlayerRun(result){
  message($s('aqwPlayerBoardStatus'),data?.duplicate?aqwPlayerT('duplicate'):aqwPlayerT('saved'));
  await loadPlayerLeaderboard();
 }
+async function loadMyRushRank(){
+ const el=$s('aqwMyRushRank');if(!el)return;
+ if(!currentUser){message(el,aqwRushT('loginRank'));return}
+ const {data:mine,error:mineError}=await sb.from('aqw_speed_rush_scores').select('correct_count,elapsed_ms').eq('user_id',currentUser.id).maybeSingle();
+ if(mineError){message(el,aqwRushT('rankUnavailable')+errText(mineError));return}
+ if(!mine){message(el,aqwRushT('loginRank'));return}
+ const {count,error}=await sb.from('aqw_speed_rush_scores').select('user_id',{count:'exact',head:true})
+  .or('correct_count.gt.'+Number(mine.correct_count)+',and(correct_count.eq.'+Number(mine.correct_count)+',elapsed_ms.lt.'+Number(mine.elapsed_ms)+')');
+ if(error){message(el,aqwRushT('rankUnavailable')+errText(error));return}
+ message(el,aqwRushT('myRank')+(Number(count||0)+1).toLocaleString()+aqwRushT('rankSuffix'));
+}
 async function loadRushLeaderboard(){
  if(!sb)return;
  const statusEl=$s('aqwRushBoardStatus'),rows=$s('aqwRushBoardRows');
@@ -902,6 +914,7 @@ async function loadRushLeaderboard(){
   const time=document.createElement('td');time.textContent=formatRushTime(item.elapsed_ms);
   trEl.append(rank,player,score,time);rows.append(trEl);
  });
+ await loadMyRushRank();
 }
 async function submitRushResult(result){
  if(result.questionCount!==10){message($s('aqwRushBoardStatus'),aqwRushT('needTen'));return}
