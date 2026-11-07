@@ -175,6 +175,28 @@ function calculateLearnedTotalAdjustment(genres,tags,preferences){
  const total=calculateLearnedAdjustment(genres,preferences.genres,2.4)+calculateLearnedAdjustment(tags,preferences.tags,2);
  return Math.max(-4,Math.min(4,total));
 }
+// 1件ずつ評価対象を学習データから外す簡易ホールドアウト検証。
+// これは推薦順位全体の精度ではなく、ジャンル・タグ学習の方向性だけを確認する参考指標。
+function evaluateLearnedFeedback(feedback){
+ const entries=Object.entries(feedback||{}).filter(([,item])=>item&&['like','dislike'].includes(item.value)&&(Array.isArray(item.genres)||Array.isArray(item.tags)));
+ const totals={tested:0,decided:0,correct:0,predictedLike:0,predictedDislike:0,actualLike:0,actualDislike:0};
+ const samples=[];
+ for(const [heldOutId,item] of entries){
+  const training=Object.fromEntries(Object.entries(feedback).filter(([id,other])=>id!==heldOutId&&other&&['like','dislike'].includes(other.value)));
+  const preferences=buildLearnedPreferences(training);
+  const adjustment=calculateLearnedTotalAdjustment(item.genres||[],item.tags||[],preferences);
+  const prediction=adjustment>0.15?'like':adjustment< -0.15?'dislike':'neutral';
+  totals.tested++;
+  if(item.value==='like')totals.actualLike++;else totals.actualDislike++;
+  if(prediction!=='neutral'){
+   totals.decided++;
+   if(prediction===item.value)totals.correct++;
+   if(prediction==='like')totals.predictedLike++;else totals.predictedDislike++;
+  }
+  samples.push({id:heldOutId,actual:item.value,prediction,adjustment});
+ }
+ return {...totals,samples};
+}
 function runRecommendationSelfTests(){
  const tests=[];
  const check=(name,condition)=>tests.push({name,passed:Boolean(condition)});
@@ -193,6 +215,16 @@ function runRecommendationSelfTests(){
  check('合算補正は上限+4以内',calculateLearnedTotalAdjustment(many,many,maxPrefs)<=4);
  const minPrefs={genres:new Map(many.map(name=>[name,{likes:0,total:100}])),tags:new Map(many.map(name=>[name,{likes:0,total:100}]))};
  check('合算補正は下限-4以上',calculateLearnedTotalAdjustment(many,many,minPrefs)>=-4);
+ const holdout=evaluateLearnedFeedback({
+  target:{value:'like',genres:['Fantasy'],tags:['Magic']},
+  support1:{value:'like',genres:['Fantasy'],tags:['Magic']},
+  support2:{value:'like',genres:['Fantasy'],tags:['Magic']},
+  opposite1:{value:'dislike',genres:['Mystery'],tags:['Horror']},
+  opposite2:{value:'dislike',genres:['Mystery'],tags:['Horror']}
+ });
+ check('ホールドアウト評価の件数を正しく集計',holdout.tested===5);
+ check('評価対象自身を学習データから除外',holdout.samples.find(x=>x.id==='target')?.adjustment>0);
+ check('評価がない特徴は中立予測',evaluateLearnedFeedback({only:{value:'like',genres:['Fantasy']}}).samples[0]?.prediction==='neutral');
  return tests;
 }
 
@@ -637,6 +669,24 @@ function renderFeedbackAnalytics(){
  const learning=document.createElement('p');learning.className='status';
  learning.textContent='推薦への学習反映：ジャンル '+learnableGenres+' 種類、タグ '+learnableTags+' 種類（各2件以上の評価がある特徴）。評価が1件以下の特徴は、少数データによる偏りを避けるため、まだ順位調整に使いません。';
  root.append(learning);
+ const validation=evaluateLearnedFeedback(readRecommendationFeedback());
+ const validationBox=document.createElement('div');validationBox.style.cssText='margin-top:14px;padding:12px;border:1px solid var(--line);border-radius:8px;background:#fff';
+ const validationTitle=document.createElement('strong');validationTitle.textContent='学習ロジックの簡易ホールドアウト検証';validationBox.append(validationTitle);
+ const validationText=document.createElement('p');validationText.className='status';
+ const enough=validation.tested>=8&&validation.actualLike>=3&&validation.actualDislike>=3;
+ if(!validation.tested){
+  validationText.textContent='ジャンル・タグ情報を含む評価がまだありません。評価が蓄積すると、評価対象を1件ずつ学習データから除外する検証を行います。';
+ }else if(!enough){
+  validationText.textContent='検証対象 '+validation.tested+' 件（肯定 '+validation.actualLike+'／否定 '+validation.actualDislike+'）。暫定表示の最低条件は、対象8件以上かつ肯定・否定が各3件以上です。現時点では予測正答率を表示しません。';
+ }else{
+  const coverage=Math.round(validation.decided/validation.tested*100);
+  const accuracy=validation.decided?Math.round(validation.correct/validation.decided*100):0;
+  validationText.textContent='検証対象 '+validation.tested+' 件中、学習傾向から方向を判定できたのは '+validation.decided+' 件（判定率 '+coverage+'%）。判定できた分の方向一致率は '+accuracy+'%（'+validation.correct+' / '+validation.decided+' 件）。中立判定は正答率の分母に含めません。';
+ }
+ validationBox.append(validationText);
+ const validationNote=document.createElement('p');validationNote.className='status';validationNote.style.fontSize='.82rem';
+ validationNote.textContent='各評価を1件ずつ学習データから除外して再計算する方式です。ジャンル・タグ傾向の簡易検証であり、候補作品の順位、診断全体の推薦精度、実際の視聴満足度を測定するものではありません。評価データの偏りや同一作品群の類似性も残るため、結果は参考値です。';
+ validationBox.append(validationNote);root.append(validationBox);
  const note=document.createElement('p');note.className='status';note.style.fontSize='.82rem';
  note.textContent='集計対象：評価 '+rated.length+' 件。ジャンル・タグの内訳は詳細を保存した '+known.length+' 件のみです。これはこのブラウザ内に保存された本人の評価履歴の記述統計であり、他の利用者の評価は含みません。学習反映数は推薦精度の証明や因果関係を示すものではありません。';
  root.append(note);
