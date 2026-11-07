@@ -699,7 +699,7 @@ document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',e=>{
  const panels={quiz:$('#quiz'),search:$('#search'),progressTab:$('#progressPanel'),social:$('#social'),ranking:$('#ranking')};
  Object.entries(panels).forEach(([key,panel])=>{if(panel)panel.classList.toggle('hidden',key!==tab)});
  if(tab==='progressTab')renderProgress();
- if(tab==='ranking'){loadRushLeaderboard();loadPlayerLeaderboard()}
+ if(tab==='ranking'){loadRushLeaderboard();loadPlayerLeaderboard();refreshLeaderboardRegistration()}
 }));
 try{restoreLanguage()}catch(e){console.error('AQW language initialization failed:',e);const status=document.getElementById('quizStatus');if(status)status.textContent='画面の初期化に失敗しました。ページを再読み込みしてください。'}
 
@@ -810,6 +810,73 @@ async function shareRushBoardImage(){
   const url=URL.createObjectURL(file),a=document.createElement('a');a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);message($s('aqwRushBoardStatus'),aqwRushT('savedImage'));
  }catch(e){message($s('aqwRushBoardStatus'),aqwRushT('shareError')+errText(e))}
 }
+
+async function createPlayerBoardImage(){
+ const period=$s('aqwPlayerBoardPeriod')?.value||'all',metric=$s('aqwPlayerBoardSort')?.value||'xp';
+ const {data,error}=await sb.rpc('get_aqw_player_leaderboard',{p_period:period,p_metric:metric});
+ if(error)throw error;if(!data?.length)throw new Error(aqwPlayerT('empty'));
+ const canvas=document.createElement('canvas');canvas.width=1200;canvas.height=630;
+ const ctx=canvas.getContext('2d');if(!ctx)throw new Error('Canvas unavailable');
+ const bg=ctx.createLinearGradient(0,0,1200,630);bg.addColorStop(0,'#101a30');bg.addColorStop(1,'#263e67');ctx.fillStyle=bg;ctx.fillRect(0,0,1200,630);
+ ctx.fillStyle='#8fb4ff';ctx.font='bold 22px Arial,sans-serif';ctx.fillText('ANIME QUIZ WORLD',70,64);
+ ctx.fillStyle='#fff';ctx.font='bold 40px Arial,sans-serif';ctx.fillText('PLAYER RANKING',70,125);
+ ctx.fillStyle='#c9d7ee';ctx.font='22px Arial,sans-serif';ctx.fillText(aqwPlayerT('title')+' · '+aqwPeriodT(period),70,164);
+ const heads=[aqwPlayerT('rank'),aqwPlayerT('player'),aqwPlayerT('metric'),aqwPlayerT('detail')],xs=[85,220,820,1010];
+ ctx.fillStyle='#9fb5d7';ctx.font='bold 20px Arial,sans-serif';heads.forEach((h,i)=>ctx.fillText(h,xs[i],220));
+ const metricValue=x=>metric==='runs'?Number(x.total_runs||0):metric==='accuracy'?(Number(x.total_questions)?Number(x.total_correct)/Number(x.total_questions):0):Number(x.total_xp||0);
+ const sorted=[...data].sort((a,b)=>metricValue(b)-metricValue(a));
+ let previous=null,rank=0;
+ sorted.slice(0,10).forEach((item,index)=>{const value=metricValue(item);if(value!==previous)rank=index+1;previous=value;const y=270+index*32;if(index<3){ctx.fillStyle=['#e6b83f','#aab6c5','#c18a61'][index];ctx.globalAlpha=.17;ctx.fillRect(65,y-25,1070,30);ctx.globalAlpha=1}
+ ctx.fillStyle=index<3?['#f4d477','#d5deea','#e2b18b'][index]:'#fff';ctx.font='bold 20px Arial,sans-serif';ctx.fillText(String(rank),xs[0],y);
+ let name=item.display_name||item.username||aqwPlayerT('player');if(name.length>26)name=name.slice(0,25)+'…';ctx.fillText(name,xs[1],y);
+ const valueText=metric==='runs'?Number(item.total_runs||0).toLocaleString():metric==='accuracy'?Math.round(value*100)+'%':Number(item.total_xp||0).toLocaleString()+' XP';
+ const detail=metric==='accuracy'?Number(item.total_correct||0)+' / '+Number(item.total_questions||0):Number(item.total_runs||0)+' '+aqwPlayerT('plays');
+ ctx.fillText(valueText,xs[2],y);ctx.fillText(detail,xs[3],y);
+ });
+ ctx.fillStyle='#aebdd3';ctx.font='18px Arial,sans-serif';ctx.fillText(aqwPlayerT('unverified'),70,590);
+ return await new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(new File([blob],'anime-quiz-world-player-ranking.png',{type:'image/png'})):reject(new Error('PNG export failed')),'image/png'));
+}
+async function sharePlayerBoardImage(){
+ try{const file=await createPlayerBoardImage();if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({title:'Anime Quiz World · Player Ranking',files:[file]});message($s('aqwPlayerBoardStatus'),aqwRushT('shareOpened'));return}
+ const url=URL.createObjectURL(file),a=document.createElement('a');a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);message($s('aqwPlayerBoardStatus'),aqwRushT('savedImage'));
+ }catch(e){message($s('aqwPlayerBoardStatus'),aqwRushT('shareError')+errText(e))}
+}
+async function savePlayerBoardImage(){
+ let url='';try{const file=await createPlayerBoardImage();url=URL.createObjectURL(file);const a=document.createElement('a');a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove();message($s('aqwPlayerBoardStatus'),aqwRushT('savedImage'))}
+ catch(e){message($s('aqwPlayerBoardStatus'),aqwRushT('shareError')+errText(e))}
+ finally{if(url)setTimeout(()=>URL.revokeObjectURL(url),10000)}
+}
+async function refreshLeaderboardRegistration(){
+ if(!currentUser){message($s('aqwLeaderboardAccountStatus'),'ログインするとランキング登録を管理できます。');return}
+ const {data,error}=await sb.from('profiles').select('leaderboard_enabled').eq('id',currentUser.id).maybeSingle();
+ if(error){message($s('aqwLeaderboardAccountStatus'),'登録状態を取得できませんでした：'+errText(error));return}
+ const enabled=data?.leaderboard_enabled!==false;
+ const button=$s('aqwToggleLeaderboardRegistration');if(button)button.textContent=enabled?'ランキング登録を解除':'ランキングに再登録';
+ message($s('aqwLeaderboardAccountStatus'),enabled?'ランキング登録中です。':'ランキング登録を解除しています。記録データは保持されています。');
+}
+async function toggleLeaderboardRegistration(){
+ if(!currentUser){message($s('aqwLeaderboardAccountStatus'),'ランキング登録の変更にはログインが必要です。');return}
+ const {data,error:readError}=await sb.from('profiles').select('leaderboard_enabled').eq('id',currentUser.id).maybeSingle();
+ if(readError){message($s('aqwLeaderboardAccountStatus'),'登録状態を取得できませんでした：'+errText(readError));return}
+ const enabled=data?.leaderboard_enabled!==false;
+ const next=!enabled;
+ if(!confirm(next?'ランキングに再登録しますか？':'ランキングへの掲載を停止します。保存済みの記録は削除されず、再登録すると再び表示されます。続行しますか？'))return;
+ const {data:result,error}=await sb.rpc('set_aqw_leaderboard_enabled',{p_enabled:next});
+ if(error){message($s('aqwLeaderboardAccountStatus'),'設定を変更できませんでした：'+errText(error));return}
+ await refreshLeaderboardRegistration();await loadRushLeaderboard();await loadPlayerLeaderboard();
+}
+async function resetOnlineLeaderboardRecords(){
+ if(!currentUser){message($s('aqwLeaderboardAccountStatus'),'実績のリセットにはログインが必要です。');return}
+ if(!confirm('サーバーに保存された自分のランキング実績（総合XP・プレイ回数・正答数・スピードラッシュ記録と期間別履歴）をすべて削除します。この操作は取り消せません。続行しますか？'))return;
+ const {data,error}=await sb.rpc('reset_aqw_player_records');
+ if(error){message($s('aqwLeaderboardAccountStatus'),'実績をリセットできませんでした：'+errText(error));return}
+ ['aqw-history','aqw-total-runs','aqw-xp','aqw-collection','aqw-daily-progress','aqw-daily-quest-claims','aqw-streak'].forEach(k=>safeStorage.removeItem(k));
+ safeStorage.keys().filter(k=>k.startsWith('aqw-best-')).forEach(k=>safeStorage.removeItem(k));
+ renderProgress();const history=$s('historySummary');if(history)history.textContent='';
+ message($s('aqwLeaderboardAccountStatus'),'自分のランキング実績をリセットしました。');
+ await loadRushLeaderboard();await loadPlayerLeaderboard();
+}
+
 async function saveRushBoardImage(){
  let url='';
  try{const file=await createRushBoardImage();url=URL.createObjectURL(file);const a=document.createElement('a');a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove();message($s('aqwRushBoardStatus'),aqwRushT('savedImage'))}
@@ -1122,6 +1189,11 @@ $s('aqwPlayerBoardSort').addEventListener('change',loadPlayerLeaderboard);
 $s('aqwPlayerBoardPeriod').addEventListener('change',loadPlayerLeaderboard);
 $s('aqwRushBoardShare').addEventListener('click',shareRushBoardImage);
 $s('aqwRushBoardSave').addEventListener('click',saveRushBoardImage);
+$s('aqwPlayerBoardShare').addEventListener('click',sharePlayerBoardImage);
+$s('aqwPlayerBoardSave').addEventListener('click',savePlayerBoardImage);
+$s('aqwResetOnlineRecords').addEventListener('click',resetOnlineLeaderboardRecords);
+$s('aqwToggleLeaderboardRegistration').addEventListener('click',toggleLeaderboardRegistration);
+
 document.getElementById('languageSelect')?.addEventListener('change',()=>{applyRushLeaderboardLanguage();applyPlayerLeaderboardLanguage();applyPeriodLabels();renderPlayerLeaderboard()});
 window.addEventListener('aqw:quiz-finished',event=>{
  const detail=event.detail;
