@@ -240,7 +240,7 @@ function renderCards(result){
  if(!result.closeMatches.length&&!result.discoveries.length){$('resultStatus').textContent='条件に合う作品を十分に取得できませんでした。回答を変えて再診断してください。';return}
  if(!result.closeMatches.length)$('animeCards').innerHTML='<p class="status">一致度の高い候補は見つかりませんでした。</p>';
  if(!result.discoveries.length)$('discoveryCards').innerHTML='<p class="status">今回の候補群では、相性を保った意外な作品を見つけられませんでした。</p>';
- $('resultStatus').textContent='「意外なおすすめ」は候補群内で人気度が比較的低い作品です。人気度はAniListの登録・利用状況に基づく目安で、作品の質を示すものではありません。';
+ $('resultStatus').textContent='相性スコアは推薦処理内の比較用数値で、百分率や客観的な作品評価ではありません。「意外なおすすめ」は候補群内で人気度が比較的低い作品です。人気度はAniListの登録・利用状況に基づく目安で、作品の質を示すものではありません。';
 }
 async function finish(){
  $('diagnosis').classList.add('hidden');$('error').classList.add('hidden');$('loading').classList.remove('hidden');
