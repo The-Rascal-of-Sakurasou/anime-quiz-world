@@ -543,8 +543,13 @@ function renderFeedbackAnalytics(){
  addBreakdown('ジャンル別の評価（最大6件）',genreCounts);
  addBreakdown('物語タグ別の評価（最大6件）',tagCounts);
  addBreakdown('表示位置別の評価',rankCounts);
+ const learnableGenres=Object.values(genreCounts).filter(count=>count.like+count.dislike>=2).length;
+ const learnableTags=Object.values(tagCounts).filter(count=>count.like+count.dislike>=2).length;
+ const learning=document.createElement('p');learning.className='status';
+ learning.textContent='推薦への学習反映：ジャンル '+learnableGenres+' 種類、タグ '+learnableTags+' 種類（各2件以上の評価がある特徴）。評価が1件以下の特徴は、少数データによる偏りを避けるため、まだ順位調整に使いません。';
+ root.append(learning);
  const note=document.createElement('p');note.className='status';note.style.fontSize='.82rem';
- note.textContent='集計対象：評価 '+rated.length+' 件。ジャンル・タグの内訳は詳細を保存した '+known.length+' 件のみです。これは利用者自身の評価履歴の記述統計であり、推薦精度の証明や因果関係を示すものではありません。';
+ note.textContent='集計対象：評価 '+rated.length+' 件。ジャンル・タグの内訳は詳細を保存した '+known.length+' 件のみです。これはこのブラウザ内に保存された本人の評価履歴の記述統計であり、他の利用者の評価は含みません。学習反映数は推薦精度の証明や因果関係を示すものではありません。';
  root.append(note);
 }
 function renderCards(result){
