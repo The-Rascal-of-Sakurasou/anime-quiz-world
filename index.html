@@ -284,6 +284,32 @@ async function fetchAnime(vars={}){
   }
   throw lastError||new Error('データを取得できませんでした。');
  };
+ const requestPageBatch=async(pages,sort)=>{
+  if(pages.length===1)return [await request({page:pages[0],perPage:50},sort)];
+  const fields='id format popularity title { romaji english native } description(asHtml:false) synonyms coverImage { large medium extraLarge } episodes seasonYear averageScore genres studios(isMain:true) { nodes { name } } characters(sort:ROLE,perPage:5) { nodes { id name { full native } image { large } } } relations { edges { relationType node { id type } } }';
+  const aliases=pages.map((page,index)=>'p'+index+': Page(page:'+page+',perPage:50) { pageInfo { hasNextPage } media(type:ANIME,sort:'+sort+',isAdult:false) { '+fields+' } }').join(' ');
+  const batchQuery='query { '+aliases+' }';
+  let lastError;
+  for(let attempt=0;attempt<4;attempt++){
+   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);
+   try{
+    const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query:batchQuery}),signal:controller.signal});
+    if(!response.ok){
+     const err=new Error(response.status===429?'アクセスが集中しています（HTTP 429）。':('データサーバー応答エラー（HTTP '+response.status+'）。'));
+     if(response.status===429){const retrySeconds=Number(response.headers.get('Retry-After'))||30;rateLimitedUntil=Math.max(rateLimitedUntil,Date.now()+retrySeconds*1000);lastError=err;await new Promise(resolve=>setTimeout(resolve,Math.max(5000*(attempt+1),rateLimitedUntil-Date.now())));continue}
+     if(response.status>=500){lastError=err;await new Promise(resolve=>setTimeout(resolve,1500*Math.pow(2,attempt)));continue}
+     throw err;
+    }
+    const json=await response.json();
+    if(json.errors?.length)throw new Error(json.errors.map(e=>e.message).join(' / '));
+    return pages.map((_,index)=>normalizeUnicode(json.data?.['p'+index]?.media||[]));
+   }catch(error){
+    lastError=error.name==='AbortError'?new Error('データ取得がタイムアウトしました。'):error;
+    if(attempt<3)await new Promise(resolve=>setTimeout(resolve,800*Math.pow(2,attempt)));
+   }finally{clearTimeout(timeout)}
+  }
+  throw lastError||new Error('データをまとめて取得できませんでした。');
+ };
  if(vars.search)return (await request({page:1,perPage:18,search:vars.search})).filter(isUsableAnime);
  const cacheKey='aqw-anime-pool-v13-franchise-complete-20000',targetCount=20000;
  // Reuse the previous catalogue cache when available; continue expanding it toward the new 20,000-item target.
@@ -327,23 +353,35 @@ async function fetchAnime(vars={}){
    const saveProgress=async(items,nextIndex)=>{
     try{await new Promise(resolve=>{const req=indexedDB.open('aqw-catalogue',1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('catalogues'))req.result.createObjectStore('catalogues')};req.onsuccess=()=>{try{const tx=req.result.transaction('catalogues','readwrite'),store=tx.objectStore('catalogues');store.put({savedAt:Date.now(),items},cacheKey);store.put({tasks,taskIndex:nextIndex,failures,updatedAt:Date.now()},cacheKey+'-progress');tx.oncomplete=()=>resolve();tx.onerror=()=>resolve()}catch(e){resolve()}};req.onerror=()=>resolve()})}catch(e){}
    };
-   for(;taskIndex<tasks.length;taskIndex++){
+   for(;taskIndex<tasks.length;){
     const [sort,page,taskType]=tasks[taskIndex];
     if(all.size>=targetCount&&taskType==='fill')break;
+    // Bundle two adjacent pages into one GraphQL request to reduce network round trips without increasing request frequency.
+    const batch=[tasks[taskIndex]];
+    if(taskType==='fill'&&taskIndex+1<tasks.length){
+     const next=tasks[taskIndex+1];
+     if(next[2]==='fill'&&next[0]===sort&&next[1]===page+1)batch.push(next);
+    }
     await new Promise(resolve=>setTimeout(resolve,2100));
     try{
-     const rows=sort==='ID_IN'?await request({id_in:page,perPage:50}):await request({page,perPage:50},sort);
-     rows.forEach(a=>{if(isUsableAnime(a))all.set(a.id,a)});
-    }catch(err){failures++;console.warn('Background anime page failed:',sort,page,err)}
-    completed++;
+     const pageResults=sort==='ID_IN'?[await request({id_in:page,perPage:50})]:await requestPageBatch(batch.map(task=>task[1]),sort);
+     pageResults.flat().forEach(a=>{if(isUsableAnime(a))all.set(a.id,a)});
+    }catch(err){failures+=batch.length;console.warn('Background anime page batch failed:',sort,page,err)}
+    taskIndex+=batch.length;
+    completed+=batch.length;
     const items=deduplicateQuestionPool([...all.values()]);
     pool=items;extendQuestionsFromPool(items);
-    // Save after every page; this also checkpoints the next page before a tab is closed.
-    await saveProgress(items,taskIndex+1);
+    // Save after each batch; the cursor always points to the first page not yet fetched.
+    await saveProgress(items,taskIndex);
     const status=document.getElementById('quizStatus');
     if(status){
      const percent=Math.min(100,Math.floor(items.length/targetCount*100));
      const progress=document.getElementById('animePoolProgress');
+     if(progress)progress.textContent=lang==='ja'?('取得状況：'+items.length.toLocaleString()+' / '+targetCount.toLocaleString()+'作品（'+percent+'%）・ページ '+completed+' / '+tasks.length+'・失敗 '+failures+'件'):('Catalogue: '+items.length.toLocaleString()+' / '+targetCount.toLocaleString()+' ('+percent+'%) · pages '+completed+' / '+tasks.length+' · failures '+failures);
+     status.textContent=lang==='ja'?'作品データを追加中… '+items.length.toLocaleString()+' / '+targetCount.toLocaleString()+'作品':'Adding anime… '+items.length.toLocaleString()+' / '+targetCount.toLocaleString();
+    }
+   }
+   const progress=document.getElementById('animePoolProgress');
      if(progress)progress.textContent=lang==='ja'?('取得状況：'+items.length.toLocaleString()+' / '+targetCount.toLocaleString()+'作品（'+percent+'%）・ページ '+completed+' / '+tasks.length+'・失敗 '+failures+'件'):('Catalogue: '+items.length.toLocaleString()+' / '+targetCount.toLocaleString()+' ('+percent+'%) · pages '+completed+' / '+tasks.length+' · failures '+failures);
      status.textContent=lang==='ja'?'作品データを追加中… '+items.length.toLocaleString()+' / '+targetCount.toLocaleString()+'作品':'Adding anime… '+items.length.toLocaleString()+' / '+targetCount.toLocaleString();
     }
