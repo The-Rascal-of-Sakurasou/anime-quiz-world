@@ -322,10 +322,49 @@ async function fetchAnime(vars={}){
  // Reuse the previous catalogue cache when available; continue expanding it toward the new 20,000-item target.
  let initial=[],cacheSavedAt=0,savedProgress=null;
  try{
-  const stored=await new Promise(resolve=>{try{const req=indexedDB.open('aqw-catalogue',1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('catalogues'))req.result.createObjectStore('catalogues')};req.onsuccess=()=>{const db=req.result;try{const store=db.transaction('catalogues','readonly').objectStore('catalogues'),get=store.get(cacheKey),legacyGet=store.get('aqw-anime-pool-v10-characters-20000'),progressGet=store.get(cacheKey+'-progress');let cached=null,progress=null,done=0;const finish=()=>{if(++done===3)resolve({cached,progress})};get.onsuccess=()=>{cached=get.result||null;finish()};get.onerror=finish;legacyGet.onsuccess=()=>{if(!cached)cached=legacyGet.result||null;finish()};legacyGet.onerror=finish;progressGet.onsuccess=()=>{progress=progressGet.result||null;finish()};progressGet.onerror=finish}catch(e){resolve({cached:null,progress:null})}};req.onerror=()=>resolve({cached:null,progress:null})}catch(e){resolve({cached:null,progress:null})}});
-  const cached=stored?.cached;savedProgress=stored?.progress;
-  if(cached&&Array.isArray(cached.items)){initial=[...new Map(cached.items.filter(isUsableAnime).map(a=>[Number(a.id),a])).values()];cacheSavedAt=Number(cached.savedAt)||0;}
-  if(!initial.length){const legacy=JSON.parse(safeStorage.getItem(cacheKey)||safeStorage.getItem('aqw-anime-pool-v10-characters-20000')||safeStorage.getItem('aqw-anime-pool-v9-characters-10000')||safeStorage.getItem('aqw-anime-pool-v7-linked')||'null');if(Array.isArray(legacy?.items)){initial=[...new Map(legacy.items.filter(isUsableAnime).map(a=>[Number(a.id),a])).values()];cacheSavedAt=Number(legacy.savedAt)||0;}}
+  const stored=await new Promise(resolve=>{
+   try{
+    const req=indexedDB.open('aqw-catalogue',1);
+    req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('catalogues'))req.result.createObjectStore('catalogues')};
+    req.onsuccess=()=>{
+     const db=req.result;
+     try{
+      const tx=db.transaction('catalogues','readonly'),store=tx.objectStore('catalogues');
+      const keysReq=store.getAllKeys();
+      keysReq.onsuccess=()=>{
+       const keys=keysReq.result||[];
+       const catalogueKeys=keys.filter(key=>typeof key==='string'&&new RegExp('^aqw-anime-pool-v\\d+.*-20000$').test(key));
+       const readKeys=[...new Set([...catalogueKeys,cacheKey])];
+       const results=[];
+       let pending=readKeys.length+1,progress=null;
+       const finish=()=>{if(--pending===0)resolve({cachedItems:results.flatMap(x=>Array.isArray(x?.items)?x.items:[]),progress})};
+       readKeys.forEach(key=>{const get=store.get(key);get.onsuccess=()=>{if(get.result)results.push(get.result);finish()};get.onerror=finish});
+       const progressGet=store.get(cacheKey+'-progress');
+       progressGet.onsuccess=()=>{progress=progressGet.result||null;finish()};
+       progressGet.onerror=finish;
+      };
+      keysReq.onerror=()=>resolve({cachedItems:[],progress:null});
+     }catch(e){resolve({cachedItems:[],progress:null})}
+    };
+    req.onerror=()=>resolve({cachedItems:[],progress:null});
+   }catch(e){resolve({cachedItems:[],progress:null})}
+  });
+  savedProgress=stored?.progress||null;
+  if(Array.isArray(stored?.cachedItems)&&stored.cachedItems.length){
+   initial=[...new Map(stored.cachedItems.filter(isUsableAnime).map(a=>[Number(a.id),a])).values()];
+   cacheSavedAt=Date.now();
+  }
+  try{
+   for(let i=0;i<safeStorage.length;i++){
+    const key=safeStorage.key(i);
+    if(!key||!new RegExp('^aqw-anime-pool-v\\d+.*-20000$').test(key))continue;
+    const legacy=JSON.parse(safeStorage.getItem(key)||'null');
+    if(Array.isArray(legacy?.items))initial.push(...legacy.items.filter(isUsableAnime));
+    if(Number(legacy?.savedAt)>cacheSavedAt)cacheSavedAt=Number(legacy.savedAt);
+   }
+   initial=[...new Map(initial.map(a=>[Number(a.id),a])).values()];
+  }catch(e){}
+
  }catch(e){}
  initial=deduplicateQuestionPool(initial);
  if(initial.length>=targetCount&&Date.now()-cacheSavedAt<24*60*60*1000)return initial;
@@ -867,14 +906,16 @@ async function toggleLeaderboardRegistration(){
 }
 async function resetOnlineLeaderboardRecords(){
  if(!currentUser){message($s('aqwLeaderboardAccountStatus'),'実績のリセットにはログインが必要です。');return}
- if(!confirm('サーバーに保存された自分のランキング実績（総合XP・プレイ回数・正答数・スピードラッシュ記録と期間別履歴）をすべて削除します。この操作は取り消せません。続行しますか？'))return;
- const {data,error}=await sb.rpc('reset_aqw_player_records');
- if(error){message($s('aqwLeaderboardAccountStatus'),'実績をリセットできませんでした：'+errText(error));return}
- ['aqw-history','aqw-total-runs','aqw-xp','aqw-collection','aqw-daily-progress','aqw-daily-quest-claims','aqw-streak'].forEach(k=>safeStorage.removeItem(k));
- safeStorage.keys().filter(k=>k.startsWith('aqw-best-')).forEach(k=>safeStorage.removeItem(k));
- renderProgress();const history=$s('historySummary');if(history)history.textContent='';
- message($s('aqwLeaderboardAccountStatus'),'自分のランキング実績をリセットしました。');
- await loadRushLeaderboard();await loadPlayerLeaderboard();
+ if(!confirm('ログイン中の自分のサーバー上のランキング実績（総合XP・プレイ回数・正答数・スピードラッシュ記録と期間別履歴）だけを削除します。他のユーザーの記録や、このブラウザの作品データ・ローカル実績は削除されません。この操作は取り消せません。続行しますか？'))return;
+ const button=$s('aqwResetOnlineRecords');if(button)button.disabled=true;
+ message($s('aqwLeaderboardAccountStatus'),'自分のランキング実績を削除しています…');
+ try{
+  const {error}=await sb.rpc('reset_aqw_player_records');
+  if(error)throw error;
+  await Promise.all([loadRushLeaderboard(),loadPlayerLeaderboard()]);
+  message($s('aqwLeaderboardAccountStatus'),'自分のランキング実績を削除し、ランキングを更新しました。他のユーザーの記録と作品データは保持されています。');
+ }catch(error){message($s('aqwLeaderboardAccountStatus'),'実績をリセットできませんでした：'+errText(error))}
+ finally{if(button)button.disabled=false}
 }
 
 async function saveRushBoardImage(){
