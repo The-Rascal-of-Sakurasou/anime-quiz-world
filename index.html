@@ -684,7 +684,7 @@ async function createRushBoardImage(){
   ctx.fillText(formatRushTime(item.elapsed_ms),xs[3],y);
  });
  ctx.fillStyle='#aebdd3';ctx.font='18px Arial,sans-serif';ctx.fillText(aqwRushT('unverified'),70,590);
- ctx.textAlign='right';ctx.fillText('the-rascal-of-sakurasou.github.io/anime-quiz-world/',1130,590);ctx.textAlign='left';
+ 
  return await new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(new File([blob],'anime-quiz-world-speed-rush-ranking.png',{type:'image/png'})):reject(new Error('PNG export failed')),'image/png'));
 }
 async function shareRushBoardImage(){
