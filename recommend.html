@@ -43,7 +43,7 @@
 </section>
 <div id="error" class="status hidden" role="alert"></div>
 </main>
-<p class="foot">診断は回答内容とAniListの作品ジャンル・タグなどを使った、ルールベースの娯楽向け推薦です。推薦理由は作品データとの一致を示すもので、作品の優劣や視聴体験を保証しません。入力した作品名はAniListへの検索リクエストに使われます。回答内容はアカウントには保存しません。作品情報：AniList。</p>
+<p class="foot">診断は回答内容とAniListの作品ジャンル・タグなどを使った、ルールベースの娯楽向け推薦です。好きな作品のタグ一致度や候補群内でのタグの希少性も参考にするため、ジャンルが異なる作品が候補に入る場合があります。推薦理由は作品データとの一致を示すもので、作品の優劣や視聴体験を保証しません。入力した作品名はAniListへの検索リクエストに使われます。回答内容はアカウントには保存しません。作品情報：AniList。</p>
 </div>
 <script>
 const API='https://graphql.anilist.co';
@@ -114,14 +114,15 @@ function titleKey(media){
  return [media?.title?.native,media?.title?.english,media?.title?.romaji].filter(Boolean).map(x=>x.toLocaleLowerCase().replace(/[\\s・：:!！?？]/g,''));
 }
 async function getRecommendations(profile){
- const query='query ($page:Int,$genres:[String],$sort:[MediaSort]) { Page(page:$page,perPage:50) { media(type:ANIME,sort:$sort,isAdult:false,genre_in:$genres) { id format title { romaji english native } description(asHtml:false) coverImage { extraLarge large } episodes seasonYear averageScore popularity genres tags { name rank isMediaSpoiler } siteUrl } } }';
+ const query='query ($page:Int,$sort:[MediaSort]) { Page(page:$page,perPage:50) { media(type:ANIME,sort:$sort,isAdult:false) { id format title { romaji english native } description(asHtml:false) coverImage { extraLarge large } episodes seasonYear averageScore popularity genres tags { name rank isMediaSpoiler } siteUrl } } }';
  const fetchPage=async (page,sort)=>{
-  const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query,variables:{page,sort:[sort],genres:Object.keys(profile.genres)}}),signal:AbortSignal.timeout(15000)});
+  const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query,variables:{page,sort:[sort]}}),signal:AbortSignal.timeout(15000)});
   const json=await response.json().catch(()=>null);
   if(!response.ok||json?.errors?.length||!json?.data?.Page)throw new Error('作品データの取得に失敗しました（HTTP '+response.status+'）。時間をおいて再試行してください。');
   return json.data.Page.media||[];
  };
- // 4種類の並び順から各3ページ（最大600件）を取得。1回につき3リクエストに抑え、重複IDを統合する。
+ // ジャンルで候補を絞らず、4種類の並び順から各3ページ（最大600件）を取得。
+ // 先にジャンルで絞ると別ジャンルでもタグが一致する作品を取りこぼすため、全体から収集して後段で相性を採点する。
  const sortModes=['POPULARITY_DESC','SCORE_DESC','TRENDING_DESC','START_DATE_DESC'];
  const pages=[];
  for(const sort of sortModes){
@@ -134,15 +135,31 @@ async function getRecommendations(profile){
  for(const name of favoriteNames){const found=await findSeedAnime(name);if(found)favoriteSeeds.push(found)}
  for(const name of dislikedNames){const found=await findSeedAnime(name);if(found)dislikedSeeds.push(found)}
  const genreEntries=Object.entries(profile.genres),tagEntries=Object.entries(profile.tags);
+ const tagFrequency=new Map();
+ for(const anime of items){
+  const seen=new Set((anime.tags||[]).filter(t=>!t.isMediaSpoiler&&t.rank>=40).map(t=>t.name));
+  for(const name of seen)tagFrequency.set(name,(tagFrequency.get(name)||0)+1);
+ }
+ const rarityWeight=name=>{
+  const frequency=tagFrequency.get(name)||0;
+  const rarity=1-Math.log(frequency+1)/Math.log(items.length+1);
+  return 0.7+Math.max(0,Math.min(1,rarity))*0.8;
+ };
  const seedScore=(candidate,seeds)=>{
   let total=0,matched=[];
+  const candidateTags=new Map((candidate.tags||[]).filter(t=>!t.isMediaSpoiler&&t.rank>=40).map(t=>[t.name,t]));
   for(const seed of seeds){
    const sharedGenres=(seed.genres||[]).filter(g=>(candidate.genres||[]).includes(g));
-   const sharedTags=(seed.tags||[]).filter(t=>!t.isMediaSpoiler&&t.rank>=40&&(candidate.tags||[]).some(c=>c.name===t.name&&!c.isMediaSpoiler&&c.rank>=40));
-   total+=sharedGenres.length*2.5+Math.min(sharedTags.length,5)*1.5;
-   matched.push(...sharedGenres.slice(0,2),...sharedTags.slice(0,3).map(t=>t.name));
+   const sharedTags=(seed.tags||[]).filter(t=>!t.isMediaSpoiler&&t.rank>=40&&candidateTags.has(t.name));
+   const tagPoints=sharedTags.reduce((sum,t)=>{
+    const rank=Math.max(0,Math.min(100,Number(t.rank)||0))/100;
+    return sum+rank*rarityWeight(t.name);
+   },0);
+   // ジャンル一致よりも、作品固有のタグ一致を重視する。各シード作品の加点は上限を設ける。
+   total+=Math.min(10,tagPoints*2)+Math.min(2,sharedGenres.length*0.8);
+   matched.push(...sharedGenres.slice(0,2),...sharedTags.sort((a,b)=>b.rank-a.rank).slice(0,3).map(t=>t.name));
   }
-  return {score:Math.min(total,18),matched:[...new Set(matched)]};
+  return {score:Math.min(total,24),matched:[...new Set(matched)]};
  };
  const favoriteIds=new Set(favoriteSeeds.map(x=>x.id)),dislikedIds=new Set(dislikedSeeds.map(x=>x.id));
  const scored=items.filter(a=>a.coverImage?.large&&a.title&&(a.format==='TV'||a.format==='TV_SHORT'||a.format==='MOVIE'||a.format==='ONA'||a.format==='OVA'||a.format==='SPECIAL')).map(a=>{
