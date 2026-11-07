@@ -370,7 +370,7 @@ async function findSeedAnime(title){
  }catch(_){return null}
 }
 async function getRecommendations(profile){
- const query='query ($page:Int,$sort:[MediaSort]) { Page(page:$page,perPage:50) { media(type:ANIME,sort:$sort,isAdult:false) { id format title { romaji english native } description(asHtml:false) coverImage { extraLarge large } episodes seasonYear averageScore popularity genres tags { name rank isMediaSpoiler } siteUrl } } }';
+ const query='query ($page:Int,$sort:[MediaSort]) { Page(page:$page,perPage:50) { media(type:ANIME,sort:$sort,isAdult:false) { id format title { romaji english native } description(asHtml:false) coverImage { extraLarge large } episodes seasonYear averageScore popularity genres tags { name rank isMediaSpoiler } relations { edges { relationType node { id type } } } siteUrl } } }';
  const fetchPage=async (page,sort)=>{
   let lastError=null;
   for(let attempt=0;attempt<3;attempt++){
@@ -514,12 +514,20 @@ async function getRecommendations(profile){
   // AniList may list the same work under alternate scripts or title aliases.
   const titleKeyForDedup=anime=>[anime?.title?.native,anime?.title?.english,anime?.title?.romaji]
    .filter(Boolean).map(title=>String(title).toLocaleLowerCase().normalize('NFKC').replace(/[\s・：:!！?？。、,.'’"「」『』()（）［］【】]/g,''));
-  const usedIds=new Set(),usedTitles=new Set(),uniqueScored=[];
+  const usedIds=new Set(),usedTitles=new Set(),usedFranchiseIds=new Set(),uniqueScored=[];
   for(const anime of scored){
    if(usedIds.has(anime.id))continue;
    const keys=titleKeyForDedup(anime);
+   const relatedIds=[anime.id,...(anime.relations?.edges||[])
+    .filter(edge=>['PREQUEL','SEQUEL','PARENT','SUMMARY','ALTERNATIVE','COMPILATION'].includes(edge?.relationType))
+    .map(edge=>edge?.node?.id).filter(id=>id!=null)];
+   // シリーズの前後編・親子作品・別バージョンを同一グループとして扱う。
+   if(relatedIds.some(id=>usedFranchiseIds.has(id)))continue;
    if(keys.some(key=>key&&usedTitles.has(key)))continue;
-   usedIds.add(anime.id);keys.forEach(key=>{if(key)usedTitles.add(key)});uniqueScored.push(anime);
+   usedIds.add(anime.id);
+   relatedIds.forEach(id=>usedFranchiseIds.add(id));
+   keys.forEach(key=>{if(key)usedTitles.add(key)});
+   uniqueScored.push(anime);
   }
   scored.splice(0,scored.length,...uniqueScored);
  // 一致度を保ちながら、同じジャンル・タグに偏りすぎないよう逐次選択する。
