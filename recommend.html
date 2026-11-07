@@ -346,7 +346,7 @@ async function getRecommendations(profile){
   const animeGenres=a.genres||[];
   const animeTags=a.tags||[];
   const genreNames={Fantasy:'ファンタジー',Adventure:'冒険',Action:'アクション','Sci-Fi':'SF',Mystery:'ミステリー',Thriller:'サスペンス',Drama:'ドラマ',Comedy:'コメディ',Romance:'恋愛','Slice of Life':'日常',Psychological:'心理',Historical:'歴史',Mecha:'メカ'};
-  const tagNames={'Conspiracy':'陰謀・謎','Survival':'サバイバル','Psychological':'心理描写','Mystery':'謎解き','Tragedy':'悲劇','Coming of Age':'成長','Super Power':'特殊能力','Martial Arts':'格闘','Revenge':'復讐','Parody':'パロディ','Gag Humor':'ギャグ','Fast-Paced':'テンポの速い展開','Time Manipulation':'時間操作','World Building':'世界観の構築','Character Development':'人物の成長','Episodic':'各話完結','Magic':'魔法','Isekai':'異世界','Space':'宇宙','Cyberpunk':'サイバーパンク','Mythology':'神話','Samurai':'侍'};
+  const tagNames={'Conspiracy':'陰謀・謎','Survival':'サバイバル','Psychological':'心理描写','Mystery':'謎解き','Tragedy':'悲劇','Coming of Age':'成長','Super Power':'特殊能力','Martial Arts':'格闘','Revenge':'復讐','Parody':'パロディ','Gag Humor':'ギャグ','Fast-Paced':'テンポの速い展開','Time Manipulation':'時間操作','World Building':'世界観の構築','Character Development':'人物の成長','Episodic':'各話完結','Magic':'魔法','Isekai':'異世界','Space':'宇宙','Cyberpunk':'サイバーパンク','Mythology':'神話','Samurai':'侍','Ensemble Cast':'群像劇','Found Family':'疑似家族・仲間','Philosophy':'哲学','Leadership':'リーダーシップ','Battle Royale':'バトルロイヤル','Quest':'冒険の目的・探求','Politics':'政治','Crime':'犯罪','Travel':'旅・移動'};
   const matchedGenreKeys=genreEntries.filter(([g])=>animeGenres.includes(g)).map(([g])=>g);
   const matchedGenres=matchedGenreKeys.map(g=>genreNames[g]||g);
   if(matchedGenreKeys.length)score+=genreEntries.filter(([g])=>animeGenres.includes(g)).reduce((n,[,w])=>n+w*5.5,0);
@@ -433,7 +433,8 @@ function buildProfile(profile){
  const top=Object.entries(profile.genres).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]);
  const names={Fantasy:'ファンタジー',Adventure:'冒険',Action:'アクション','Sci-Fi':'SF',Mystery:'ミステリー',Thriller:'サスペンス',Drama:'ドラマ',Comedy:'コメディ',Romance:'恋愛', 'Slice of Life':'日常',Psychological:'心理',Historical:'歴史',Mecha:'メカ'};
  $('profileTitle').textContent=top.length?top.map(g=>names[g]||g).join(' × ')+'タイプ':'幅広く楽しむタイプ';
- const traits=Object.entries(profile.tags).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]);
+ const tagNames={'Conspiracy':'陰謀・謎','Survival':'サバイバル','Psychological':'心理描写','Mystery':'謎解き','Tragedy':'悲劇','Coming of Age':'成長','Super Power':'特殊能力','Martial Arts':'格闘','Revenge':'復讐','Parody':'パロディ','Gag Humor':'ギャグ','Fast-Paced':'テンポの速い展開','Time Manipulation':'時間操作','World Building':'世界観の構築','Character Development':'人物の成長','Episodic':'各話完結','Magic':'魔法','Isekai':'異世界','Space':'宇宙','Cyberpunk':'サイバーパンク','Mythology':'神話','Samurai':'侍','Ensemble Cast':'群像劇','Found Family':'疑似家族・仲間','Philosophy':'哲学','Leadership':'リーダーシップ','Battle Royale':'バトルロイヤル','Quest':'冒険の目的・探求','Politics':'政治','Crime':'犯罪','Travel':'旅・移動'};
+ const traits=Object.entries(profile.tags).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([tag])=>tagNames[tag]||tag);
  $('profileDescription').textContent='ジャンルの傾向に加え、物語の展開や雰囲気の好みを反映しています。';
  $('profileChips').replaceChildren();
  [...top.map(g=>names[g]||g),...traits].forEach(t=>{const span=document.createElement('span');span.className='chip';span.textContent=t;$('profileChips').append(span)});
