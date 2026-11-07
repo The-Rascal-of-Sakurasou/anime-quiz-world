@@ -121,6 +121,8 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .aqw-rush-board{margin:18px 0;padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--surface,transparent)}
 .aqw-rush-board-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .aqw-rush-board-head h3{margin:0}
+.aqw-rush-board-actions{display:flex;gap:8px;flex-wrap:wrap}
+.aqw-rush-board-actions button{font-size:.9rem}
 .aqw-rush-board-desc{margin:8px 0 12px}
 .aqw-rush-board-scroll{overflow-x:auto}
 .aqw-rush-board table{width:100%;border-collapse:collapse;min-width:420px}
@@ -150,7 +152,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 <p id="socialDescription" class="muted">AQW独自のアカウントでフレンドを登録し、フレンド同士でコメントと返信ができます。フレンドは相互にフォローしているユーザーです。</p>
 <div class="social-status" id="aqwSocialStatus" role="status">AQWのSNSを準備しています…</div>
 <section id="aqwRushLeaderboard" class="social-box aqw-rush-board" aria-labelledby="aqwRushBoardTitle">
- <div class="aqw-rush-board-head"><h3 id="aqwRushBoardTitle">スピードラッシュ・世界ランキング</h3><button id="aqwRushBoardRefresh" type="button">更新</button></div>
+ <div class="aqw-rush-board-head"><h3 id="aqwRushBoardTitle">スピードラッシュ・世界ランキング</h3><div class="aqw-rush-board-actions"><button id="aqwRushBoardRefresh" type="button">更新</button><button id="aqwRushBoardShare" type="button">ランキングを共有</button><button id="aqwRushBoardSave" type="button">画像を保存</button></div></div>
  <p class="muted aqw-rush-board-desc" id="aqwRushBoardDescription">ログインして記録を登録できます。各ユーザーの自己ベストを表示します。</p>
  <p class="aqw-rush-board-status" id="aqwRushBoardStatus" role="status" aria-live="polite">ランキングを読み込んでいます…</p>
  <div class="aqw-rush-board-scroll"><table><thead><tr><th id="aqwRushRankHeading">順位</th><th id="aqwRushPlayerHeading">プレイヤー</th><th id="aqwRushScoreHeading">正解数</th><th id="aqwRushTimeHeading">タイム</th></tr></thead><tbody id="aqwRushBoardRows"></tbody></table></div>
@@ -589,10 +591,57 @@ const aqwRushText={
 const aqwRushT=key=>(aqwRushText[lang]||aqwRushText.en)[key]||aqwRushText.en[key]||key;
 let pendingRushResult=null;
 function applyRushLeaderboardLanguage(){
- const map={aqwRushBoardTitle:'title',aqwRushBoardDescription:'description',aqwRushBoardRefresh:'refresh',aqwRushRankHeading:'rank',aqwRushPlayerHeading:'player',aqwRushScoreHeading:'score',aqwRushTimeHeading:'time'};
+ const map={aqwRushBoardTitle:'title',aqwRushBoardDescription:'description',aqwRushBoardRefresh:'refresh',aqwRushBoardShare:'share',aqwRushBoardSave:'save',aqwRushRankHeading:'rank',aqwRushPlayerHeading:'player',aqwRushScoreHeading:'score',aqwRushTimeHeading:'time'};
  for(const [id,key] of Object.entries(map)){const el=$s(id);if(el)el.textContent=aqwRushT(key)}
 }
 function formatRushTime(ms){return (Number(ms)/1000).toFixed(2)+' s'}
+async function createRushBoardImage(){
+ if(!sb)throw new Error('Community service unavailable');
+ const {data,error}=await sb.from('aqw_speed_rush_scores').select('user_id,correct_count,elapsed_ms,profiles(username,display_name)').order('correct_count',{ascending:false}).order('elapsed_ms',{ascending:true}).limit(10);
+ if(error)throw error;
+ if(!data?.length)throw new Error(aqwRushT('emptyShare'));
+ const canvas=document.createElement('canvas');canvas.width=1200;canvas.height=630;
+ const ctx=canvas.getContext('2d');if(!ctx)throw new Error('Canvas unavailable');
+ const bg=ctx.createLinearGradient(0,0,1200,630);bg.addColorStop(0,'#101a30');bg.addColorStop(1,'#263e67');ctx.fillStyle=bg;ctx.fillRect(0,0,1200,630);
+ ctx.fillStyle='#8fb4ff';ctx.font='bold 22px Arial,sans-serif';ctx.fillText('ANIME QUIZ WORLD',70,64);
+ ctx.fillStyle='#ffffff';ctx.font='bold 44px Arial,sans-serif';ctx.fillText('SPEED RUSH',70,125);
+ ctx.fillStyle='#c9d7ee';ctx.font='24px Arial,sans-serif';ctx.fillText(aqwRushT('title'),70,164);
+ const headers=[aqwRushT('rank'),aqwRushT('player'),aqwRushT('score'),aqwRushT('time')];
+ const xs=[85,220,820,1010];ctx.fillStyle='#9fb5d7';ctx.font='bold 20px Arial,sans-serif';
+ headers.forEach((h,i)=>ctx.fillText(h,xs[i],220));
+ let prevScore=null,prevTime=null,rank=0;
+ data.forEach((item,index)=>{
+  if(item.correct_count!==prevScore||item.elapsed_ms!==prevTime)rank=index+1;
+  prevScore=item.correct_count;prevTime=item.elapsed_ms;
+  const y=270+index*32;
+  if(index<3){ctx.fillStyle=['#e6b83f','#aab6c5','#c18a61'][index];ctx.globalAlpha=.17;ctx.fillRect(65,y-25,1070,30);ctx.globalAlpha=1}
+  ctx.fillStyle=index<3?['#f4d477','#d5deea','#e2b18b'][index]:'#ffffff';
+  ctx.font='bold 20px Arial,sans-serif';ctx.fillText(String(rank),xs[0],y);
+  const profile=Array.isArray(item.profiles)?item.profiles[0]:item.profiles;
+  let name=profile?.display_name||profile?.username||aqwRushT('player');
+  if(name.length>26)name=name.slice(0,25)+'…';
+  ctx.fillText(name,xs[1],y);
+  ctx.fillText(String(item.correct_count)+'/10',xs[2],y);
+  ctx.fillText(formatRushTime(item.elapsed_ms),xs[3],y);
+ });
+ ctx.fillStyle='#aebdd3';ctx.font='18px Arial,sans-serif';ctx.fillText(aqwRushT('unverified'),70,590);
+ ctx.textAlign='right';ctx.fillText('the-rascal-of-sakurasou.github.io/anime-quiz-world/',1130,590);ctx.textAlign='left';
+ return await new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(new File([blob],'anime-quiz-world-speed-rush-ranking.png',{type:'image/png'})):reject(new Error('PNG export failed')),'image/png'));
+}
+async function shareRushBoardImage(){
+ try{
+  const file=await createRushBoardImage();
+  if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({title:'Anime Quiz World · Speed Rush',files:[file]});message($s('aqwRushBoardStatus'),aqwRushT('shareOpened'));return}
+  const url=URL.createObjectURL(file),a=document.createElement('a');a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);message($s('aqwRushBoardStatus'),aqwRushT('savedImage'));
+ }catch(e){message($s('aqwRushBoardStatus'),aqwRushT('shareError')+errText(e))}
+}
+async function saveRushBoardImage(){
+ let url='';
+ try{const file=await createRushBoardImage();url=URL.createObjectURL(file);const a=document.createElement('a');a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove();message($s('aqwRushBoardStatus'),aqwRushT('savedImage'))}
+ catch(e){message($s('aqwRushBoardStatus'),aqwRushT('shareError')+errText(e))}
+ finally{if(url)setTimeout(()=>URL.revokeObjectURL(url),10000)}
+}
+
 async function loadRushLeaderboard(){
  if(!sb)return;
  const statusEl=$s('aqwRushBoardStatus'),rows=$s('aqwRushBoardRows');
@@ -817,6 +866,8 @@ $s('aqwMessageForm').addEventListener('submit',sendFriendMessage);
 $s('aqwUserSearchForm').addEventListener('submit',searchUsers);
 $s('aqwNotificationsButton').addEventListener('click',loadNotifications);
 $s('aqwRushBoardRefresh').addEventListener('click',loadRushLeaderboard);
+$s('aqwRushBoardShare').addEventListener('click',shareRushBoardImage);
+$s('aqwRushBoardSave').addEventListener('click',saveRushBoardImage);
 document.getElementById('languageSelect')?.addEventListener('change',applyRushLeaderboardLanguage);
 window.addEventListener('aqw:rush-finished',event=>{
  const detail=event.detail;
