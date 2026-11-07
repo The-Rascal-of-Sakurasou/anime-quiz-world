@@ -241,20 +241,61 @@ function compareLearnedWeightVariants(feedback){
  ];
  return variants.map(variant=>({...variant,...evaluateLearnedFeedback(feedback,variant)}));
 }
-function deduplicateRecommendationGroups(closeMatches,discoveries){
- const seenIds=new Set(),seenTitles=new Set();
- const normalizeTitle=value=>String(value||'').toLocaleLowerCase().normalize('NFKC').replace(/[\s\p{P}\p{S}]/gu,'');
- const unique=items=>(Array.isArray(items)?items:[]).filter(anime=>{
-  const rawTitles=[anime?.title?.native,anime?.title?.english,anime?.title?.romaji,...(Array.isArray(anime?.synonyms)?anime.synonyms:[])];
-  const keys=[...new Set(rawTitles.map(normalizeTitle).filter(Boolean))];
-  const id=anime?.id==null?null:String(anime.id);
-  if(id!==null&&seenIds.has(id))return false;
-  if(keys.some(key=>seenTitles.has(key)))return false;
-  if(id!==null)seenIds.add(id);
-  keys.forEach(key=>seenTitles.add(key));
+function deduplicateAnimeSeries(items){
+ const list=Array.isArray(items)?items:[];
+ const parent=new Map();
+ const find=id=>{
+  const key=String(id);
+  if(!parent.has(key))parent.set(key,key);
+  let root=key;
+  while(parent.get(root)!==root)root=parent.get(root);
+  let current=key;
+  while(parent.get(current)!==root){const next=parent.get(current);parent.set(current,root);current=next;}
+  return root;
+ };
+ const unite=(a,b)=>{
+  if(a==null||b==null)return;
+  const left=find(a),right=find(b);
+  if(left!==right)parent.set(right,left);
+ };
+ const relatedTypes=new Set(['PREQUEL','SEQUEL','PARENT','SUMMARY','ALTERNATIVE','COMPILATION','CONTAINS']);
+ const titleOwners=new Map();
+ for(const anime of list){
+  if(anime?.id==null)continue;
+  find(anime.id);
+  for(const edge of anime.relations?.edges||[]){
+   if(relatedTypes.has(edge?.relationType)&&edge?.node?.id!=null)unite(anime.id,edge.node.id);
+  }
+  const titles=[anime?.title?.native,anime?.title?.english,anime?.title?.romaji,...(Array.isArray(anime?.synonyms)?anime.synonyms:[])]
+   .map(value=>String(value||'').toLocaleLowerCase().normalize('NFKC').replace(/[\\s\\p{P}\\p{S}]/gu,''))
+   .filter(Boolean);
+  for(const title of new Set(titles)){
+   if(titleOwners.has(title))unite(anime.id,titleOwners.get(title));
+   else titleOwners.set(title,anime.id);
+  }
+ }
+ const keptRoots=new Set();
+ return list.filter(anime=>{
+  if(anime?.id==null)return true;
+  const root=find(anime.id);
+  if(keptRoots.has(root))return false;
+  keptRoots.add(root);
   return true;
  });
- return {closeMatches:unique(closeMatches),discoveries:unique(discoveries)};
+}
+
+function deduplicateRecommendationGroups(closeMatches,discoveries){
+ const closeInput=Array.isArray(closeMatches)?closeMatches:[];
+ const discoveryInput=Array.isArray(discoveries)?discoveries:[];
+ const combined=[...closeInput,...discoveryInput];
+ const unique=deduplicateAnimeSeries(combined);
+ const keptIds=new Set(unique.map(anime=>String(anime?.id)));
+ const close=closeInput.filter(anime=>anime?.id==null||keptIds.has(String(anime.id)));
+ const closeIds=new Set(close.map(anime=>anime?.id==null?null:String(anime.id)));
+ const discoveriesOut=discoveryInput.filter(anime=>
+  anime?.id==null||(!closeIds.has(String(anime.id))&&keptIds.has(String(anime.id)))
+ );
+ return {closeMatches:close,discoveries:discoveriesOut};
 }
 
 function runRecommendationSelfTests(){
@@ -268,6 +309,26 @@ function runRecommendationSelfTests(){
  check('記号・空白だけの違いを重複判定',deduplicateRecommendationGroups([{id:1,title:{native:'SPY×FAMILY'}}],[{id:2,title:{native:'SPY × FAMILY'}}]).discoveries.length===0);
  check('AniListの別名も重複判定に利用',deduplicateRecommendationGroups([{id:1,title:{native:'作品A'},synonyms:['Alias A']}],[{id:2,title:{native:'Alias A'}}]).discoveries.length===0);
  check('重複のない候補は両方の枠に残す',dedup.closeMatches.length===1&&dedup.discoveries.length===1);
+ check('前編・続編は同じシリーズとして1作品だけ残す',deduplicateAnimeSeries([
+  {id:101,title:{native:'シリーズ第1期'},relations:{edges:[{relationType:'SEQUEL',node:{id:102}}]}},
+  {id:102,title:{native:'シリーズ第2期'},relations:{edges:[{relationType:'PREQUEL',node:{id:101}}]}}
+ ]).length===1);
+ check('複数シーズンの連鎖関係もまとめる',deduplicateAnimeSeries([
+  {id:201,title:{native:'第1期'},relations:{edges:[{relationType:'SEQUEL',node:{id:202}}]}},
+  {id:202,title:{native:'第2期'},relations:{edges:[{relationType:'SEQUEL',node:{id:203}}]}},
+  {id:203,title:{native:'第3期'}}
+ ]).length===1);
+ check('別バージョン・総集編も同一枠にまとめる',deduplicateAnimeSeries([
+  {id:301,title:{native:'通常版'},relations:{edges:[{relationType:'ALTERNATIVE',node:{id:302}}]}},
+  {id:302,title:{native:'別バージョン'}}
+ ]).length===1);
+ check('無関係な作品は別々に残す',deduplicateAnimeSeries([
+  {id:401,title:{native:'作品A'}},{id:402,title:{native:'作品B'}}
+ ]).length===2);
+ check('推薦2枠をまたいだシリーズ重複も防ぐ',deduplicateRecommendationGroups(
+  [{id:501,title:{native:'第1期'},relations:{edges:[{relationType:'SEQUEL',node:{id:502}}]}}],
+  [{id:502,title:{native:'第2期'}}]
+ ).discoveries.length===0);
  const check=(name,condition)=>tests.push({name,passed:Boolean(condition)});
  const sample=buildLearnedPreferences({
   one:{value:'like',genres:['Fantasy'],tags:['Magic']},
@@ -511,25 +572,8 @@ async function getRecommendations(profile){
   };
   return {...a,_score:score,_scoreBreakdown:scoreBreakdown,_reasonDetails:details,_evaluationMetrics:evaluationMetrics,_quality:Number(a.averageScore)||0,_popularity:Number(a.popularity)||0};
  }).filter(a=>!excludedSeedIds.has(a.id)).sort((a,b)=>b._score-a._score||b._quality-a._quality||b._popularity-a._popularity);
-  // AniList may list the same work under alternate scripts or title aliases.
-  const titleKeyForDedup=anime=>[anime?.title?.native,anime?.title?.english,anime?.title?.romaji]
-   .filter(Boolean).map(title=>String(title).toLocaleLowerCase().normalize('NFKC').replace(/[\s・：:!！?？。、,.'’"「」『』()（）［］【】]/g,''));
-  const usedIds=new Set(),usedTitles=new Set(),usedFranchiseIds=new Set(),uniqueScored=[];
-  for(const anime of scored){
-   if(usedIds.has(anime.id))continue;
-   const keys=titleKeyForDedup(anime);
-   const relatedIds=[anime.id,...(anime.relations?.edges||[])
-    .filter(edge=>['PREQUEL','SEQUEL','PARENT','SUMMARY','ALTERNATIVE','COMPILATION'].includes(edge?.relationType))
-    .map(edge=>edge?.node?.id).filter(id=>id!=null)];
-   // シリーズの前後編・親子作品・別バージョンを同一グループとして扱う。
-   if(relatedIds.some(id=>usedFranchiseIds.has(id)))continue;
-   if(keys.some(key=>key&&usedTitles.has(key)))continue;
-   usedIds.add(anime.id);
-   relatedIds.forEach(id=>usedFranchiseIds.add(id));
-   keys.forEach(key=>{if(key)usedTitles.add(key)});
-   uniqueScored.push(anime);
-  }
-  scored.splice(0,scored.length,...uniqueScored);
+  // 前後編・シーズン・別バージョンの関係を連結成分としてまとめ、最高順位の1作品だけ残す。
+  scored.splice(0,scored.length,...deduplicateAnimeSeries(scored));
  // 一致度を保ちながら、同じジャンル・タグに偏りすぎないよう逐次選択する。
  const selectDiverse=(candidates,count,discovery=false)=>{
   const pool=[...candidates],selected=[];
