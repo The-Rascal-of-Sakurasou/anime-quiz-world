@@ -14,7 +14,7 @@
 <body>
 <div class="wrap">
 <header class="top"><div class="brand">Anime Quiz <span>World</span></div><a href="./index.html">クイズに戻る</a></header>
-<section class="hero"><div class="eyebrow">ANIME RECOMMENDATION ANALYSIS</div><h1>あなたに合うアニメを分析</h1><p>好きなジャンルだけでなく、物語の展開・雰囲気・作品の長さなどから好みの傾向を分析し、次に見る候補を提案します。全6問＋任意の作品入力で診断します。</p></section>
+<section class="hero"><div class="eyebrow">ANIME RECOMMENDATION ANALYSIS</div><h1>あなたに合うアニメを分析</h1><p>好きなジャンルだけでなく、物語の展開・雰囲気・作品の長さなどから好みの傾向を分析し、次に見る候補を提案します。全10問＋任意の作品入力で診断します。</p></section>
 <main class="panel">
 <div id="diagnosis">
 <div class="progress" aria-label="診断の進行状況"><div id="progressBar"></div></div>
@@ -105,6 +105,30 @@ const questions=[
 {label:'中程度：2〜3クール程度',length:'medium'},
 {label:'長め：複数シーズン・長編',length:'long'},
 {label:'長さは気にしない',length:'any'}
+]},
+{title:'登場人物に求めるものは？',help:'人物描写や関係性で特に惹かれるものを選んでください。',options:[
+{label:'大きく成長していく主人公',tags:['Character Development','Coming of Age']},
+{label:'個性の異なる仲間たちの群像劇',tags:['Ensemble Cast','Found Family']},
+{label:'複雑な心理や価値観のぶつかり合い',genres:['Psychological','Drama'],tags:['Philosophy','Psychological']},
+{label:'信念が強く、行動力のある人物',genres:['Action','Adventure'],tags:['Revenge','Leadership']}
+]},
+{title:'物語の構成はどれが好み？',help:'見ていて特に面白いと感じる構成を選んでください。',options:[
+{label:'伏線がつながり、真相が明らかになる',genres:['Mystery','Thriller'],tags:['Conspiracy','Time Manipulation']},
+{label:'次々と困難が起こり、展開が加速する',genres:['Action','Adventure'],tags:['Survival','Battle Royale']},
+{label:'一話ごとの満足感があり、気軽に見られる',genres:['Comedy','Slice of Life'],tags:['Episodic']},
+{label:'大きな目的に向かって物語が積み重なる',genres:['Adventure','Fantasy'],tags:['World Building','Quest']}
+]},
+{title:'作品に求める感情体験は？',help:'視聴後にどんな気持ちが残る作品が好みですか？',options:[
+{label:'緊張感や驚き、衝撃',genres:['Thriller','Mystery'],tags:['Psychological','Survival']},
+{label:'感動や切なさ、深い余韻',genres:['Drama'],tags:['Tragedy','Coming of Age']},
+{label:'爽快感や達成感',genres:['Action','Adventure'],tags:['Super Power','Revenge']},
+{label:'笑いや安心感、前向きな気分',genres:['Comedy'],tags:['Gag Humor','Found Family']}
+]},
+{title:'世界観で重視するものは？',help:'設定や舞台の魅力として近いものを選んでください。',options:[
+{label:'独自のルールや緻密な設定',genres:['Fantasy','Sci-Fi'],tags:['World Building','Politics']},
+{label:'現実に近い社会や人間ドラマ',genres:['Drama','Psychological'],tags:['Crime','Philosophy']},
+{label:'未知の場所への冒険や探索',genres:['Adventure','Fantasy'],tags:['Travel','Survival']},
+{label:'科学技術・未来社会・宇宙',genres:['Sci-Fi','Mecha'],tags:['Space','Cyberpunk']}
 ]}
 ];
 let step=0;const answers=Array(questions.length).fill(null);
@@ -173,15 +197,16 @@ function runRecommendationSelfTests(){
 }
 
 function saveDiagnosis(result=null){
- try{const data={v:1,savedAt:new Date().toISOString(),answers:[...answers],favorite:$('favoriteTitles').value.slice(0,180),disliked:$('dislikedTitles').value.slice(0,180),result};localStorage.setItem(SAVE_KEY,JSON.stringify(data));}
+ try{const data={v:2,savedAt:new Date().toISOString(),answers:[...answers],favorite:$('favoriteTitles').value.slice(0,180),disliked:$('dislikedTitles').value.slice(0,180),result};localStorage.setItem(SAVE_KEY,JSON.stringify(data));}
  catch(e){$('shareStatus').textContent='保存できませんでした。ブラウザの保存容量や設定を確認してください。';}
 }
 function restoreSavedDiagnosis(){
  try{
   const raw=localStorage.getItem(SAVE_KEY);if(!raw)return false;
   const data=JSON.parse(raw);
-  if(data?.v!==1||!Array.isArray(data.answers)||data.answers.length!==questions.length||!data.answers.every((n,i)=>n===null||(Number.isInteger(n)&&n>=0&&n<questions[i].options.length))||typeof data.favorite!=='string'||typeof data.disliked!=='string')return false;
-  answers.splice(0,answers.length,...data.answers);$('favoriteTitles').value=data.favorite;$('dislikedTitles').value=data.disliked;
+  if(![1,2].includes(data?.v)||!Array.isArray(data.answers)||![6,10].includes(data.answers.length)||data.answers.length>questions.length||!data.answers.every((n,i)=>n===null||(Number.isInteger(n)&&n>=0&&n<questions[i].options.length))||typeof data.favorite!=='string'||typeof data.disliked!=='string')return false;
+  const restoredAnswers=[...data.answers,...Array(questions.length-data.answers.length).fill(null)];
+  answers.splice(0,answers.length,...restoredAnswers);$('favoriteTitles').value=data.favorite;$('dislikedTitles').value=data.disliked;
   step=Math.max(0,answers.findIndex(n=>n===null));if(!answers.includes(null))step=questions.length-1;
   if(data.result&&Array.isArray(data.result.closeMatches)&&Array.isArray(data.result.discoveries)&&!answers.includes(null)){
    const profile=profileFromAnswers();buildProfile(profile);renderCards(data.result);$('resultIntro').textContent='保存された前回の診断結果です。';$('diagnosis').classList.add('hidden');$('results').classList.remove('hidden');return true;
@@ -463,11 +488,11 @@ function restoreShareState(){
   const binary=atob(encoded.padEnd(Math.ceil(encoded.length/4)*4,'='));
   const bytes=Uint8Array.from(binary,char=>char.charCodeAt(0));
   const state=JSON.parse(new TextDecoder().decode(bytes));
-  if(state?.v!==1||!Array.isArray(state.a)||state.a.length!==questions.length||!state.a.every((n,i)=>Number.isInteger(n)&&n>=0&&n<questions[i].options.length))return false;
+  if(state?.v!==1||!Array.isArray(state.a)||![6,10].includes(state.a.length)||state.a.length>questions.length||!state.a.every((n,i)=>Number.isInteger(n)&&n>=0&&n<questions[i].options.length))return false;
   if(typeof state.f!=='string'||typeof state.d!=='string'||state.f.length>180||state.d.length>180)return false;
-  answers.splice(0,answers.length,...state.a);
+  answers.splice(0,answers.length,...state.a,...Array(questions.length-state.a.length).fill(null));
   $('favoriteTitles').value=state.f;$('dislikedTitles').value=state.d;
-  step=questions.length-1;render();
+  step=answers.includes(null)?answers.findIndex(n=>n===null):questions.length-1;render();
   return true;
  }catch(_){return false}
 }
@@ -640,7 +665,7 @@ function renderCards(result){
 }
 async function finish(){
  $('diagnosis').classList.add('hidden');$('error').classList.add('hidden');$('loading').classList.remove('hidden');
- try{const profile=profileFromAnswers();buildProfile(profile);const result=await getRecommendations(profile);renderCards(result);const favCount=parseTitleInput('favoriteTitles').length,disCount=parseTitleInput('dislikedTitles').length;$('resultIntro').textContent='6つの回答'+(favCount||disCount?'と、入力された好き・苦手な作品':'')+'をもとに分析しました。各作品の推薦理由も確認できます。';$('loading').classList.add('hidden');$('results').classList.remove('hidden');saveDiagnosis(result);window.scrollTo({top:0,behavior:'smooth'})}
+ try{const profile=profileFromAnswers();buildProfile(profile);const result=await getRecommendations(profile);renderCards(result);const favCount=parseTitleInput('favoriteTitles').length,disCount=parseTitleInput('dislikedTitles').length;$('resultIntro').textContent='10の回答'+(favCount||disCount?'と、入力された好き・苦手な作品':'')+'をもとに分析しました。各作品の推薦理由も確認できます。';$('loading').classList.add('hidden');$('results').classList.remove('hidden');saveDiagnosis(result);window.scrollTo({top:0,behavior:'smooth'})}
  catch(e){$('loading').classList.add('hidden');$('diagnosis').classList.remove('hidden');$('error').textContent=e.message||'予期しないエラーが発生しました。';$('error').classList.remove('hidden')}
 }
 $('favoriteTitles').addEventListener('input',()=>saveDiagnosis());
