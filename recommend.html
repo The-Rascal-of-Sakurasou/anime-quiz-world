@@ -246,6 +246,10 @@ function runRecommendationSelfTests(){
  const jaccard=(a,b)=>{const left=new Set(a),right=new Set(b),union=new Set([...left,...right]);return union.size?[...left].filter(x=>right.has(x)).length/union.size:0};
  check('多様性指標は完全一致で1',jaccard(['Fantasy','Action'],['Fantasy','Action'])===1);
  check('多様性指標は共通要素なしで0',jaccard(['Fantasy'],['Comedy'])===0);
+ const weighted=calculateRankWeightedFeedback([{value:'like',group:'close',rank:1},{value:'dislike',group:'close',rank:4}],'close');
+ check('順位加重評価は上位の肯定評価を強く反映',weighted.weightedRate>0.5);
+ check('推薦グループを分けて集計',calculateRankWeightedFeedback([{value:'like',group:'discovery',rank:1}],'close').count===0);
+ check('順位情報のない評価は除外',calculateRankWeightedFeedback([{value:'like',group:'close'}],'close').count===0);
  return tests;
 }
 
@@ -658,6 +662,16 @@ async function saveShareImage(){
   $('shareStatus').textContent='カバー画像付きの診断結果カードを保存しました。';
  },'image/png');
 }
+function calculateRankWeightedFeedback(items,group){
+ const eligible=(items||[]).filter(item=>item&&['like','dislike'].includes(item.value)&&item.group===group&&Number.isInteger(Number(item.rank))&&Number(item.rank)>0);
+ let weightedLikes=0,totalWeight=0;
+ eligible.forEach(item=>{
+  const weight=1/Math.log2(Number(item.rank)+1);
+  totalWeight+=weight;
+  if(item.value==='like')weightedLikes+=weight;
+ });
+ return {count:eligible.length,weightedRate:totalWeight?weightedLikes/totalWeight:null};
+}
 function renderFeedbackAnalytics(){
  const feedback=Object.values(readRecommendationFeedback());
  const rated=feedback.filter(item=>item&&['like','dislike'].includes(item.value));
@@ -705,6 +719,19 @@ function renderFeedbackAnalytics(){
  addBreakdown('物語タグ別の評価（最大6件）',tagCounts);
  addBreakdown('表示位置別の評価',rankCounts);
  addBreakdown('推薦グループ別の評価',groupCounts);
+ const rankMetricSection=document.createElement('div');rankMetricSection.style.cssText='margin-top:12px';
+ const rankMetricTitle=document.createElement('strong');rankMetricTitle.textContent='順位を考慮した評価指標';rankMetricSection.append(rankMetricTitle);
+ const closeWeighted=calculateRankWeightedFeedback(rated,'close');
+ const discoveryWeighted=calculateRankWeightedFeedback(rated,'discovery');
+ const rankMetricText=document.createElement('p');rankMetricText.className='status';
+ const weightedLabel=result=>result.count
+  ?'順位加重肯定率 '+Math.round(result.weightedRate*100)+'%（評価 '+result.count+' 件）'
+  :'評価データなし';
+ rankMetricText.textContent='好みにかなり近い作品：'+weightedLabel(closeWeighted)+'。意外なおすすめ：'+weightedLabel(discoveryWeighted)+'。';
+ rankMetricSection.append(rankMetricText);
+ const rankMetricNote=document.createElement('p');rankMetricNote.className='status';rankMetricNote.style.fontSize='.82rem';
+ rankMetricNote.textContent='上位ほど大きい重み（1 / log₂(順位+1)）を付けた、このブラウザ内の記述指標です。診断ごとのまとまりを保存していないため、標準的なランキング評価指標（NDCG等）ではありません。表示位置による評価の偏りも含み、推薦精度の証明にはなりません。';
+ rankMetricSection.append(rankMetricNote);root.append(rankMetricSection);
  const learnableGenres=Object.values(genreCounts).filter(count=>count.like+count.dislike>=2).length;
  const learnableTags=Object.values(tagCounts).filter(count=>count.like+count.dislike>=2).length;
  const learning=document.createElement('p');learning.className='status';
