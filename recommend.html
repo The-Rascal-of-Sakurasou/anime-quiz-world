@@ -595,8 +595,17 @@ function renderFeedbackAnalytics(){
  root.replaceChildren();
  const summary=document.createElement('p');
  summary.className='status';
- summary.textContent='評価 '+rated.length+' 件（合っている '+likes+' 件／合っていない '+dislikes+' 件）'+(rated.length?' · 肯定率 '+Math.round(likes/rated.length*100)+'%':'');
+ const rate=rated.length?likes/rated.length:0;
+ const z=1.96,denom=1+z*z/Math.max(1,rated.length);
+ const center=(rate+z*z/(2*Math.max(1,rated.length)))/denom;
+ const margin=z*Math.sqrt((rate*(1-rate)+z*z/(4*Math.max(1,rated.length)))/Math.max(1,rated.length))/denom;
+ summary.textContent='評価 '+rated.length+' 件（合っている '+likes+' 件／合っていない '+dislikes+' 件）'+(rated.length?' · 肯定率 '+Math.round(rate*100)+'%':'');
  root.append(summary);
+ if(rated.length){
+  const uncertainty=document.createElement('p');uncertainty.className='status';
+  uncertainty.textContent='肯定率の95%信頼区間（目安）：'+Math.round(Math.max(0,center-margin)*100)+'〜'+Math.round(Math.min(1,center+margin)*100)+'%。評価件数が少ない間は幅が広くなります。';
+  root.append(uncertainty);
+ }
  if(!rated.length){
   const empty=document.createElement('p');empty.className='status';empty.textContent='まだ評価データがありません。作品カードから評価すると、ここに集計が表示されます。';root.append(empty);return;
  }
@@ -606,7 +615,7 @@ function renderFeedbackAnalytics(){
   const list=document.createElement('ul');list.style.cssText='margin:6px 0 0;padding-left:22px';
   const sorted=Object.entries(items).sort((a,b)=>(b[1].like+b[1].dislike)-(a[1].like+a[1].dislike)).slice(0,6);
   if(!sorted.length){const li=document.createElement('li');li.textContent='集計可能なデータはまだありません。';list.append(li)}
-  sorted.forEach(([name,count])=>{const li=document.createElement('li');li.textContent=name+'：合っている '+count.like+'／合っていない '+count.dislike+'（計 '+(count.like+count.dislike)+'）';list.append(li)});
+  sorted.forEach(([name,count])=>{const li=document.createElement('li');const total=count.like+count.dislike;const pct=Math.round(count.like/Math.max(1,total)*100);li.textContent=name+'：肯定率 '+pct+'%（合っている '+count.like+'／合っていない '+count.dislike+'、計 '+total+'件）'+(total<5?' ※参考値':'' );list.append(li)});
   section.append(list);root.append(section);
  };
  const genreCounts={},tagCounts={},rankCounts={},groupCounts={};
@@ -622,6 +631,7 @@ function renderFeedbackAnalytics(){
  addBreakdown('ジャンル別の評価（最大6件）',genreCounts);
  addBreakdown('物語タグ別の評価（最大6件）',tagCounts);
  addBreakdown('表示位置別の評価',rankCounts);
+ addBreakdown('推薦グループ別の評価',groupCounts);
  const learnableGenres=Object.values(genreCounts).filter(count=>count.like+count.dislike>=2).length;
  const learnableTags=Object.values(tagCounts).filter(count=>count.like+count.dislike>=2).length;
  const learning=document.createElement('p');learning.className='status';
