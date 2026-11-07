@@ -314,6 +314,33 @@ function deduplicateRecommendationGroups(closeMatches,discoveries){
  return {closeMatches:close,discoveries:discoveriesOut};
 }
 
+function calculateSelectionAdjustment(candidate,selected,discovery=false,maxPopularity=2){
+ const genres=new Set(candidate.genres||[]);
+ const tags=new Set((candidate.tags||[]).filter(t=>!t.isMediaSpoiler&&t.rank>=40).map(t=>t.name));
+ let maxSimilarity=0,genreConcentration=0;
+ for(const chosen of selected||[]){
+  const chosenGenres=new Set(chosen.genres||[]);
+  const chosenTags=new Set((chosen.tags||[]).filter(t=>!t.isMediaSpoiler&&t.rank>=40).map(t=>t.name));
+  const sharedGenres=[...genres].filter(g=>chosenGenres.has(g)).length;
+  const sharedTags=[...tags].filter(t=>chosenTags.has(t)).length;
+  const genreUnion=new Set([...genres,...chosenGenres]).size;
+  const tagUnion=new Set([...tags,...chosenTags]).size;
+  const genreSimilarity=genreUnion?sharedGenres/genreUnion:0;
+  const tagSimilarity=tagUnion?sharedTags/tagUnion:0;
+  maxSimilarity=Math.max(maxSimilarity,genreSimilarity*0.65+tagSimilarity*0.35);
+ }
+ for(const genre of genres){
+  const occurrences=(selected||[]).filter(chosen=>(chosen.genres||[]).includes(genre)).length;
+  genreConcentration=Math.max(genreConcentration,occurrences);
+ }
+ const popularity=Number(candidate._popularity)||0;
+ const novelty=discovery?Math.max(0,1-Math.log(popularity+1)/Math.log(Math.max(2,maxPopularity))):0;
+ const similarityPenalty=maxSimilarity*5.5;
+ const genreConcentrationPenalty=genreConcentration*0.7;
+ const noveltyBonus=novelty*0.8;
+ return {similarityPenalty,genreConcentrationPenalty,noveltyBonus,total:-similarityPenalty-genreConcentrationPenalty+noveltyBonus};
+}
+
 function runRecommendationSelfTests(){
  const tests=[];
  const check=(name,condition)=>tests.push({name,passed:Boolean(condition)});
@@ -390,6 +417,9 @@ function runRecommendationSelfTests(){
  const jaccard=(a,b)=>{const left=new Set(a),right=new Set(b),union=new Set([...left,...right]);return union.size?[...left].filter(x=>right.has(x)).length/union.size:0};
  check('多様性指標は完全一致で1',jaccard(['Fantasy','Action'],['Fantasy','Action'])===1);
  check('多様性指標は共通要素なしで0',jaccard(['Fantasy'],['Comedy'])===0);
+ check('最初の候補には重複ペナルティが発生しない',calculateSelectionAdjustment({genres:['Fantasy'],tags:[],_popularity:10},[],false,100).total===0);
+ check('同じジャンルの候補には多様性ペナルティが発生する',calculateSelectionAdjustment({genres:['Fantasy'],tags:[],_popularity:10},[{genres:['Fantasy'],tags:[]}],false,100).total<0);
+ check('意外なおすすめでは人気度が低いほど意外性ボーナスが大きい',calculateSelectionAdjustment({_popularity:1,genres:[],tags:[]},[],true,100).noveltyBonus>calculateSelectionAdjustment({_popularity:99,genres:[],tags:[]},[],true,100).noveltyBonus);
  const weighted=calculateRankWeightedFeedback([{value:'like',group:'close',rank:1},{value:'dislike',group:'close',rank:4}],'close');
  check('順位加重評価は上位の肯定評価を強く反映',weighted.weightedRate>0.5);
  check('推薦グループを分けて集計',calculateRankWeightedFeedback([{value:'like',group:'discovery',rank:1}],'close').count===0);
@@ -592,7 +622,8 @@ async function getRecommendations(profile){
   if(profile.length==='medium'){if(a.episodes>=12&&a.episodes<=39){score+=3;lengthPoints+=3;lengthReason='2〜3クール程度';}else if(a.episodes>60){score-=2;lengthPoints-=2;lengthAdjustment='希望より長め（60話超）';}}
   if(profile.length==='long'){if(a.episodes>=40){score+=5;lengthPoints+=5;lengthReason='長編';}else if(a.episodes&&a.episodes<=13){score-=2;lengthPoints-=2;lengthAdjustment='希望より短め（13話以下）';}}
   const fav=seedScore(a,activeFavoriteSeeds),dis=seedScore(a,activeDislikedSeeds);
-  const seedPoints=fav.score-dis.score*0.75;score+=seedPoints;if(seedPoints)scoreBreakdown.push({label:'入力した好き・苦手作品',points:seedPoints});
+  const favoritePoints=fav.score;score+=favoritePoints;if(favoritePoints)scoreBreakdown.push({label:'好きな作品との類似度',points:favoritePoints});
+  const dislikedPenalty=dis.score*0.75;score-=dislikedPenalty;if(dislikedPenalty)scoreBreakdown.push({label:'苦手な作品との類似度',points:-dislikedPenalty});
   if(lengthPoints){score+=0;scoreBreakdown.push({label:'希望する作品の長さ',points:lengthPoints});}
   const learnedTotalAdjustment=calculateLearnedTotalAdjustment(animeGenres,animeTags.filter(t=>!t.isMediaSpoiler&&t.rank>=40).map(t=>t.name),learnedPreferences);
   score+=learnedTotalAdjustment;if(learnedTotalAdjustment)scoreBreakdown.push({label:'過去の評価傾向',points:learnedTotalAdjustment});
@@ -602,13 +633,15 @@ async function getRecommendations(profile){
   const details=[];
    if(priorFeedback?.value==='like')details.push({label:'過去の推薦評価',items:['以前「合っている」と評価'],kind:'positive'});
    else if(priorFeedback?.value==='dislike')details.push({label:'過去の推薦評価',items:['以前「合っていない」と評価'],kind:'adjustment'});
-  if(Math.abs(learnedTotalAdjustment)>=0.35)details.push({label:'これまでの評価傾向による調整',items:[learnedTotalAdjustment>0?'過去に好評だったジャンル・タグを少し優先':'過去に不評だったジャンル・タグを少し抑制'],kind:learnedTotalAdjustment>0?'positive':'adjustment'});
+  if(Math.abs(learnedTotalAdjustment)>0.001)details.push({label:'これまでの評価傾向による調整',items:[(learnedTotalAdjustment>0?'過去に好評だったジャンル・タグを優先':'過去に不評だったジャンル・タグを抑制')+'（'+(learnedTotalAdjustment>0?'+':'')+learnedTotalAdjustment.toFixed(1)+'点）'],kind:learnedTotalAdjustment>0?'positive':'adjustment'});
   if(matchedGenreKeys.length)details.push({label:'選んだジャンルとの一致',items:matchedGenres.slice(0,4),kind:'positive'});
   if(matchedTagKeys.length)details.push({label:'重視する物語要素との一致',items:matchedTagKeys.slice(0,5).map(t=>tagNames[t]||t),kind:'positive'});
+  if(fav.score>0.001&&!fav.matchedTags.length&&!fav.matchedGenres.length)details.push({label:'好きな作品との類似度',items:['共通要素による加点 '+fav.score.toFixed(1)+'点'],kind:'positive'});
   if(fav.matchedTags.length)details.push({label:'好きな作品と共通する物語タグ',items:fav.matchedTags.slice(0,5).map(t=>tagNames[t]||t),kind:'positive'});
   if(fav.matchedGenres.length)details.push({label:'好きな作品と共通するジャンル',items:fav.matchedGenres.slice(0,4).map(g=>genreNames[g]||g),kind:'positive'});
   if(lengthReason)details.push({label:'希望する作品の長さ',items:[lengthReason],kind:'positive'});
   if(lengthAdjustment)details.push({label:'長さによる調整',items:[lengthAdjustment],kind:'adjustment'});
+  if(dis.score>0.001&&!dis.matchedTags.length&&!dis.matchedGenres.length)details.push({label:'苦手な作品との類似度',items:['共通要素による減点 '+dislikedPenalty.toFixed(1)+'点'],kind:'adjustment'});
   if(dis.matchedTags.length)details.push({label:'苦手な作品と共通する物語タグ',items:dis.matchedTags.slice(0,4).map(t=>tagNames[t]||t),kind:'adjustment'});
   if(dis.matchedGenres.length)details.push({label:'苦手な作品と共通するジャンル',items:dis.matchedGenres.slice(0,3).map(g=>genreNames[g]||g),kind:'adjustment'});
   // 入力された作品そのものは推薦候補から外す。
@@ -630,36 +663,22 @@ async function getRecommendations(profile){
   const pool=[...candidates],selected=[];
   const maxPopularity=Math.max(2,...pool.map(x=>(Number(x._popularity)||0)+1));
   while(pool.length&&selected.length<count){
-   let bestIndex=0,bestValue=-Infinity;
+   let bestIndex=0,bestValue=-Infinity,bestAdjustment=null;
    for(let i=0;i<pool.length;i++){
     const candidate=pool[i];
-    const genres=new Set(candidate.genres||[]);
-    const tags=new Set((candidate.tags||[]).filter(t=>!t.isMediaSpoiler&&t.rank>=40).map(t=>t.name));
-    let maxSimilarity=0,genreConcentration=0;
-    for(const chosen of selected){
-     const chosenGenres=new Set(chosen.genres||[]);
-     const chosenTags=new Set((chosen.tags||[]).filter(t=>!t.isMediaSpoiler&&t.rank>=40).map(t=>t.name));
-     const sharedGenres=[...genres].filter(g=>chosenGenres.has(g)).length;
-     const sharedTags=[...tags].filter(t=>chosenTags.has(t)).length;
-     const genreUnion=new Set([...genres,...chosenGenres]).size;
-     const tagUnion=new Set([...tags,...chosenTags]).size;
-     const genreSimilarity=genreUnion?sharedGenres/genreUnion:0;
-     const tagSimilarity=tagUnion?sharedTags/tagUnion:0;
-     const similarity=genreSimilarity*0.65+tagSimilarity*0.35;
-     maxSimilarity=Math.max(maxSimilarity,similarity);
-    }
-    for(const genre of genres){
-     const occurrences=selected.filter(chosen=>(chosen.genres||[]).includes(genre)).length;
-     genreConcentration=Math.max(genreConcentration,occurrences);
-    }
-    const popularity=Number(candidate._popularity)||0;
-    const novelty=discovery?Math.max(0,1-Math.log(popularity+1)/Math.log(maxPopularity)):0;
-    // 生の共通数ではなく集合の重なり率を使い、作品ごとのタグ数の差を補正する。
-    const redundancyPenalty=maxSimilarity*5.5+genreConcentration*0.7;
-    const value=candidate._score-redundancyPenalty+novelty*0.8;
-    if(value>bestValue){bestValue=value;bestIndex=i}
+    // 生の共通数ではなく集合の重なり率で多様性を調整する。
+    const adjustment=calculateSelectionAdjustment(candidate,selected,discovery,maxPopularity);
+    const value=candidate._score+adjustment.total;
+    if(value>bestValue){bestValue=value;bestIndex=i;bestAdjustment=adjustment}
    }
-   selected.push(pool.splice(bestIndex,1)[0]);
+   const chosen=pool.splice(bestIndex,1)[0];
+   chosen._selectionAdjustment=bestAdjustment||{similarityPenalty:0,genreConcentrationPenalty:0,noveltyBonus:0,total:0};
+   chosen._selectionBreakdown=[
+    {label:'既出作品との類似度による調整',points:-chosen._selectionAdjustment.similarityPenalty},
+    {label:'ジャンルの偏りによる調整',points:-chosen._selectionAdjustment.genreConcentrationPenalty},
+    {label:'意外性（AniList上の人気度）',points:chosen._selectionAdjustment.noveltyBonus}
+   ].filter(item=>Math.abs(item.points)>0.001);
+   selected.push(chosen);
   }
   return selected;
  };
@@ -691,7 +710,16 @@ function renderCardList(containerId,items){
   const body=document.createElement('div');body.className='anime-body';
   const h=document.createElement('h3');h.textContent=(i+1)+'. '+(a.title.native||a.title.english||a.title.romaji);
   const meta=document.createElement('small');meta.textContent=[a.seasonYear||'年不明',a.format,a.episodes?(a.episodes+'話'):'話数不明',a.averageScore?'評価 '+a.averageScore+'/100':null].filter(Boolean).join(' · ');
-  const score=document.createElement('div');score.className='score';score.textContent='相性スコア '+a._score.toFixed(1)+'（比較用）';
+  const score=document.createElement('div');score.className='score';score.textContent='相性スコア '+a._score.toFixed(1)+'（回答・作品特徴の一致度）';
+  const selectionInfo=document.createElement('small');selectionInfo.style.cssText='display:block;margin-top:3px;color:var(--muted)';
+  const selectionAdjustment=Number(a._selectionAdjustment?.total)||0;
+  selectionInfo.textContent='選出時の調整 '+(selectionAdjustment>0?'+':'')+selectionAdjustment.toFixed(1)+'点（順位の多様性調整）';
+  const selectionDetails=document.createElement('details');selectionDetails.style.cssText='margin-top:6px;font-size:.8rem;color:var(--muted)';
+  const selectionSummary=document.createElement('summary');selectionSummary.textContent='選出時の調整理由';
+  const selectionList=document.createElement('ul');selectionList.style.cssText='margin:5px 0;padding-left:18px';
+  (a._selectionBreakdown||[]).forEach(part=>{const item=document.createElement('li');item.textContent=part.label+'：'+(part.points>0?'+':'')+part.points.toFixed(1);selectionList.append(item)});
+  if(!selectionList.children.length){const item=document.createElement('li');item.textContent='この候補には追加の調整はありません';selectionList.append(item)}
+  selectionDetails.append(selectionSummary,selectionList);
   const breakdown=document.createElement('details');breakdown.style.cssText='margin-top:8px;font-size:.8rem;color:var(--muted)';
   const breakdownSummary=document.createElement('summary');breakdownSummary.textContent='スコアの内訳';
   const breakdownList=document.createElement('ul');breakdownList.style.cssText='margin:5px 0;padding-left:18px';
@@ -718,7 +746,7 @@ function renderCardList(containerId,items){
   const updateFeedback=(value)=>{const next=currentFeedback===value?'':value;const context={genres:Array.isArray(a.genres)?a.genres:[],tags:(a.tags||[]).filter(t=>!t.isMediaSpoiler&&t.rank>=40).map(t=>t.name).slice(0,30),rank:i+1,group,evaluationMetrics:a._evaluationMetrics&&typeof a._evaluationMetrics==='object'?a._evaluationMetrics:null};const ok=writeRecommendationFeedback(a.id,next||'neutral',context);if(!ok){$('shareStatus').textContent='評価を保存できませんでした。ブラウザの保存設定を確認してください。';return}const historyOk=writeRecommendationEvaluation({sessionId:latestResult?.evaluationSessionId||'legacy-session',animeId:String(a.id),value:next,rank:i+1,group,genres:context.genres,tags:context.tags});like.textContent=next==='like'?'✓ 合っている':'合っている';dislike.textContent=next==='dislike'?'✓ 合っていない':'合っていない';currentFeedback=next;like.setAttribute('aria-pressed',String(next==='like'));dislike.setAttribute('aria-pressed',String(next==='dislike'));$('shareStatus').textContent=historyOk?'評価を保存しました。次回の診断から推薦順位の調整に使います。':'評価は保存しましたが、診断別の評価履歴を保存できませんでした。';renderFeedbackAnalytics()};
   like.addEventListener('click',()=>updateFeedback('like'));dislike.addEventListener('click',()=>updateFeedback('dislike'));
   feedback.append(feedbackLabel,like,dislike);
-  body.append(h,meta,score,breakdown,reasonList,desc,link,feedback);card.append(img,body);container.append(card);
+  body.append(h,meta,score,selectionInfo,selectionDetails,breakdown,reasonList,desc,link,feedback);card.append(img,body);container.append(card);
  });
 }
 let latestResult=null;
