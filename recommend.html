@@ -88,11 +88,16 @@ function profileFromAnswers(){
 }
 function escapeHTML(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 async function getRecommendations(profile){
- const query='query ($genres:[String]) { Page(page:1,perPage:100) { media(type:ANIME,sort:POPULARITY_DESC,isAdult:false,genre_in:$genres) { id format title { romaji english native } description(asHtml:false) coverImage { extraLarge large } episodes seasonYear averageScore popularity genres tags { name rank isMediaSpoiler } siteUrl } } }';
- const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query,variables:{genres:Object.keys(profile.genres)}}),signal:AbortSignal.timeout(15000)});
- if(!response.ok)throw new Error('作品データの取得に失敗しました（HTTP '+response.status+'）。時間をおいて再試行してください。');
- const json=await response.json();if(json.errors?.length)throw new Error('作品データの取得に失敗しました。');
- const items=json.data?.Page?.media||[];
+ const query='query ($page:Int,$genres:[String]) { Page(page:$page,perPage:50) { media(type:ANIME,sort:POPULARITY_DESC,isAdult:false,genre_in:$genres) { id format title { romaji english native } description(asHtml:false) coverImage { extraLarge large } episodes seasonYear averageScore popularity genres tags { name rank isMediaSpoiler } siteUrl } } }';
+ const fetchPage=async page=>{
+  const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query,variables:{page,genres:Object.keys(profile.genres)}}),signal:AbortSignal.timeout(15000)});
+  const json=await response.json().catch(()=>null);
+  if(!response.ok||json?.errors?.length||!json?.data?.Page)throw new Error('作品データの取得に失敗しました（HTTP '+response.status+'）。時間をおいて再試行してください。');
+  return json.data.Page.media||[];
+ };
+ // AniListのPage.perPage上限は50。2ページ取得して最大100作品を候補にする。
+ const pages=await Promise.all([fetchPage(1),fetchPage(2)]);
+ const items=[...pages[0],...pages[1]];
  const genreEntries=Object.entries(profile.genres),tagEntries=Object.entries(profile.tags);
  const scored=items.filter(a=>a.coverImage?.large&&a.title&&(a.format==='TV'||a.format==='TV_SHORT'||a.format==='MOVIE'||a.format==='ONA'||a.format==='OVA'||a.format==='SPECIAL')).map(a=>{
   let score=0,matched=[];
