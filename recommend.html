@@ -41,9 +41,10 @@
 <p class="status" id="resultStatus">診断結果との相性をもとに並べています。</p>
 <div class="share-panel">
  <strong>診断結果をシェア</strong>
- <p>あなたのアニメタイプとおすすめ作品を、Xへの投稿や画像で共有できます。</p>
+ <p>リンクを開くと、同じ回答内容で診断を再実行して結果を表示します。AniListのデータ更新により、作品候補が変わる場合があります。</p>
  <div class="share-actions">
   <button id="shareX" type="button" class="primary">Xで共有</button>
+  <button id="copyResultLink" type="button">診断結果リンクをコピー</button>
   <button id="copyShare" type="button">共有文をコピー</button>
   <button id="saveShareImage" type="button">結果画像を保存</button>
  </div>
@@ -245,10 +246,38 @@ function renderCardList(containerId,items){
  });
 }
 let latestResult=null;
+function encodeShareState(){
+ const state={v:1,a:answers,f:$('favoriteTitles').value.slice(0,180),d:$('dislikedTitles').value.slice(0,180)};
+ const bytes=new TextEncoder().encode(JSON.stringify(state));
+ let binary='';bytes.forEach(byte=>binary+=String.fromCharCode(byte));
+ return btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function getShareUrl(){
+ const url=new URL(location.href);url.hash='result='+encodeShareState();return url.toString();
+}
+function restoreShareState(){
+ if(!location.hash.startsWith('#result='))return false;
+ try{
+  const encoded=location.hash.slice(8).replace(/-/g,'+').replace(/_/g,'/');
+  const binary=atob(encoded.padEnd(Math.ceil(encoded.length/4)*4,'='));
+  const bytes=Uint8Array.from(binary,char=>char.charCodeAt(0));
+  const state=JSON.parse(new TextDecoder().decode(bytes));
+  if(state?.v!==1||!Array.isArray(state.a)||state.a.length!==questions.length||!state.a.every((n,i)=>Number.isInteger(n)&&n>=0&&n<questions[i].options.length))return false;
+  if(typeof state.f!=='string'||typeof state.d!=='string'||state.f.length>180||state.d.length>180)return false;
+  answers.splice(0,answers.length,...state.a);
+  $('favoriteTitles').value=state.f;$('dislikedTitles').value=state.d;
+  step=questions.length-1;render();
+  return true;
+ }catch(_){return false}
+}
+async function copyResultLink(){
+ try{await navigator.clipboard.writeText(getShareUrl());$('shareStatus').textContent='診断結果を再現できるリンクをコピーしました。';}
+ catch(_){$('shareStatus').textContent='リンクをコピーできませんでした。ブラウザの共有機能を利用してください。';}
+}
 function buildShareText(){
  const close=(latestResult?.closeMatches||[]).slice(0,3).map(a=>a.title.native||a.title.english||a.title.romaji).filter(Boolean);
  const discovery=(latestResult?.discoveries||[]).slice(0,2).map(a=>a.title.native||a.title.english||a.title.romaji).filter(Boolean);
- return 'Anime Quiz Worldでアニメの好みを診断！\n私のタイプは「'+($('profileTitle').textContent||'アニメ好き')+'」でした。\nおすすめ：'+(close.join('、')||'診断結果をチェック')+(discovery.length?'\n意外なおすすめ：'+discovery.join('、'):'')+'\nあなたも診断してみてください！\n'+location.href+'\n#AnimeQuizWorld';
+ return 'Anime Quiz Worldでアニメの好みを診断！\\n私のタイプは「'+($('profileTitle').textContent||'アニメ好き')+'」でした。\\nおすすめ：'+(close.join('、')||'診断結果をチェック')+(discovery.length?'\\n意外なおすすめ：'+discovery.join('、'):'')+'\\nあなたも診断してみてください！\\n'+getShareUrl()+'\\n#AnimeQuizWorld';
 }
 async function copyShareText(){
  try{await navigator.clipboard.writeText(buildShareText());$('shareStatus').textContent='共有文をコピーしました。';}
@@ -338,11 +367,13 @@ async function finish(){
 }
 $('back').addEventListener('click',()=>{if(step>0){step--;render()}});
 $('next').addEventListener('click',()=>{if(answers[step]===null)return;if(step<questions.length-1){step++;render()}else finish()});
-$('retry').addEventListener('click',()=>{step=0;answers.fill(null);$('results').classList.add('hidden');$('diagnosis').classList.remove('hidden');$('progressBar').style.width='0%';render();window.scrollTo({top:0,behavior:'smooth'})});
+$('retry').addEventListener('click',()=>{step=0;answers.fill(null);$('results').classList.add('hidden');$('diagnosis').classList.remove('hidden');$('progressBar').style.width='0%';history.replaceState(null,'',location.pathname+location.search);render();window.scrollTo({top:0,behavior:'smooth'})});
 $('shareX').addEventListener('click',shareOnX);
+$('copyResultLink').addEventListener('click',copyResultLink);
 $('copyShare').addEventListener('click',copyShareText);
 $('saveShareImage').addEventListener('click',saveShareImage);
 render();
+if(restoreShareState())finish();
 </script>
 </body>
 </html>
