@@ -155,20 +155,41 @@ function titleKey(media){
 async function getRecommendations(profile){
  const query='query ($page:Int,$sort:[MediaSort]) { Page(page:$page,perPage:50) { media(type:ANIME,sort:$sort,isAdult:false) { id format title { romaji english native } description(asHtml:false) coverImage { extraLarge large } episodes seasonYear averageScore popularity genres tags { name rank isMediaSpoiler } siteUrl } } }';
  const fetchPage=async (page,sort)=>{
-  const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query,variables:{page,sort:[sort]}}),signal:AbortSignal.timeout(15000)});
-  const json=await response.json().catch(()=>null);
-  if(!response.ok||json?.errors?.length||!json?.data?.Page)throw new Error('作品データの取得に失敗しました（HTTP '+response.status+'）。時間をおいて再試行してください。');
-  return json.data.Page.media||[];
+  let lastError=null;
+  for(let attempt=0;attempt<3;attempt++){
+   try{
+    const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query,variables:{page,sort:[sort]}}),signal:AbortSignal.timeout(15000)});
+    const json=await response.json().catch(()=>null);
+    if(response.ok&&!json?.errors?.length&&json?.data?.Page)return json.data.Page.media||[];
+    const apiMessage=(json?.errors||[]).map(error=>error.message).filter(Boolean).join(' / ');
+    const error=new Error('AniList APIエラー（HTTP '+response.status+'）'+(apiMessage?'：'+apiMessage:'。'));
+    error.retryable=response.status===429||response.status>=500;
+    if(!error.retryable)throw error;
+    lastError=error;
+   }catch(error){
+    lastError=error;
+    if(error.retryable===false)throw error;
+   }
+   if(attempt<2)await new Promise(resolve=>setTimeout(resolve,1200*(attempt+1)));
+  }
+  throw lastError||new Error('AniListから作品データを取得できませんでした。');
  };
  // ジャンルで候補を絞らず、4種類の並び順から各3ページ（最大600件）を取得。
- // 先にジャンルで絞ると別ジャンルでもタグが一致する作品を取りこぼすため、全体から収集して後段で相性を採点する。
+ // 一部のページ取得に失敗しても、成功したページの作品で診断を続行する。
  const sortModes=['POPULARITY_DESC','SCORE_DESC','TRENDING_DESC','START_DATE_DESC'];
- const pages=[];
- for(const sort of sortModes){
-  const batch=await Promise.all([1,2,3].map(page=>fetchPage(page,sort)));
-  pages.push(...batch);
+ const pages=[];let failedPages=0;
+ for(let i=0;i<sortModes.length;i++){
+  const sort=sortModes[i];
+  const batch=await Promise.allSettled([1,2,3].map(page=>fetchPage(page,sort)));
+  for(const result of batch){
+   if(result.status==='fulfilled')pages.push(result.value);
+   else{failedPages++;console.warn('Recommendation page failed:',sort,result.reason);}
+  }
+  $('loading').textContent='作品データを取得中… '+(i+1)+' / '+sortModes.length+' グループ（取得失敗 '+failedPages+' ページ）';
  }
- const items=[...new Map(pages.flat().map(a=>[a.id,a])).values()];
+ if(!pages.length)throw new Error('AniListから作品データを取得できませんでした。通信状態を確認して、もう一度お試しください。');
+ const items=[...new Map(pages.flat().map(a=>[a.id,a]).filter(([id])=>id!=null)).values()];
+ if(!items.length)throw new Error('取得できた作品データがありませんでした。時間をおいて再診断してください。');
  const [favoriteNames,dislikedNames]=[parseTitleInput('favoriteTitles'),parseTitleInput('dislikedTitles')];
  const favoriteSeeds=[],dislikedSeeds=[];
  for(const name of favoriteNames){const found=await findSeedAnime(name);if(found)favoriteSeeds.push(found)}
