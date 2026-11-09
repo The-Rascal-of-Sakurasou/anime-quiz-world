@@ -367,7 +367,7 @@ async function fetchAnime(vars={}){
   });
   savedProgress=stored?.progress||null;
   if(Array.isArray(stored?.cachedItems)&&stored.cachedItems.length){
-   initial=[...new Map(stored.cachedItems.filter(isUsableAnime).map(a=>[Number(a.id),a])).values()];
+   initial=mergeAnimeCollection(stored.cachedItems.filter(isUsableAnime));
    cacheSavedAt=Date.now();
   }
   try{
@@ -377,7 +377,7 @@ async function fetchAnime(vars={}){
     if(Array.isArray(legacy?.items))initial.push(...legacy.items.filter(isUsableAnime));
     if(Number(legacy?.savedAt)>cacheSavedAt)cacheSavedAt=Number(legacy.savedAt);
    }
-   initial=[...new Map(initial.map(a=>[Number(a.id),a])).values()];
+   initial=mergeAnimeCollection(initial);
   }catch(e){}
 
  }catch(e){}
@@ -437,7 +437,7 @@ async function fetchAnime(vars={}){
     let pageResults=[];
     try{
      pageResults=sort==='ID_IN'?[{items:await request({id_in:page,perPage:50}),hasNextPage:false}]:await requestPageBatch(batch.map(task=>task[1]),sort,format,yearStart,yearEnd);
-     pageResults.forEach(result=>(result.items||[]).forEach(a=>{if(isUsableAnime(a))all.set(a.id,a)}));
+     pageResults.forEach(result=>(result.items||[]).forEach(a=>{if(isUsableAnime(a)){const previous=all.get(a.id);all.set(a.id,previous?mergeAnimeRecords(previous,a):a)}}));
     }catch(err){failures+=batch.length;console.warn('Background anime page batch failed:',sort,page,err);const retryable=batch.filter(task=>Number(task[6]||0)<2);if(retryable.length)tasks.push(...retryable.map(task=>[...task,Number(task[6]||0)+1]))}
     if(format&&!yearStart&&batch.some(task=>task[1]===100)&&pageResults.some(result=>result.hasNextPage===true)){
      for(let startYear=1900;startYear<=2030;startYear+=10){
@@ -489,6 +489,30 @@ function deduplicateSearchResults(items){
   seenIds.add(id);titleKeys.forEach(key=>seenTitles.add(key));result.push(anime);
  }
  return result;
+}
+function mergeAnimeRecords(existing,incoming){
+ if(!existing)return incoming;
+ if(!incoming)return existing;
+ const merge=(oldValue,newValue)=>{
+  if(newValue===null||newValue===undefined||newValue==='')return oldValue;
+  if(Array.isArray(newValue))return newValue.length?newValue:oldValue;
+  if(newValue&&typeof newValue==='object'&&!Array.isArray(newValue)){
+   const result={...(oldValue&&typeof oldValue==='object'&&!Array.isArray(oldValue)?oldValue:{})};
+   for(const [key,value] of Object.entries(newValue))result[key]=merge(result[key],value);
+   return result;
+  }
+  return newValue;
+ };
+ return merge(existing,incoming);
+}
+function mergeAnimeCollection(items){
+ const byId=new Map();
+ for(const anime of items||[]){
+  const id=Number(anime?.id);
+  if(!Number.isFinite(id))continue;
+  byId.set(id,mergeAnimeRecords(byId.get(id),anime));
+ }
+ return [...byId.values()];
 }
 function deduplicateQuestionPool(items){
  // Keep every distinct AniList entry. Seasons, sequels, movies, OVAs and remakes
