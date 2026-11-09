@@ -431,14 +431,14 @@ async function fetchAnime(vars={}){
     const batch=[tasks[taskIndex]];
     if(taskType==='fill'&&taskIndex+1<tasks.length){
      const next=tasks[taskIndex+1];
-     if(next[2]==='fill'&&next[0]===sort&&next[1]===page+1&&next[3]===format&&next[4]===yearStart&&next[5]===yearEnd)batch.push(next);
+     if(next[2]==='fill'&&next[0]===sort&&next[1]===page+1&&next[3]===format&&next[4]===yearStart&&next[5]===yearEnd&&next[6]===batch[0][6])batch.push(next);
     }
     await new Promise(resolve=>setTimeout(resolve,2100));
     let pageResults=[];
     try{
      pageResults=sort==='ID_IN'?[{items:await request({id_in:page,perPage:50}),hasNextPage:false}]:await requestPageBatch(batch.map(task=>task[1]),sort,format,yearStart,yearEnd);
      pageResults.forEach(result=>(result.items||[]).forEach(a=>{if(isUsableAnime(a))all.set(a.id,a)}));
-    }catch(err){failures+=batch.length;console.warn('Background anime page batch failed:',sort,page,err)}
+    }catch(err){failures+=batch.length;console.warn('Background anime page batch failed:',sort,page,err);const retryable=batch.filter(task=>Number(task[6]||0)<2);if(retryable.length)tasks.push(...retryable.map(task=>[...task,Number(task[6]||0)+1]))}
     if(format&&!yearStart&&batch.some(task=>task[1]===100)&&pageResults.some(result=>result.hasNextPage===true)){
      for(let startYear=1900;startYear<=2030;startYear+=10){
       const endYear=startYear+9,scope=sort+'|'+format+'|'+startYear+'|'+endYear;
