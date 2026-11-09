@@ -327,7 +327,7 @@ async function fetchAnime(vars={}){
     return pages.map((_,index)=>({items:normalizeUnicode(json.data?.['p'+index]?.media||[]),hasNextPage:json.data?.['p'+index]?.pageInfo?.hasNextPage===true}));
    }catch(error){
     if(error.name==='AbortError'){lastError=new Error('データ取得がタイムアウトしました。');lastError.batchUnsupported=error.batchUnsupported===true}else{lastError=error}
-    if(attempt<3)await new Promise(resolve=>setTimeout(resolve,800*Math.pow(2,attempt)));
+    if(!error.batchUnsupported&&attempt<3)await new Promise(resolve=>setTimeout(resolve,800*Math.pow(2,attempt)));
    }finally{clearTimeout(timeout)}
   }
   if(lastError?.batchUnsupported)return Promise.all(pages.map(async page=>{const items=await request({page,perPage:50,format_in:format?[format]:undefined,startDate_greater:yearStart?yearStart*10000+101:undefined,startDate_lesser:yearEnd?yearEnd*10000+1231:undefined},sort);return {items,hasNextPage:items.length===50}}));
