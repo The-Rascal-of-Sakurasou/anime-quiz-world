@@ -327,7 +327,8 @@ async function fetchAnime(vars={}){
     return pages.map((_,index)=>({items:normalizeUnicode(json.data?.['p'+index]?.media||[]),hasNextPage:json.data?.['p'+index]?.pageInfo?.hasNextPage===true}));
    }catch(error){
     if(error.name==='AbortError'){lastError=new Error('データ取得がタイムアウトしました。');lastError.batchUnsupported=error.batchUnsupported===true}else{lastError=error}
-    if(!error.batchUnsupported&&attempt<3)await new Promise(resolve=>setTimeout(resolve,800*Math.pow(2,attempt)));
+    if(error.batchUnsupported)break;
+    if(attempt<3)await new Promise(resolve=>setTimeout(resolve,800*Math.pow(2,attempt)));
    }finally{clearTimeout(timeout)}
   }
   if(lastError?.batchUnsupported)return Promise.all(pages.map(async page=>{const items=await request({page,perPage:50,format_in:format?[format]:undefined,startDate_greater:yearStart?yearStart*10000+101:undefined,startDate_lesser:yearEnd?yearEnd*10000+1231:undefined},sort);return {items,hasNextPage:items.length===50}}));
@@ -450,7 +451,7 @@ async function fetchAnime(vars={}){
     let nextTaskIndex=taskIndex+batch.length;
     if(pageResults.some(result=>result.hasNextPage===false))while(nextTaskIndex<tasks.length&&tasks[nextTaskIndex][0]===sort&&tasks[nextTaskIndex][3]===format&&tasks[nextTaskIndex][4]===yearStart&&tasks[nextTaskIndex][5]===yearEnd&&tasks[nextTaskIndex][2]==='fill')nextTaskIndex++;
     taskIndex=nextTaskIndex;
-    completed+=batch.length;
+    completed=taskIndex;
     batchesSinceSave++;
     if(batchesSinceSave>=3||taskIndex>=tasks.length){
      const items=deduplicateQuestionPool([...all.values()]);
