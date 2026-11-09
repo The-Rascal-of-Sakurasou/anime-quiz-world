@@ -326,7 +326,7 @@ async function fetchAnime(vars={}){
     if(json.errors?.length){const error=new Error(json.errors.map(e=>e.message).join(' / '));error.batchUnsupported=true;throw error}
     return pages.map((_,index)=>({items:normalizeUnicode(json.data?.['p'+index]?.media||[]),hasNextPage:json.data?.['p'+index]?.pageInfo?.hasNextPage===true}));
    }catch(error){
-    lastError=error.name==='AbortError'?new Error('データ取得がタイムアウトしました。'):error;
+    if(error.name==='AbortError'){lastError=new Error('データ取得がタイムアウトしました。');lastError.batchUnsupported=error.batchUnsupported===true}else{lastError=error}
     if(attempt<3)await new Promise(resolve=>setTimeout(resolve,800*Math.pow(2,attempt)));
    }finally{clearTimeout(timeout)}
   }
