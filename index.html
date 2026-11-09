@@ -420,7 +420,7 @@ async function fetchAnime(vars={}){
    let taskIndex=Number.isInteger(savedProgress?.taskIndex)?Math.max(0,Math.min(tasks.length,savedProgress.taskIndex)):0;
    if(taskIndex>=tasks.length&&Date.now()-Number(savedProgress?.updatedAt||0)>7*24*60*60*1000)taskIndex=0;
    const existingDateScopes=new Set(tasks.filter(task=>task[4]!=null&&task[5]!=null).map(task=>task[0]+'|'+task[3]+'|'+task[4]+'|'+task[5]));
-   let completed=taskIndex,failures=Number(savedProgress?.failures)||0;
+   let completed=taskIndex,failures=Number(savedProgress?.failures)||0,batchesSinceSave=0;
    const saveProgress=async(items,nextIndex)=>{
     try{await new Promise(resolve=>{const req=indexedDB.open('aqw-catalogue',1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('catalogues'))req.result.createObjectStore('catalogues')};req.onsuccess=()=>{try{const tx=req.result.transaction('catalogues','readwrite'),store=tx.objectStore('catalogues');store.put({savedAt:Date.now(),items},cacheKey);store.put({tasks,taskIndex:nextIndex,failures,updatedAt:Date.now()},cacheKey+'-progress');tx.oncomplete=()=>resolve();tx.onerror=()=>resolve()}catch(e){resolve()}};req.onerror=()=>resolve()})}catch(e){}
    };
@@ -433,7 +433,7 @@ async function fetchAnime(vars={}){
      const next=tasks[taskIndex+1];
      if(next[2]==='fill'&&next[0]===sort&&next[1]===page+1&&next[3]===format&&next[4]===yearStart&&next[5]===yearEnd&&next[6]===batch[0][6])batch.push(next);
     }
-    await new Promise(resolve=>setTimeout(resolve,2100));
+    await new Promise(resolve=>setTimeout(resolve,1200));
     let pageResults=[];
     try{
      pageResults=sort==='ID_IN'?[{items:await request({id_in:page,perPage:50}),hasNextPage:false}]:await requestPageBatch(batch.map(task=>task[1]),sort,format,yearStart,yearEnd);
@@ -451,15 +451,19 @@ async function fetchAnime(vars={}){
     if(pageResults.some(result=>result.hasNextPage===false))while(nextTaskIndex<tasks.length&&tasks[nextTaskIndex][0]===sort&&tasks[nextTaskIndex][3]===format&&tasks[nextTaskIndex][4]===yearStart&&tasks[nextTaskIndex][5]===yearEnd&&tasks[nextTaskIndex][2]==='fill')nextTaskIndex++;
     taskIndex=nextTaskIndex;
     completed+=batch.length;
-    const items=deduplicateQuestionPool([...all.values()]);
-    pool=items;extendQuestionsFromPool(items);
-    // Save after each batch; the cursor always points to the first page not yet fetched.
-    await saveProgress(items,taskIndex);
+    batchesSinceSave++;
+    if(batchesSinceSave>=3||taskIndex>=tasks.length){
+     const items=deduplicateQuestionPool([...all.values()]);
+     pool=items;extendQuestionsFromPool(items);
+     // Persist in small intervals to avoid repeatedly serializing the entire growing catalogue.
+     await saveProgress(items,taskIndex);
+     batchesSinceSave=0;
+    }
     const status=document.getElementById('quizStatus');
     if(status){
      const progress=document.getElementById('animePoolProgress');
-     if(progress)progress.textContent=lang==='ja'?('取得中：'+items.length.toLocaleString()+'作品・処理ページ '+completed+' / '+tasks.length+'・失敗試行 '+failures+'件'):('Loading: '+items.length.toLocaleString()+' anime · processed pages '+completed+' / '+tasks.length+' · failed attempts '+failures);
-     status.textContent=lang==='ja'?'作品データを追加中… '+items.length.toLocaleString()+'作品':'Adding anime… '+items.length.toLocaleString()+' anime';
+     if(progress)progress.textContent=lang==='ja'?('取得中：'+all.size.toLocaleString()+'作品・処理ページ '+completed+' / '+tasks.length+'・失敗試行 '+failures+'件'):('Loading: '+all.size.toLocaleString()+' anime · processed pages '+completed+' / '+tasks.length+' · failed attempts '+failures);
+     status.textContent=lang==='ja'?'作品データを追加中… '+all.size.toLocaleString()+'作品':'Adding anime… '+all.size.toLocaleString()+' anime';
     }
    }
    const progress=document.getElementById('animePoolProgress');
