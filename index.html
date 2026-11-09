@@ -458,15 +458,15 @@ async function fetchAnime(vars={}){
     const status=document.getElementById('quizStatus');
     if(status){
      const progress=document.getElementById('animePoolProgress');
-     if(progress)progress.textContent=lang==='ja'?('取得中：'+items.length.toLocaleString()+'作品・取得ページ '+completed+' / '+tasks.length+'・失敗 '+failures+'件'):('Loading: '+items.length.toLocaleString()+' anime · pages '+completed+' / '+tasks.length+' · failures '+failures);
+     if(progress)progress.textContent=lang==='ja'?('取得中：'+items.length.toLocaleString()+'作品・処理ページ '+completed+' / '+tasks.length+'・失敗試行 '+failures+'件'):('Loading: '+items.length.toLocaleString()+' anime · processed pages '+completed+' / '+tasks.length+' · failed attempts '+failures);
      status.textContent=lang==='ja'?'作品データを追加中… '+items.length.toLocaleString()+'作品':'Adding anime… '+items.length.toLocaleString()+' anime';
     }
    }
    const progress=document.getElementById('animePoolProgress');
    
-   if(progress)progress.textContent=lang==='ja'?('最終取得数：'+all.size.toLocaleString()+'作品・取得ページ '+completed+' / '+tasks.length+'・失敗 '+failures+'件。データはこのブラウザに保存されます。'):('Final catalogue: '+all.size.toLocaleString()+' anime · pages '+completed+' / '+tasks.length+' · failures '+failures+'. Saved in this browser.');
+   if(progress)progress.textContent=lang==='ja'?('最終取得数：'+all.size.toLocaleString()+'作品・処理ページ '+completed+' / '+tasks.length+'・失敗試行 '+failures+'件。データはこのブラウザに保存されます。'):('Final catalogue: '+all.size.toLocaleString()+' anime · processed pages '+completed+' / '+tasks.length+' · failed attempts '+failures+'. Saved in this browser.');
    const status=document.getElementById('quizStatus');
-   if(status)status.textContent=lang==='ja'?('取得可能なページの確認が完了しました。現在'+all.size.toLocaleString()+'作品を利用できます。取得済みデータはこのブラウザに保存されています。'):('All configured AniList pages have been checked. '+all.size.toLocaleString()+' anime are available and saved in this browser.');
+   if(status)status.textContent=lang==='ja'?('取得処理が完了しました。現在'+all.size.toLocaleString()+'作品を利用できます。取得済みデータはこのブラウザに保存されています。'):('Catalogue loading has finished. '+all.size.toLocaleString()+' anime are available and saved in this browser.');
    await saveProgress([...all.values()],tasks.length);
    return {count:all.size,failures,completed};
   })().finally(()=>{backgroundLoadPromise=null});
