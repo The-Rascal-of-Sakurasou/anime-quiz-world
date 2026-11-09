@@ -531,23 +531,21 @@ function descriptionOf(a){return (a?.description||'').replace(/<[^>]*>/g,' ').re
 function hasJapanese(text){return /[ぁ-んァ-ヶ一-龯]/.test(String(text||''))}
 function titleUsable(a){return lang!=='ja'||hasJapanese(a.title?.native||'')}
 function difficultyModes(){return $('#difficultySelect')?.value||'normal'}
-let difficultyTierById=new Map(),difficultyThresholds={p05:Infinity,p20:Infinity,p50:Infinity,p80:Infinity,total:0};
+let difficultyTierById=new Map(),difficultyThresholds={p07:Infinity,p23:Infinity,p47:Infinity,p77:Infinity,total:0},difficultyBoundaries=[];
 function prepareDifficultyTiers(items=pool){
  const ranked=(items||[]).filter(a=>Number.isFinite(Number(a?.id))&&Number.isFinite(Number(a?.popularity))&&Number(a.popularity)>0).sort((a,b)=>Number(b.popularity)-Number(a.popularity)||Number(a.id)-Number(b.id));
  const total=ranked.length,cutoffs=[0.07,0.23,0.47,0.77].map(p=>total?Math.max(1,Math.ceil(total*p)):0);
  const tiers=new Map();
  ranked.forEach((a,i)=>tiers.set(Number(a.id),i<cutoffs[0]?'veryEasy':i<cutoffs[1]?'easy':i<cutoffs[2]?'normal':i<cutoffs[3]?'hard':'veryHard'));
  difficultyTierById=tiers;
- difficultyThresholds={p05:cutoffs[0]?Number(ranked[cutoffs[0]-1].popularity):Infinity,p20:cutoffs[1]?Number(ranked[cutoffs[1]-1].popularity):Infinity,p50:cutoffs[2]?Number(ranked[cutoffs[2]-1].popularity):Infinity,p80:cutoffs[3]?Number(ranked[cutoffs[3]-1].popularity):Infinity,total};
+ difficultyBoundaries=cutoffs.map((cutoff,index)=>{const item=ranked[cutoff-1];return item?{popularity:Number(item.popularity),id:Number(item.id),tier:['veryEasy','easy','normal','hard'][index]}:null});
+ difficultyThresholds={p07:cutoffs[0]?Number(ranked[cutoffs[0]-1].popularity):Infinity,p23:cutoffs[1]?Number(ranked[cutoffs[1]-1].popularity):Infinity,p47:cutoffs[2]?Number(ranked[cutoffs[2]-1].popularity):Infinity,p77:cutoffs[3]?Number(ranked[cutoffs[3]-1].popularity):Infinity,total};
  return difficultyThresholds;
 }
 function popularityTier(a){
  const id=Number(a?.id);if(difficultyTierById.has(id))return difficultyTierById.get(id);
- const p=Number(a?.popularity);if(!Number.isFinite(p)||p<=0||!difficultyThresholds.total)return 'unknown';
- if(p>=difficultyThresholds.p05)return 'veryEasy';
- if(p>=difficultyThresholds.p20)return 'easy';
- if(p>=difficultyThresholds.p50)return 'normal';
- if(p>=difficultyThresholds.p80)return 'hard';
+ const popularity=Number(a?.popularity);if(!Number.isFinite(id)||!Number.isFinite(popularity)||popularity<=0||!difficultyThresholds.total)return 'unknown';
+ for(const boundary of difficultyBoundaries){if(boundary&&(popularity>boundary.popularity||(popularity===boundary.popularity&&id<=boundary.id)))return boundary.tier}
  return 'veryHard';
 }
 function animeHasMode(a,mode,format){if(format==='typed'&&!typedTitleEligible(a))return false;if(format==='typed'&&mode==='titleSynopsis')return false;if(['image','studio','synonym','titleYear','titleStudio','synopsis','titleSynopsis','character','titleCharacter','characterImage','characterNameImage'].includes(mode)&&!titleUsable(a))return false;if(mode==='image')return titleUsable(a);if(mode==='studio'||mode==='titleStudio')return !!a.studios?.nodes?.[0]?.name;if(mode==='character'||mode==='titleCharacter')return characterNames(a).length>0;if(mode==='characterImage'||mode==='characterNameImage')return characterRecords([a]).length>0&&characterRecords(pool.filter(item=>Number(item.id)!==Number(a.id)&&matchesDifficulty(item)&&titleUsable(item))).length>=3;if(mode==='synonym')return aliasCandidates(a).length>0;if(mode==='titleYear')return Number.isInteger(animeYear(a))&&animeYear(a)>1900;if(mode==='synopsis'||mode==='titleSynopsis')return hasUsableSynopsis(a)&&titleUsable(a);return false}
