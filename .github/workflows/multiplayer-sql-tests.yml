@@ -9,6 +9,7 @@ on:
       - "scripts/test-multiplayer-sql.sql"
       - "scripts/build-question-bank-seed.mjs"
       - "scripts/test-question-bank-import.mjs"
+      - "scripts/fixtures/question-bank-sample.json"
       - ".github/workflows/multiplayer-sql-tests.yml"
 
 permissions:
@@ -41,6 +42,14 @@ jobs:
         env:
           PGPASSWORD: postgres
         run: psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -f scripts/test-multiplayer-sql.sql
+      - name: Verify generated question seed applies and is idempotent
+        env:
+          PGPASSWORD: postgres
+        run: |
+          node scripts/build-question-bank-seed.mjs scripts/fixtures/question-bank-sample.json /tmp/aqw-question-bank-seed.sql
+          psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -f /tmp/aqw-question-bank-seed.sql
+          psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -f /tmp/aqw-question-bank-seed.sql
+          psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -c "DO \\$\\$ BEGIN IF (SELECT count(*) FROM private.aqw_question_bank WHERE source_key LIKE 'ci:sample:%') <> 2 THEN RAISE EXCEPTION 'Question seed import is not idempotent'; END IF; END \\$\\$;"
 
   edge-function-typecheck:
     name: Edge Function type check
