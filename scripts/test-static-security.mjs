@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 const frontendFiles = [
   "index.html",
   "admin.html",
+  "multiplayer.html",
   "recommend.html",
   "guide.html",
   "privacy.html",
@@ -32,7 +33,7 @@ for (const [file, html] of source) {
 }
 assert.ok(checkedScripts > 0, "No inline JavaScript was checked");
 
-for (const file of ["index.html", "admin.html"]) {
+for (const file of ["index.html", "admin.html", "multiplayer.html"]) {
   const html = source.get(file);
   assert.match(html, /http-equiv\s*=\s*["']Content-Security-Policy["']/i, `${file}: CSP meta tag missing`);
   assert.match(html, /name\s*=\s*["']referrer["']/i, `${file}: Referrer-Policy meta tag missing`);
