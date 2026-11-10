@@ -169,8 +169,8 @@ async function connectRoom(){
  channel=sb.channel('aqw-match:'+room.id,{config:{private:true,presence:{key:user.id}}})
   .on('broadcast',{event:'room_changed'},async()=>{await refreshRoom(false)})
   .on('presence',{event:'sync'},renderPresence)
-  .on('presence',{event:'join'},renderPresence)
-  .on('presence',{event:'leave'},renderPresence);
+  .on('presence',{event:'join'},async()=>{renderPresence();try{await refreshRoom(false)}catch(e){status($('roomActionStatus'),errorText(e),'error')}})
+  .on('presence',{event:'leave'},async()=>{renderPresence();try{await refreshRoom(false)}catch(e){status($('roomActionStatus'),errorText(e),'error')}});
  channel.subscribe(async state=>{
   if(state==='SUBSCRIBED'){
    const mine=room.players.find(p=>p.user_id===user.id);
