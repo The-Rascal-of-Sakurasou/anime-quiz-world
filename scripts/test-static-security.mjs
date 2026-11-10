@@ -121,6 +121,9 @@ assert.doesNotMatch(relationAllowlist, /PARENT/, "A side story parent relation m
 assert.match(recommend, /独立したサイドストーリーは親作品と別候補として残す/, "Side-story separation regression test missing");
 
 const index = source.get("index.html");
+assert.doesNotMatch(index, /id="collection(?:Heading)?"/, "The anime collection display must be removed");
+assert.doesNotMatch(index, /rememberAnime|aqw-collection/, "Quiz answers must not create or load a per-user anime collection");
+assert.match(index, /\[t\.fifty,runs>=50\]/, "The 50-play achievement must not depend on a stored anime collection");
 assert.match(index, /type:ANIME,countryOfOrigin:JP/, "Quiz search query must be restricted to Japanese-origin anime");
 assert.ok(index.includes("media(type:ANIME,countryOfOrigin:JP"), "Quiz catalog query must be restricted to Japanese-origin anime");
 assert.match(index, /countryOfOrigin===.JP./, "Quiz data must be filtered by Japanese origin on the client as a second guard");
