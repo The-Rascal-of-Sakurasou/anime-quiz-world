@@ -1,0 +1,40 @@
+name: Sync shared anime catalogue
+
+on:
+  schedule:
+    - cron: '30 19 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: aqw-shared-anime-catalogue
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build shared Japanese-origin anime catalogue
+        run: node scripts/sync-anime-catalog.mjs
+      - name: Commit catalogue when changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/anime-catalog.json
+          if git diff --cached --quiet; then
+            echo "Catalogue has no changes."
+            exit 0
+          fi
+          git commit -m "Update shared anime catalogue"
+          git push
