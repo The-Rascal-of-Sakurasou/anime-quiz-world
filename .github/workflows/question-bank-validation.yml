@@ -1,0 +1,40 @@
+name: AQW question-bank validation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/build-question-bank-seed.mjs"
+      - "scripts/test-question-bank-import.mjs"
+      - "scripts/fixtures/question-bank-sample.json"
+      - ".github/workflows/question-bank-validation.yml"
+  pull_request:
+    paths:
+      - "scripts/build-question-bank-seed.mjs"
+      - "scripts/test-question-bank-import.mjs"
+      - "scripts/fixtures/question-bank-sample.json"
+      - ".github/workflows/question-bank-validation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-question-bank:
+    name: Question-bank import validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run importer unit tests
+        run: node scripts/test-question-bank-import.mjs
+      - name: Validate sample fixture and generate SQL
+        run: node scripts/build-question-bank-seed.mjs scripts/fixtures/question-bank-sample.json /tmp/aqw-question-bank-sample.sql
+      - name: Ensure generated SQL keeps answer keys out of public payload
+        run: |
+          ! grep -q '"correct_option_id"' /tmp/aqw-question-bank-sample.sql
+          grep -q 'insert into private.aqw_question_bank' /tmp/aqw-question-bank-sample.sql
