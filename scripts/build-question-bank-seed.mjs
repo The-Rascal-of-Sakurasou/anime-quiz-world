@@ -54,14 +54,18 @@ export function validateQuestionBank(input) {
     }
 
     const optionIds = new Set();
+    const optionTextKeys = new Set();
     const options = question.options.map((option, optionIndex) => {
       if (!option || typeof option !== "object" || Array.isArray(option)) {
         throw new Error(label + ".options[" + optionIndex + "] must be an object");
       }
       const id = nonEmptyString(option.id, label + ".options[" + optionIndex + "].id", 100);
       const text = nonEmptyString(option.text, label + ".options[" + optionIndex + "].text", 300);
+      const normalizedText = text.normalize("NFKC").replace(/\\s+/g, " ").trim().toLocaleLowerCase("und");
       if (optionIds.has(id)) throw new Error(label + " has duplicate option ID \"" + id + "\"");
+      if (optionTextKeys.has(normalizedText)) throw new Error(label + " has duplicate option text after normalization");
       optionIds.add(id);
+      optionTextKeys.add(normalizedText);
       return { id, text };
     });
 
@@ -78,11 +82,17 @@ export function validateQuestionBank(input) {
       } catch {
         throw new Error(label + ".image_url must be a valid HTTPS URL");
       }
-      if (parsed.protocol !== "https:") throw new Error(label + ".image_url must use HTTPS");
+      if (parsed.protocol !== "https:" || !parsed.hostname || parsed.username || parsed.password) {
+        throw new Error(label + ".image_url must use HTTPS and must not contain credentials");
+      }
       payload.image_url = imageUrl;
     }
 
-    const contentKey = JSON.stringify({ category, payload });
+    const normalizedPayload = {
+      prompt: payload.prompt.normalize("NFKC").replace(/\\s+/g, " ").trim().toLocaleLowerCase("und"),
+      options: payload.options.map((option) => option.text.normalize("NFKC").replace(/\\s+/g, " ").trim().toLocaleLowerCase("und")).sort(),
+    };
+    const contentKey = JSON.stringify({ category: category.normalize("NFKC").trim().toLocaleLowerCase("und"), payload: normalizedPayload });
     if (seenContent.has(contentKey)) throw new Error(label + " duplicates another question's content");
     seenContent.add(contentKey);
 
