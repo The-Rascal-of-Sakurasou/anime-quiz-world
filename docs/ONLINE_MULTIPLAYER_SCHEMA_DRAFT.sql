@@ -166,13 +166,15 @@ declare
   v_seen_ids text[] := array[]::text[];
   v_option_id text;
 begin
-  if jsonb_typeof(new.question_payload -> 'prompt') <> 'string'
-     or char_length(trim(new.question_payload ->> 'prompt')) = 0 then
+  if jsonb_typeof(new.question_payload -> 'prompt') is distinct from 'string'
+     or coalesce(char_length(trim(new.question_payload ->> 'prompt')), 0) = 0 then
     raise exception 'Question prompt must be a non-empty string';
   end if;
 
-  if jsonb_typeof(new.question_payload -> 'options') <> 'array'
-     or jsonb_array_length(new.question_payload -> 'options') not between 2 and 6 then
+  if jsonb_typeof(new.question_payload -> 'options') is distinct from 'array' then
+    raise exception 'Question options must be an array';
+  end if;
+  if jsonb_array_length(new.question_payload -> 'options') not between 2 and 6 then
     raise exception 'A question must have between 2 and 6 options';
   end if;
 
@@ -180,16 +182,16 @@ begin
     select item.value
     from jsonb_array_elements(new.question_payload -> 'options') as item(value)
   loop
-    if jsonb_typeof(v_option) <> 'object'
-       or jsonb_typeof(v_option -> 'id') <> 'string'
-       or jsonb_typeof(v_option -> 'text') <> 'string' then
+    if jsonb_typeof(v_option) is distinct from 'object'
+       or jsonb_typeof(v_option -> 'id') is distinct from 'string'
+       or jsonb_typeof(v_option -> 'text') is distinct from 'string' then
       raise exception 'Every option must have string id and text fields';
     end if;
 
     v_option_id := trim(v_option ->> 'id');
     if char_length(v_option_id) = 0
        or char_length(v_option_id) > 100
-       or char_length(trim(v_option ->> 'text')) = 0 then
+       or coalesce(char_length(trim(v_option ->> 'text')), 0) = 0 then
       raise exception 'Option IDs and text must be non-empty and bounded';
     end if;
 
