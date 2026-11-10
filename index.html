@@ -672,9 +672,9 @@ const msgPanel=document.getElementById('aqwFriendMessagesPanel');if(msgPanel){co
 const legal=document.querySelectorAll('#social > .legal-links a');if(legal[0])legal[0].textContent=sl.termsLink;if(legal[1])legal[1].textContent=sl.privacyLink;
 const ph=document.getElementById('query');if(ph)ph.placeholder=lang==='ja'?'例：葬送のフリーレン':lang==='en'?'e.g. Frieren: Beyond Journey’s End':({ko:'예: 장송의 프리렌',zh:'例如：葬送的芙莉莲',es:'p. ej., Frieren',fr:'ex. : Frieren',pt:'ex.: Frieren',de:'z. B. Frieren'}[lang]||'Search anime');
 }
-const query=`query ($page:Int,$perPage:Int,$search:String,$id_in:[Int],$format_in:[MediaFormat],$startDate_greater:FuzzyDateInt,$startDate_lesser:FuzzyDateInt) { Page(page:$page,perPage:$perPage) { media(id_in:$id_in,format_in:$format_in,startDate_greater:$startDate_greater,startDate_lesser:$startDate_lesser,type:ANIME,countryOfOrigin:JP,sort:POPULARITY_DESC,search:$search,isAdult:false) { id countryOfOrigin source relations { edges { relationType node { id type countryOfOrigin format } } } format popularity title { romaji english native } description(asHtml:false) synonyms coverImage { large medium extraLarge } episodes seasonYear averageScore genres studios { nodes { name } } startDate { year } characters(sort:ROLE,perPage:5) { nodes { id name { full native } image { large } } } externalLinks { url site type isDisabled } } } }`;
+const query=`query ($page:Int,$perPage:Int,$search:String,$id_in:[Int],$format_in:[MediaFormat],$startDate_greater:FuzzyDateInt,$startDate_lesser:FuzzyDateInt) { Page(page:$page,perPage:$perPage) { media(id_in:$id_in,format_in:$format_in,startDate_greater:$startDate_greater,startDate_lesser:$startDate_lesser,type:ANIME,countryOfOrigin:JP,sort:POPULARITY_DESC,search:$search,isAdult:false) { id countryOfOrigin source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } format popularity title { romaji english native } description(asHtml:false) synonyms coverImage { large medium extraLarge } episodes seasonYear averageScore genres studios { nodes { name } } startDate { year } characters(sort:ROLE,perPage:5) { nodes { id name { full native } image { large } } } externalLinks { url site type isDisabled } } } }`;
 function normalizeUnicode(value){if(typeof value==='string')return value.normalize('NFC');if(Array.isArray(value))return value.map(normalizeUnicode);if(value&&typeof value==='object'){const out={};for(const [key,item] of Object.entries(value))out[key]=normalizeUnicode(item);return out}return value}
-function isJapaneseOriginAnime(a){return !!a&&a.countryOfOrigin==='JP'}
+function isJapaneseOriginAnime(a){if(!a||a.countryOfOrigin!=='JP')return false;if(a.source==='ORIGINAL')return true;const sourceFormats={MANGA:['MANGA','ONE_SHOT'],LIGHT_NOVEL:['NOVEL'],NOVEL:['NOVEL'],DOUJINSHI:['MANGA','ONE_SHOT','NOVEL']};const allowedFormats=sourceFormats[a.source];if(!allowedFormats)return false;return Array.isArray(a.relations?.edges)&&a.relations.edges.some(edge=>edge?.relationType==='ADAPTATION'&&edge.node?.type==='MANGA'&&edge.node?.countryOfOrigin==='JP'&&allowedFormats.includes(edge.node?.format))}
 const $=s=>document.querySelector(s);let pool=[],questions=[],index=0,points=0,skippedQuestionCount=0,locked=false,questionTimer=null,clockTimer=null,secondsLeft=15,questionDeadline=0,pausedQuestionSeconds=0,isPaused=false,pausedAt=0,totalPausedMs=0,startedAt=0,elapsedSeconds=0,missedQuestions=[],reviewMode=false,playMode='normal',roundFailed=false,lastResultData=null,combo=0,bestCombo=0,choiceHintUsed=false,typedHintUsed=false,backgroundLoadPromise=null,requestedQuestionCount=10,rateLimitedUntil=0,failedImageUrls=new Set(),autoNextTimer=null;
 async function fetchAnime(vars={}){
  const request=async(variables,sort='POPULARITY_DESC')=>{
@@ -702,7 +702,7 @@ async function fetchAnime(vars={}){
   throw lastError||new Error('データを取得できませんでした。');
  };
  const requestPageBatch=async(pages,sort,format,yearStart,yearEnd)=>{
-  const fields='id countryOfOrigin source relations { edges { relationType node { id type countryOfOrigin format } } } format popularity title { romaji english native } description(asHtml:false) synonyms coverImage { large medium extraLarge } episodes seasonYear averageScore genres studios(isMain:true) { nodes { name } } characters(sort:ROLE,perPage:5) { nodes { id name { full native } image { large } } }';
+  const fields='id countryOfOrigin source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } format popularity title { romaji english native } description(asHtml:false) synonyms coverImage { large medium extraLarge } episodes seasonYear averageScore genres studios(isMain:true) { nodes { name } } characters(sort:ROLE,perPage:5) { nodes { id name { full native } image { large } } }';
   const formatArg=(format?',format_in:['+format+']':'')+(yearStart?',startDate_greater:'+(yearStart*10000)+',startDate_lesser:'+((yearEnd+1)*10000):'');
   const aliases=pages.map((page,index)=>'p'+index+': Page(page:'+page+',perPage:50) { pageInfo { hasNextPage } media(type:ANIME,countryOfOrigin:JP,sort:'+sort+',isAdult:false'+formatArg+') { '+fields+' } }').join(' ');
   const batchQuery='query { '+aliases+' }';
@@ -730,7 +730,7 @@ async function fetchAnime(vars={}){
   throw lastError||new Error('データをまとめて取得できませんでした。');
  };
  if(vars.search){const raw=(await request({page:1,perPage:18,search:vars.search})).filter(isUsableAnime);const unique=deduplicateSearchResults(raw);unique.duplicateCount=Math.max(0,raw.length-unique.length);return unique;}
- const cacheKey='aqw-anime-pool-v17-japanese-origin-complete';
+ const cacheKey='aqw-anime-pool-v18-japanese-original-source-verified';
  // Merge every older local catalogue cache; the application no longer imposes an item-count target.
  let initial=[],cacheSavedAt=0,savedProgress=null;
  try{
