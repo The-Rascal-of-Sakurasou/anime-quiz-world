@@ -478,6 +478,9 @@ function runRecommendationSelfTests(){
  check('評価がない特徴は中立予測',evaluateLearnedFeedback({only:{value:'like',genres:['Fantasy']}}).samples[0]?.prediction==='neutral');
  check('重み比較は4種類を返す',compareLearnedWeightVariants({}).length===4);
  check('比較用の重み指定が現在の設定を変えない',calculateLearnedTotalAdjustment(['Fantasy'],[],{genres:new Map([['Fantasy',{likes:4,total:4}]]),tags:new Map()}, {genre:3,tag:1.5})!==calculateLearnedTotalAdjustment(['Fantasy'],[],{genres:new Map([['Fantasy',{likes:4,total:4}]]),tags:new Map()}));
+ check('作品名の正規化で全角・半角や空白の違いを吸収',normalizeSeedTitle(' Ａｎｇｅｌ Ｂｅａｔｓ！')===normalizeSeedTitle('AngelBeats'));
+ check('作品名の照合は完全一致の別名だけを許可',matchesSeedTitle({title:{native:'作品A',english:'Work A',romaji:'Sakuhin A'},synonyms:['別名A']},'Work A')&&!matchesSeedTitle({title:{native:'作品A',english:'Work A',romaji:'Sakuhin A'},synonyms:['別名A']},'Work'));
+ check('別名として登録された作品名を照合できる',matchesSeedTitle({title:{native:'作品A'},synonyms:['正式な別名']},'正式な別名'));
  const metrics={favoriteSimilarity:3,dislikedSimilarity:1,favoriteGenreMatches:2,favoriteTagMatches:3,selectedGenreMatches:1,selectedTagMatches:2};
  check('類似度メトリクスは数値として保存可能',Object.values(metrics).every(Number.isFinite));
  check('類似度スコアの範囲は0〜8.5',metrics.favoriteSimilarity>=0&&metrics.favoriteSimilarity<=8.5);
@@ -543,7 +546,13 @@ function profileFromAnswers(){
 }
 function escapeHTML(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function parseTitleInput(id){
- return $(id).value.split(/[、,，;；]/).map(x=>x.trim()).filter(Boolean).slice(0,3);
+ const seen=new Set();
+ return $(id).value.split(/[、,，;；]/).map(x=>x.trim()).filter(value=>{
+  if(!value)return false;
+  const key=normalizeSeedTitle(value);
+  if(!key||seen.has(key))return false;
+  seen.add(key);return true;
+ }).slice(0,3);
 }
 function normalizeSeedTitle(value){
  return String(value||'').toLocaleLowerCase().normalize('NFKC')
