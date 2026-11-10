@@ -1,0 +1,23 @@
+[
+  {
+    "source_key": "ci:sample:work:001",
+    "category": "work",
+    "prompt": "Which fictional title matches the sample description?",
+    "options": [
+      { "id": "a", "text": "Sample title A" },
+      { "id": "b", "text": "Sample title B" }
+    ],
+    "correct_option_id": "b"
+  },
+  {
+    "source_key": "ci:sample:character:002",
+    "category": "character",
+    "prompt": "Which fictional character is described?",
+    "options": [
+      { "id": "left", "text": "Sample character left" },
+      { "id": "right", "text": "Sample character right" },
+      { "id": "center", "text": "Sample character center" }
+    ],
+    "correct_option_id": "center"
+  }
+]
