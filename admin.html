@@ -172,10 +172,19 @@ const $=id=>document.getElementById(id);
 const status=$('status');
 const client=window.supabase.createClient(SUPABASE_URL,KEY,{auth:{persistSession:false,autoRefreshToken:true,detectSessionInUrl:false}});
 let activeUser=null;
+function clearMfaSecrets(){
+ $('mfaQr').removeAttribute('src');
+ $('mfaSecret').textContent='';
+ $('mfaCode').value='';
+ $('mfaSetup').classList.add('hidden');
+ pendingMfaFactorId='';
+ pendingMfaChallengeId='';
+}
 client.auth.onAuthStateChange((event,session)=>{
  if(event==='TOKEN_REFRESHED'&&session?.user)activeUser=session.user;
  if(event==='SIGNED_OUT')setTimeout(()=>{
   activeUser=null;
+  clearMfaSecrets();
   $('console').classList.add('hidden');
   $('mfaCard').classList.add('hidden');
   $('loginCard').classList.remove('hidden');
@@ -246,6 +255,7 @@ async function startSession(session){
   if(!allowed){await client.auth.signOut();activeUser=null;say('このアカウントには管理者権限がありません。','error');$('loginCard').classList.remove('hidden');return}
   const mfaReady=await prepareMfa();
   if(!mfaReady){say('管理者用の追加認証を完了してください。');return}
+  clearMfaSecrets();
   $('ownerIdentity').textContent='認証済み：'+(activeUser.email||'管理者アカウント')+' · 多要素認証済み';
   $('console').classList.remove('hidden');
   say('管理者として認証されました。','success');
