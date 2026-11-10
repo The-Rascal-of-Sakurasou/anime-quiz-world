@@ -286,7 +286,7 @@ function deduplicateAnimeSeries(items){
    if(relatedTypes.has(edge?.relationType)&&edge?.node?.id!=null)unite(anime.id,edge.node.id);
   }
   const titles=[anime?.title?.native,anime?.title?.english,anime?.title?.romaji,...(Array.isArray(anime?.synonyms)?anime.synonyms:[])]
-   .map(value=>String(value||'').toLocaleLowerCase().normalize('NFKC').replace(/[\\s\\p{P}\\p{S}]/gu,''))
+   .map(value=>String(value||'').toLocaleLowerCase().normalize('NFKC').replace(/[\s\p{P}\p{S}]/gu,''))
    .filter(Boolean);
   for(const title of new Set(titles)){
    if(titleOwners.has(title))unite(anime.id,titleOwners.get(title));
