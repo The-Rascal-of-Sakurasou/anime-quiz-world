@@ -75,6 +75,10 @@ assert.match(index, /term\.normalize\('NFKC'\)/, "Community search input must be
 assert.match(index, /safeTerm\.length<2|\[\.\.\.safeTerm\]\.length<2/, "Community search must reject terms shorter than two searchable characters");
 assert.match(index, /body\.textContent\s*=\s*post\.body/, "User-generated post text must be rendered with textContent");
 assert.doesNotMatch(index, /innerHTML\s*=\s*[^;]*(?:post\.body|profile\.(?:username|display_name))/, "User-generated profile/post data must not be inserted with innerHTML");
-assert.match(index, /catch\(error\)\{console\.error\([\s\S]*?clearInterval\(questionTimer\);clearInterval\(clockTimer\);clearTimeout\(autoNextTimer\)[\s\S]*?\$\(\x27pauseButton\x27\)\.classList\.add\(\x27hidden\x27\)[\s\S]*?\$\(\x27quitQuizButton\x27\)\.classList\.add\(\x27hidden\x27\)/, "Quiz start failure must stop timers and hide pause/quit controls");
+const beginBlock = index.match(/async function begin\(\)\{([\s\S]*?)\n\}/)?.[1];
+assert.ok(beginBlock, "Quiz begin function not found");
+assert.match(beginBlock, /catch\(error\)\{[\s\S]*?clearInterval\(questionTimer\);clearInterval\(clockTimer\);clearTimeout\(autoNextTimer\)/, "Quiz start failure must stop timers");
+assert.match(beginBlock, /\$\([\x27"]#pauseButton[\x27"]\)\.classList\.add\([\x27"]hidden[\x27"]\)/, "Quiz start failure must hide pause control");
+assert.match(beginBlock, /\$\([\x27"]#quitQuizButton[\x27"]\)\.classList\.add\([\x27"]hidden[\x27"]\)/, "Quiz start failure must hide quit control");
 
 console.log(`Static security checks passed. Checked ${checkedScripts} inline script(s) across ${frontendFiles.length} pages.`);
