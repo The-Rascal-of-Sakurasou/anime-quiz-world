@@ -59,6 +59,37 @@ li{padding-left:3px;margin:8px 0}
 .doc-footer{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;padding:18px 4px 0;color:var(--muted);font-size:.82rem}
 .doc-footer nav{display:flex;flex-wrap:wrap;gap:8px 16px}
 @media(max-width:560px){.toc ol{columns:1}.wrap{width:calc(100% - 24px)}header,main{padding:20px 17px}}
+
+/* Site-wide mobile pass: guide and announcements */
+@media(max-width:700px){
+  html{scroll-padding-top:14px}
+  body{font-size:16px;line-height:1.8}
+  .wrap{width:calc(100% - 22px);padding-top:10px}
+  header{gap:10px;padding:12px;border-radius:12px}
+  .brand{min-width:0;white-space:normal;line-height:1.25}
+  .brand-copy{min-width:0}
+  .brand-tagline{overflow-wrap:anywhere}
+  .back{min-height:46px;padding:9px 12px}
+  main{padding:20px 15px;border-radius:12px}
+  .hero{padding:22px 2px 16px}
+  .hero h1{font-size:clamp(1.65rem,7vw,2.1rem)}
+  .jump{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:14px 0 20px}
+  .jump a{display:flex;align-items:center;justify-content:center;min-height:44px;padding:8px;text-align:center;overflow-wrap:anywhere}
+  section{padding:17px 14px;margin-bottom:15px;border-radius:11px}
+  h2{font-size:1.2rem;line-height:1.45}
+  .steps{grid-template-columns:minmax(0,1fr);gap:10px}
+  .step{padding:13px}
+  .actions{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+  .actions>*{width:100%;min-height:48px}
+  .doc-footer{display:grid;gap:10px}
+  .doc-footer nav{gap:10px 14px}
+}
+@media(max-width:380px){
+  .wrap{width:calc(100% - 16px)}
+  header,main{padding-left:12px;padding-right:12px}
+  .jump{grid-template-columns:minmax(0,1fr)}
+}
+
 </style>
 </head>
 <body>
