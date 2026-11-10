@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 
 const API = 'https://graphql.anilist.co';
@@ -166,9 +166,12 @@ for (const format of FORMATS) {
 const items = [...records.values()].sort((a, b) =>
   (Number(b.popularity) || 0) - (Number(a.popularity) || 0) || Number(a.id) - Number(b.id)
 );
+let previousOutput = null;
+try { previousOutput = JSON.parse(await readFile(OUTPUT, 'utf8')); } catch {}
+const unchanged = previousOutput?.schemaVersion === 1 && JSON.stringify(previousOutput.items) === JSON.stringify(items);
 const output = {
   schemaVersion: 1,
-  generatedAt: new Date().toISOString(),
+  generatedAt: unchanged ? previousOutput.generatedAt : new Date().toISOString(),
   source: 'AniList GraphQL API',
   originRule: 'Japanese-origin verification matching the AQW client filter',
   count: items.length,
