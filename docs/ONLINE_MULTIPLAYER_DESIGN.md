@@ -8,7 +8,7 @@ Implementation status (2026-11-10):
 - `supabase/config.toml` enables platform JWT verification for that function.
 - The gateway verifies the caller with `auth.getUser(token)`, derives the actor ID from that verified user, restricts actions and payload fields, and HMAC-hashes room codes with an Edge Function secret.
 - The gateway calls `public.aqw_match_dispatch`, which has **not** been implemented yet. The function is therefore a source draft, not deployable or usable.
-- The SQL draft now includes a private question bank with record validation, a service-role-only dispatcher, server-side answer scoring, question deadlines, result ranking, room lifecycle operations, and a per-account room-code attempt throttle. The SQL has passed an automated PostgreSQL 16 integration run using disposable Auth/Realtime compatibility stubs, and the Edge Function has passed Deno type checking. It has not been applied to the hosted database.
+- The SQL draft now includes a private question bank with record validation, a service-role-only dispatcher, server-side answer scoring, question deadlines, result ranking, room lifecycle operations, a per-account room-code attempt throttle, and a guard against answering while disconnected. The expanded SQL integration flow has passed on disposable PostgreSQL 16 with Auth/Realtime compatibility stubs; the Edge Function has passed Deno type checking. It has not been applied to the hosted database.
 - The question bank is empty: a trusted admin/import workflow and reviewed question data are still required before a match can start.
 - No production database schema, RLS policy, Realtime setting, secret, or Edge Function has been changed.
 
