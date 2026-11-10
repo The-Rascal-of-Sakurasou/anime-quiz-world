@@ -551,7 +551,7 @@ function normalizeSeedTitle(value){
  return String(value||'').toLocaleLowerCase().normalize('NFKC')
   .replace(/[\s・：:!！?？。、,.'’"「」『』()（）［］【】_ｰ-]/g,'');
 }
-function isJapaneseOriginAnime(media){if(!media||media.countryOfOrigin!=='JP')return false;if(media.source==='ORIGINAL')return true;return Array.isArray(media.relations?.edges)&&media.relations.edges.some(edge=>edge?.relationType==='ADAPTATION'&&edge.node?.type==='MANGA'&&edge.node?.countryOfOrigin==='JP')}
+function isJapaneseOriginAnime(media){return !!media&&media.countryOfOrigin==='JP'}
 function matchesSeedTitle(media,title){
  const wanted=normalizeSeedTitle(title);
  if(!wanted)return false;
