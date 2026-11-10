@@ -536,8 +536,9 @@ begin
 
       v_answer_id := p_payload ->> 'selected_option_id';
       if not exists (
-        select 1 from jsonb_array_elements(v_question.question_payload -> 'options') opt
-        where opt ->> 'id' = v_answer_id
+        select 1
+        from jsonb_array_elements(v_question.question_payload -> 'options') as option_row(value)
+        where option_row.value ->> 'id' = v_answer_id
       ) then raise exception 'Selected option is invalid'; end if;
 
       v_correct := v_answer_id = v_question.correct_option_id;
