@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="referrer" content="no-referrer">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; form-action 'self' https://*.supabase.co; upgrade-insecure-requests">
-<meta name="description" content="Anime Quiz Worldのオンライン対戦ルーム。ルームを作成して友達と参加できます。">
+<meta name="description" content="Anime Quiz Worldのオンライン対戦ルーム。1対1ルームを作成して友達と参加できます。">
 <meta name="theme-color" content="#f6f7f9">
 <title>オンライン対戦ルーム | Anime Quiz World</title>
 <style>
@@ -90,7 +90,7 @@ input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{ou
 </header>
 <main>
 <h1>オンライン対戦ルーム</h1>
-<p class="muted">ルームを作成して参加者を集め、準備状態をリアルタイムで確認できます。</p>
+<p class="muted">1対1の対戦相手を探すか、ルームコードで友達と1対1対戦を始められます。</p>
 <div id="authGate" class="card hidden">
 <h2>ログインが必要です</h2>
 <p>オンライン対戦にはAQWアカウントが必要です。トップページの「AQW」からログインした後、このページに戻ってください。</p>
@@ -99,10 +99,10 @@ input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{ou
 <div id="mainArea" class="hidden">
 <section class="card" id="randomMatchPanel">
 <h2>ランダムマッチ</h2>
-<p class="muted">条件の合う参加者を自動で探します。直近で対戦した相手との再マッチは優先的に避けます。</p>
+<p class="muted">1対1の対戦相手を自動で探します。直近で対戦した相手との再マッチは優先的に避けます。</p>
 <div class="grid">
 <label>対戦人数
-<select id="randomMaxPlayers"><option value="2" selected>2人</option><option value="3">3人</option><option value="4">4人</option></select>
+<select id="randomMaxPlayers" disabled><option value="2" selected>2人（1対1）</option></select>
 </label>
 <label>問題数
 <select id="randomQuestionCount"><option value="5">5問</option><option value="10" selected>10問</option><option value="15">15問</option><option value="20">20問</option></select>
@@ -113,13 +113,13 @@ input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{ou
 <p id="matchmakingStatus" class="status" role="status" aria-live="polite"></p>
 <div class="form-actions"><button class="danger" id="cancelMatch">マッチングをキャンセル</button></div>
 </div>
-<p class="muted">マッチングでは直近1時間・24時間・7日間の同一相手との対戦回数を優先して減らし、条件が同じ候補からランダムに選びます。参加者が少ない場合は同じ相手になることがあります。</p>
+<p class="muted">マッチングでは直近1時間・24時間・7日間の同一相手との対戦回数を優先して減らします。参加者が少ない場合は同じ相手になることがあります。</p>
 </section>
 <section class="card" id="createPanel">
 <h2>ルームを作成</h2>
 <div class="grid">
 <label>最大参加人数
-<select id="maxPlayers"><option value="2">2人</option><option value="3">3人</option><option value="4">4人</option></select>
+<select id="maxPlayers" disabled><option value="2" selected>2人（1対1）</option></select>
 </label>
 <label>問題数
 <select id="questionCount"><option value="5">5問</option><option value="10" selected>10問</option><option value="15">15問</option><option value="20">20問</option></select>
@@ -153,7 +153,7 @@ input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{ou
 <p id="roomActionStatus" class="status" role="status" aria-live="polite"></p>
 </section>
 <div class="note">
-<strong>開発状況：</strong>ルーム作成・参加・準備確認に加え、対戦履歴に基づいて同じ相手との連続マッチを抑えるランダムマッチを実装しています。同期クイズ、対戦結果の保存、再戦機能は順次追加します。現段階では対戦スコアや勝敗は記録されません。
+<strong>開発状況：</strong>現在は1対1のルーム作成・参加・準備確認・ランダムマッチに対応しています。同期出題、回答受付、サーバー側の正誤判定、勝敗・対戦履歴の保存は未実装です。3人以上の対戦は1対1を完成させた後に対応します。
 </div>
 </div>
 </main>
