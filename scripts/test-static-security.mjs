@@ -170,7 +170,7 @@ assert.match(index, /source\\(version:2\\) relations \\{ edges \\{ relationType 
 assert.match(index, /if\\(!isJapaneseOriginAnime\\(anime\\)\\|\\|!Number\\.isFinite\\(Number\\(anime\\.id\\)\\)\\)continue/, "New seasonal anime must pass verified Japanese-source filtering");
 assert.match(index, /if\\(isJapaneseOriginAnime\\(anime\\)&&Number\\.isFinite\\(Number\\(anime\\.id\\)\\)\\)byId\\.set/, "Ongoing seasonal anime must pass verified Japanese-source filtering");
 
-assert.match(index, /function isJapaneseOriginAnime\(a\)\{[^\n]*a\.countryOfOrigin===.JP./, "Japanese-origin eligibility must accept every AniList JP-origin record and reject all others");
+assert.match(index, /function isJapaneseOriginAnime\(a\)\{[^\n]*a\.countryOfOrigin!==.JP./, "Japanese-origin eligibility must reject non-Japanese animation records before source verification");
 assert.match(index, /const cleanedItems=value\.items\.filter\(isUsableAnime\)/, "Existing IndexedDB catalogues must be purged of non-Japanese-origin anime when loaded");
 assert.match(index, /const cleanedItems=legacy\.items\.filter\(isUsableAnime\)/, "Existing localStorage catalogues must be purged of non-Japanese-origin anime when loaded");
 assert.match(index, /normalizeUnicode\(json\.data\?\.Page\?\.media\|\|\[\]\)\.filter\(isJapaneseOriginAnime\)/, "Featured anime rail must apply strict Japanese-source verification");
