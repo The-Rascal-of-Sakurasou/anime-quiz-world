@@ -169,6 +169,28 @@ begin
     jsonb_build_object('match_id', v_match_id)
   );
 
+  perform public.aqw_match_dispatch(
+    'leave_room',
+    '10000000-0000-4000-8000-000000000002',
+    jsonb_build_object('match_id', v_match_id)
+  );
+  begin
+    perform public.aqw_match_dispatch(
+      'submit_answer',
+      '10000000-0000-4000-8000-000000000002',
+      jsonb_build_object('match_id', v_match_id, 'question_no', 1, 'selected_option_id', 'b')
+    );
+    raise exception 'Disconnected player unexpectedly submitted an answer';
+  exception
+    when raise_exception then
+      if sqlerrm = 'Disconnected player unexpectedly submitted an answer' then raise; end if;
+  end;
+  perform public.aqw_match_dispatch(
+    'reconnect',
+    '10000000-0000-4000-8000-000000000002',
+    jsonb_build_object('match_id', v_match_id)
+  );
+
   v_state := public.aqw_match_dispatch(
     'get_match_state',
     '10000000-0000-4000-8000-000000000001',
