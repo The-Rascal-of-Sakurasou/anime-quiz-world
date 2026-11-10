@@ -60,8 +60,8 @@ assert.match(admin, /mfa\.verify/, "Admin TOTP verification flow missing");
 assert.match(admin, /aqw-admin-control/, "Protected admin Edge Function call missing");
 
 const recommend = source.get("recommend.html");
-assert.match(recommend, /media\\(search:\\$search,type:ANIME,countryOfOrigin:JP/, "Favorite-work search must be restricted to Japanese-origin anime");
-assert.match(recommend, /media\\(type:ANIME,countryOfOrigin:JP/, "Recommendation catalog query must be restricted to Japanese-origin anime");
+assert.ok(recommend.includes("media(search:$search,type:ANIME,countryOfOrigin:JP"), "Favorite-work search must be restricted to Japanese-origin anime");
+assert.ok(recommend.includes("media(type:ANIME,countryOfOrigin:JP"), "Recommendation catalog query must be restricted to Japanese-origin anime");
 assert.match(recommend, /countryOfOrigin===.JP./, "Recommendation data must be filtered by Japanese origin on the client as a second guard");
 const questionBlock = recommend.match(/const questions=\[([\s\S]*?)\n\];\nconst questionTitles=/)?.[1];
 assert.ok(questionBlock, "Recommendation question block not found");
@@ -105,7 +105,7 @@ assert.match(recommend, /独立したサイドストーリーは親作品と別�
 
 const index = source.get("index.html");
 assert.match(index, /type:ANIME,countryOfOrigin:JP/, "Quiz search query must be restricted to Japanese-origin anime");
-assert.match(index, /media\\(type:ANIME,countryOfOrigin:JP/, "Quiz catalog query must be restricted to Japanese-origin anime");
+assert.ok(index.includes("media(type:ANIME,countryOfOrigin:JP"), "Quiz catalog query must be restricted to Japanese-origin anime");
 assert.match(index, /countryOfOrigin===.JP./, "Quiz data must be filtered by Japanese origin on the client as a second guard");
 assert.match(index, /term\.normalize\('NFKC'\)/, "Community search input must be normalized before building PostgREST filters");
 assert.match(index, /safeTerm\.length<2|\[\.\.\.safeTerm\]\.length<2/, "Community search must reject terms shorter than two searchable characters");
