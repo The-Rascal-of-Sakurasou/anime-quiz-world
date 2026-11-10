@@ -66,6 +66,17 @@ const recommend = source.get("recommend.html");
 assert.ok(recommend.includes("media(search:$search,type:ANIME,countryOfOrigin:JP"), "Favorite-work search must be restricted to Japanese-origin anime");
 assert.ok(recommend.includes("media(type:ANIME,countryOfOrigin:JP"), "Recommendation catalog query must be restricted to Japanese-origin anime");
 assert.match(recommend, /countryOfOrigin===.JP./, "Recommendation data must be filtered by Japanese origin on the client as a second guard");
+
+assert.match(recommend, /source relations \\{ edges \\{ relationType node \\{ id type countryOfOrigin format \\} \\} \\}/, "Recommendation queries must include source and adaptation-origin metadata");
+const recommendOriginHelper = recommend.match(/function isJapaneseOriginAnime\\(media\\)\\{[^\\n]*\\}/)?.[0];
+assert.ok(recommendOriginHelper, "Recommendation Japanese-source verification helper missing");
+const isRecommendedOriginJapanese = vm.runInNewContext(`(${recommendOriginHelper})`);
+assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "ORIGINAL" }), true, "Japanese original anime must remain eligible");
+assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP" } }] } }), true, "Japanese manga and light-novel adaptations must remain eligible");
+assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "US" } }] } }), false, "Non-Japanese source adaptations must be excluded");
+assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [] } }), false, "Unknown source nationality must fail closed");
+assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "CN", source: "ORIGINAL" }), false, "Non-Japanese animation must be excluded");
+
 const questionBlock = recommend.match(/const questions=\[([\s\S]*?)\n\];/)?.[1];
 assert.ok(questionBlock, "Recommendation question block not found");
 const questionTitles = [...questionBlock.matchAll(/title:'([^']+)'/g)].map(match => match[1].trim());
@@ -131,11 +142,23 @@ assert.match(index, /\[t\.fifty,runs>=50\]/, "The 50-play achievement must not d
 assert.match(index, /type:ANIME,countryOfOrigin:JP/, "Quiz search query must be restricted to Japanese-origin anime");
 assert.ok(index.includes("media(type:ANIME,countryOfOrigin:JP"), "Quiz catalog query must be restricted to Japanese-origin anime");
 assert.match(index, /countryOfOrigin===.JP./, "Quiz data must be filtered by Japanese origin on the client as a second guard");
-assert.match(index, /function isUsableAnime\(a\)\{[^\n]*isJapaneseOriginAnime\(a\)/, "Every cached and live quiz record must pass the Japanese-origin eligibility check");
+
+assert.match(index, /source relations \\{ edges \\{ relationType node \\{ id type countryOfOrigin format \\} \\} \\}/, "Quiz queries must include source and adaptation-origin metadata");
+const indexOriginHelper = index.match(/function isJapaneseOriginAnime\\(a\\)\\{[^\\n]*\\}/)?.[0];
+assert.ok(indexOriginHelper, "Quiz Japanese-source verification helper missing");
+const isQuizOriginJapanese = vm.runInNewContext(`(${indexOriginHelper})`);
+assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "ORIGINAL" }), true, "Japanese original anime must remain eligible in the quiz");
+assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP" } }] } }), true, "Japanese manga and light-novel adaptations must remain eligible in the quiz");
+assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "KR" } }] } }), false, "Non-Japanese source adaptations must be excluded from the quiz");
+assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [] } }), false, "Unknown source nationality must fail closed in the quiz");
+assert.equal(isQuizOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL" }), false, "Non-Japanese animation must be excluded from the quiz");
+assert.match(index, /function isJapaneseOriginAnime\\(a\\)\\{[^\\n]*a\\.source===.ORIGINAL.[^\\n]*relationType===.ADAPTATION./, "Eligibility must require a Japanese original or a linked Japanese source work");
+
+assert.match(index, /function isUsableAnime\(a\)\{[^\n]*isJapaneseOriginAnime\(a\)/, "Every cached and live quiz record must pass strict Japanese-source eligibility");
 assert.match(index, /function isJapaneseOriginAnime\(a\)\{[^\n]*a\.countryOfOrigin!==.JP./, "Japanese-origin eligibility must reject non-Japanese source works");
 assert.match(index, /const cleanedItems=value\.items\.filter\(isUsableAnime\)/, "Existing IndexedDB catalogues must be purged of non-Japanese-origin anime when loaded");
 assert.match(index, /const cleanedItems=legacy\.items\.filter\(isUsableAnime\)/, "Existing localStorage catalogues must be purged of non-Japanese-origin anime when loaded");
-assert.match(index, /normalizeUnicode\(json\.data\?\.Page\?\.media\|\|\[\]\)\.filter\(isJapaneseOriginAnime\)/, "Featured anime rail must also apply the Japanese-origin source verification");
+assert.match(index, /normalizeUnicode\(json\.data\?\.Page\?\.media\|\|\[\]\)\.filter\(isJapaneseOriginAnime\)/, "Featured anime rail must apply strict Japanese-source verification");
 assert.match(index, /term\.normalize\('NFKC'\)/, "Community search input must be normalized before building PostgREST filters");
 assert.match(index, /safeTerm\.length<2|\[\.\.\.safeTerm\]\.length<2/, "Community search must reject terms shorter than two searchable characters");
 assert.match(index, /body\.textContent\s*=\s*post\.body/, "User-generated post text must be rendered with textContent");
