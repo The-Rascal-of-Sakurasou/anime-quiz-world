@@ -59,7 +59,7 @@ body{background:#f6f7f9;color:#202936;letter-spacing:.005em}
 <main class="panel" id="mainContent" tabindex="-1">
 <div id="diagnosis">
 <div class="progress" aria-label="診断の進行状況"><div id="progressBar"></div></div>
-<div class="question"><div class="eyebrow" id="stepLabel">QUESTION 1 / 10</div><h2 id="questionTitle">どんなジャンルの物語に惹かれますか？</h2><p id="questionHelp">最も見たいものを1つ選んでください。</p></div>
+<div class="question"><div class="eyebrow" id="stepLabel">QUESTION 1 / 13</div><h2 id="questionTitle">どんなジャンルの物語に惹かれますか？</h2><p id="questionHelp">最も見たいものを1つ選んでください。</p></div>
 <div class="choices" id="choices"><button class="choice" type="button" disabled><span class="n">A</span><span>異世界・冒険・ファンタジー</span></button><button class="choice" type="button" disabled><span class="n">B</span><span>SF・ミステリー・サスペンス</span></button><button class="choice" type="button" disabled><span class="n">C</span><span>バトル・アクション</span></button><button class="choice" type="button" disabled><span class="n">D</span><span>ドラマ・コメディ・人間関係</span></button></div>
 <div class="preference-inputs" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:22px">
 <label style="display:block;font-weight:700;font-size:.92rem">好きなアニメ（任意）
@@ -760,6 +760,8 @@ function buildProfile(profile){
  $('profileDescription').textContent='ジャンルの傾向に加え、物語の展開や雰囲気の好みを反映しています。';
  $('profileChips').replaceChildren();
  [...top.map(g=>names[g]||g),...traits].forEach(t=>{const span=document.createElement('span');span.className='chip';span.textContent=t;$('profileChips').append(span)});
+ const avoidLabels={Romance:'恋愛少なめ',Comedy:'コメディ少なめ'};
+ Object.keys(profile.avoidGenres||{}).forEach(g=>{const span=document.createElement('span');span.className='chip';span.textContent=(avoidLabels[g]||((names[g]||g)+'少なめ希望'));$('profileChips').append(span)});
 }
 function renderCardList(containerId,items){
  const container=$(containerId);container.replaceChildren();
