@@ -12,7 +12,7 @@ Tracking issue: https://github.com/The-Rascal-of-Sakurasou/anime-quiz-world/issu
 - Direct messages between mutual follows
 - Speed Rush online leaderboard
 - Quiz modes: normal, daily, timed, and continuous play
-- Achievements, XP, streaks, missions, collections, and play history (some progress is currently browser-local)
+- Achievements, XP, streaks, missions, and play history (some progress is currently browser-local)
 - Anime search and recommendation quiz/result sharing
 - Multilingual interface
 - Guide/news page and administrator tools
@@ -38,7 +38,7 @@ Tracking issue: https://github.com/The-Rascal-of-Sakurasou/anime-quiz-world/issu
 - [ ] Per-user multiplayer statistics page
 
 ### P2 — Cross-device progress
-- [ ] Sync achievements, XP, streaks, missions, collections, and play history to the signed-in account
+- [ ] Sync achievements, XP, streaks, missions, and play history to the signed-in account
 - [ ] Restore progress on another device
 - [ ] Merge existing local progress without duplicate records
 
