@@ -408,7 +408,10 @@ async function startMatch(){
   await announce();
   startGamePolling();
   status($('roomActionStatus'),'同期クイズを開始しました。','good');
- }catch(e){status($('roomActionStatus'),errorText(e),'error')}
+ }catch(e){
+  try{await refreshRoom(false)}catch(_){}
+  status($('roomActionStatus'),errorText(e),'error')
+ }
  finally{setBusy(false);if(room)renderPlayers()}
 }
 
