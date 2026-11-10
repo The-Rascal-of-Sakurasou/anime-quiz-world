@@ -1,0 +1,52 @@
+name: Multiplayer SQL and Edge Function checks
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "docs/ONLINE_MULTIPLAYER_SCHEMA_DRAFT.sql"
+      - "supabase/functions/match/**"
+      - "scripts/test-multiplayer-sql.sql"
+      - ".github/workflows/multiplayer-sql-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  postgres-integration:
+    name: PostgreSQL integration tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+      - name: Apply draft to disposable PostgreSQL and run integration flow
+        env:
+          PGPASSWORD: postgres
+        run: psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -f scripts/test-multiplayer-sql.sql
+
+  edge-function-typecheck:
+    name: Edge Function type check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Check Edge Function types
+        run: deno check supabase/functions/match/index.ts
