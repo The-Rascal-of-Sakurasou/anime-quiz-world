@@ -59,6 +59,9 @@ assert.match(admin, /aal2/, "Admin MFA assurance-level enforcement missing");
 assert.match(admin, /mfa\.verify/, "Admin TOTP verification flow missing");
 assert.match(admin, /aqw-admin-control/, "Protected admin Edge Function call missing");
 
+const privacy = source.get("privacy.html");
+assert.doesNotMatch(privacy, /コレクション/, "Privacy policy must not describe the removed anime collection feature");
+
 const recommend = source.get("recommend.html");
 assert.ok(recommend.includes("media(search:$search,type:ANIME,countryOfOrigin:JP"), "Favorite-work search must be restricted to Japanese-origin anime");
 assert.ok(recommend.includes("media(type:ANIME,countryOfOrigin:JP"), "Recommendation catalog query must be restricted to Japanese-origin anime");
