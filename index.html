@@ -308,6 +308,81 @@ body{background:#f6f7f9;color:#202936;letter-spacing:.005em}
 @media(prefers-reduced-transparency:reduce){
   .tabs{backdrop-filter:none;-webkit-backdrop-filter:none;background:#f6f7f9}
 }
+/* Final mobile-first refinements */
+@media(max-width:700px){
+  html{scroll-padding-top:76px;-webkit-text-size-adjust:100%}
+  body{overflow-x:hidden}
+  #app.wrap{width:calc(100% - 20px);max-width:100%;margin-inline:auto}
+  .top{align-items:flex-start;flex-wrap:wrap;padding:12px 0;gap:10px}
+  .brand-area{flex:1 1 100%;min-width:0;gap:10px}
+  .brand{font-size:1.16rem}
+  .top-actions{width:100%;display:flex;align-items:center;justify-content:flex-start;flex-wrap:wrap;gap:8px}
+  .top-actions>*{max-width:100%}
+  .language-picker{display:flex;align-items:center;gap:8px}
+  .language-picker select{width:auto;max-width:190px}
+  .hero{padding:20px 0 16px}
+  .hero h1{font-size:clamp(1.65rem,7vw,2.15rem);line-height:1.35}
+  .hero p{font-size:.94rem;line-height:1.75}
+  .hero-actions{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+  .hero-actions a{display:flex;width:100%;min-height:46px;align-items:center;justify-content:center;text-align:center}
+  .featured-section{padding:13px 0 8px;margin:6px 0 16px}
+  .featured-head{align-items:flex-start;flex-direction:column;gap:6px}
+  .featured-card{flex:0 0 112px;width:112px}
+  .featured-card img{width:100%;height:146px;object-fit:cover}
+  .featured-track{gap:8px}
+  .tabs{position:sticky;top:0;z-index:50;display:flex;flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;gap:5px;margin:4px -10px 14px;padding:6px 10px 0;background:rgba(246,247,249,.98)}
+  .tabs::-webkit-scrollbar{display:none}
+  .tabs .tab{flex:0 0 auto;min-width:max-content;min-height:46px;padding:10px 13px;white-space:nowrap;font-size:.9rem}
+  .card{padding:14px;border-radius:11px}
+  .row{flex-wrap:wrap;align-items:flex-start;gap:10px}
+  .row>*{min-width:0;max-width:100%}
+  .answers{grid-template-columns:minmax(0,1fr);gap:10px}
+  .answers button,.answer{width:100%;min-height:50px;padding:12px}
+  .setup-controls{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+  .setup-controls>*{width:100%;min-width:0}
+  .social-columns{grid-template-columns:minmax(0,1fr)!important}
+  .auth-grid{grid-template-columns:minmax(0,1fr)!important}
+  .aqw-rush-board{padding:13px;margin:14px 0;border-radius:11px}
+  .aqw-rush-board-head{align-items:stretch;flex-direction:column;gap:10px}
+  .aqw-rush-board-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .aqw-rush-board-actions label{grid-column:span 2}
+  .aqw-rush-board-actions button,.aqw-rush-board-actions select{width:100%;min-width:0;min-height:46px}
+  .aqw-rush-board-scroll{overflow:visible}
+  .aqw-rush-board table{min-width:0;width:100%;display:block}
+  .aqw-rush-board thead{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  .aqw-rush-board tbody{display:grid;gap:9px}
+  .aqw-rush-board tbody tr{display:grid;grid-template-columns:40px minmax(0,1fr) auto;grid-template-areas:"rank player metric" "rank detail detail";align-items:center;gap:2px 9px;padding:11px;border:1px solid var(--line);border-radius:10px;background:#fff}
+  .aqw-rush-board tbody td{display:block;padding:2px 0;border:0;white-space:normal;min-width:0}
+  .aqw-rush-board tbody td:nth-child(1){grid-area:rank;font-size:1.08rem;text-align:center}
+  .aqw-rush-board tbody td:nth-child(2){grid-area:player;min-width:0}
+  .aqw-rush-board tbody td:nth-child(3){grid-area:metric;text-align:right;font-weight:800;font-variant-numeric:tabular-nums}
+  .aqw-rush-board tbody td:nth-child(4){grid-area:detail;grid-column:2/4;color:var(--muted);font-size:.82rem}
+  .aqw-rush-board .aqw-player-cell{display:flex;align-items:center;gap:8px}
+  .aqw-rush-board .player-name,.aqw-rush-board .player-handle{overflow-wrap:anywhere;white-space:normal}
+  .aqw-rush-board .player-name{font-size:.94rem}
+  .aqw-rush-board .player-handle{font-size:.74rem}
+  .aqw-rush-board tr.podium-1{border-color:#d8b65b;background:#fffaf0}
+  .aqw-rush-board tr.podium-2{border-color:#bdc6d1;background:#f8fafc}
+  .aqw-rush-board tr.podium-3{border-color:#d0a184;background:#fff8f3}
+  .table-wrap{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  input,select,textarea{font-size:16px;max-width:100%}
+  button,.tab,a{touch-action:manipulation}
+  button{min-height:44px}
+}
+@media(max-width:380px){
+  .brand{font-size:1.04rem}
+  .aqw-logo{width:42px;height:42px}
+  .tabs .tab{padding:9px 11px;font-size:.85rem}
+  .aqw-rush-board-actions{grid-template-columns:minmax(0,1fr)}
+  .aqw-rush-board-actions label{grid-column:auto}
+}
+.aqw-rush-board table{border-spacing:0}
+.aqw-rush-board thead th{background:#f4f7fa;font-weight:750}
+.aqw-rush-board tbody tr{transition:background-color .15s ease}
+.aqw-rush-board tbody tr:hover{background:#eef3f9}
+.aqw-rush-board .aqw-player-cell{vertical-align:middle}
+.aqw-rush-board .rank-cell{font-variant-numeric:tabular-nums;font-size:1rem}
+.aqw-rush-board .rank-cell.podium-1{font-size:1.12rem}
 </style>
 </head>
 <body><a class="skip-link" href="#quiz">クイズへ移動</a><div id="app" class="wrap">
