@@ -94,6 +94,29 @@ body{background:#f6f7f9;color:#202936;letter-spacing:.005em}
   .actions>*{width:100%}
 }
 
+/* Mobile refinement: prevent clipping and improve touch/accessibility */
+@media(max-width:700px){
+  html{scroll-padding-top:14px}
+  body{overflow-wrap:anywhere}
+  img,video,canvas{max-width:100%;height:auto}
+  iframe{max-width:100%}
+  button,input,select,textarea{max-width:100%;min-width:0}
+  button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  :focus-visible{outline:3px solid #3978c8;outline-offset:2px}
+  [id]{scroll-margin-top:14px}
+  pre{max-width:100%;overflow-x:auto}
+  code{overflow-wrap:anywhere}
+}
+/* Additional mobile layout: make optional preference fields readable */
+@media(max-width:700px){
+  .preference-inputs{grid-template-columns:minmax(0,1fr)!important;gap:10px!important}
+  .preference-inputs label{min-width:0}
+  .preference-inputs input{box-sizing:border-box;min-height:46px}
+  .actions{align-items:stretch}
+  .actions button,.actions a{display:flex;align-items:center;justify-content:center;text-align:center}
+  .cards{align-items:stretch}
+}
+
 </style>
 </head>
 <body>
