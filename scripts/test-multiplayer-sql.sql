@@ -290,7 +290,7 @@ select set_config('realtime.topic', 'aqw-match:' || :'test_match_id', false);
 insert into realtime.messages(extension, topic)
 values ('presence', 'aqw-match:' || :'test_match_id');
 
-do $
+do $$
 begin
   begin
     insert into realtime.messages(extension, topic)
@@ -300,11 +300,11 @@ begin
     when insufficient_privilege then null;
   end;
 end
-$;
+$$;
 
 reset role;
 
-do $
+do $$
 declare
   v_result_count integer;
 begin
