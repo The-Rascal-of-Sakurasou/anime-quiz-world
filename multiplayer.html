@@ -69,6 +69,24 @@ input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{ou
 <a href="./index.html">トップページでログインする</a>
 </div>
 <div id="mainArea" class="hidden">
+<section class="card" id="randomMatchPanel">
+<h2>ランダムマッチ</h2>
+<p class="muted">条件の合う参加者を自動で探します。直近で対戦した相手との再マッチは優先的に避けます。</p>
+<div class="grid">
+<label>対戦人数
+<select id="randomMaxPlayers"><option value="2" selected>2人</option><option value="3">3人</option><option value="4">4人</option></select>
+</label>
+<label>問題数
+<select id="randomQuestionCount"><option value="5">5問</option><option value="10" selected>10問</option><option value="15">15問</option><option value="20">20問</option></select>
+</label>
+</div>
+<div class="form-actions"><button class="primary" id="findMatch">ランダムマッチを開始</button></div>
+<div id="matchmakingWait" class="hidden">
+<p id="matchmakingStatus" class="status" role="status" aria-live="polite"></p>
+<div class="form-actions"><button class="danger" id="cancelMatch">マッチングをキャンセル</button></div>
+</div>
+<p class="muted">マッチングでは直近1時間・24時間・7日間の同一相手との対戦回数を優先して減らし、条件が同じ候補からランダムに選びます。参加者が少ない場合は同じ相手になることがあります。</p>
+</section>
 <section class="card" id="createPanel">
 <h2>ルームを作成</h2>
 <div class="grid">
@@ -107,7 +125,7 @@ input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{ou
 <p id="roomActionStatus" class="status" role="status" aria-live="polite"></p>
 </section>
 <div class="note">
-<strong>開発状況：</strong>現在はルーム作成・参加・準備確認の基盤を実装しています。同期クイズ、対戦結果の保存、自動マッチング、再戦機能はロードマップに沿って順次追加します。現段階では対戦スコアや勝敗は記録されません。
+<strong>開発状況：</strong>ルーム作成・参加・準備確認に加え、対戦履歴に基づいて同じ相手との連続マッチを抑えるランダムマッチを実装しています。同期クイズ、対戦結果の保存、再戦機能は順次追加します。現段階では対戦スコアや勝敗は記録されません。
 </div>
 </div>
 </main>
@@ -121,8 +139,9 @@ const SUPABASE_KEY='sb_publishable_eL_Da06cmHz3W58jpcBIBQ_YzTThTL4';
 const $=id=>document.getElementById(id);
 const status=(el,text,kind='')=>{el.textContent=text||'';el.className='status'+(kind?' '+kind:'')};
 let sb=null,user=null,room=null,channel=null,presenceUsers=new Set(),busy=false;
+let matchmakingTimer=null,matchmakingBusy=false,matchmakingPrefs=null;
 const errorText=e=>e?.message||'処理に失敗しました。';
-function setBusy(value){busy=value;['createRoom','joinRoom','toggleReady','leaveRoom','refreshRoom','copyInvite'].forEach(id=>$(id).disabled=value)}
+function setBusy(value){busy=value;['createRoom','joinRoom','toggleReady','leaveRoom','refreshRoom','copyInvite','findMatch','cancelMatch'].forEach(id=>$(id).disabled=value)}
 async function invoke(name,args){
  const {data,error}=await sb.rpc(name,args);
  if(error)throw error;
@@ -201,6 +220,65 @@ async function enterRoom(data){
  history.replaceState(null,'',location.pathname+'?room='+encodeURIComponent(room.room_code));
  status($('pageStatus'),'ルームに接続しました。','good');
 }
+function stopMatchmakingPolling(){
+ if(matchmakingTimer){clearInterval(matchmakingTimer);matchmakingTimer=null}
+ matchmakingBusy=false;
+}
+function showMatchmakingWaiting(data){
+ $('matchmakingWait').classList.remove('hidden');
+ const count=Number(data.players_waiting)||1;
+ status($('matchmakingStatus'),`対戦相手を検索中…（現在 ${count}/${data.required_players}人）`);
+}
+async function handleMatchmakingResult(data){
+ if(data?.status==='searching'){showMatchmakingWaiting(data);return}
+ if(data?.status==='matched'||data?.status==='in_room'){
+  stopMatchmakingPolling();
+  $('matchmakingWait').classList.add('hidden');
+  await enterRoom(data.room);
+  return;
+ }
+ throw new Error('マッチング結果を確認できませんでした。');
+}
+async function pollMatchmaking(){
+ if(matchmakingBusy||!matchmakingPrefs||!user||room)return;
+ matchmakingBusy=true;
+ try{
+  const data=await invoke('aqw_matchmaking_join',matchmakingPrefs);
+  await handleMatchmakingResult(data);
+ }catch(e){
+  stopMatchmakingPolling();
+  status($('matchmakingStatus'),errorText(e),'error');
+ }finally{matchmakingBusy=false}
+}
+async function findRandomMatch(){
+ if(busy||room)return;
+ matchmakingPrefs={
+  p_max_players:Number($('randomMaxPlayers').value),
+  p_question_count:Number($('randomQuestionCount').value)
+ };
+ setBusy(true);
+ status($('pageStatus'),'ランダムマッチを検索しています…');
+ try{
+  const data=await invoke('aqw_matchmaking_join',matchmakingPrefs);
+  await handleMatchmakingResult(data);
+  if(data?.status==='searching'&&!matchmakingTimer){
+   matchmakingTimer=setInterval(pollMatchmaking,4000);
+  }
+ }catch(e){status($('pageStatus'),errorText(e),'error')}
+ finally{setBusy(false)}
+}
+async function cancelRandomMatch(){
+ if(busy)return;
+ stopMatchmakingPolling();
+ setBusy(true);
+ try{
+  await invoke('aqw_matchmaking_cancel',{});
+  matchmakingPrefs=null;
+  $('matchmakingWait').classList.add('hidden');
+  status($('pageStatus'),'ランダムマッチをキャンセルしました。','good');
+ }catch(e){status($('matchmakingStatus'),errorText(e),'error')}
+ finally{setBusy(false)}
+}
 async function createRoom(){
  if(busy)return;setBusy(true);status($('pageStatus'),'ルームを作成しています…');
  try{const data=await invoke('aqw_match_create_room',{p_max_players:Number($('maxPlayers').value),p_question_count:Number($('questionCount').value)});await enterRoom(data)}
@@ -239,6 +317,8 @@ async function init(){
  user=session.user;$('mainArea').classList.remove('hidden');
  $('createRoom').addEventListener('click',createRoom);
  $('joinRoom').addEventListener('click',joinRoom);
+ $('findMatch').addEventListener('click',findRandomMatch);
+ $('cancelMatch').addEventListener('click',cancelRandomMatch);
  $('toggleReady').addEventListener('click',toggleReady);
  $('leaveRoom').addEventListener('click',leaveRoom);
  $('copyInvite').addEventListener('click',copyInvite);
