@@ -858,11 +858,21 @@ async function fetchAnime(vars={}){
 
  }catch(e){}
  // Merge the shared GitHub Pages catalogue so every visitor starts with the same expanded dataset.
+ let sharedCatalogItems=[];
  try{
-  const sharedItems=await fetchSharedAnimeCatalog();
-  if(sharedItems.length)initial=mergeAnimeCollection([...initial,...sharedItems]);
+  sharedCatalogItems=await fetchSharedAnimeCatalog();
+  if(sharedCatalogItems.length)initial=mergeAnimeCollection([...initial,...sharedCatalogItems]);
  }catch(e){}
  initial=deduplicateQuestionPool(initial);
+ if(sharedCatalogItems.length){
+  // The centrally maintained catalogue replaces the expensive per-browser AniList backfill.
+  pool=initial;
+  const progress=document.getElementById('animePoolProgress');
+  if(progress)progress.textContent=lang==='ja'?('共通カタログ：'+initial.length.toLocaleString()+'作品（毎日更新）'):('Shared catalogue: '+initial.length.toLocaleString()+' anime (updated daily)');
+  const status=document.getElementById('quizStatus');
+  if(status)status.textContent=lang==='ja'?'共通作品データを読み込みました。クイズを開始できます。':'Shared anime catalogue loaded. Ready to start.';
+  return initial;
+ }
  
  if(!initial.length){
   const first=(await request({page:1,perPage:50},'POPULARITY_DESC')).filter(isUsableAnime);
