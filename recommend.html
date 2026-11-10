@@ -472,7 +472,7 @@ function parseTitleInput(id){
 }
 function normalizeSeedTitle(value){
  return String(value||'').toLocaleLowerCase().normalize('NFKC')
-  .replace(/[\\s・：:!！?？。、,.'’"「」『』()（）［］【】_ｰ-]/g,'');
+  .replace(/[\s・：:!！?？。、,.'’"「」『』()（）［］【】_ｰ-]/g,'');
 }
 function matchesSeedTitle(media,title){
  const wanted=normalizeSeedTitle(title);
