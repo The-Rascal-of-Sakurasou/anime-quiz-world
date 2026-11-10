@@ -59,6 +59,14 @@ assert.match(admin, /aal2/, "Admin MFA assurance-level enforcement missing");
 assert.match(admin, /mfa\.verify/, "Admin TOTP verification flow missing");
 assert.match(admin, /aqw-admin-control/, "Protected admin Edge Function call missing");
 
+const recommend = source.get("recommend.html");
+const questionBlock = recommend.match(/const questions=\[([\s\S]*?)\n\];\nconst questionTitles=/)?.[1];
+assert.ok(questionBlock, "Recommendation question block not found");
+const questionTitles = [...questionBlock.matchAll(/title:'([^']+)'/g)].map(match => match[1].trim());
+assert.equal(questionTitles.length, 13, "Recommendation diagnosis must contain exactly 13 questions");
+assert.equal(new Set(questionTitles).size, questionTitles.length, "Recommendation question titles must be unique");
+assert.match(recommend, /new Set\(q\.options\.map\(o=>o\.label\.trim\(\)\)\)\.size!==q\.options\.length/, "Runtime duplicate-option guard missing");
+
 const index = source.get("index.html");
 assert.match(index, /body\.textContent\s*=\s*post\.body/, "User-generated post text must be rendered with textContent");
 assert.doesNotMatch(index, /innerHTML\s*=\s*[^;]*(?:post\.body|profile\.(?:username|display_name))/, "User-generated profile/post data must not be inserted with innerHTML");
