@@ -170,8 +170,18 @@ const SUPABASE_URL='https://ksyfhscjfqzenifcttiu.supabase.co';
 const KEY='sb_publishable_eL_Da06cmHz3W58jpcBIBQ_YzTThTL4';
 const $=id=>document.getElementById(id);
 const status=$('status');
-const client=window.supabase.createClient(SUPABASE_URL,KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+const client=window.supabase.createClient(SUPABASE_URL,KEY,{auth:{persistSession:false,autoRefreshToken:true,detectSessionInUrl:false}});
 let activeUser=null;
+client.auth.onAuthStateChange((event,session)=>{
+ if(event==='TOKEN_REFRESHED'&&session?.user)activeUser=session.user;
+ if(event==='SIGNED_OUT')setTimeout(()=>{
+  activeUser=null;
+  $('console').classList.add('hidden');
+  $('mfaCard').classList.add('hidden');
+  $('loginCard').classList.remove('hidden');
+  say('セッションが終了しました。再度ログインしてください。');
+ },0);
+});
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function say(message,kind=''){status.textContent=message;status.className='status'+(kind?' '+kind:'')}
 function date(value){if(!value)return '—';const d=new Date(value);return Number.isNaN(d.getTime())?'—':d.toLocaleString('ja-JP')}
