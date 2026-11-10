@@ -7,6 +7,8 @@ on:
       - "docs/ONLINE_MULTIPLAYER_SCHEMA_DRAFT.sql"
       - "supabase/functions/match/**"
       - "scripts/test-multiplayer-sql.sql"
+      - "scripts/build-question-bank-seed.mjs"
+      - "scripts/test-question-bank-import.mjs"
       - ".github/workflows/multiplayer-sql-tests.yml"
 
 permissions:
@@ -50,3 +52,7 @@ jobs:
           deno-version: v2.x
       - name: Check Edge Function types
         run: deno check supabase/functions/match/index.ts
+      - name: Test question bank import generator
+        run: |
+          node --check scripts/build-question-bank-seed.mjs
+          node scripts/test-question-bank-import.mjs
