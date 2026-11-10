@@ -160,6 +160,16 @@ assert.match(relationAllowlist, /PREQUEL.*SEQUEL.*SUMMARY.*ALTERNATIVE.*COMPILAT
 assert.doesNotMatch(relationAllowlist, /PARENT/, "A side story parent relation must not hide a distinct side story");
 assert.match(recommend, /独立したサイドストーリーは親作品と別候補として残す/, "Side-story separation regression test missing");
 
+const syncScript = fs.readFileSync("scripts/sync-anime-catalog.mjs", "utf8");
+const syncWorkflow = fs.readFileSync(".github/workflows/sync-anime-catalog.yml", "utf8");
+assert.match(syncScript, /function isJapaneseOriginAnime\(anime\)/, "Shared catalogue sync must verify Japanese source origin");
+assert.match(syncScript, /countryOfOrigin !== 'JP'/, "Shared catalogue sync must reject non-Japanese animation");
+assert.match(syncScript, /isAdult:false/, "Shared catalogue sync must exclude adult catalogue entries");
+assert.match(syncScript, /const OVERFLOW_SORTS = \['SCORE_DESC', 'FAVOURITES_DESC', 'TRENDING_DESC', 'START_DATE_DESC'\]/, "Shared catalogue sync must cover AniList pagination overflow");
+assert.match(syncWorkflow, /cron: '30 19 \* \* \*'/, "Shared catalogue sync must be scheduled daily");
+assert.match(syncWorkflow, /workflow_dispatch:/, "Shared catalogue sync must support manual runs");
+assert.match(syncWorkflow, /contents: write/, "Shared catalogue sync must be able to publish the generated dataset");
+
 const index = source.get("index.html");
 assert.doesNotMatch(index, /id="collection(?:Heading)?"/, "The anime collection display must be removed");
 assert.doesNotMatch(index, /rememberAnime|safeStorage\.(?:getItem|setItem)\([\'"]aqw-collection[\'"]/, "Quiz answers must not create or load a per-user anime collection");
@@ -184,6 +194,9 @@ assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "OTHER", rela
 assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "NOVEL" } }] } }), false, "Manga source must match manga format in the quiz");
 assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "KR", format: "MANGA" } }] } }), false, "Non-Japanese source adaptations must be excluded from the quiz");
 assert.equal(isQuizOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL" }), false, "Non-Japanese animation must be excluded from the quiz");
+assert.match(index, /async function fetchSharedAnimeCatalog\(\)/, "The quiz must load the shared catalogue");
+assert.match(index, /new URL\('data\/anime-catalog\.json',document\.baseURI\)/, "The shared catalogue must resolve correctly from GitHub Pages subpaths");
+assert.match(index, /sharedItems=await fetchSharedAnimeCatalog\(\)/, "Shared catalogue entries must be merged with local cached records");
 assert.match(index, /const cacheKey='aqw-anime-pool-v20-expanded-format-overflow-sort-coverage'/, "Verified original-source eligibility must rebuild the browser catalogue");
 assert.ok(index.includes("source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } }"), "Quiz queries must request detailed source metadata and adaptation-origin evidence");
 assert.ok(recommend.includes("source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } }"), "Recommendation queries must request detailed source metadata and adaptation-origin evidence");
