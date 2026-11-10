@@ -1664,8 +1664,8 @@ async function searchUsers(e){
  e?.preventDefault?.();
  const term=$s('aqwUserSearch').value.trim(),box=$s('aqwUserResults');
  box.textContent=localJa()?'検索中…':'Searching…';
- if(term.length<2){box.textContent=localJa()?'2文字以上入力してください。':'Enter at least 2 characters.';return}
- const safeTerm=term.replace(/[,%()]/g,'');
+ const safeTerm=term.normalize('NFKC').replace(/[^\p{L}\p{N} -]/gu,'').trim().slice(0,64);
+ if([...safeTerm].length<2){box.textContent=localJa()?'検索できる文字を2文字以上入力してください。':'Enter at least two searchable letters or numbers.';return}
  const {data,error}=await sb.from('profiles').select('id,username,display_name,bio,avatar_path').or('username.ilike.%'+safeTerm+'%,display_name.ilike.%'+safeTerm+'%').limit(20);
  if(error){box.textContent=errText(error);return}
  box.replaceChildren();
