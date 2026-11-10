@@ -79,6 +79,23 @@ footer{color:var(--muted);font-size:.85rem;padding:10px 0 30px}
 <div class="actions" style="margin-bottom:12px"><button id="reloadUsers" type="button">アカウント一覧を更新</button></div>
 <div class="table-wrap"><table><thead><tr><th>メールアドレス</th><th>登録日</th><th>最終ログイン</th><th>状態</th><th>操作</th></tr></thead><tbody id="authUsers"><tr><td colspan="5">読み込み中…</td></tr></tbody></table></div>
 </div>
+<div class="card">
+<h2>サイトデータ・ランキング・SNS管理</h2>
+<p class="muted">ランキング記録、フォロー、いいね、通知、フレンドメッセージの管理ができます。メッセージ本文はプライバシー保護のため表示せず、送受信者と日時のみを表示します。</p>
+<div class="actions" style="margin:12px 0">
+<label style="min-width:min(100%,320px)">管理対象
+<select id="dataTable" style="font:inherit;padding:10px;border:1px solid #c7d0db;border-radius:7px">
+<option value="aqw_player_stats">プレイヤー実績</option>
+<option value="aqw_speed_rush_scores">スピードラッシュ記録</option>
+<option value="follows">フォロー関係</option>
+<option value="post_likes">投稿へのいいね</option>
+<option value="notifications">通知</option>
+<option value="friend_messages">フレンドメッセージ（本文非表示）</option>
+</select></label>
+<button id="loadData" type="button">データを読み込む</button>
+</div>
+<div class="table-wrap"><table><thead id="dataHead"><tr><th>データ</th><th>操作</th></tr></thead><tbody id="dataRows"><tr><td colspan="2">管理対象を選択してください。</td></tr></tbody></table></div>
+</div>
 </section>
 </main>
 <footer class="wrap">Anime Quiz World — 管理操作はSupabaseのRow Level Securityによって保護されています。</footer>
@@ -195,6 +212,42 @@ async function deletePost(post,button){
   await refreshAll();
  }catch(error){button.disabled=false;say('削除できませんでした：'+(error.message||String(error)),'error')}
 }
+const dataColumns={
+ aqw_player_stats:[['user_id','ユーザーID'],['total_xp','合計XP'],['total_runs','プレイ回数'],['total_correct','正解数'],['total_questions','出題数'],['accuracy_rate','正答率'],['updated_at','更新日時']],
+ aqw_speed_rush_scores:[['user_id','ユーザーID'],['correct_count','正解数'],['elapsed_ms','経過時間(ms)'],['updated_at','更新日時']],
+ follows:[['follower_id','フォローしたユーザー'],['following_id','フォロー先'],['created_at','日時']],
+ post_likes:[['user_id','ユーザーID'],['post_id','投稿ID'],['created_at','日時']],
+ notifications:[['recipient_id','通知先'],['actor_id','実行者'],['kind','種類'],['post_id','投稿ID'],['created_at','日時']],
+ friend_messages:[['sender_id','送信者'],['recipient_id','受信者'],['created_at','日時']]
+};
+async function loadDataRecords(){
+ const table=$('dataTable').value,root=$('dataRows'),head=$('dataHead');root.replaceChildren();head.replaceChildren();
+ const cols=dataColumns[table];const header=document.createElement('tr');
+ for(const [,label] of cols){const th=document.createElement('th');th.textContent=label;header.append(th)}
+ const op=document.createElement('th');op.textContent='操作';header.append(op);head.append(header);
+ const {data,error}=await client.from(table).select('*').order('updated_at',{ascending:false}).limit(100);
+ if(error)throw error;
+ if(!data?.length){const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=cols.length+1;cell.textContent='データはありません。';row.append(cell);root.append(row);return}
+ for(const record of data){
+  const row=document.createElement('tr');
+  for(const [key] of cols){const cell=document.createElement('td');cell.textContent=key==='created_at'||key==='updated_at'?date(record[key]):String(record[key]??'—');row.append(cell)}
+  const action=document.createElement('td');const button=document.createElement('button');button.type='button';button.className='danger';button.textContent='削除';
+  button.addEventListener('click',async()=>{
+   if(!confirm('選択したデータを削除します。この操作は取り消せません。'))return;
+   button.disabled=true;
+   try{
+    let query=client.from(table).delete();
+    if(table==='aqw_player_stats'||table==='aqw_speed_rush_scores')query=query.eq('user_id',record.user_id);
+    else if(table==='follows')query=query.eq('follower_id',record.follower_id).eq('following_id',record.following_id);
+    else if(table==='post_likes')query=query.eq('user_id',record.user_id).eq('post_id',record.post_id);
+    else query=query.eq('id',record.id);
+    const {error:deleteError}=await query;if(deleteError)throw deleteError;
+    say('データを削除しました。','success');await loadDataRecords();await refreshAll();
+   }catch(error){say('削除できませんでした：'+(error.message||String(error)),'error');button.disabled=false}
+  });
+  action.append(button);row.append(action);root.append(row);
+ }
+}
 async function loadAuthUsers(){
  const root=$('authUsers');root.replaceChildren();
  const {data,error}=await client.functions.invoke('aqw-admin-control',{body:{action:'list_users',page:1}});
@@ -257,6 +310,8 @@ $('logoutButton').addEventListener('click',async()=>{
 });
 $('refreshButton').addEventListener('click',refreshAll);
 $('reloadUsers').addEventListener('click',loadAuthUsers);
+$('loadData').addEventListener('click',()=>loadDataRecords().catch(error=>say('データを取得できませんでした：'+(error.message||String(error)),'error')));
+$('dataTable').addEventListener('change',()=>loadDataRecords().catch(error=>say('データを取得できませんでした：'+(error.message||String(error)),'error')));
 say('メールアドレスとパスワードを入力して管理者認証を行ってください。');
 $('loginCard').classList.remove('hidden');
 $('console').classList.add('hidden');
