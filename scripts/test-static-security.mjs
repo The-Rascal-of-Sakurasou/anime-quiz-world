@@ -172,7 +172,7 @@ assert.match(index, /function isUsableAnime\(a\)\{[^\n]*isJapaneseOriginAnime\(a
 assert.match(index, /function isUsableAnime\(a\)\{[^\n]*a\.isAdult!==true/, "Adult-flagged records must be excluded from live and cached quiz data");
 
 assert.match(index, /source\(version:2\) relations \{ edges \{ relationType node \{ id type countryOfOrigin format \} \} \} season seasonYear/, "Featured seasonal queries must include source and related-origin metadata");
-assert.match(index, /if\(!isJapaneseOriginAnime\(anime\)\|\|!Number\.isFinite\(Number\(anime\.id\)\)\)continue/, "New seasonal anime must pass verified Japanese-source filtering");
+assert.ok(index.includes("if(!isJapaneseOriginAnime(anime)||!Number.isFinite(Number(anime.id)))continue"), "New seasonal anime must pass verified Japanese-source filtering");
 assert.match(index, /if\(isJapaneseOriginAnime\(anime\)&&Number\.isFinite\(Number\(anime\.id\)\)\)byId\.set/, "Ongoing seasonal anime must pass verified Japanese-source filtering");
 
 assert.match(index, /function isJapaneseOriginAnime\(a\)\{[^\n]*a\.countryOfOrigin!==.JP./, "Japanese-origin eligibility must reject non-Japanese animation records before source verification");
