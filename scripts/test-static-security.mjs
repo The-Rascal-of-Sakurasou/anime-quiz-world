@@ -82,6 +82,9 @@ assert.equal(new Set(recommendationLabels).size, recommendationLabels.length, "R
 assert.equal(questionDimensions.length, new Set(questionDimensions).size, "No preference dimension may be asked more than once");
 assert.ok(recommendationLabels.every(label => [...label].length <= 30), "Recommendation choices must stay short and easy to scan");
 assert.match(questionBlock, /help:'[^']+'/g, "Recommendation questions must include simple guidance");
+const complexityQuestion = questionBlock.match(/\{dimension:\'narrative_complexity\'[\s\S]*?\n\]\}/)?.[0] || "";
+assert.ok(complexityQuestion, "Narrative complexity question must exist");
+assert.doesNotMatch(complexityQuestion, /genres:|avoidGenres:/, "Narrative complexity must not double-count the genre preference axis");
 assert.doesNotMatch(questionBlock, /NDCG|IDF|重み付け|希少性/, "Technical recommendation terms must not appear in user-facing questions");
 const seedSimilaritySource = recommend.match(/function calculateSeedSimilarity\(candidate,seeds,rarityWeight,genreRarity\)\{[\s\S]*?\n\}/)?.[0];
 assert.ok(seedSimilaritySource, "Favorite-anime similarity function not found");
