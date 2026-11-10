@@ -2,7 +2,16 @@
 
 ## Status
 
-Planning document only. No production database schema, RLS policy, Realtime setting, or Edge Function has been changed by this document.
+Implementation status (2026-11-10):
+
+- An authenticated Edge Function gateway draft now exists at `supabase/functions/match/index.ts`.
+- `supabase/config.toml` enables platform JWT verification for that function.
+- The gateway verifies the caller with `auth.getUser(token)`, derives the actor ID from that verified user, restricts actions and payload fields, and HMAC-hashes room codes with an Edge Function secret.
+- The gateway calls `public.aqw_match_dispatch`, which has **not** been implemented yet. The function is therefore a source draft, not deployable or usable.
+- The SQL schema remains a design draft. It has not been applied to the hosted database. Its Realtime topic-validation regex and duplicated trailing SQL fragment were corrected in the draft.
+- No production database schema, RLS policy, Realtime setting, secret, or Edge Function has been changed.
+
+The next required work is the service-role-only SQL dispatcher, a server-side question bank, isolated database tests, then a lobby client.
 
 The current Supabase project has Auth and social/profile tables, but no multiplayer tables and no deployed Edge Functions. The first implementation must therefore add a separate, auditable multiplayer layer.
 
