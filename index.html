@@ -878,7 +878,7 @@ async function fetchAnime(vars={}){
  return deduplicateQuestionPool(initial);
 }
 function hasUsableImageUrl(value){const url=String(value||'').trim();return /^https?:\/\//i.test(url)&&!/(?:no[-_ ]?image|placeholder|default[-_ ]?image)/i.test(url)&&!failedImageUrls.has(url)}
-function isUsableAnime(a){const titleImage=a?.coverImage?.large||a?.coverImage?.medium||a?.coverImage?.extraLarge||'';return !!(a&&a.id&&isJapaneseOriginAnime(a)&&hasUsableImageUrl(titleImage)&&titleOf(a)&&['TV','TV_SHORT','MOVIE','OVA','ONA','SPECIAL'].includes(a.format)&&!((a.genres||[]).includes('Hentai')))}
+function isUsableAnime(a){const titleImage=a?.coverImage?.large||a?.coverImage?.medium||a?.coverImage?.extraLarge||'';return !!(a&&a.id&&a.isAdult!==true&&isJapaneseOriginAnime(a)&&hasUsableImageUrl(titleImage)&&titleOf(a)&&['TV','TV_SHORT','MOVIE','OVA','ONA','SPECIAL'].includes(a.format)&&!((a.genres||[]).includes('Hentai')))}
 function deduplicateSearchResults(items){
  // AniList search can return multiple media entries with the same displayed title.
  // Keep the most popular representative and suppress exact title duplicates across locales.
