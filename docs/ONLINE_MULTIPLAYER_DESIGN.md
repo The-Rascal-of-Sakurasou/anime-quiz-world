@@ -7,7 +7,7 @@ Implementation status (2026-11-10):
 - An authenticated Edge Function gateway draft now exists at `supabase/functions/match/index.ts`.
 - `supabase/config.toml` enables platform JWT verification for that function.
 - The gateway verifies the caller with `auth.getUser(token)`, derives the actor ID from that verified user, restricts actions and payload fields, and HMAC-hashes room codes with an Edge Function secret.
-- The gateway calls `public.aqw_match_dispatch`, which has **not** been implemented yet. The function is therefore a source draft, not deployable or usable.
+- The gateway calls `public.aqw_match_dispatch`, which is now defined in the SQL draft with service-role-only execution. Neither the SQL nor the Edge Function has been deployed, so the multiplayer service is not yet usable.
 - The SQL draft now includes a private question bank with record validation, a service-role-only dispatcher, server-side answer scoring, question deadlines, result ranking, room lifecycle operations, a per-account room-code attempt throttle, and a guard against answering while disconnected. The expanded SQL integration flow has passed on disposable PostgreSQL 16 with Auth/Realtime compatibility stubs; the Edge Function has passed Deno type checking. It has not been applied to the hosted database.
 - The question bank is empty: a trusted admin/import workflow and reviewed question data are still required before a match can start.
 - No production database schema, RLS policy, Realtime setting, secret, or Edge Function has been changed.
@@ -35,7 +35,7 @@ Random matchmaking can follow after private rooms are stable.
 - **Supabase Auth:** require a verified authenticated user for ranked matches.
 - **Supabase Edge Functions:** authoritative operations. The client never chooses the correct answer, final score, or another player's result.
 - **Postgres:** persistent room membership and match results. Correct answers and answer keys stay in a non-exposed `private` schema.
-- **Realtime Broadcast + Presence:** low-latency room events and online/ready indicators. Use private channels and membership-based RLS.
+- **Realtime Broadcast + Presence:** low-latency room events and online/ready indicators. Use private channels and membership-based RLS. Browser clients may send Presence only; authoritative Broadcast events are reserved for the server.
 
 ### Proposed data model
 
