@@ -141,6 +141,18 @@ Deno.serve(async (request: Request) => {
     const admin = createClient(url, serviceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
+
+    if (body.action === "join_room") {
+      const { data: allowed, error: rateLimitError } = await admin.rpc("aqw_match_rate_limit", {
+        p_action: "join_room",
+        p_actor_id: auth.user.id,
+      });
+      if (rateLimitError) throw new Error("Could not verify room-join rate limit");
+      if (allowed !== true) {
+        return respond(origin, 429, { error: "Too many room-code attempts. Try again in 10 minutes." });
+      }
+    }
+
     const { data: profile, error: profileError } = await admin
       .from("profiles")
       .select("display_name")
