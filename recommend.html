@@ -403,6 +403,12 @@ function calculateSelectionAdjustment(candidate,selected,discovery=false,maxPopu
 function buildExcludedSeedIds(favorites,dislikes){
  return new Set([...(Array.isArray(favorites)?favorites:[]),...(Array.isArray(dislikes)?dislikes:[])].map(item=>item?.id).filter(id=>id!==undefined&&id!==null));
 }
+function buildRecommendationDataWarnings(failedPages,totalPages){
+ const failed=Number.isInteger(failedPages)?Math.max(0,failedPages):0;
+ const total=Number.isInteger(totalPages)?Math.max(0,totalPages):0;
+ if(!failed||!total)return [];
+ return ['作品データの一部を取得できませんでした（'+failed+'/'+total+'ページ）。推薦候補が偏る可能性があります。時間をおいて再診断してください。'];
+}
 
 function runRecommendationSelfTests(){
  const tests=[];
@@ -419,6 +425,9 @@ function runRecommendationSelfTests(){
  check('苦手な作品そのものを推薦候補から除外する',buildExcludedSeedIds([],[{id:12}]).has(12));
  check('好き・苦手の両方に入力した作品も推薦候補から除外する',buildExcludedSeedIds([{id:13}],[{id:13}]).has(13));
  check('未解決の作品入力は他の候補IDを誤って除外しない',buildExcludedSeedIds([{id:null}],[]).size===0);
+ check('全ページ取得成功時はデータ不足警告を表示しない',buildRecommendationDataWarnings(0,20).length===0);
+ check('一部ページ失敗時は候補の偏りを警告する',buildRecommendationDataWarnings(3,20)[0]?.includes('3/20ページ'));
+ check('全ページ失敗は別のエラー処理に任せ、部分取得警告を誤用しない',buildRecommendationDataWarnings(20,20).length===1);
  check('13問すべてに異なる分類が設定されている',new Set(questions.map(q=>q.dimension)).size===13);
   check('全13問の選択肢ラベルが重複していない',!duplicateChoiceLabels&&questions.every(q=>q.options.length===4));
   check('ジャンル質問と舞台質問が同じジャンル加点に依存しない',questions.find(q=>q.dimension==='setting').options.every(o=>!o.genres?.length));
@@ -646,7 +655,7 @@ async function getRecommendations(profile){
  // 評価履歴からジャンル・タグごとの傾向を集計し、少数評価を抑制した補正値を算出する。
  const learnedPreferences=buildLearnedPreferences(recommendationFeedback);
  const favoriteSeeds=[],dislikedSeeds=[];
- const seedReport={unresolvedFavorites:[],unresolvedDislikes:[],conflicts:[],resolvedFavorites:[],resolvedDislikes:[],lookupErrors:[]};
+ const seedReport={unresolvedFavorites:[],unresolvedDislikes:[],conflicts:[],resolvedFavorites:[],resolvedDislikes:[],lookupErrors:[],dataWarnings:buildRecommendationDataWarnings(failedPages,sortModes.length*5)};
  for(const name of favoriteNames){
   try{const found=await findSeedAnime(name);if(found){favoriteSeeds.push({...found,_requestedTitle:name});seedReport.resolvedFavorites.push({requested:name,resolved:found.title?.native||found.title?.english||found.title?.romaji||'タイトル不明'})}else seedReport.unresolvedFavorites.push(name)}
   catch(error){seedReport.lookupErrors.push({type:'好きな作品',title:name,message:error.message||'検索に失敗しました'})}
@@ -1141,6 +1150,7 @@ function renderCards(result){
  if(!result.discoveries.length)$('discoveryCards').innerHTML='<p class="status">今回の候補群では、相性を保った意外な作品を見つけられませんでした。</p>';
  const report=result.seedReport||{};
  const notices=[];
+ if(report.dataWarnings?.length)notices.push(...report.dataWarnings);
  if(report.resolvedFavorites?.length)notices.push('好きな作品の照合結果：'+report.resolvedFavorites.map(x=>x.requested+' → '+x.resolved).join('、'));
  if(report.resolvedDislikes?.length)notices.push('苦手な作品の照合結果：'+report.resolvedDislikes.map(x=>x.requested+' → '+x.resolved).join('、'));
  if(report.unresolvedFavorites?.length)notices.push('完全一致で確認できなかった「好きな作品」：'+report.unresolvedFavorites.join('、'));
