@@ -209,7 +209,7 @@ async function refreshRoom(reconnect=true){
  room=data;
  $('roomCodeDisplay').textContent=room.room_code;
  $('roomPanel').classList.remove('hidden');
- $('createPanel').classList.add('hidden');$('joinPanel').classList.add('hidden');
+ $('createPanel').classList.add('hidden');$('joinPanel').classList.add('hidden');$('randomMatchPanel').classList.add('hidden');
  renderPlayers();
  if(reconnect)await connectRoom();
 }
@@ -298,8 +298,8 @@ async function toggleReady(){
  catch(e){status($('roomActionStatus'),errorText(e),'error')}finally{setBusy(false);if(room)renderPlayers()}
 }
 async function leaveRoom(){
- if(!room||busy)return;setBusy(true);
- try{await invoke('aqw_match_leave_room',{p_room_code:room.room_code});await removeChannel();room=null;$('roomPanel').classList.add('hidden');$('createPanel').classList.remove('hidden');$('joinPanel').classList.remove('hidden');history.replaceState(null,'',location.pathname);status($('pageStatus'),'ルームから退出しました。','good')}
+ if(!room||busy)return;stopMatchmakingPolling();matchmakingPrefs=null;setBusy(true);
+ try{await invoke('aqw_match_leave_room',{p_room_code:room.room_code});await removeChannel();room=null;$('roomPanel').classList.add('hidden');$('createPanel').classList.remove('hidden');$('joinPanel').classList.remove('hidden');$('randomMatchPanel').classList.remove('hidden');history.replaceState(null,'',location.pathname);status($('pageStatus'),'ルームから退出しました。','good')}
  catch(e){status($('roomActionStatus'),errorText(e),'error')}finally{setBusy(false)}
 }
 async function copyInvite(){
