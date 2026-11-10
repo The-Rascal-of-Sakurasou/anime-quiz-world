@@ -52,6 +52,20 @@ footer{color:var(--muted);font-size:.85rem;padding:10px 0 30px}
 <button class="primary" id="loginButton" type="submit">ログイン</button>
 </form>
 </section>
+<section id="mfaCard" class="card hidden">
+<h2>管理者用の多要素認証</h2>
+<p class="muted" id="mfaHelp">管理者操作には認証アプリによる追加認証が必要です。</p>
+<div id="mfaSetup" class="hidden">
+<p>認証アプリで次のQRコードを読み取ってください。QRコードと秘密鍵は他人に共有しないでください。</p>
+<img id="mfaQr" alt="多要素認証の設定QRコード" style="display:block;width:min(240px,100%);height:auto;background:#fff;padding:10px;border:1px solid #dfe5ec;border-radius:8px">
+<p>読み取れない場合の設定キー：</p><code id="mfaSecret" style="display:block;overflow-wrap:anywhere;padding:10px;background:#f2f4f7;border-radius:7px;user-select:all"></code>
+</div>
+<form id="mfaForm">
+<label>認証アプリに表示された6桁のコード<input id="mfaCode" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" minlength="6" maxlength="6" required></label>
+<button class="primary" id="mfaVerify" type="submit">認証して管理画面へ</button>
+</form>
+<p class="muted">認証コードはこの画面からSupabase Authへ直接送信されます。サイト側には保存しません。</p>
+</section>
 <section id="console" class="hidden">
 <div class="card">
 <div class="actions" style="justify-content:space-between"><div><h2 style="margin:0">運営状況</h2><small id="ownerIdentity"></small></div><div class="actions"><button id="refreshButton" type="button">最新情報に更新</button><button id="logoutButton" type="button">ログアウト</button></div></div>
@@ -123,6 +137,39 @@ function storagePath(value){
   return decodeURIComponent(url.pathname.slice(at+marker.length));
  }catch{return null}
 }
+let pendingMfaFactorId='',pendingMfaChallengeId='';
+async function prepareMfa(){
+ const {data:aal,error:aalError}=await client.auth.mfa.getAuthenticatorAssuranceLevel();
+ if(aalError)throw aalError;
+ if(aal.currentLevel==='aal2')return true;
+ const {data:factors,error:factorsError}=await client.auth.mfa.listFactors();
+ if(factorsError)throw factorsError;
+ let factor=(factors.totp||[]).find(item=>item.status==='verified');
+ $('mfaSetup').classList.add('hidden');
+ if(!factor){
+  const stale=(factors.totp||[]).find(item=>item.status==='unverified');
+  if(stale){const {error}=await client.auth.mfa.unenroll({factorId:stale.id});if(error)throw error}
+  const {data:enrolled,error:enrollError}=await client.auth.mfa.enroll({factorType:'totp',friendlyName:'AQW 管理者'});
+  if(enrollError)throw enrollError;
+  factor=enrolled;
+  $('mfaQr').src=enrolled.totp.qr_code;
+  $('mfaSecret').textContent=enrolled.totp.secret;
+  $('mfaSetup').classList.remove('hidden');
+  $('mfaHelp').textContent='初回設定です。認証アプリにQRコードを登録し、表示された6桁のコードを入力してください。';
+ }else{
+  $('mfaHelp').textContent='認証アプリを開き、AQW管理者用の6桁のコードを入力してください。';
+ }
+ pendingMfaFactorId=factor.id;
+ const {data:challenge,error:challengeError}=await client.auth.mfa.challenge({factorId:factor.id});
+ if(challengeError)throw challengeError;
+ pendingMfaChallengeId=challenge.id;
+ $('mfaCode').value='';
+ $('mfaCard').classList.remove('hidden');
+ $('loginCard').classList.add('hidden');
+ $('console').classList.add('hidden');
+ $('mfaCode').focus();
+ return false;
+}
 async function verifyOwner(){
  const {data,error}=await client.rpc('is_site_owner');
  if(error)throw error;
@@ -131,13 +178,16 @@ async function verifyOwner(){
 async function startSession(session){
  activeUser=session?.user||null;
  $('console').classList.add('hidden');
- if(!activeUser){$('loginCard').classList.remove('hidden');say('管理者アカウントでログインしてください。');return}
+ $('mfaCard').classList.add('hidden');
+ if(!activeUser){$('loginCard').classList.remove('hidden');say('管理者アカウントでメールアドレスとパスワードを入力してください。');return}
  $('loginCard').classList.add('hidden');
- say('管理者権限を確認しています…');
+ say('管理者権限と追加認証を確認しています…');
  try{
   const allowed=await verifyOwner();
-  if(!allowed){say('このアカウントには管理者権限がありません。管理者専用機能は利用できません。','error');return}
-  $('ownerIdentity').textContent='認証済み：'+(activeUser.email||'管理者アカウント');
+  if(!allowed){await client.auth.signOut();activeUser=null;say('このアカウントには管理者権限がありません。','error');$('loginCard').classList.remove('hidden');return}
+  const mfaReady=await prepareMfa();
+  if(!mfaReady){say('管理者用の追加認証を完了してください。');return}
+  $('ownerIdentity').textContent='認証済み：'+(activeUser.email||'管理者アカウント')+' · 多要素認証済み';
   $('console').classList.remove('hidden');
   say('管理者として認証されました。','success');
   await refreshAll();
@@ -303,6 +353,20 @@ async function loadProfiles(){
   root.append(row);
  }
 }
+$('mfaForm').addEventListener('submit',async event=>{
+ event.preventDefault();
+ const code=$('mfaCode').value.trim();
+ if(!/^[0-9]{6}$/.test(code)){say('6桁の認証コードを入力してください。','error');return}
+ $('mfaVerify').disabled=true;say('追加認証を確認しています…');
+ try{
+  const {error}=await client.auth.mfa.verify({factorId:pendingMfaFactorId,challengeId:pendingMfaChallengeId,code});
+  if(error)throw error;
+  const {data,error:sessionError}=await client.auth.getSession();
+  if(sessionError)throw sessionError;
+  await startSession(data.session);
+ }catch(error){say('追加認証に失敗しました：'+(error.message||String(error)),'error')}
+ finally{$('mfaVerify').disabled=false}
+});
 $('loginForm').addEventListener('submit',async event=>{
  event.preventDefault();$('loginButton').disabled=true;say('ログインしています…');
  try{const {data,error}=await client.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;await startSession(data.session)}
