@@ -284,6 +284,7 @@ async function findRandomMatch(){
 }
 async function cancelRandomMatch(){
  if(busy)return;
+ if(matchmakingBusy){status($('matchmakingStatus'),'検索処理中です。少し待ってからキャンセルしてください。');return}
  stopMatchmakingPolling();
  setBusy(true);
  try{
