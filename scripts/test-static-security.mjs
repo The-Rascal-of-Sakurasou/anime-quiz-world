@@ -85,6 +85,16 @@ assert.match(questionBlock, /help:'[^']+'/g, "Recommendation questions must incl
 const complexityQuestion = questionBlock.match(/\{dimension:\'narrative_complexity\'[\s\S]*?\n\]\}/)?.[0] || "";
 assert.ok(complexityQuestion, "Narrative complexity question must exist");
 assert.doesNotMatch(complexityQuestion, /genres:|avoidGenres:/, "Narrative complexity must not double-count the genre preference axis");
+assert.match(recommend, /const state=\{v:3,a:answers,/, "New recommendation share links must use version 3");
+const shareNormalizerSource = recommend.match(/function normalizeSharedAnswers\(state\)\{[\s\S]*?\n\}/)?.[0];
+assert.ok(shareNormalizerSource, "Share-link answer migration helper missing");
+const normalizeSharedAnswers = vm.runInNewContext(`(${shareNormalizerSource})`, { questions: Array.from({ length: 7 }, () => ({ options: Array(4) })) });
+assert.deepEqual([...normalizeSharedAnswers({ v: 3, a: [0, 1, 2, 3, 0, 1, 2] })], [0, 1, 2, 3, 0, 1, 2], "Current seven-answer share links must restore exactly");
+assert.deepEqual([...normalizeSharedAnswers({ v: 2, a: [0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0] })], [0, 2, 3, 1, 2, 3, 2], "Legacy 13-question share links must map to current dimensions");
+assert.deepEqual([...normalizeSharedAnswers({ v: 2, a: [0, 1, 2, 3, 0, 1] })], [0, 2, 3, 1, null, null, null], "Legacy six-question share links must preserve compatible answers");
+assert.deepEqual([...normalizeSharedAnswers({ v: 2, a: [0, 1, 2, 3, 0, 1, 2, 3, 0, 1] })], [0, 2, 3, 1, 0, 3, null], "Legacy ten-question share links must preserve compatible answers");
+assert.equal(normalizeSharedAnswers({ v: 3, a: [0, 1, 2, 3, 0, 1] }), null, "Current share links with an incomplete answer count must be rejected");
+assert.equal(normalizeSharedAnswers({ v: 3, a: [0, 1, 2, 3, 0, 1, 4] }), null, "Out-of-range shared answers must be rejected");
 assert.doesNotMatch(questionBlock, /NDCG|IDF|重み付け|希少性/, "Technical recommendation terms must not appear in user-facing questions");
 const seedSimilaritySource = recommend.match(/function calculateSeedSimilarity\(candidate,seeds,rarityWeight,genreRarity\)\{[\s\S]*?\n\}/)?.[0];
 assert.ok(seedSimilaritySource, "Favorite-anime similarity function not found");
