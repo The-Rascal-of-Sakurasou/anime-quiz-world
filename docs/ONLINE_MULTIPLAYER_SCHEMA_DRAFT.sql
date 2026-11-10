@@ -126,12 +126,12 @@ using (
   and private.aqw_is_match_member(realtime.topic())
 );
 
-create policy "AQW match members can send private presence and events"
+create policy "AQW match members can send private presence"
 on realtime.messages
 for insert
 to authenticated
 with check (
-  realtime.messages.extension in ('broadcast', 'presence')
+  realtime.messages.extension = 'presence'
   and private.aqw_is_match_member(realtime.topic())
 );
 
