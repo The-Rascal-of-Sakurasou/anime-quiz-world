@@ -8,8 +8,8 @@ Implementation status (2026-11-10):
 - `supabase/config.toml` enables platform JWT verification for that function.
 - The gateway verifies the caller with `auth.getUser(token)`, derives the actor ID from that verified user, restricts actions and payload fields, and HMAC-hashes room codes with an Edge Function secret.
 - The gateway calls `public.aqw_match_dispatch`, which has **not** been implemented yet. The function is therefore a source draft, not deployable or usable.
-- The SQL draft now includes a private question bank, a service-role-only dispatcher, server-side answer scoring, question deadlines, result ranking, and room lifecycle operations. It has not been applied to the hosted database.
-- The question bank is empty: an authenticated admin/import workflow and reviewed question data are still required before a match can start.
+- The SQL draft now includes a private question bank with record validation, a service-role-only dispatcher, server-side answer scoring, question deadlines, result ranking, room lifecycle operations, and a per-account room-code attempt throttle. It has not been applied to the hosted database.
+- The question bank is empty: a trusted admin/import workflow and reviewed question data are still required before a match can start.
 - No production database schema, RLS policy, Realtime setting, secret, or Edge Function has been changed.
 
 The next required work is to validate the SQL on an isolated database, populate a reviewed question bank through a trusted process, deploy the Edge Function only after tests, and then build the lobby client.
@@ -102,6 +102,7 @@ The project's Realtime setting **Allow public access** must be disabled before p
 - The dispatcher is intended to be executable only by `service_role`; the Edge Function must continue deriving the actor ID from a verified user JWT.
 - Each question is open for 20 seconds. A correct answer earns up to 1,500 points, with the speed component calculated by the server. Incorrect answers earn zero.
 - The server sends the question payload and deadline, but not the stored correct option ID.
+- Question-bank writes are checked for a non-empty prompt, 2–6 unique option IDs with non-empty labels, and a correct option ID that exists in the options.
 - The draft currently selects from a private question bank. It contains no seed questions, so starting a match correctly fails until enough active questions have been curated and loaded.
 - A player who leaves during an active match is marked disconnected rather than removed, so the match can still finish consistently. Host migration is not implemented in this draft.
 
