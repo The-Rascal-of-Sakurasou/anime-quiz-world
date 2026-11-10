@@ -44,4 +44,5 @@ jobs:
             exit 0
           fi
           git commit -m "Update shared anime catalogue"
+          git pull --rebase origin main
           git push
