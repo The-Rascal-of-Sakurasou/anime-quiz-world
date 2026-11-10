@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 
 const API = 'https://graphql.anilist.co';
@@ -112,7 +112,7 @@ async function scanScope(format, sort) {
         accepted++;
       }
     }
-    const hasMore = results.some((result) => result.hasNextPage);
+    const hasMore = results.at(-1)?.hasNextPage === true;
     if (!hasMore) return false;
     if (pages.at(-1) === 100) return true;
     if (requests % 10 === 0) {
@@ -161,8 +161,6 @@ const output = {
   items,
 };
 await mkdir(dirname(OUTPUT), { recursive: true });
-let previous = '';
-try { previous = await readFile(OUTPUT, 'utf8'); } catch {}
 const serialized = JSON.stringify(output);
 await writeFile(OUTPUT, serialized + '\n');
 console.log('Catalogue complete: ' + items.length + ' unique usable anime.');
