@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#102b46">
+<title>管理者コンソール | Anime Quiz World</title>
+<style>
+:root{color-scheme:light;--bg:#f4f6f9;--panel:#fff;--text:#202936;--muted:#667586;--line:#dfe5ec;--accent:#174c7c;--danger:#b42318;--success:#18794e}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Yu Gothic",Meiryo,sans-serif;line-height:1.65}
+.wrap{width:min(1080px,calc(100% - 32px));margin:0 auto}
+header{background:#102b46;color:white;padding:18px 0}
+.head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.brand{font-family:"Yu Mincho","Noto Serif JP",serif;font-weight:800;font-size:1.35rem;letter-spacing:-.03em}
+header a{color:#fff;text-decoration:none;border:1px solid #ffffff55;padding:8px 12px;border-radius:7px}
+main{padding:30px 0 60px}
+h1{font-size:clamp(1.6rem,4vw,2.1rem);margin:0 0 6px}
+h2{font-size:1.2rem;margin:0 0 12px}
+p{margin:8px 0}.muted{color:var(--muted)}.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;margin:18px 0;box-shadow:0 2px 10px #172b4508}
+form{display:grid;gap:12px;max-width:440px}label{display:grid;gap:5px;font-size:.93rem}input{font:inherit;padding:11px 12px;border:1px solid #c7d0db;border-radius:7px;min-width:0}
+button{font:inherit;font-weight:700;padding:10px 14px;border:1px solid #c7d0db;border-radius:7px;background:#fff;color:var(--text);cursor:pointer;min-height:42px}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}button.danger{color:var(--danger);border-color:#e6b5b1;background:#fff8f7}
+button:disabled{opacity:.55;cursor:not-allowed}button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #7da4dc;outline-offset:2px}
+.status{padding:11px 13px;border-radius:8px;background:#f0f3f7;color:var(--muted);margin:12px 0;overflow-wrap:anywhere}
+.status.error{background:#fff1f0;color:#9d2119}.status.success{background:#edf8f1;color:#17663e}
+.hidden{display:none!important}.actions{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.metric{border:1px solid var(--line);border-radius:9px;padding:14px;min-width:0}
+.metric span{display:block;color:var(--muted);font-size:.86rem}.metric strong{font-size:1.55rem;font-variant-numeric:tabular-nums}
+.list{display:grid;gap:12px}.post{border:1px solid var(--line);border-radius:9px;padding:15px;min-width:0}
+.post-head{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.post-body{white-space:pre-wrap;overflow-wrap:anywhere;margin:12px 0}
+.post img{display:block;max-width:min(100%,420px);max-height:320px;object-fit:contain;border-radius:7px;margin:10px 0;background:#f0f2f5}
+small{color:var(--muted)}.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:580px}th,td{text-align:left;padding:11px 10px;border-bottom:1px solid var(--line);font-size:.92rem}th{color:var(--muted);font-weight:700;background:#f7f9fb}
+footer{color:var(--muted);font-size:.85rem;padding:10px 0 30px}
+@media(max-width:700px){.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.card{padding:15px}.head{align-items:flex-start}}
+</style>
+</head>
+<body>
+<header><div class="wrap head"><div class="brand">Anime Quiz World <span style="font-weight:500;font-size:.9rem">/ 管理者コンソール</span></div><a href="./index.html">サイトへ戻る</a></div></header>
+<main class="wrap">
+<h1>管理者コンソール</h1>
+<p class="muted">AQWの運営管理画面です。登録済みのサイト管理者だけが利用できます。</p>
+<div id="status" class="status" role="status" aria-live="polite">認証状態を確認しています…</div>
+<section id="loginCard" class="card hidden">
+<h2>管理者ログイン</h2>
+<form id="loginForm">
+<label>メールアドレス<input id="email" type="email" autocomplete="username" required maxlength="254"></label>
+<label>パスワード<input id="password" type="password" autocomplete="current-password" required maxlength="128"></label>
+<button class="primary" id="loginButton" type="submit">ログイン</button>
+</form>
+</section>
+<section id="console" class="hidden">
+<div class="card">
+<div class="actions" style="justify-content:space-between"><div><h2 style="margin:0">運営状況</h2><small id="ownerIdentity"></small></div><div class="actions"><button id="refreshButton" type="button">最新情報に更新</button><button id="logoutButton" type="button">ログアウト</button></div></div>
+<div class="metrics" style="margin-top:16px">
+<div class="metric"><span>登録プロフィール</span><strong id="profileCount">—</strong></div>
+<div class="metric"><span>投稿・返信</span><strong id="postCount">—</strong></div>
+<div class="metric"><span>通知</span><strong id="notificationCount">—</strong></div>
+<div class="metric"><span>フレンドメッセージ</span><strong id="messageCount">—</strong></div>
+</div>
+<p class="muted" style="font-size:.85rem;margin-top:12px">件数のみを表示しています。個人間メッセージの本文は管理画面に表示しません。</p>
+</div>
+<div class="card">
+<h2>投稿・返信の管理</h2>
+<p class="muted">最新100件を表示します。削除すると、その投稿への返信・いいね・関連通知もデータベースの外部キー設定に従って削除されます。</p>
+<div id="posts" class="list"><p class="muted">読み込み中…</p></div>
+</div>
+<div class="card">
+<h2>ユーザー一覧</h2>
+<p class="muted">公開プロフィールの一覧です。メールアドレスや認証情報は表示しません。</p>
+<div class="table-wrap"><table><thead><tr><th>ユーザー名</th><th>表示名</th><th>登録日</th><th>ランキング掲載</th></tr></thead><tbody id="profiles"><tr><td colspan="4">読み込み中…</td></tr></tbody></table></div>
+</div>
+</section>
+</main>
+<footer class="wrap">Anime Quiz World — 管理操作はSupabaseのRow Level Securityによって保護されています。</footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(()=> {
+'use strict';
+const URL='https://ksyfhscjfqzenifcttiu.supabase.co';
+const KEY='sb_publishable_eL_Da06cmHz3W58jpcBIBQ_YzTThTL4';
+const $=id=>document.getElementById(id);
+const status=$('status');
+const client=window.supabase.createClient(URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+let activeUser=null;
+const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function say(message,kind=''){status.textContent=message;status.className='status'+(kind?' '+kind:'')}
+function date(value){if(!value)return '—';const d=new Date(value);return Number.isNaN(d.getTime())?'—':d.toLocaleString('ja-JP')}
+async function count(table){const {count,error}=await client.from(table).select('*',{count:'exact',head:true});if(error)throw error;return count??0}
+function storagePath(value){
+ if(!value||typeof value!=='string')return null;
+ try{
+  const url=new URL(value,location.origin);
+  const marker='/storage/v1/object/public/aqw-social/';
+  const at=url.pathname.indexOf(marker);
+  if(at<0)return null;
+  return decodeURIComponent(url.pathname.slice(at+marker.length));
+ }catch{return null}
+}
+async function verifyOwner(){
+ const {data,error}=await client.rpc('is_site_owner');
+ if(error)throw error;
+ return data===true;
+}
+async function startSession(session){
+ activeUser=session?.user||null;
+ $('console').classList.add('hidden');
+ if(!activeUser){$('loginCard').classList.remove('hidden');say('管理者アカウントでログインしてください。');return}
+ $('loginCard').classList.add('hidden');
+ say('管理者権限を確認しています…');
+ try{
+  const allowed=await verifyOwner();
+  if(!allowed){say('このアカウントには管理者権限がありません。管理者専用機能は利用できません。','error');return}
+  $('ownerIdentity').textContent='認証済み：'+(activeUser.email||'管理者アカウント');
+  $('console').classList.remove('hidden');
+  say('管理者として認証されました。','success');
+  await refreshAll();
+ }catch(error){say('管理者確認に失敗しました：'+(error.message||String(error)),'error')}
+}
+async function refreshAll(){
+ $('refreshButton').disabled=true;
+ try{
+  const [profiles,posts,notifications,messages]=await Promise.all([
+   count('profiles'),count('posts'),count('notifications'),count('friend_messages')
+  ]);
+  $('profileCount').textContent=profiles.toLocaleString('ja-JP');
+  $('postCount').textContent=posts.toLocaleString('ja-JP');
+  $('notificationCount').textContent=notifications.toLocaleString('ja-JP');
+  $('messageCount').textContent=messages.toLocaleString('ja-JP');
+  await Promise.all([loadPosts(),loadProfiles()]);
+  say('管理情報を更新しました。','success');
+ }catch(error){say('データを取得できませんでした：'+(error.message||String(error)),'error')}
+ finally{$('refreshButton').disabled=false}
+}
+async function loadPosts(){
+ const root=$('posts');root.textContent='読み込み中…';
+ const {data,error}=await client.from('posts').select('id,user_id,body,image_path,parent_post_id,created_at').order('created_at',{ascending:false}).limit(100);
+ if(error)throw error;
+ if(!data?.length){root.textContent='投稿はありません。';return}
+ const ids=[...new Set(data.map(row=>row.user_id))];
+ const {data:profiles,error:profileError}=await client.from('profiles').select('id,username,display_name').in('id',ids);
+ if(profileError)throw profileError;
+ const byId=new Map((profiles||[]).map(p=>[p.id,p]));
+ root.replaceChildren();
+ for(const post of data){
+  const profile=byId.get(post.user_id)||{};
+  const article=document.createElement('article');article.className='post';
+  const head=document.createElement('div');head.className='post-head';
+  const meta=document.createElement('div');
+  const name=document.createElement('strong');name.textContent=(profile.display_name||profile.username||'ユーザー')+' (@'+(profile.username||'unknown')+')';
+  const dateEl=document.createElement('small');dateEl.textContent=' · '+date(post.created_at)+(post.parent_post_id?' · 返信':' · 投稿');
+  meta.append(name,dateEl);
+  const del=document.createElement('button');del.type='button';del.className='danger';del.textContent='削除';del.addEventListener('click',()=>deletePost(post,del));
+  head.append(meta,del);
+  const body=document.createElement('p');body.className='post-body';body.textContent=post.body||'';
+  article.append(head,body);
+  if(post.image_path){const img=document.createElement('img');img.loading='lazy';img.alt='投稿画像';img.src=post.image_path;img.onerror=()=>img.remove();article.append(img)}
+  root.append(article);
+ }
+}
+async function deletePost(post,button){
+ if(!confirm('この投稿を削除しますか？返信・いいね・関連通知も削除されます。この操作は取り消せません。'))return;
+ button.disabled=true;
+ try{
+  const {error}=await client.from('posts').delete().eq('id',post.id);
+  if(error)throw error;
+  let note='投稿と関連データを削除しました。';
+  const path=storagePath(post.image_path);
+  if(path){
+   const {error:storageError}=await client.storage.from('aqw-social').remove([path]);
+   if(storageError)note+=' 画像ファイルの削除には失敗しました：'+storageError.message;
+   else note+=' 投稿画像も削除しました。';
+  }
+  say(note, 'success');
+  await refreshAll();
+ }catch(error){button.disabled=false;say('削除できませんでした：'+(error.message||String(error)),'error')}
+}
+async function loadProfiles(){
+ const root=$('profiles');root.replaceChildren();
+ const {data,error}=await client.from('profiles').select('id,username,display_name,created_at,leaderboard_enabled').order('created_at',{ascending:false}).limit(100);
+ if(error)throw error;
+ if(!data?.length){const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=4;cell.textContent='プロフィールはありません。';row.append(cell);root.append(row);return}
+ for(const profile of data){
+  const row=document.createElement('tr');
+  for(const value of [profile.username,profile.display_name,date(profile.created_at),profile.leaderboard_enabled?'掲載中':'非掲載']){
+   const cell=document.createElement('td');cell.textContent=value??'—';row.append(cell)
+  }
+  root.append(row);
+ }
+}
+$('loginForm').addEventListener('submit',async event=>{
+ event.preventDefault();$('loginButton').disabled=true;say('ログインしています…');
+ try{const {data,error}=await client.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;await startSession(data.session)}
+ catch(error){say('ログインできませんでした：'+(error.message||String(error)),'error')}
+ finally{$('loginButton').disabled=false}
+});
+$('logoutButton').addEventListener('click',async()=>{
+ const {error}=await client.auth.signOut();
+ if(error){say('ログアウトできませんでした：'+error.message,'error');return}
+ await startSession(null);
+});
+$('refreshButton').addEventListener('click',refreshAll);
+client.auth.onAuthStateChange((_event,session)=>{queueMicrotask(()=>startSession(session))});
+client.auth.getSession().then(({data,error})=>{if(error)say('セッションを確認できませんでした：'+error.message,'error');else startSession(data.session)});
+})();
+</script>
+</body>
+</html>
