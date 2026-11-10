@@ -672,8 +672,9 @@ const msgPanel=document.getElementById('aqwFriendMessagesPanel');if(msgPanel){co
 const legal=document.querySelectorAll('#social > .legal-links a');if(legal[0])legal[0].textContent=sl.termsLink;if(legal[1])legal[1].textContent=sl.privacyLink;
 const ph=document.getElementById('query');if(ph)ph.placeholder=lang==='ja'?'例：葬送のフリーレン':lang==='en'?'e.g. Frieren: Beyond Journey’s End':({ko:'예: 장송의 프리렌',zh:'例如：葬送的芙莉莲',es:'p. ej., Frieren',fr:'ex. : Frieren',pt:'ex.: Frieren',de:'z. B. Frieren'}[lang]||'Search anime');
 }
-const query=`query ($page:Int,$perPage:Int,$search:String,$id_in:[Int],$format_in:[MediaFormat],$startDate_greater:FuzzyDateInt,$startDate_lesser:FuzzyDateInt) { Page(page:$page,perPage:$perPage) { media(id_in:$id_in,format_in:$format_in,startDate_greater:$startDate_greater,startDate_lesser:$startDate_lesser,type:ANIME,countryOfOrigin:JP,sort:POPULARITY_DESC,search:$search,isAdult:false) { id countryOfOrigin format popularity title { romaji english native } description(asHtml:false) synonyms coverImage { large medium extraLarge } episodes seasonYear averageScore genres studios { nodes { name } } startDate { year } characters(sort:ROLE,perPage:5) { nodes { id name { full native } image { large } } } externalLinks { url site type isDisabled } } } }`;
+const query=`query ($page:Int,$perPage:Int,$search:String,$id_in:[Int],$format_in:[MediaFormat],$startDate_greater:FuzzyDateInt,$startDate_lesser:FuzzyDateInt) { Page(page:$page,perPage:$perPage) { media(id_in:$id_in,format_in:$format_in,startDate_greater:$startDate_greater,startDate_lesser:$startDate_lesser,type:ANIME,countryOfOrigin:JP,sort:POPULARITY_DESC,search:$search,isAdult:false) { id countryOfOrigin source relations { edges { relationType node { id type countryOfOrigin format } } } format popularity title { romaji english native } description(asHtml:false) synonyms coverImage { large medium extraLarge } episodes seasonYear averageScore genres studios { nodes { name } } startDate { year } characters(sort:ROLE,perPage:5) { nodes { id name { full native } image { large } } } externalLinks { url site type isDisabled } } } }`;
 function normalizeUnicode(value){if(typeof value==='string')return value.normalize('NFC');if(Array.isArray(value))return value.map(normalizeUnicode);if(value&&typeof value==='object'){const out={};for(const [key,item] of Object.entries(value))out[key]=normalizeUnicode(item);return out}return value}
+function isJapaneseOriginAnime(a){if(!a||a.countryOfOrigin!=='JP')return false;if(a.source==='ORIGINAL')return true;return Array.isArray(a.relations?.edges)&&a.relations.edges.some(edge=>edge?.relationType==='ADAPTATION'&&edge.node?.type==='MANGA'&&edge.node?.countryOfOrigin==='JP')}
 const $=s=>document.querySelector(s);let pool=[],questions=[],index=0,points=0,skippedQuestionCount=0,locked=false,questionTimer=null,clockTimer=null,secondsLeft=15,questionDeadline=0,pausedQuestionSeconds=0,isPaused=false,pausedAt=0,totalPausedMs=0,startedAt=0,elapsedSeconds=0,missedQuestions=[],reviewMode=false,playMode='normal',roundFailed=false,lastResultData=null,combo=0,bestCombo=0,choiceHintUsed=false,typedHintUsed=false,backgroundLoadPromise=null,requestedQuestionCount=10,rateLimitedUntil=0,failedImageUrls=new Set(),autoNextTimer=null;
 async function fetchAnime(vars={}){
  const request=async(variables,sort='POPULARITY_DESC')=>{
@@ -691,7 +692,7 @@ async function fetchAnime(vars={}){
     }
     const json=await response.json();
     if(json.errors?.length){const error=new Error(json.errors.map(e=>e.message).join(' / '));error.graphqlErrors=true;throw error}
-    return normalizeUnicode(json.data?.Page?.media||[]).filter(item=>item.countryOfOrigin==='JP');
+    return normalizeUnicode(json.data?.Page?.media||[]).filter(isJapaneseOriginAnime);
    }catch(error){
     lastError=error.name==='AbortError'?new Error('データ取得がタイムアウトしました。'):error;
     if(error.graphqlErrors||(error.status&&error.status<500&&error.status!==429))break;
@@ -701,7 +702,7 @@ async function fetchAnime(vars={}){
   throw lastError||new Error('データを取得できませんでした。');
  };
  const requestPageBatch=async(pages,sort,format,yearStart,yearEnd)=>{
-  const fields='id countryOfOrigin format popularity title { romaji english native } description(asHtml:false) synonyms coverImage { large medium extraLarge } episodes seasonYear averageScore genres studios(isMain:true) { nodes { name } } characters(sort:ROLE,perPage:5) { nodes { id name { full native } image { large } } }';
+  const fields='id countryOfOrigin source relations { edges { relationType node { id type countryOfOrigin format } } } format popularity title { romaji english native } description(asHtml:false) synonyms coverImage { large medium extraLarge } episodes seasonYear averageScore genres studios(isMain:true) { nodes { name } } characters(sort:ROLE,perPage:5) { nodes { id name { full native } image { large } } }';
   const formatArg=(format?',format_in:['+format+']':'')+(yearStart?',startDate_greater:'+(yearStart*10000)+',startDate_lesser:'+((yearEnd+1)*10000):'');
   const aliases=pages.map((page,index)=>'p'+index+': Page(page:'+page+',perPage:50) { pageInfo { hasNextPage } media(type:ANIME,countryOfOrigin:JP,sort:'+sort+',isAdult:false'+formatArg+') { '+fields+' } }').join(' ');
   const batchQuery='query { '+aliases+' }';
@@ -718,7 +719,7 @@ async function fetchAnime(vars={}){
     }
     const json=await response.json();
     if(json.errors?.length){const error=new Error(json.errors.map(e=>e.message).join(' / '));error.batchUnsupported=true;throw error}
-    return pages.map((_,index)=>({items:normalizeUnicode(json.data?.['p'+index]?.media||[]).filter(item=>item.countryOfOrigin==='JP'),hasNextPage:json.data?.['p'+index]?.pageInfo?.hasNextPage===true}));
+    return pages.map((_,index)=>({items:normalizeUnicode(json.data?.['p'+index]?.media||[]).filter(isJapaneseOriginAnime),hasNextPage:json.data?.['p'+index]?.pageInfo?.hasNextPage===true}));
    }catch(error){
     if(error.name==='AbortError'){lastError=new Error('データ取得がタイムアウトしました。');lastError.batchUnsupported=error.batchUnsupported===true}else{lastError=error}
     if(error.batchUnsupported)break;
@@ -877,7 +878,7 @@ async function fetchAnime(vars={}){
  return deduplicateQuestionPool(initial);
 }
 function hasUsableImageUrl(value){const url=String(value||'').trim();return /^https?:\/\//i.test(url)&&!/(?:no[-_ ]?image|placeholder|default[-_ ]?image)/i.test(url)&&!failedImageUrls.has(url)}
-function isUsableAnime(a){const titleImage=a?.coverImage?.large||a?.coverImage?.medium||a?.coverImage?.extraLarge||'';return !!(a&&a.id&&a.countryOfOrigin==='JP'&&hasUsableImageUrl(titleImage)&&titleOf(a)&&['TV','TV_SHORT','MOVIE','OVA','ONA','SPECIAL'].includes(a.format)&&!((a.genres||[]).includes('Hentai')))}
+function isUsableAnime(a){const titleImage=a?.coverImage?.large||a?.coverImage?.medium||a?.coverImage?.extraLarge||'';return !!(a&&a.id&&isJapaneseOriginAnime(a)&&hasUsableImageUrl(titleImage)&&titleOf(a)&&['TV','TV_SHORT','MOVIE','OVA','ONA','SPECIAL'].includes(a.format)&&!((a.genres||[]).includes('Hentai')))}
 function deduplicateSearchResults(items){
  // AniList search can return multiple media entries with the same displayed title.
  // Keep the most popular representative and suppress exact title duplicates across locales.
@@ -1998,14 +1999,14 @@ async function loadFeaturedRail(){
  const root=document.getElementById('featuredRail');if(!root)return;
  // 日本時間の現在の年月からシーズンを自動判定
  const current=getCurrentAnimeSeason();
- const queryText='query { Page(page:1,perPage:20) { media(type:ANIME,season:'+current.season+',seasonYear:'+current.year+',countryOfOrigin:JP,format_in:[TV,ONA],isAdult:false,sort:POPULARITY_DESC) { id title { romaji english native } coverImage { large medium } externalLinks { url site type isDisabled } } } }';
+ const queryText='query { Page(page:1,perPage:20) { media(type:ANIME,season:'+current.season+',seasonYear:'+current.year+',countryOfOrigin:JP,format_in:[TV,ONA],isAdult:false,sort:POPULARITY_DESC) { id countryOfOrigin source relations { edges { relationType node { id type countryOfOrigin format } } } title { romaji english native } coverImage { large medium } externalLinks { url site type isDisabled } } } }';
  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),12000);
  try{
   const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query:queryText}),signal:controller.signal});
   if(!response.ok)throw new Error('Seasonal anime request failed: '+response.status);
   const json=await response.json();
   if(json.errors?.length)throw new Error(json.errors.map(e=>e.message).join(' / '));
-  const items=normalizeUnicode(json.data?.Page?.media||[]).filter(item=>item.countryOfOrigin==='JP');
+  const items=normalizeUnicode(json.data?.Page?.media||[]).filter(isJapaneseOriginAnime);
   if(items.length)renderFeaturedRail(items);
   else root.innerHTML='<p class="featured-empty">'+current.year+'年'+current.label+'シーズンの日本アニメは見つかりませんでした。</p>';
  }catch(error){
