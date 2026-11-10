@@ -103,7 +103,60 @@ set search_path = ''
 as $$
   select
     auth.uid() is not null
-    and p_topic ~ '^aqw-match:[0-9a-fA-F-]{36}$'
+    and p_topic ~ '^aqw-match:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}
+    and exists (
+      select 1
+      from private.aqw_match_players p
+      where p.match_id = substring(p_topic from 11)::uuid
+        and p.user_id = (select auth.uid())
+    );
+$$;
+
+revoke all on function private.aqw_is_match_member(text) from public, anon;
+grant usage on schema private to authenticated;
+grant execute on function private.aqw_is_match_member(text) to authenticated;
+
+-- Private Realtime channels only. Realtime messages are transport, not authoritative state.
+create policy "AQW match members can receive private events"
+on realtime.messages
+for select
+to authenticated
+using (
+  realtime.messages.extension in ('broadcast', 'presence')
+  and private.aqw_is_match_member(realtime.topic())
+);
+
+create policy "AQW match members can send private presence and events"
+on realtime.messages
+for insert
+to authenticated
+with check (
+  realtime.messages.extension in ('broadcast', 'presence')
+  and private.aqw_is_match_member(realtime.topic())
+);
+
+-- Follow-up implementation must add Edge Functions plus server-only SQL RPC entry points
+-- in the exposed public schema. Revoke EXECUTE from PUBLIC, anon, and authenticated;
+-- grant EXECUTE only to service_role. Those wrappers must call private implementation
+-- functions and must never accept an unverified user ID from the browser.
+-- Add operations for:
+-- create_room, join_room, set_ready, start_match, submit_answer,
+-- get_match_state, finish_match, reconnect, and leave_room.
+-- Those operations must verify auth.uid() from the JWT and enforce state transitions.
+-- Room codes must be generated with a cryptographically secure random source;
+-- store only a keyed hash (HMAC) using a server-side secret, never the raw code.
+-- The Edge Function must derive the player ID from the verified JWT, not request JSON.
+-- The question payload sent to clients must omit correct_option_id.
+-- Scores and rankings must be computed from private answers on the server.
+--
+-- Before production:
+-- 1. Review and apply on a disposable development database.
+-- 2. Confirm the Realtime public-access setting is disabled.
+-- 3. Verify the Realtime RLS policies against actual private channel subscriptions.
+-- 4. Add server operations and automated tests for replayed/late answers, full/expired
+--    rooms, non-members, disconnect/reconnect, host departure, and duplicate joins.
+-- 5. Run Supabase security advisors.
+
     and exists (
       select 1
       from private.aqw_match_players p
