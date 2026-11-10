@@ -71,9 +71,14 @@ const recommendOriginHelper = recommend.match(/function isJapaneseOriginAnime\(m
 assert.ok(recommendOriginHelper, "Recommendation Japanese-origin verification helper missing");
 const isRecommendedOriginJapanese = vm.runInNewContext(`(${recommendOriginHelper})`);
 assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "ORIGINAL" }), true, "Japanese original anime must remain eligible");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "MANGA" }), true, "Japanese manga adaptations must remain eligible");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "LIGHT_NOVEL" }), true, "Japanese light-novel adaptations must remain eligible");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "VIDEO_GAME" }), true, "Japanese game adaptations must remain eligible");
+assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), true, "Japanese manga adaptations must remain eligible");
+assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "LIGHT_NOVEL", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "NOVEL" } }] } }), true, "Japanese light-novel adaptations must remain eligible");
+assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "NOVEL", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "NOVEL" } }] } }), true, "Japanese novel adaptations must remain eligible");
+assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "DOUJINSHI", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), true, "Japanese doujinshi adaptations must remain eligible");
+assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "VIDEO_GAME", relations: { edges: [] } }), false, "Game source origin must not be guessed without source-country evidence");
+assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "OTHER", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), false, "Unknown source types must fail closed");
+assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "NOVEL" } }] } }), false, "Manga source must match manga format");
+assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "US", format: "MANGA" } }] } }), false, "Non-Japanese source adaptations must be excluded");
 assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL" }), false, "Non-Japanese animation must be excluded");
 
 const questionBlock = recommend.match(/const questions=\[([\s\S]*?)\n\];/)?.[1];
@@ -147,10 +152,14 @@ const indexOriginHelper = index.match(/function isJapaneseOriginAnime\(a\)\{[^\n
 assert.ok(indexOriginHelper, "Quiz Japanese-origin verification helper missing");
 const isQuizOriginJapanese = vm.runInNewContext(`(${indexOriginHelper})`);
 assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "ORIGINAL" }), true, "Japanese original anime must remain eligible in the quiz");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "MANGA" }), true, "Japanese manga adaptations must remain eligible in the quiz");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "LIGHT_NOVEL" }), true, "Japanese light-novel adaptations must remain eligible in the quiz");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "VIDEO_GAME" }), true, "Japanese game adaptations must remain eligible in the quiz");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "NOVEL" }), true, "Japanese novel adaptations must remain eligible in the quiz");
+assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), true, "Japanese manga adaptations must remain eligible in the quiz");
+assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "LIGHT_NOVEL", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "NOVEL" } }] } }), true, "Japanese light-novel adaptations must remain eligible in the quiz");
+assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "NOVEL", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "NOVEL" } }] } }), true, "Japanese novel adaptations must remain eligible in the quiz");
+assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "DOUJINSHI", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), true, "Japanese doujinshi adaptations must remain eligible in the quiz");
+assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "VIDEO_GAME", relations: { edges: [] } }), false, "Game source origin must not be guessed without source-country evidence");
+assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "OTHER", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), false, "Unknown source types must fail closed in the quiz");
+assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "NOVEL" } }] } }), false, "Manga source must match manga format in the quiz");
+assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "KR", format: "MANGA" } }] } }), false, "Non-Japanese source adaptations must be excluded from the quiz");
 assert.equal(isQuizOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL" }), false, "Non-Japanese animation must be excluded from the quiz");
 assert.match(index, /const cacheKey='aqw-anime-pool-v17-japanese-origin-complete'/, "Expanded Japanese-origin eligibility must rebuild the browser catalogue");
 assert.match(index, /const sorts=\['POPULARITY_DESC','ID','ID_DESC'\]/, "Format-specific catalogue backfill must use complementary sort orders");
