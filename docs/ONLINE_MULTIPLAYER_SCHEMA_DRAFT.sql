@@ -574,7 +574,8 @@ begin
           where own_answer.match_id = v_match_id
             and own_answer.question_no = v_question.question_no
             and own_answer.user_id = p.user_id
-        )
+        ),
+        'rank', res.rank
       ) order by coalesce(s.total_points, 0) desc, p.joined_at asc)
       into v_result
       from private.aqw_match_players p
@@ -583,6 +584,8 @@ begin
                count(*) filter (where is_correct)::integer as correct_count
         from private.aqw_match_answers where match_id = v_match_id group by user_id
       ) s on s.user_id = p.user_id
+      left join private.aqw_match_results res
+        on res.match_id = v_match_id and res.user_id = p.user_id
       where p.match_id = v_match_id;
 
       return jsonb_build_object(
