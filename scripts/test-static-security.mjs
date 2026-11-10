@@ -165,6 +165,7 @@ assert.match(index, /const cacheKey='aqw-anime-pool-v18-japanese-original-source
 assert.match(index, /const sorts=\['POPULARITY_DESC','ID','ID_DESC'\]/, "Format-specific catalogue backfill must use complementary sort orders");
 
 assert.match(index, /function isUsableAnime\(a\)\{[^\n]*isJapaneseOriginAnime\(a\)/, "Every cached and live quiz record must pass strict Japanese-source eligibility");
+assert.match(index, /function isUsableAnime\(a\)\{[^\n]*a\.isAdult!==true/, "Adult-flagged records must be excluded from live and cached quiz data");
 
 assert.match(index, /source\\(version:2\\) relations \\{ edges \\{ relationType node \\{ id type countryOfOrigin format \\} \\} \\} season seasonYear/, "Featured seasonal queries must include source and related-origin metadata");
 assert.match(index, /if\\(!isJapaneseOriginAnime\\(anime\\)\\|\\|!Number\\.isFinite\\(Number\\(anime\\.id\\)\\)\\)continue/, "New seasonal anime must pass verified Japanese-source filtering");
