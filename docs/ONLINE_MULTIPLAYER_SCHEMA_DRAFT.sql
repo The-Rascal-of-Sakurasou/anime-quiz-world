@@ -222,6 +222,59 @@ revoke all on all tables in schema private from anon, authenticated;
 revoke all on all sequences in schema private from anon, authenticated;
 revoke all on table private.aqw_question_bank from service_role;
 
+
+-- Per-account join-code guessing throttle. This is separate from the match
+-- dispatcher so rejected attempts still commit their counter increment.
+create table private.aqw_match_rate_limits (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  action text not null check (action = 'join_room'),
+  window_started_at timestamptz not null default now(),
+  attempts integer not null default 0 check (attempts >= 0),
+  primary key (user_id, action)
+);
+
+alter table private.aqw_match_rate_limits enable row level security;
+revoke all on table private.aqw_match_rate_limits from anon, authenticated, service_role;
+
+create or replace function public.aqw_match_rate_limit(
+  p_action text,
+  p_actor_id uuid
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $
+declare
+  v_attempts integer;
+begin
+  if p_actor_id is null or p_action <> 'join_room' then
+    raise exception 'Unsupported rate-limit request';
+  end if;
+
+  insert into private.aqw_match_rate_limits
+    (user_id, action, window_started_at, attempts)
+  values (p_actor_id, p_action, now(), 1)
+  on conflict (user_id, action) do update
+  set attempts = case
+        when private.aqw_match_rate_limits.window_started_at < now() - interval '10 minutes'
+          then 1
+        else private.aqw_match_rate_limits.attempts + 1
+      end,
+      window_started_at = case
+        when private.aqw_match_rate_limits.window_started_at < now() - interval '10 minutes'
+          then now()
+        else private.aqw_match_rate_limits.window_started_at
+      end
+  returning attempts into v_attempts;
+
+  return v_attempts <= 10;
+end;
+$;
+
+revoke all on function public.aqw_match_rate_limit(text, uuid) from public, anon, authenticated;
+grant execute on function public.aqw_match_rate_limit(text, uuid) to service_role;
+
 -- Finalize results using only server-calculated answer rows.
 create or replace function private.aqw_finalize_match(p_match_id uuid)
 returns void
