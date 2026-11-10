@@ -457,6 +457,14 @@ body{background:#f6f7f9;color:#202936;letter-spacing:.005em}
   .aqw-rush-board tbody td:nth-child(2){min-width:0}
   .aqw-rush-board tbody td:nth-child(3){font-size:1.02rem}
   .aqw-rush-board tbody td:nth-child(4){font-size:.8rem;line-height:1.45}
+  .aqw-rush-board tbody td:nth-child(3)::before,
+  .aqw-rush-board tbody td:nth-child(4)::before{
+    content:attr(data-label);display:block;margin-bottom:2px;
+    color:var(--muted);font-size:.64rem;font-weight:650;line-height:1.25
+  }
+  .aqw-rush-board tbody td:nth-child(3)::before{text-align:right}
+  .aqw-rush-board tbody td:nth-child(4)::before{text-align:left}
+
   .aqw-rush-board .player-name{font-size:.9rem;line-height:1.3}
   .aqw-rush-board .player-handle{font-size:.72rem}
   .aqw-player-cell{display:flex;align-items:center;gap:8px;min-width:0}
@@ -1424,6 +1432,8 @@ function renderPlayerLeaderboard(){
   const handle=document.createElement('span');handle.className='player-handle';handle.textContent='@'+(profile?.username||'user')+(currentUser?.id===item.user_id?' · '+aqwRushT('you'):'');meta.append(name,handle);player.append(meta);
   const value=document.createElement('td');
   const detail=document.createElement('td');
+  value.dataset.label=mode==='runs'?'プレイ回数':mode==='accuracy'?'正答率':'総合XP';
+  detail.dataset.label=mode==='runs'?'獲得XP':mode==='accuracy'?'正解数 / 出題数':'プレイ回数・正解数';
   if(mode==='runs'){value.textContent=Number(item.total_runs||0).toLocaleString();detail.textContent=Number(item.total_xp||0).toLocaleString()+' XP'}
   else if(mode==='accuracy'){const total=Number(item.total_questions||0),correct=Number(item.total_correct||0);value.textContent=(total?Math.round(correct/total*100):0)+'%';detail.textContent=correct.toLocaleString()+' / '+total.toLocaleString()}
   else{value.textContent=Number(item.total_xp||0).toLocaleString()+' XP';detail.textContent=Number(item.total_runs||0).toLocaleString()+' '+aqwPlayerT('plays')+' · '+Number(item.total_correct||0).toLocaleString()+' '+aqwPlayerT('correct')}
@@ -1486,8 +1496,8 @@ async function loadRushLeaderboardRemote(){
   const player=document.createElement('td');player.className='aqw-player-cell';player.append(makeAvatarElement(leaderboardProfiles.get(item.user_id)?.avatar_path,item.display_name||item.username||aqwRushT('player')));const meta=document.createElement('span');meta.className='player-meta';
   const name=document.createElement('span');name.className='player-name';name.textContent=item.display_name||item.username||aqwRushT('player');
   const handle=document.createElement('span');handle.className='player-handle';handle.textContent='@'+(item.username||'user')+(currentUser?.id===item.user_id?' · '+aqwRushT('you'):'');meta.append(name,handle);player.append(meta);
-  const score=document.createElement('td');score.textContent=String(item.correct_count)+'/10';
-  const time=document.createElement('td');time.textContent=formatRushTime(item.elapsed_ms);
+  const score=document.createElement('td');score.dataset.label='正解数';score.textContent=String(item.correct_count)+'/10';
+  const time=document.createElement('td');time.dataset.label='タイム';time.textContent=formatRushTime(item.elapsed_ms);
   trEl.append(rank,player,score,time);rows.append(trEl);
  });
  await loadMyRushRank(period);
