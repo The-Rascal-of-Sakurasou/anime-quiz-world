@@ -202,6 +202,14 @@ body{background:#f6f7f9;color:#202936;letter-spacing:.005em}
 @media(max-width:700px){.wrap{width:calc(100% - 24px)}.featured-head{align-items:flex-start;flex-direction:column}.featured-card{flex-basis:118px;width:118px}.featured-card img{height:154px}.featured-track{gap:9px}.featured-section{padding-top:16px}.hero{padding-top:24px}}
 @media(prefers-reduced-motion:reduce){.featured-track,.featured-track.reverse{animation:none!important;transform:none!important}}
  .aqw-logo text{transform:none}
+/* Clearer ranking hierarchy on desktop */
+.aqw-rush-board tbody tr{transition:background-color .15s,border-color .15s}
+.aqw-rush-board tbody tr.podium-1 td.rank-cell{color:#704d00;background:#f5d77c;border-radius:999px;text-align:center;font-weight:900}
+.aqw-rush-board tbody tr.podium-2 td.rank-cell{color:#45515f;background:#dce2e9;border-radius:999px;text-align:center;font-weight:900}
+.aqw-rush-board tbody tr.podium-3 td.rank-cell{color:#78452b;background:#edc5a9;border-radius:999px;text-align:center;font-weight:900}
+.aqw-rush-board tbody tr.is-me{outline:2px solid #8aa9d2;outline-offset:-2px}
+.aqw-rush-board .player-meta{min-width:0}
+.aqw-rush-board .aqw-player-cell{min-width:160px}
 /* Mobile-first interaction and leaderboard layout */
 @media(max-width:700px){
   .wrap{width:calc(100% - 24px)}
@@ -343,7 +351,7 @@ body{background:#f6f7f9;color:#202936;letter-spacing:.005em}
 </div>
 <div id="aqwMemberPanel" class="hidden">
 <div class="social-columns">
-<section class="social-box"><h3>プロフィール</h3><form id="aqwProfileForm"><div class="aqw-avatar-editor"><div class="aqw-avatar-preview" id="aqwAvatarPreview"><span id="aqwAvatarFallback">?</span><img id="aqwAvatarPreviewImage" alt="プロフィールアイコンのプレビュー" class="hidden"></div><div class="aqw-avatar-controls"><label>プロフィールアイコン<input id="aqwAvatarFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></label><small class="muted">JPEG・PNG・WebP・GIF、5MB以下</small><button id="aqwRemoveAvatar" type="button">アイコンを削除</button></div></div><label>ユーザー名<input id="aqwEditUsername" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]+" required></label><label>表示名<input id="aqwEditDisplayName" maxlength="40" required></label><label>自己紹介<textarea id="aqwBio" maxlength="280" rows="3"></textarea></label><button class="primary" type="submit">プロフィールを保存</button></form><hr style="border:0;border-top:1px solid var(--line);margin:20px 0"><h3>パスワード変更</h3><form id="aqwPasswordForm"><label>新しいパスワード<input id="aqwNewPassword" type="password" minlength="8" maxlength="128" autocomplete="new-password" required></label><label>新しいパスワード（確認）<input id="aqwConfirmPassword" type="password" minlength="8" maxlength="128" autocomplete="new-password" required></label><button class="primary" type="submit">パスワードを変更</button></form><p id="aqwPasswordMessage" class="auth-message" aria-live="polite"></p></section>
+<section class="social-box"><h3>プロフィール</h3><form id="aqwProfileForm"><div class="aqw-avatar-editor"><div class="aqw-avatar-preview" id="aqwAvatarPreview"><span id="aqwAvatarFallback">?</span><img id="aqwAvatarPreviewImage" alt="プロフィールアイコンのプレビュー" class="hidden"></div><div class="aqw-avatar-controls"><label>プロフィールアイコン<input id="aqwAvatarFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></label><small class="muted">JPEG・PNG・WebP・GIF、5MB以下</small><button id="aqwRemoveAvatar" type="button">アイコンを削除</button></div></div><label>ユーザー名<input id="aqwEditUsername" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]+" required></label><label>表示名<input id="aqwEditDisplayName" maxlength="40" required></label><label>自己紹介<textarea id="aqwBio" maxlength="280" rows="3"></textarea></label><button class="primary" type="submit">プロフィールを保存</button></form><hr style="border:0;border-top:1px solid var(--line);margin:20px 0"><h3>パスワード変更</h3><form id="aqwPasswordForm"><label>新しいパスワード<input id="aqwNewPassword" type="password" minlength="12" maxlength="128" autocomplete="new-password" required></label><label>新しいパスワード（確認）<input id="aqwConfirmPassword" type="password" minlength="12" maxlength="128" autocomplete="new-password" required></label><button class="primary" type="submit">パスワードを変更</button></form><p id="aqwPasswordMessage" class="auth-message" aria-live="polite"></p></section>
 <section class="social-box"><h3>ユーザー検索・フレンド登録</h3><p class="muted">相手をフォローできます。お互いにフォローするとフレンドになり、1対1のチャットができます。</p><form id="aqwUserSearchForm" class="searchbar"><input id="aqwUserSearch" placeholder="ユーザー名・表示名" maxlength="60" required><button type="submit">検索</button></form><div id="aqwUserResults"></div></section>
 </div>
 <section class="social-box" id="aqwFriendMessagesPanel" style="margin-top:18px"><h3>フレンドとのチャット</h3><div class="social-columns"><div><h4>フレンド一覧</h4><p class="muted">相互にフォローしているユーザーが表示されます。</p><button id="aqwRefreshFriends" type="button">フレンド一覧を更新</button><div id="aqwFriends" class="aqw-feed"></div></div><div><h4 id="aqwConversationTitle">チャットする相手を選択してください</h4><div id="aqwMessages" class="aqw-feed" aria-live="polite"></div><form id="aqwMessageForm" class="aqw-reply-form"><input id="aqwMessageInput" maxlength="2000" placeholder="メッセージを書く（最大2,000文字）" required disabled><button class="primary" id="aqwSendMessage" type="submit" disabled>送信</button></form><p id="aqwMessageStatus" class="auth-message" aria-live="polite"></p></div></div></section>
@@ -1343,6 +1351,7 @@ function initSupabase(){
  return true;
 }
 let signupMode=false;
+const strongPassword=value=>value.length>=12&&value.length<=128&&/[a-z]/.test(value)&&/[A-Z]/.test(value)&&/[0-9]/.test(value)&&/[^A-Za-z0-9]/.test(value);
 function setAuthMode(signup){
  signupMode=signup;
  $s('aqwUsernameField').classList.toggle('hidden',!signup);
@@ -1351,6 +1360,8 @@ function setAuthMode(signup){
  $s('aqwUsername').required=signup;
  $s('aqwAcceptTerms').required=signup;
  $s('aqwPassword').autocomplete=signup?'new-password':'current-password';
+ $s('aqwPassword').minLength=signup?12:8;
+ $s('aqwPassword').placeholder=signup?(localJa()?'12文字以上・大文字／小文字／数字／記号':'12+ chars with upper/lowercase, number and symbol'):'';
  $s('aqwAuthHeading').textContent=signup?(localJa()?'新規登録':'Create account'):(localJa()?'ログイン':'Sign in');
  $s('aqwSignIn').textContent=signup?(localJa()?'アカウントを作成':'Create account'):(localJa()?'ログイン':'Sign in');
  $s('aqwSignUp').textContent=signup?(localJa()?'ログインに戻る':'Back to sign in'):(localJa()?'新規登録はこちら':'Create an account');
@@ -1360,6 +1371,7 @@ async function authAction(kind){
  message(authMsg,'');
  const email=$s('aqwEmail').value.trim(),password=$s('aqwPassword').value;
  if(kind==='signup'&&!$s('aqwAcceptTerms').checked){message(authMsg,localJa()?'新規登録には利用規約とプライバシーポリシーへの同意が必要です。':'You must accept the Terms of Use and Privacy Policy to create an account.');return}
+ if(kind==='signup'&&!strongPassword(password)){message(authMsg,localJa()?'パスワードは12文字以上とし、大文字・小文字・数字・記号をそれぞれ1文字以上含めてください。':'Use 12–128 characters with at least one uppercase letter, lowercase letter, number and symbol.');return}
  try{
   if(kind==='signin'){
    const {error}=await sb.auth.signInWithPassword({email,password});if(error)throw error;
@@ -1656,7 +1668,7 @@ async function sendFriendMessage(e){
 if(!initSupabase())return;
 $s('aqwAuthForm').addEventListener('submit',e=>{e.preventDefault();authAction(signupMode?'signup':'signin')});
 $s('aqwSignUp').addEventListener('click',()=>setAuthMode(!signupMode));
-$s('aqwPasswordForm').addEventListener('submit',async e=>{e.preventDefault();const next=$s('aqwNewPassword').value,confirmPassword=$s('aqwConfirmPassword').value;message($s('aqwPasswordMessage'),'');if(next.length<8){message($s('aqwPasswordMessage'),localJa()?'パスワードは8文字以上にしてください。':'Password must be at least 8 characters.');return}if(next!==confirmPassword){message($s('aqwPasswordMessage'),localJa()?'確認用パスワードが一致しません。':'Passwords do not match.');return}const button=$s('aqwPasswordForm').querySelector('button[type="submit"]');button.disabled=true;try{const {error}=await sb.auth.updateUser({password:next});if(error)throw error;$s('aqwNewPassword').value='';$s('aqwConfirmPassword').value='';message($s('aqwPasswordMessage'),localJa()?'パスワードを変更しました。':'Password changed successfully.')}catch(err){message($s('aqwPasswordMessage'),(localJa()?'変更できませんでした：':'Could not change password: ')+errText(err))}finally{button.disabled=false}});
+$s('aqwPasswordForm').addEventListener('submit',async e=>{e.preventDefault();const next=$s('aqwNewPassword').value,confirmPassword=$s('aqwConfirmPassword').value;message($s('aqwPasswordMessage'),'');if(!strongPassword(next)){message($s('aqwPasswordMessage'),localJa()?'新しいパスワードは12文字以上とし、大文字・小文字・数字・記号をそれぞれ1文字以上含めてください。':'Use 12–128 characters with at least one uppercase letter, lowercase letter, number and symbol.');return}if(next!==confirmPassword){message($s('aqwPasswordMessage'),localJa()?'確認用パスワードが一致しません。':'Passwords do not match.');return}const button=$s('aqwPasswordForm').querySelector('button[type="submit"]');button.disabled=true;try{const {error}=await sb.auth.updateUser({password:next});if(error)throw error;$s('aqwNewPassword').value='';$s('aqwConfirmPassword').value='';message($s('aqwPasswordMessage'),localJa()?'パスワードを変更しました。':'Password changed successfully.')}catch(err){message($s('aqwPasswordMessage'),(localJa()?'変更できませんでした：':'Could not change password: ')+errText(err))}finally{button.disabled=false}});
 $s('aqwSignOut').addEventListener('click',async()=>{const {error}=await sb.auth.signOut();if(error)message(authMsg,errText(error));else message(authMsg,localJa()?'ログアウトしました。':'Signed out.')});
 sb.auth.onAuthStateChange((_event,session)=>{setTimeout(()=>refreshSession(session),0)});
 sb.auth.getSession().then(({data,error})=>{if(error)setStatus(errText(error));else refreshSession(data.session)});
