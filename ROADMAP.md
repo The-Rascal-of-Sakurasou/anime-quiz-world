@@ -23,7 +23,7 @@ Tracking issue: https://github.com/The-Rascal-of-Sakurasou/anime-quiz-world/issu
 - [x] Create a match room
 - [x] Join by room code or invitation link
 - [ ] Invite existing friends (reuse mutual follows)
-- [ ] Public matchmaking
+- [x] Public matchmaking (2–4 players; prioritizes avoiding recent repeat opponents)
 - [x] 2–4 player lobby and online presence
 - [ ] Ready state, host start, leave, reconnect
 - [ ] Synchronized questions, timer, and answer submission
@@ -58,6 +58,6 @@ Tracking issue: https://github.com/The-Rascal-of-Sakurasou/anime-quiz-world/issu
 1. Multiplayer database and authorization design
 2. Room creation, joining, and lobby
 3. Synchronized quiz, server validation, and result storage
-4. Matchmaking, friend invitations, and rematches
+4. Friend invitations and rematches
 5. Match history, multiplayer ranking, and profile integration
 6. Cross-device progress synchronization
