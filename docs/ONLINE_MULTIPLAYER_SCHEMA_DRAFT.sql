@@ -160,7 +160,7 @@ create or replace function private.aqw_validate_question_bank_row()
 returns trigger
 language plpgsql
 set search_path = ''
-as $
+as $$
 declare
   v_option jsonb;
   v_seen_ids text[] := array[]::text[];
@@ -244,7 +244,7 @@ returns boolean
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $$
 declare
   v_attempts integer;
 begin
