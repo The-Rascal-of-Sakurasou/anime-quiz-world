@@ -524,6 +524,9 @@ begin
 
     elsif p_action = 'submit_answer' then
       if v_room.status <> 'in_progress' then raise exception 'Match is not in progress'; end if;
+      if v_player.disconnected_at is not null then
+        raise exception 'Player is disconnected; reconnect before answering';
+      end if;
       select * into v_question from private.aqw_match_questions
       where match_id = v_match_id
         and question_no = (p_payload ->> 'question_no')::smallint
