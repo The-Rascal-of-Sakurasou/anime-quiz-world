@@ -180,9 +180,8 @@ body{background:#f6f7f9;color:#202936;letter-spacing:.005em}
 .featured-caption{margin:4px 0 0;color:var(--muted);font-size:.88rem}
 .featured-refresh{flex:0 0 auto;min-height:38px;padding:7px 12px;font-size:.88rem}
 .featured-rail{display:grid;gap:12px;overflow:hidden}
-.featured-track{display:flex;width:max-content;gap:12px;animation:featured-scroll 78s linear infinite}
-.featured-track.reverse{animation-name:featured-scroll-reverse;animation-duration:86s}
-.featured-section:hover .featured-track,.featured-section:focus-within .featured-track{animation-play-state:paused}
+.featured-track{display:flex;width:max-content;gap:12px;animation:featured-scroll 180s linear infinite;will-change:transform}
+.featured-track.reverse{animation-name:featured-scroll-reverse;animation-duration:195s}
 .featured-card{display:block;flex:0 0 146px;width:146px;color:var(--text);text-decoration:none;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff;transition:transform .18s,border-color .18s}
 .featured-card:hover{transform:translateY(-3px);border-color:#9eb3ce}
 .featured-card img{display:block;width:100%;height:190px;object-fit:cover;background:#edf0f4}
@@ -1591,6 +1590,15 @@ function renderFeaturedRail(source){
   return track;
  };
  root.replaceChildren(makeTrack(candidates),makeTrack(shuffle(candidates),true));
+ // ホバー・キーボード操作時は一時停止し、一定時間後に自動再開する
+ let resumeTimer=null;
+ const tracks=()=>root.querySelectorAll('.featured-track');
+ const resume=()=>{if(resumeTimer)clearTimeout(resumeTimer);tracks().forEach(track=>track.style.animationPlayState='running');resumeTimer=null};
+ const pauseBriefly=()=>{if(resumeTimer)clearTimeout(resumeTimer);tracks().forEach(track=>track.style.animationPlayState='paused');resumeTimer=setTimeout(resume,2200)};
+ root.onpointerenter=pauseBriefly;
+ root.onpointerleave=resume;
+ root.onfocusin=pauseBriefly;
+ root.onfocusout=resume;
 }
 function getCurrentAnimeSeason(date=new Date()){
  const month=date.getMonth()+1;
