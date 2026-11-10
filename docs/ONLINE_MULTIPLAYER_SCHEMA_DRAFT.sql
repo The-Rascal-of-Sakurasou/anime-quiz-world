@@ -155,6 +155,63 @@ create table private.aqw_question_bank (
   created_at timestamptz not null default now()
 );
 
+
+create or replace function private.aqw_validate_question_bank_row()
+returns trigger
+language plpgsql
+set search_path = ''
+as $
+declare
+  v_option jsonb;
+  v_seen_ids text[] := array[]::text[];
+  v_option_id text;
+begin
+  if jsonb_typeof(new.question_payload -> 'prompt') <> 'string'
+     or char_length(trim(new.question_payload ->> 'prompt')) = 0 then
+    raise exception 'Question prompt must be a non-empty string';
+  end if;
+
+  if jsonb_typeof(new.question_payload -> 'options') <> 'array'
+     or jsonb_array_length(new.question_payload -> 'options') not between 2 and 6 then
+    raise exception 'A question must have between 2 and 6 options';
+  end if;
+
+  for v_option in
+    select item.value
+    from jsonb_array_elements(new.question_payload -> 'options') as item(value)
+  loop
+    if jsonb_typeof(v_option) <> 'object'
+       or jsonb_typeof(v_option -> 'id') <> 'string'
+       or jsonb_typeof(v_option -> 'text') <> 'string' then
+      raise exception 'Every option must have string id and text fields';
+    end if;
+
+    v_option_id := trim(v_option ->> 'id');
+    if char_length(v_option_id) = 0
+       or char_length(v_option_id) > 100
+       or char_length(trim(v_option ->> 'text')) = 0 then
+      raise exception 'Option IDs and text must be non-empty and bounded';
+    end if;
+
+    if v_option_id = any(v_seen_ids) then
+      raise exception 'Option IDs must be unique within a question';
+    end if;
+    v_seen_ids := array_append(v_seen_ids, v_option_id);
+  end loop;
+
+  if not (new.correct_option_id = any(v_seen_ids)) then
+    raise exception 'Correct option ID must exist in the options array';
+  end if;
+
+  return new;
+end;
+$;
+
+create trigger aqw_validate_question_bank_row
+before insert or update of question_payload, correct_option_id
+on private.aqw_question_bank
+for each row execute function private.aqw_validate_question_bank_row();
+
 alter table private.aqw_question_bank enable row level security;
 
 alter table private.aqw_match_questions
