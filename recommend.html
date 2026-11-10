@@ -125,6 +125,12 @@ const questions=[
 {label:'バトル・アクション',genres:['Action','Adventure']},
 {label:'ドラマ・コメディ・日常',genres:['Drama','Comedy','Slice of Life']}
 ]},
+{dimension:'protagonist_challenge',title:'主人公には何をしてほしい？',help:'一番見てみたい展開を選んでください。',options:[
+{label:'隠された謎や真実を解き明かす',tags:['Conspiracy','Mystery']},
+{label:'厳しい状況を乗り越える',tags:['Survival','Battle Royale']},
+{label:'大きな目標に向かって成長する',tags:['Quest','Character Development']},
+{label:'自分の弱さや悩みと向き合う',tags:['Philosophy','Coming of Age']}
+]},
 {dimension:'pacing',title:'物語のテンポはどれが好き？',help:'見ていて心地よい進み方を選んでください。',options:[
 {label:'最初からどんどん話が進む',tags:['Fast-Paced']},
 {label:'ほどよい速さで進む',genres:['Adventure']},
@@ -136,6 +142,12 @@ const questions=[
 {label:'感動したり、心を動かされたりしたい',tags:['Tragedy','Coming of Age']},
 {label:'気楽に笑って楽しみたい',tags:['Gag Humor','Parody']},
 {label:'落ち着いた気分で楽しみたい',tags:['Iyashikei']}
+]},
+{dimension:'setting',title:'どんな世界が舞台だとワクワクする？',help:'一番見てみたい舞台を選んでください。',options:[
+{label:'異世界・魔法の世界',tags:['Magic','Isekai','World Building']},
+{label:'現代・学校・身近な日常',tags:['School','Urban','Coming of Age']},
+{label:'未来・宇宙・科学技術',tags:['Space','Cyberpunk','Mecha']},
+{label:'歴史・神話・和風の世界',tags:['Historical','Mythology','Samurai']}
 ]},
 {dimension:'duration',title:'どのくらいの長さの作品が見やすい？',help:'普段の視聴スタイルに近いものを選んでください。',options:[
 {label:'短め（映画・1クールくらい）',length:'short'},
@@ -155,11 +167,35 @@ const questions=[
 {label:'複数の人物や出来事を読み解きたい',genres:['Psychological','Drama'],tags:['Politics','Ensemble Cast']},
 {label:'独自の設定や世界観を考察したい',genres:['Sci-Fi','Fantasy'],tags:['World Building','Politics']}
 ]},
+{dimension:'aftertaste',title:'見終わったあと、どんな気持ちになりたい？',help:'作品を見終えたときに残ってほしい気分を選んでください。',options:[
+{label:'驚きや衝撃を感じたい',genres:['Thriller','Mystery'],tags:['Psychological']},
+{label:'感動や切なさに浸りたい',genres:['Drama'],tags:['Tragedy','Coming of Age']},
+{label:'スカッとしたい・達成感がほしい',genres:['Action','Adventure'],tags:['Super Power']},
+{label:'笑って明るい気分になりたい',genres:['Comedy'],tags:['Gag Humor']}
+]},
+{dimension:'relationships',title:'キャラ同士のどんな関係が好き？',help:'特に見たい関係性を1つ選んでください。',options:[
+{label:'仲間と協力し、絆を深める',tags:['Friendship','Found Family']},
+{label:'ライバル同士で競い合う',tags:['Rivalry']},
+{label:'家族や身近な人との絆を描く',tags:['Family','Family Life']},
+{label:'恋愛や複雑な恋模様を描く',genres:['Romance'],tags:['Love Triangle']}
+]},
 {dimension:'romance_amount',title:'恋愛要素はどのくらい欲しい？',help:'恋愛が物語にどのくらい入っていてほしいか選んでください。',options:[
 {label:'恋愛が物語の中心にあってほしい',genreWeights:{Romance:2.5}},
 {label:'少しだけ入っていてほしい',genreWeights:{Romance:1.1}},
 {label:'恋愛は少なめがいい',avoidGenres:['Romance'],avoidGenreWeights:{Romance:0.8}},
 {label:'恋愛はほとんどなくていい',avoidGenres:['Romance'],avoidGenreWeights:{Romance:1.8}}
+]}
+{dimension:'tone_balance',title:'笑いとシリアス、どちらが好き？',help:'作品全体の雰囲気に近いものを選んでください。',options:[
+{label:'笑える場面が多い',genreWeights:{Comedy:2.5}},
+{label:'シリアス中心で、笑いは少し',genreWeights:{Drama:1.4},avoidGenreWeights:{Comedy:0.5}},
+{label:'笑いとシリアスが半々くらい',genreWeights:{Drama:1.2,Comedy:1.2}},
+{label:'基本はシリアスで、笑いは少なめ',genreWeights:{Drama:1.8},avoidGenres:['Comedy'],avoidGenreWeights:{Comedy:1.2}}
+]},
+{dimension:'story_structure',title:'どんな話の進み方が好き？',help:'1話ごとの楽しさと、続きが気になる大きな物語。どちらが好みか選んでください。',options:[
+{label:'最終話まで続く大きな物語',avoidTags:['Episodic'],avoidTagWeights:{Episodic:1.2}},
+{label:'1話ごとに区切りがある物語',tagWeights:{Episodic:2.2}},
+{label:'大きな物語も、各話の面白さも欲しい',tagWeights:{Episodic:0.7}},
+{label:'どちらでも気にしない'}
 ]}
 ];
 const questionTitles=questions.map(q=>q.title.trim());
