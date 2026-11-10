@@ -331,7 +331,7 @@ function deduplicateAnimeSeries(items){
   const left=find(a),right=find(b);
   if(left!==right)parent.set(right,left);
  };
- const relatedTypes=new Set(['PREQUEL','SEQUEL','PARENT','SUMMARY','ALTERNATIVE' ,'COMPILATION']);
+ const relatedTypes=new Set(['PREQUEL','SEQUEL','SUMMARY','ALTERNATIVE','COMPILATION']);
  const titleOwners=new Map();
  for(const anime of list){
   if(anime?.id==null)continue;
@@ -457,6 +457,14 @@ function runRecommendationSelfTests(){
   {id:301,title:{native:'通常版'},relations:{edges:[{relationType:'ALTERNATIVE',node:{id:302}}]}},
   {id:302,title:{native:'別バージョン'}}
  ]).length===1);
+ check('独立したサイドストーリーは親作品と別候補として残す',deduplicateAnimeSeries([
+  {id:305,title:{native:'本編'},relations:{edges:[{relationType:'SIDE_STORY',node:{id:306}}]}},
+  {id:306,title:{native:'外伝'}}
+ ]).length===2);
+ check('サイドストーリー側の親作品参照だけでは本編と統合しない',deduplicateAnimeSeries([
+  {id:307,title:{native:'外伝'},relations:{edges:[{relationType:'PARENT',node:{id:308}}]}},
+  {id:308,title:{native:'本編'}}
+ ]).length===2);
  check('無関係な作品は別々に残す',deduplicateAnimeSeries([
   {id:401,title:{native:'作品A'}},{id:402,title:{native:'作品B'}}
  ]).length===2);
