@@ -161,7 +161,7 @@ assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "OTHER", rela
 assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "NOVEL" } }] } }), false, "Manga source must match manga format in the quiz");
 assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "KR", format: "MANGA" } }] } }), false, "Non-Japanese source adaptations must be excluded from the quiz");
 assert.equal(isQuizOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL" }), false, "Non-Japanese animation must be excluded from the quiz");
-assert.match(index, /const cacheKey='aqw-anime-pool-v17-japanese-origin-complete'/, "Expanded Japanese-origin eligibility must rebuild the browser catalogue");
+assert.match(index, /const cacheKey='aqw-anime-pool-v18-japanese-original-source-verified'/, "Verified original-source eligibility must rebuild the browser catalogue");
 assert.match(index, /const sorts=\['POPULARITY_DESC','ID','ID_DESC'\]/, "Format-specific catalogue backfill must use complementary sort orders");
 
 assert.match(index, /function isUsableAnime\(a\)\{[^\n]*isJapaneseOriginAnime\(a\)/, "Every cached and live quiz record must pass strict Japanese-source eligibility");
