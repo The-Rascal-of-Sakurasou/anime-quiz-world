@@ -80,6 +80,11 @@ assert.doesNotMatch(multiplayer, /<option value="3">3人|<option value="4">4人/
 const matchMigration = fs.readFileSync("supabase/migrations/20261111090000_restrict_aqw_matches_to_one_on_one.sql", "utf8");
 assert.match(matchMigration, /p_max_players <> 2/, "The database must reject match sizes other than two players");
 assert.match(matchMigration, /現在のオンライン対戦は1対1のみ対応しています/, "The database must explain the one-on-one restriction");
+assert.match(multiplayer, /id="startMatch"/, "Host start-match control missing");
+assert.match(multiplayer, /async function startMatch\(\)/, "Host start-match handler missing");
+assert.match(multiplayer, /invoke\('aqw_match_start_room'/, "Starting a match must use the server-side room-start RPC");
+assert.match(multiplayer, /players\.length!==2\|\|!players\.every\(p=>p\.is_ready\)/, "Client must require both players ready before starting");
+assert.match(multiplayer, /room\.host_id===user\.id/, "Only the room host may start a match in the UI");
 const privacy = source.get("privacy.html");
 assert.doesNotMatch(privacy, /コレクション/, "Privacy policy must not describe the removed anime collection feature");
 
