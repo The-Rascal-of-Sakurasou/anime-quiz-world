@@ -70,8 +70,8 @@ footer{color:var(--muted);font-size:.85rem;padding:10px 0 30px}
 </div>
 <div class="card">
 <h2>ユーザー一覧</h2>
-<p class="muted">公開プロフィールの一覧です。メールアドレスや認証情報は表示しません。</p>
-<div class="table-wrap"><table><thead><tr><th>ユーザー名</th><th>表示名</th><th>登録日</th><th>ランキング掲載</th></tr></thead><tbody id="profiles"><tr><td colspan="4">読み込み中…</td></tr></tbody></table></div>
+<p class="muted">表示名・自己紹介・ランキング掲載状態を変更できます。メールアドレスや認証情報は表示しません。</p>
+<div class="table-wrap"><table><thead><tr><th>ユーザー名</th><th>表示名</th><th>登録日</th><th>自己紹介</th><th>ランキング掲載</th><th>操作</th></tr></thead><tbody id="profiles"><tr><td colspan="4">読み込み中…</td></tr></tbody></table></div>
 </div>
 </section>
 </main>
@@ -84,7 +84,7 @@ const SUPABASE_URL='https://ksyfhscjfqzenifcttiu.supabase.co';
 const KEY='sb_publishable_eL_Da06cmHz3W58jpcBIBQ_YzTThTL4';
 const $=id=>document.getElementById(id);
 const status=$('status');
-const client=window.supabase.createClient(SUPABASE_URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+const client=window.supabase.createClient(SUPABASE_URL,KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
 let activeUser=null;
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function say(message,kind=''){status.textContent=message;status.className='status'+(kind?' '+kind:'')}
@@ -153,13 +153,24 @@ async function loadPosts(){
   const name=document.createElement('strong');name.textContent=(profile.display_name||profile.username||'ユーザー')+' (@'+(profile.username||'unknown')+')';
   const dateEl=document.createElement('small');dateEl.textContent=' · '+date(post.created_at)+(post.parent_post_id?' · 返信':' · 投稿');
   meta.append(name,dateEl);
+  const tools=document.createElement('div');tools.className='actions';
+  const edit=document.createElement('button');edit.type='button';edit.textContent='本文を編集';edit.addEventListener('click',()=>editPost(post,edit));
   const del=document.createElement('button');del.type='button';del.className='danger';del.textContent='削除';del.addEventListener('click',()=>deletePost(post,del));
-  head.append(meta,del);
+  tools.append(edit,del);head.append(meta,tools);
   const body=document.createElement('p');body.className='post-body';body.textContent=post.body||'';
   article.append(head,body);
   if(post.image_path){const img=document.createElement('img');img.loading='lazy';img.alt='投稿画像';img.src=post.image_path;img.onerror=()=>img.remove();article.append(img)}
   root.append(article);
  }
+}
+async function editPost(post,button){
+ const next=prompt('投稿本文を編集します。',post.body||'');
+ if(next===null)return;
+ if(!next.trim()){say('本文を空にすることはできません。','error');return}
+ button.disabled=true;
+ try{const {error}=await client.from('posts').update({body:next.trim(),updated_at:new Date().toISOString()}).eq('id',post.id);if(error)throw error;say('投稿を更新しました。','success');await refreshAll()}
+ catch(error){say('投稿を更新できませんでした：'+(error.message||String(error)),'error')}
+ finally{button.disabled=false}
 }
 async function deletePost(post,button){
  if(!confirm('この投稿を削除しますか？返信・いいね・関連通知も削除されます。この操作は取り消せません。'))return;
@@ -180,14 +191,17 @@ async function deletePost(post,button){
 }
 async function loadProfiles(){
  const root=$('profiles');root.replaceChildren();
- const {data,error}=await client.from('profiles').select('id,username,display_name,created_at,leaderboard_enabled').order('created_at',{ascending:false}).limit(100);
+ const {data,error}=await client.from('profiles').select('id,username,display_name,bio,created_at,leaderboard_enabled').order('created_at',{ascending:false}).limit(100);
  if(error)throw error;
- if(!data?.length){const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=4;cell.textContent='プロフィールはありません。';row.append(cell);root.append(row);return}
+ if(!data?.length){const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=6;cell.textContent='プロフィールはありません。';row.append(cell);root.append(row);return}
  for(const profile of data){
   const row=document.createElement('tr');
-  for(const value of [profile.username,profile.display_name,date(profile.created_at),profile.leaderboard_enabled?'掲載中':'非掲載']){
-   const cell=document.createElement('td');cell.textContent=value??'—';row.append(cell)
-  }
+  const username=document.createElement('td');username.textContent=profile.username||'—';row.append(username);
+  const displayCell=document.createElement('td');const display=document.createElement('input');display.value=profile.display_name||'';display.maxLength=40;display.setAttribute('aria-label','表示名');displayCell.append(display);row.append(displayCell);
+  const dateCell=document.createElement('td');dateCell.textContent=date(profile.created_at);row.append(dateCell);
+  const bioCell=document.createElement('td');const bio=document.createElement('input');bio.value=profile.bio||'';bio.maxLength=160;bio.placeholder='自己紹介';bio.setAttribute('aria-label','自己紹介');bioCell.append(bio);row.append(bioCell);
+  const rankCell=document.createElement('td');const rank=document.createElement('input');rank.type='checkbox';rank.checked=!!profile.leaderboard_enabled;rank.setAttribute('aria-label','ランキング掲載');rankCell.append(rank);row.append(rankCell);
+  const actionCell=document.createElement('td');const save=document.createElement('button');save.type='button';save.textContent='保存';save.addEventListener('click',async()=>{save.disabled=true;try{const {error}=await client.from('profiles').update({display_name:display.value.trim(),bio:bio.value.trim(),leaderboard_enabled:rank.checked}).eq('id',profile.id);if(error)throw error;say('プロフィールを更新しました。','success')}catch(error){say('更新できませんでした：'+(error.message||String(error)),'error')}finally{save.disabled=false}});actionCell.append(save);row.append(actionCell);
   root.append(row);
  }
 }
@@ -203,8 +217,9 @@ $('logoutButton').addEventListener('click',async()=>{
  await startSession(null);
 });
 $('refreshButton').addEventListener('click',refreshAll);
-client.auth.onAuthStateChange((_event,session)=>{queueMicrotask(()=>startSession(session))});
-client.auth.getSession().then(({data,error})=>{if(error)say('セッションを確認できませんでした：'+error.message,'error');else startSession(data.session)});
+say('メールアドレスとパスワードを入力して管理者認証を行ってください。');
+$('loginCard').classList.remove('hidden');
+$('console').classList.add('hidden');
 })();
 </script>
 </body>
