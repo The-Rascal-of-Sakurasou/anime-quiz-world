@@ -85,6 +85,9 @@ footer{color:var(--muted);font-size:.85rem;padding:10px 0 30px}
  .metrics{grid-template-columns:minmax(0,1fr)}
  .card{padding:12px}
 }
+/* Site-wide mobile pass: admin console */
+@media(max-width:700px){html{scroll-padding-top:12px}body{font-size:16px;overflow-wrap:anywhere}.wrap{width:calc(100% - 20px)}header .head{gap:10px}header a{min-height:44px;display:inline-flex;align-items:center}h1{font-size:clamp(1.45rem,6vw,1.9rem);line-height:1.3}h2{line-height:1.4}.card{border-radius:11px}.metric{min-width:0}.metric span{line-height:1.4}.actions>button{flex:1 1 145px}.table-wrap{border:1px solid var(--line);border-radius:8px;overscroll-behavior-x:contain}table{min-width:600px}th,td{padding:10px 9px}input,select,textarea{width:100%;max-width:100%;font-size:16px;min-height:48px}button{min-height:48px;touch-action:manipulation}}
+@media(max-width:380px){.wrap{width:calc(100% - 16px)}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.metric strong{font-size:1.15rem}.actions>button{flex-basis:100%}}
 </style>
 </head>
 <body>
