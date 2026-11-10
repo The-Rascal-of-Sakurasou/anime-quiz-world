@@ -93,6 +93,10 @@ assert.equal(calculateSeedSimilarity(spoilerOnly, [seed], rarityWeight, genreRar
 assert.match(recommend, /function buildRecommendationDataWarnings\(failedPages,totalPages\)/, "Partial recommendation data warning helper missing");
 assert.match(recommend, /report\.dataWarnings\?\.length/, "Partial recommendation data warning must be shown to users");
 assert.match(recommend, /buildRecommendationDataWarnings\(failedPages,sortModes\.length\*5\)/, "Recommendation fetch failures must be reflected in the result report");
+const relationAllowlist = recommend.match(/const relatedTypes=new Set\(\[([^\]]+)\]\)/)?.[1] || "";
+assert.match(relationAllowlist, /PREQUEL.*SEQUEL.*SUMMARY.*ALTERNATIVE.*COMPILATION/, "Recommendation deduplication must cover series and alternate/summary relations");
+assert.doesNotMatch(relationAllowlist, /PARENT/, "A side story parent relation must not hide a distinct side story");
+assert.match(recommend, /独立したサイドストーリーは親作品と別候補として残す/, "Side-story separation regression test missing");
 
 const index = source.get("index.html");
 assert.match(index, /term\.normalize\('NFKC'\)/, "Community search input must be normalized before building PostgREST filters");
