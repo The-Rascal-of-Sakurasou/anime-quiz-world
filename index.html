@@ -730,7 +730,7 @@ async function fetchAnime(vars={}){
   throw lastError||new Error('データをまとめて取得できませんでした。');
  };
  if(vars.search){const raw=(await request({page:1,perPage:18,search:vars.search})).filter(isUsableAnime);const unique=deduplicateSearchResults(raw);unique.duplicateCount=Math.max(0,raw.length-unique.length);return unique;}
- const cacheKey='aqw-anime-pool-v18-japanese-original-source-verified';
+ const cacheKey='aqw-anime-pool-v19-pagination-source-metadata';
  // Merge every older local catalogue cache; the application no longer imposes an item-count target.
  let initial=[],cacheSavedAt=0,savedProgress=null;
  try{
