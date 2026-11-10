@@ -53,7 +53,7 @@ for (const file of ["index.html", "admin.html"]) {
 
 const admin = source.get("admin.html");
 assert.match(admin, /persistSession\s*:\s*false/, "Admin session persistence must stay disabled");
-assert.match(admin, /autoRefreshToken\s*:\s*false/, "Admin token auto-refresh must stay disabled");
+assert.match(admin, /autoRefreshToken\s*:\s*true/, "Admin token auto-refresh must stay enabled for active in-memory sessions");
 assert.match(admin, /detectSessionInUrl\s*:\s*false/, "Admin URL session detection must stay disabled");
 assert.match(admin, /aal2/, "Admin MFA assurance-level enforcement missing");
 assert.match(admin, /mfa\.verify/, "Admin TOTP verification flow missing");
