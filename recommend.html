@@ -360,6 +360,11 @@ function deduplicateRecommendationGroups(closeMatches,discoveries){
  return {closeMatches:close,discoveries:discoveriesOut};
 }
 
+function buildDiscoveryPool(scored,selectedIds){
+ return scored.filter(anime=>!selectedIds.has(anime.id))
+  .sort((a,b)=>(a._popularity||0)-(b._popularity||0)||(b._score||0)-(a._score||0)||(b._quality||0)-(a._quality||0));
+}
+
 function calculateSelectionAdjustment(candidate,selected,discovery=false,maxPopularity=2){
  const genres=new Set(candidate.genres||[]);
  const tags=new Set((candidate.tags||[]).filter(t=>!t.isMediaSpoiler&&t.rank>=40).map(t=>t.name));
@@ -390,6 +395,10 @@ function calculateSelectionAdjustment(candidate,selected,discovery=false,maxPopu
 function runRecommendationSelfTests(){
  const tests=[];
  const check=(name,condition)=>tests.push({name,passed:Boolean(condition)});
+ const allCandidates=[{id:1,_score:100,_popularity:100},{id:2,_score:-80,_popularity:5},{id:3,_score:0,_popularity:20}];
+ const openPool=buildDiscoveryPool(allCandidates,new Set([1]));
+ check('相性スコアが低い作品も意外なおすすめ候補に残る',openPool.some(a=>a.id===2));
+ check('上位4作品以外も全候補から意外なおすすめ候補に残る',openPool.length===2&&openPool.some(a=>a.id===3));
  const dedup=deduplicateRecommendationGroups(
   [{id:1,title:{native:'作品A',english:'Title A',romaji:'Title A'}}],
   [{id:2,title:{native:'作品B',english:'Title B',romaji:'Title B'}},{id:3,title:{native:'作品A',english:'Another Title',romaji:'Another Title'}}]
@@ -744,10 +753,8 @@ async function getRecommendations(profile){
  };
  const closeMatches=selectDiverse(scored,4);
  const selectedIds=new Set(closeMatches.map(a=>a.id));
- const bestScore=scored[0]?scored[0]._score:0;
- const minimumDiscoveryScore=bestScore>0?bestScore*0.55:bestScore-5;
- const discoveryPool=scored.filter(a=>!selectedIds.has(a.id)&&a._score>=minimumDiscoveryScore)
-  .sort((a,b)=>a._popularity-b._popularity||b._score-a._score||b._quality-a._quality);
+ // 回答スコアによる足切りは行わない。取得済みの全候補を意外なおすすめの対象にする。
+ const discoveryPool=buildDiscoveryPool(scored,selectedIds);
  const discoveries=selectDiverse(discoveryPool,4,true);
  return {closeMatches,discoveries,seedReport};
 }
