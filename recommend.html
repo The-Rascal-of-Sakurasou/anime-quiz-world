@@ -23,6 +23,32 @@
 .skip-link{position:fixed;z-index:10000;top:10px;left:10px;transform:translateY(-160%);padding:10px 14px;border-radius:8px;background:var(--text);color:#fff;font-weight:700;text-decoration:none;box-shadow:0 3px 12px #0003}
 .skip-link:focus{transform:translateY(0)}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+/* Japanese-first product styling */
+:root{--bg:#f6f7f9;--panel:#fff;--text:#202936;--muted:#687586;--accent:#24518a;--line:#e1e6ed;--soft:#eef3f9}
+body{background:#f6f7f9;color:#202936;letter-spacing:.005em}
+.wrap{width:min(1080px,calc(100% - 36px))}
+.top{padding:16px 0}
+.brand{font-size:1.28rem;letter-spacing:-.035em}
+.brand span{color:#24518a}
+.hero{padding:32px 0 22px}
+.hero h1{letter-spacing:-.04em}
+.panel{border-radius:12px;box-shadow:0 3px 14px #172b4509}
+.question h2{font-size:1.28rem;line-height:1.5}
+.question p{font-size:.96rem;line-height:1.7}
+.choice{min-height:76px;border-radius:9px;line-height:1.5}
+.choice:hover{border-color:#9eb3ce;background:#f8fafd}
+.choice.selected{background:#edf3fa;border-color:#24518a}
+.progress{height:8px;background:#e9edf2}
+.progress>div{background:#24518a}
+.primary{background:#24518a;border-color:#24518a}
+.primary:hover{background:#193e6e}
+.profile{background:#f1f5fa;border:1px solid #e1e8f1}
+.anime{border-radius:10px;box-shadow:0 2px 8px #172b4508}
+.anime:hover{border-color:#aebed2}
+.reason-detail{background:#f3f6fa}
+.share-panel{background:#f8fafc;border-radius:10px}
+@media(max-width:480px){.wrap{width:calc(100% - 22px)}.hero{padding:23px 0 17px}.panel{padding:16px 13px}.choice{min-height:64px;padding:12px}.actions{gap:8px}.actions>*{min-width:0}}
 </style>
 </head>
 <body>
@@ -91,61 +117,61 @@ const safeStorage={
 };
 const API='https://graphql.anilist.co';
 const questions=[
-{title:'どんなジャンルの物語に惹かれますか？',help:'作品のジャンルとして最も見たいものを選んでください。',options:[
+{title:'どんなジャンルの物語に惹かれますか？',help:'ジャンル名だけでなく、普段よく見たい物語のタイプで選んでください。',options:[
 {label:'異世界・冒険・ファンタジー',genres:['Fantasy','Adventure']},
 {label:'SF・ミステリー・サスペンス',genres:['Sci-Fi','Mystery','Thriller']},
 {label:'バトル・アクション',genres:['Action','Adventure']},
 {label:'ドラマ・コメディ・日常',genres:['Drama','Comedy','Slice of Life']}
 ]},
-{title:'物語の中心にあるテーマは？',help:'ストーリーの主軸として惹かれるものを選んでください。',options:[
+{title:'物語の中心にあるテーマは？',help:'物語の中で、特に見てみたい展開やテーマを1つ選んでください。',options:[
 {label:'謎や秘密を追い、真相に迫る',genres:['Mystery','Thriller'],tags:['Conspiracy']},
 {label:'大切な人との絆や選択を描く',genres:['Drama'],tags:['Family','Friendship']},
 {label:'生き残りや強敵との対立を描く',genres:['Action','Thriller'],tags:['Survival','Battle Royale']},
 {label:'日常の出来事や社会を笑いに変える',genres:['Comedy'],tags:['Parody','Gag Humor']}
 ]},
-{title:'好みの展開テンポは？',help:'物語が進む速さについて、最も近いものを選んでください。',options:[
+{title:'好みの展開テンポは？',help:'序盤から速く進む作品か、時間をかけて描く作品か。好みに近いものを選んでください。',options:[
 {label:'序盤から次々と展開する',tags:['Fast-Paced']},
 {label:'一定のテンポで着実に進む',genres:['Adventure']},
 {label:'ゆっくりと時間をかけて進む',genres:['Drama','Slice of Life']},
 {label:'緩急が大きく、静と動の差がある',genres:['Thriller','Drama']}
 ]},
-{title:'作品全体の雰囲気はどれが好み？',help:'視聴中に感じたい作品の空気感を選んでください。',options:[
+{title:'作品全体の雰囲気はどれが好み？',help:'見ている間にどんな雰囲気を楽しみたいかで選んでください。',options:[
 {label:'シリアスで緊張感がある',genres:['Thriller','Psychological','Drama']},
 {label:'明るさとシリアスさの両方がある',genres:['Adventure','Fantasy','Sci-Fi']},
 {label:'明るく、気楽に楽しめる',genres:['Comedy','Slice of Life']},
 {label:'静かで落ち着いた雰囲気',genres:['Slice of Life','Drama']}
 ]},
-{title:'好みの舞台・世界は？',help:'物語の舞台として惹かれるものを選んでください。',options:[
+{title:'好みの舞台・世界は？',help:'現代・学校・異世界・宇宙など、好きな舞台に近いものを選んでください。',options:[
 {label:'異世界・魔法・未知の大陸',genres:['Fantasy','Adventure'],tags:['Magic','Isekai']},
 {label:'現代社会・学校・日常',genres:['Slice of Life','Drama']},
 {label:'未来・宇宙・科学技術',genres:['Sci-Fi','Mecha'],tags:['Space','Cyberpunk']},
 {label:'歴史・伝承・和風世界',genres:['Historical','Fantasy'],tags:['Mythology','Samurai']}
 ]},
-{title:'作品の長さはどれが理想？',help:'視聴にかけられる時間に近いものを選んでください。',options:[
+{title:'作品の長さはどれが理想？',help:'一気に見やすい短編か、長く楽しめるシリーズか。視聴スタイルに近いものを選んでください。',options:[
 {label:'短め：映画・1クール程度',length:'short'},
 {label:'中程度：2〜3クール程度',length:'medium'},
 {label:'長め：複数シーズン・長編',length:'long'},
 {label:'長さは気にしない',length:'any'}
 ]},
-{title:'登場人物に求めるものは？',help:'人物の性格や魅力として特に惹かれるものを選んでください。',options:[
+{title:'登場人物に求めるものは？',help:'キャラクターに期待する魅力を選んでください。複数当てはまる場合は一番近いものを選びます。',options:[
 {label:'困難を通じて大きく成長する人物',tags:['Character Development','Coming of Age']},
 {label:'個性や考え方が際立つ人物たち',tags:['Ensemble Cast','Unusual Characters']},
 {label:'複雑な心理や価値観を持つ人物',genres:['Psychological','Drama'],tags:['Philosophy','Psychological']},
 {label:'信念が強く、行動力のある人物',genres:['Action','Adventure'],tags:['Leadership','Revenge']}
 ]},
-{title:'物語の複雑さはどれが好み？',help:'設定や情報を理解していく難しさについて選んでください。',options:[
+{title:'物語の複雑さはどれが好み？',help:'伏線や複雑な設定を考察しながら見るのが好きか、分かりやすさを重視するかで選んでください。',options:[
 {label:'説明が分かりやすく、シンプル'},
 {label:'適度な伏線や意外な展開がある',genres:['Mystery'],tags:['Conspiracy']},
 {label:'複数の出来事や視点が絡み合う',genres:['Psychological','Drama'],tags:['Politics','Ensemble Cast']},
 {label:'独自の設定や専門的な情報が多い',genres:['Sci-Fi','Fantasy'],tags:['World Building','Politics']}
 ]},
-{title:'視聴後にどんな気持ちが残る作品が好み？',help:'見終わった後に得たい感情を選んでください。',options:[
+{title:'視聴後にどんな気持ちが残る作品が好み？',help:'見終わったあとに、どんな気分や余韻が残ってほしいかで選んでください。',options:[
 {label:'驚きや衝撃が残る',genres:['Thriller','Mystery'],tags:['Psychological']},
 {label:'感動や切なさ、深い余韻が残る',genres:['Drama'],tags:['Tragedy','Coming of Age']},
 {label:'爽快感や達成感が残る',genres:['Action','Adventure'],tags:['Super Power']},
 {label:'笑いや安心感、前向きな気分が残る',genres:['Comedy'],tags:['Gag Humor']}
 ]},
-{title:'登場人物同士の関係性で惹かれるものは？',help:'作品の中で特に見たい人間関係を選んでください。',options:[
+{title:'登場人物同士の関係性で惹かれるものは？',help:'登場人物同士の関係で、特に見たいものを選んでください。',options:[
 {label:'仲間と協力し、絆を深めていく',tags:['Friendship','Found Family']},
 {label:'ライバル同士が競い合い、高め合う',tags:['Rivalry']},
 {label:'家族や身近な人との関係を描く',tags:['Family','Family Life']},
