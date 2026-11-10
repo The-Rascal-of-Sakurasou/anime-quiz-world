@@ -1570,6 +1570,7 @@ async function refreshSession(session){
  $s('aqwAuthPanel').classList.remove('hidden');
  $s('aqwMemberPanel').classList.toggle('hidden',!currentUser);
  $s('aqwSignOut').classList.toggle('hidden',!currentUser);
+ $s('aqwForgotPassword').classList.toggle('hidden',!!currentUser);
  $s('aqwSignIn').classList.toggle('hidden',!!currentUser);
  $s('aqwSignUp').classList.toggle('hidden',!!currentUser);
  if(!currentUser){await closeFriendConversation();setStatus(localJa()?'ログインするとフォローとフレンドとのチャットを利用できます。':'Sign in to follow users and chat with friends.');await Promise.all([loadRushLeaderboard(),loadPlayerLeaderboard()]);return}
