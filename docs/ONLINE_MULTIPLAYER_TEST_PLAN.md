@@ -100,6 +100,7 @@ The GitHub Actions workflow runs:
 - Rejection of non-host starts, full-room joins, unknown answer options, and answer attempts while disconnected.
 - Successful reconnect before the grace period expires.
 - The 10-attempt room-code throttle.
+- Realtime membership policy allows member Presence and blocks client-originated Broadcast messages.
 - Deno type checking of the Edge Function.
 
 Workflow: `.github/workflows/multiplayer-sql-tests.yml`.
@@ -123,4 +124,4 @@ Do not deploy the Edge Function or apply the SQL to production until:
 - The room-code throttle is per authenticated account, not per IP or device.
 - A player who leaves during an active match is marked disconnected; automatic host migration is not implemented.
 - Question timeout advancement currently happens when a client requests match state after the deadline. A scheduled server-side advance mechanism is not yet implemented.
-- The SQL and TypeScript have not yet been run through PostgreSQL and Deno compilers in this environment.
+- SQL and TypeScript checks pass in GitHub Actions, but the harness is not a full Supabase stack and the Edge Function has not been deployed or invoked against a real Supabase project.
