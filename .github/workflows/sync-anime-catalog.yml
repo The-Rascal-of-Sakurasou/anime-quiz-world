@@ -25,6 +25,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Check catalogue sync script syntax
+        run: node --check scripts/sync-anime-catalog.mjs
       - name: Build shared Japanese-origin anime catalogue
         run: node scripts/sync-anime-catalog.mjs
       - name: Commit catalogue when changed
