@@ -13,6 +13,8 @@ on:
       - "scripts/test-static-security.mjs"
       - "scripts/sync-anime-catalog.mjs"
       - ".github/workflows/sync-anime-catalog.yml"
+      - "scripts/sync-anime-catalog.mjs"
+      - ".github/workflows/sync-anime-catalog.yml"
       - ".github/workflows/aqw-static-security.yml"
   pull_request:
     paths:
@@ -23,6 +25,8 @@ on:
       - "privacy.html"
       - "terms.html"
       - "scripts/test-static-security.mjs"
+      - "scripts/sync-anime-catalog.mjs"
+      - ".github/workflows/sync-anime-catalog.yml"
       - ".github/workflows/aqw-static-security.yml"
   workflow_dispatch:
 
