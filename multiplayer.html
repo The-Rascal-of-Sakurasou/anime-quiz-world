@@ -431,12 +431,12 @@ function renderGameState(data){
  renderGameScores(data.players||[]);
  $('gamePanel').classList.remove('hidden');
  $('gameProgress').textContent=data.status==='completed'?'終了':(data.current_question+' / '+data.question_count+'問');
- if(data.status==='completed'){
+ if(data.status==='completed'||data.status==='cancelled'){
   $('gameQuestionArea').classList.add('hidden');$('gameResult').classList.remove('hidden');
-  const me=(data.players||[]).find(p=>p.user_id===user.id),winner=data.winner_id;
-  $('gameResultTitle').textContent=winner===null?'引き分け':winner===user.id?'あなたの勝ち':'あなたの負け';
-  $('gameResultText').textContent='最終スコア：'+(me?.score||0)+'点';
-  status($('gameStatus'),'対戦が終了しました。','good');
+  const me=(data.players||[]).find(p=>p.user_id===user.id),opponent=(data.players||[]).find(p=>p.user_id!==user.id),winner=data.winner_id;
+  $('gameResultTitle').textContent=data.status==='cancelled'?'対戦が中断されました':winner===null?'引き分け':winner===user.id?'あなたの勝ち':'あなたの負け';
+  $('gameResultText').textContent=data.status==='cancelled'?'対戦相手が退出したため、対戦を終了しました。':'最終スコア：あなた '+(me?.score||0)+'点 / 相手 '+(opponent?.score||0)+'点';
+  status($('gameStatus'),data.status==='cancelled'?'対戦が中断されました。':'対戦が終了しました。','good');
   stopGamePolling();return;
  }
  if(data.status!=='playing'||!data.question){
