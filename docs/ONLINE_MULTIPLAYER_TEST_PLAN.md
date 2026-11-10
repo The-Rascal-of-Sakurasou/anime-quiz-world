@@ -1,6 +1,6 @@
 # Anime Quiz World — Online Multiplayer Test Plan
 
-Status: **Automated PostgreSQL 16 integration flow and Deno type check have passed once; extended authorization tests are now included in CI.**
+Status: **The expanded PostgreSQL 16 integration flow and Deno type check passed in GitHub Actions on 2026-11-10.**
 
 The SQL schema and Edge Function are still drafts. CI applies the SQL to a disposable PostgreSQL 16 instance with minimal Supabase Auth/Realtime compatibility stubs. This verifies PostgreSQL syntax and the tested database flows, but it is not a full Supabase environment. Additional tests must still be run against a disposable Supabase project or local Supabase stack. Never use the production project for negative or destructive tests.
 
@@ -97,6 +97,8 @@ The GitHub Actions workflow runs:
 - Answer option validation, duplicate-answer rejection, automatic advancement, and final result persistence.
 - Correct-answer-key omission from match-state output.
 - Rejection of direct dispatcher/rate-limit calls by the `authenticated` role.
+- Rejection of non-host starts, full-room joins, unknown answer options, and answer attempts while disconnected.
+- Successful reconnect before the grace period expires.
 - The 10-attempt room-code throttle.
 - Deno type checking of the Edge Function.
 
