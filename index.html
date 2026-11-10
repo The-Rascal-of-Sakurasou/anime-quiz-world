@@ -709,11 +709,11 @@ async function begin(){
  quizStartInProgress=true;$('#start').disabled=true;
  try{
   clearInterval(questionTimer);clearInterval(clockTimer);isPaused=false;pausedAt=0;totalPausedMs=0;pausedQuestionSeconds=0;skippedQuestionCount=0;$('#quizArea').inert=false;$('#pauseButton').classList.remove('hidden');$('#quitQuizButton').classList.remove('hidden');$('#pauseNotice').classList.add('hidden');$('#pauseButton').textContent=pauseButtonLabel(false);$('#setupControls').classList.add('hidden');$('#result').classList.add('hidden');reviewMode=false;missedQuestions=[];roundFailed=false;playMode=$('#playMode').value;mixedModeCounts={};prepareDifficultyTiers(pool);
-  const mode=$('#modeSelect').value,format=(playMode==='daily'||playMode==='rush')?'choices':$('#answerFormatSelect').value;
+  let mode=$('#modeSelect').value;const format=(playMode==='daily'||playMode==='rush')?'choices':$('#answerFormatSelect').value;
   requestedQuestionCount=playMode==='endless'?Infinity:(playMode==='daily'||playMode==='rush')?10:(Number($('#questionCount').value)||10);
-  const target=playMode==='endless'?100:Math.min(100,Math.max(10,requestedQuestionCount));
-  let eligible=await collectEligibleAnime(mode,format,target),usedSafeFallback=false;
-  if(!eligible.length&&mode!=='mixed'){eligible=await collectEligibleAnime('mixed','choices',target);usedSafeFallback=eligible.length>0}
+  const target=playMode==='endless'?Infinity:requestedQuestionCount;
+  let activeMode=mode,activeFormat=format,eligible=await collectEligibleAnime(mode,format,target),usedSafeFallback=false;
+  if(!eligible.length&&mode!=='mixed'){activeMode='mixed';activeFormat='choices';eligible=await collectEligibleAnime('mixed','choices',target);usedSafeFallback=eligible.length>0;if(usedSafeFallback){$('#modeSelect').value='mixed';$('#answerFormatSelect').value='choices'}}
   if(!eligible.length){clearInterval(questionTimer);clearInterval(clockTimer);locked=true;questions=[];index=0;isPaused=false;pausedAt=0;totalPausedMs=0;pausedQuestionSeconds=0;$('#quizArea').inert=false;$('#quizArea').classList.add('hidden');$('#pauseButton').classList.add('hidden');$('#quitQuizButton').classList.add('hidden');$('#pauseNotice').classList.add('hidden');$('#setupControls').classList.remove('hidden');$('#start').classList.remove('hidden');$('#start').disabled=false;$('#start').textContent=tr('start');$('#quizStatus').textContent=lang==='ja'?'この形式で出題できる作品がありません。出題形式や難易度を変更してください。':'No anime are available for this format. Change the question type or difficulty.';return}
   const ordered=playMode==='daily'?dailyOrder(eligible):shuffle(eligible),count=(playMode==='daily'||playMode==='rush')?Math.min(10,ordered.length):playMode==='endless'?ordered.length:Math.min(requestedQuestionCount,ordered.length);
   questions=ordered.slice(0,count);index=0;points=0;combo=0;bestCombo=0;choiceHintUsed=false;typedHintUsed=false;elapsedSeconds=0;startedAt=Date.now();
