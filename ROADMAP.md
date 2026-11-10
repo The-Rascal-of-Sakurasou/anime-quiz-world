@@ -20,11 +20,11 @@ Tracking issue: https://github.com/The-Rascal-of-Sakurasou/anime-quiz-world/issu
 ## Planned additions
 
 ### P0 — Online multiplayer
-- [ ] Create a match room
-- [ ] Join by room code or invitation link
+- [x] Create a match room
+- [x] Join by room code or invitation link
 - [ ] Invite existing friends (reuse mutual follows)
 - [ ] Public matchmaking
-- [ ] 2–4 player lobby and online presence
+- [x] 2–4 player lobby and online presence
 - [ ] Ready state, host start, leave, reconnect
 - [ ] Synchronized questions, timer, and answer submission
 - [ ] Server-side answer/score validation and result persistence
