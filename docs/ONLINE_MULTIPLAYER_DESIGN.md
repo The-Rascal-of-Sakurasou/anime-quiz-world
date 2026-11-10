@@ -101,7 +101,7 @@ The project's Realtime setting **Allow public access** must be disabled before p
 - The public RPC dispatcher accepts only the actions currently allowlisted by the Edge Function: `create_room`, `join_room`, `set_ready`, `start_match`, `submit_answer`, `get_match_state`, `reconnect`, and `leave_room`.
 - The dispatcher is intended to be executable only by `service_role`; the Edge Function must continue deriving the actor ID from a verified user JWT.
 - Each question is open for 20 seconds. A correct answer earns up to 1,500 points, with the speed component calculated by the server. Incorrect answers earn zero.
-- The server sends the question payload and deadline, but not the stored correct option ID.
+- The server sends the question payload and deadline, but not the stored correct option ID. Completed match-state responses include persisted final ranks.
 - Question-bank writes are checked for a non-empty prompt, 2–6 unique option IDs with non-empty labels, and a correct option ID that exists in the options.
 - The draft currently selects from a private question bank. It contains no seed questions, so starting a match correctly fails until enough active questions have been curated and loaded.
 - A player who leaves during an active match is marked disconnected rather than removed, so the match can still finish consistently. Host migration is not implemented in this draft.
