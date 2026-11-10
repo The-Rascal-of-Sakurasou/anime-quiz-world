@@ -765,7 +765,7 @@ async function fetchAnime(vars={}){
   throw lastError||new Error('データをまとめて取得できませんでした。');
  };
  if(vars.search){const raw=(await request({page:1,perPage:18,search:vars.search})).filter(isUsableAnime);const unique=deduplicateSearchResults(raw);unique.duplicateCount=Math.max(0,raw.length-unique.length);return unique;}
- const cacheKey='aqw-anime-pool-v19-pagination-source-metadata';
+ const cacheKey='aqw-anime-pool-v20-expanded-format-overflow-sort-coverage';
  // Merge every older local catalogue cache; the application no longer imposes an item-count target.
  let initial=[],cacheSavedAt=0,savedProgress=null;
  try{
@@ -850,6 +850,8 @@ async function fetchAnime(vars={}){
    }
    let taskIndex=Number.isInteger(savedProgress?.taskIndex)?Math.max(0,Math.min(tasks.length,savedProgress.taskIndex)):0;
    if(taskIndex>=tasks.length&&Date.now()-Number(savedProgress?.updatedAt||0)>7*24*60*60*1000)taskIndex=0;
+   const overflowSorts=['SCORE_DESC','FAVOURITES_DESC','TRENDING_DESC','START_DATE_DESC'];
+   const existingOverflowScopes=new Set(tasks.filter(task=>task[3]&&overflowSorts.includes(task[0])).map(task=>task[0]+'|'+task[3]));
    const existingDateScopes=new Set(tasks.filter(task=>task[4]!=null&&task[5]!=null).map(task=>task[0]+'|'+task[3]+'|'+task[4]+'|'+task[5]));
    let completed=taskIndex,failures=Number(savedProgress?.failures)||0,batchesSinceSave=0;
    const saveProgress=async(items,nextIndex)=>{
@@ -874,6 +876,14 @@ async function fetchAnime(vars={}){
      pageResults.forEach(result=>(result.items||[]).forEach(a=>{if(isUsableAnime(a)){const previous=all.get(a.id);all.set(a.id,previous?mergeAnimeRecords(previous,a):a)}}));
     }catch(err){failures+=batch.length;console.warn('Background anime page batch failed:',sort,page,err);const retryable=batch.filter(task=>Number(task[6]||0)<2);if(retryable.length)tasks.push(...retryable.map(task=>[...task,Number(task[6]||0)+1]))}
     if(format&&!yearStart&&batch.some(task=>task[1]===100)&&pageResults.some(result=>result.hasNextPage===true)){
+     // A format scope exceeding AniList's 5,000-item page window may hide records outside its first sort slice.
+     // Add complementary sort scopes only for overflowing formats, avoiding extra requests for small formats.
+     for(const overflowSort of overflowSorts){
+      const overflowScope=overflowSort+'|'+format;
+      if(existingOverflowScopes.has(overflowScope))continue;
+      existingOverflowScopes.add(overflowScope);
+      for(let overflowPage=1;overflowPage<=100;overflowPage++)tasks.push([overflowSort,overflowPage,'fill',format]);
+     }
      for(let startYear=1900;startYear<=2030;startYear+=10){
       const endYear=startYear+9,scope=sort+'|'+format+'|'+startYear+'|'+endYear;
       if(existingDateScopes.has(scope))continue;
