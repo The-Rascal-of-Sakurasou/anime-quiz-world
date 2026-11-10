@@ -123,6 +123,7 @@ assert.match(recommend, /独立したサイドストーリーは親作品と別�
 const index = source.get("index.html");
 assert.doesNotMatch(index, /id="collection(?:Heading)?"/, "The anime collection display must be removed");
 assert.doesNotMatch(index, /rememberAnime|aqw-collection/, "Quiz answers must not create or load a per-user anime collection");
+assert.match(index, /safeStorage\.removeItem\('aqw-collection'\)/, "Legacy per-user anime collection data must be removed on page load");
 assert.match(index, /\[t\.fifty,runs>=50\]/, "The 50-play achievement must not depend on a stored anime collection");
 assert.match(index, /type:ANIME,countryOfOrigin:JP/, "Quiz search query must be restricted to Japanese-origin anime");
 assert.ok(index.includes("media(type:ANIME,countryOfOrigin:JP"), "Quiz catalog query must be restricted to Japanese-origin anime");
