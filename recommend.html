@@ -606,6 +606,30 @@ async function findSeedAnime(title){
  }
  throw lastError||new Error('タイトル検索に失敗しました。');
 }
+function calculateSeedSimilarity(candidate,seeds,rarityWeight,genreRarity){
+ const candidateGenres=new Set(Array.isArray(candidate?.genres)?candidate.genres:[]);
+ const candidateTags=new Map((Array.isArray(candidate?.tags)?candidate.tags:[])
+  .filter(tag=>tag&&!tag.isMediaSpoiler&&Number(tag.rank)>=40&&typeof tag.name==='string')
+  .map(tag=>[tag.name,Math.max(0,Math.min(100,Number(tag.rank)||0))]));
+ const perSeed=[];const matchedGenres=[];const matchedTagScores=new Map();
+ for(const seed of Array.isArray(seeds)?seeds:[]){
+  const sharedGenres=[...new Set((Array.isArray(seed?.genres)?seed.genres:[]).filter(name=>candidateGenres.has(name)))];
+  const sharedTags=(Array.isArray(seed?.tags)?seed.tags:[])
+   .filter(tag=>tag&&!tag.isMediaSpoiler&&Number(tag.rank)>=40&&candidateTags.has(tag.name));
+  const tagPoints=sharedTags.reduce((sum,tag)=>{
+   const confidence=Math.min(100,Math.max(0,Number(tag.rank)||0),candidateTags.get(tag.name))/100;
+   matchedTagScores.set(tag.name,Math.max(matchedTagScores.get(tag.name)||0,confidence));
+   return sum+confidence*Math.max(0,Number(rarityWeight(tag.name))||0);
+  },0);
+  const tagScore=Math.min(6,tagPoints*1.5);
+  const genreScore=Math.min(2,sharedGenres.reduce((sum,name)=>sum+0.35+Math.max(0,Math.min(1,Number(genreRarity(name))||0))*0.65,0));
+  perSeed.push(tagScore+genreScore);matchedGenres.push(...sharedGenres);
+ }
+ if(!perSeed.length)return {score:0,matchedGenres:[],matchedTags:[]};
+ const best=Math.max(...perSeed),average=perSeed.reduce((sum,value)=>sum+value,0)/perSeed.length;
+ const matchedTags=[...matchedTagScores.entries()].sort((a,b)=>b[1]-a[1]).slice(0,15).map(([name])=>name);
+ return {score:Math.min(8.5,best*0.7+average*0.3),matchedGenres:[...new Set(matchedGenres)],matchedTags};
+}
 async function getRecommendations(profile){
  const query='query ($page:Int,$sort:[MediaSort]) { Page(page:$page,perPage:50) { media(type:ANIME,sort:$sort,isAdult:false) { id format title { romaji english native } description(asHtml:false) coverImage { extraLarge large } episodes seasonYear averageScore popularity genres tags { name rank isMediaSpoiler } relations { edges { relationType node { id type } } } siteUrl } } }';
  const fetchPage=async (page,sort)=>{
@@ -684,24 +708,8 @@ async function getRecommendations(profile){
  const genreFrequency=new Map();
  for(const anime of items)for(const genre of new Set(anime.genres||[]))genreFrequency.set(genre,(genreFrequency.get(genre)||0)+1);
  const genreRarity=genre=>1-Math.min(1,(genreFrequency.get(genre)||0)/Math.max(1,items.length));
- // 入力作品数に比例して補正が膨らまないよう、最良一致を中心に集約する。
- const seedScore=(candidate,seeds)=>{
-  const candidateTags=new Map((candidate.tags||[]).filter(t=>!t.isMediaSpoiler&&t.rank>=40).map(t=>[t.name,t]));
-  const perSeed=[];const matchedGenres=[],matchedTags=[];
-  for(const seed of seeds){
-   const sharedGenres=(seed.genres||[]).filter(g=>(candidate.genres||[]).includes(g));
-   const sharedTags=(seed.tags||[]).filter(t=>!t.isMediaSpoiler&&t.rank>=40&&candidateTags.has(t.name));
-   const tagPoints=sharedTags.reduce((sum,t)=>sum+(Math.max(0,Math.min(100,Number(t.rank)||0))/100)*rarityWeight(t.name),0);
-   const tagScore=Math.min(6,tagPoints*1.5);
-   const genreScore=Math.min(2,sharedGenres.reduce((sum,g)=>sum+0.35+genreRarity(g)*0.65,0));
-   perSeed.push(tagScore+genreScore);
-   matchedGenres.push(...sharedGenres);
-   matchedTags.push(...sharedTags.sort((a,b)=>b.rank-a.rank).slice(0,5).map(t=>t.name));
-  }
-  if(!perSeed.length)return {score:0,matchedGenres:[],matchedTags:[]};
-  const best=Math.max(...perSeed),average=perSeed.reduce((sum,value)=>sum+value,0)/perSeed.length;
-  return {score:Math.min(8.5,best*0.7+average*0.3),matchedGenres:[...new Set(matchedGenres)],matchedTags:[...new Set(matchedTags)]};
- };
+ // 候補作品側のタグ評価も使い、弱いタグ一致を過大評価しない。
+ const seedScore=(candidate,seeds)=>calculateSeedSimilarity(candidate,seeds,rarityWeight,genreRarity);
  const favoriteIds=new Set(favoriteSeeds.map(x=>x.id)),dislikedIds=new Set(dislikedSeeds.map(x=>x.id));
  const scored=items.filter(a=>a.coverImage?.large&&a.title&&(a.format==='TV'||a.format==='TV_SHORT'||a.format==='MOVIE'||a.format==='ONA'||a.format==='OVA'||a.format==='SPECIAL')).map(a=>{
   let score=0;const scoreBreakdown=[];const reasons=[];
