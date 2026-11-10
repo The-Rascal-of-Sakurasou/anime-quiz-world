@@ -62,7 +62,7 @@ assert.match(admin, /aqw-admin-control/, "Protected admin Edge Function call mis
 
 const multiplayer = source.get("multiplayer.html");
 assert.match(multiplayer, /let matchmakingTimer=null,matchmakingBusy=false,matchmakingPrefs=null,matchmakingPollPromise=null;/, "Random matchmaking must track an in-flight poll");
-const stopMatchmakingSource = multiplayer.match(/function stopMatchmakingPolling\(\)\{[\s\S]*?\n\}/)?.[0];
+const stopMatchmakingSource = multiplayer.match(/function stopMatchmakingPolling\(\)\{[^}]*\}/)?.[0];
 assert.ok(stopMatchmakingSource, "Matchmaking timer cleanup helper missing");
 assert.doesNotMatch(stopMatchmakingSource, /matchmakingBusy=false/, "Stopping the timer must not mark an in-flight poll as finished");
 const pollMatchmakingSource = multiplayer.match(/async function pollMatchmaking\(\)\{[\s\S]*?\n\}/)?.[0];
