@@ -80,11 +80,11 @@ footer{color:var(--muted);font-size:.85rem;padding:10px 0 30px}
 <script>
 (()=> {
 'use strict';
-const URL='https://ksyfhscjfqzenifcttiu.supabase.co';
+const SUPABASE_URL='https://ksyfhscjfqzenifcttiu.supabase.co';
 const KEY='sb_publishable_eL_Da06cmHz3W58jpcBIBQ_YzTThTL4';
 const $=id=>document.getElementById(id);
 const status=$('status');
-const client=window.supabase.createClient(URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+const client=window.supabase.createClient(SUPABASE_URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 let activeUser=null;
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function say(message,kind=''){status.textContent=message;status.className='status'+(kind?' '+kind:'')}
