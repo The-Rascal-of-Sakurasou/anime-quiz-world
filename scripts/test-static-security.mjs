@@ -173,6 +173,15 @@ assert.match(recommend, /独立したサイドストーリーは親作品と別�
 const syncScript = fs.readFileSync("scripts/sync-anime-catalog.mjs", "utf8");
 const syncWorkflow = fs.readFileSync(".github/workflows/sync-anime-catalog.yml", "utf8");
 assert.match(syncScript, /function isJapaneseOriginAnime\(anime\)/, "Shared catalogue sync must verify Japanese source origin");
+const syncOriginHelper = syncScript.match(/function isJapaneseOriginAnime\(anime\)\s*\{[\s\S]*?\n\}/)?.[0];
+assert.ok(syncOriginHelper, "Shared catalogue Japanese-origin helper must be extractable for regression tests");
+const isSyncOriginJapanese = vm.runInNewContext(`(${syncOriginHelper})`);
+assert.equal(isSyncOriginJapanese({ countryOfOrigin: "JP", source: "ORIGINAL" }), true, "Japanese original anime must enter the shared catalogue");
+assert.equal(isSyncOriginJapanese({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "ANIME", countryOfOrigin: "JP", format: "TV" } }] } }), true, "Verified Japanese anime-source spin-offs must enter the shared catalogue");
+assert.equal(isSyncOriginJapanese({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "ANIME", countryOfOrigin: "US", format: "TV" } }] } }), false, "Foreign anime-source works must not enter the shared catalogue");
+assert.equal(isSyncOriginJapanese({ countryOfOrigin: "JP", source: "VIDEO_GAME", relations: [] }), false, "Unverified game-source origin must fail closed in the shared catalogue");
+assert.match(syncScript, /startDate_greater/, "The shared catalogue must split oversized format scopes by release decade");
+
 assert.match(syncScript, /countryOfOrigin !== 'JP'/, "Shared catalogue sync must reject non-Japanese animation");
 assert.match(syncScript, /isAdult:false/, "Shared catalogue sync must exclude adult catalogue entries");
 assert.match(syncScript, /const OVERFLOW_SORTS = \['SCORE_DESC', 'FAVOURITES_DESC', 'TRENDING_DESC', 'START_DATE_DESC'\]/, "Shared catalogue sync must cover AniList pagination overflow");
