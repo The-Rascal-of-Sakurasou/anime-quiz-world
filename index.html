@@ -338,7 +338,7 @@ async function fetchAnime(vars={}){
   throw lastError||new Error('データをまとめて取得できませんでした。');
  };
  if(vars.search){const raw=(await request({page:1,perPage:18,search:vars.search})).filter(isUsableAnime);const unique=deduplicateSearchResults(raw);unique.duplicateCount=Math.max(0,raw.length-unique.length);return unique;}
- const cacheKey='aqw-anime-pool-v15-unbounded-catalogue';
+ const cacheKey='aqw-anime-pool-v16-batched-catalogue';
  // Merge every older local catalogue cache; the application no longer imposes an item-count target.
  let initial=[],cacheSavedAt=0,savedProgress=null;
  try{
@@ -415,7 +415,7 @@ async function fetchAnime(vars={}){
    const tasks=Array.isArray(savedProgress?.tasks)&&savedProgress.tasks.length?[...savedProgress.tasks]:makeTasks();
    // AniList limits each unfiltered query path to 5,000 entries. Separate formats expose additional records.
    const formats=['TV','TV_SHORT','MOVIE','OVA','ONA','SPECIAL'];
-   const sorts=['POPULARITY_DESC','ID','ID_DESC','SCORE_DESC','FAVOURITES_DESC','TRENDING_DESC','START_DATE_DESC'];
+   const sorts=['POPULARITY_DESC'];
    const existingFormatScopes=new Set(tasks.filter(task=>task[3]).map(task=>task[0]+'|'+task[3]));
    for(const format of formats)for(const sort of sorts){
     if(existingFormatScopes.has(sort+'|'+format))continue;
@@ -431,11 +431,14 @@ async function fetchAnime(vars={}){
    for(;taskIndex<tasks.length;){
     const [sort,page,taskType,format,yearStart,yearEnd]=tasks[taskIndex];
     
-    // Bundle two adjacent pages into one GraphQL request to reduce network round trips without increasing request frequency.
+    // Bundle up to three adjacent pages into one GraphQL request. This cuts round trips while keeping each response to at most 150 anime records.
     const batch=[tasks[taskIndex]];
-    if(taskType==='fill'&&taskIndex+1<tasks.length){
-     const next=tasks[taskIndex+1];
-     if(next[2]==='fill'&&next[0]===sort&&next[1]===page+1&&next[3]===format&&next[4]===yearStart&&next[5]===yearEnd&&next[6]===batch[0][6])batch.push(next);
+    if(taskType==='fill'){
+     for(let offset=1;offset<3&&taskIndex+offset<tasks.length;offset++){
+      const next=tasks[taskIndex+offset],previous=batch[batch.length-1];
+      if(next[2]==='fill'&&next[0]===sort&&next[1]===page+offset&&next[3]===format&&next[4]===yearStart&&next[5]===yearEnd&&next[6]===previous[6])batch.push(next);
+      else break;
+     }
     }
     await new Promise(resolve=>setTimeout(resolve,1200));
     let pageResults=[];
