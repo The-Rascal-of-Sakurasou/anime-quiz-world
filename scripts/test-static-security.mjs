@@ -60,17 +60,22 @@ assert.match(admin, /mfa\.verify/, "Admin TOTP verification flow missing");
 assert.match(admin, /aqw-admin-control/, "Protected admin Edge Function call missing");
 
 const recommend = source.get("recommend.html");
+assert.match(recommend, /media\\(search:\\$search,type:ANIME,countryOfOrigin:JP/, "Favorite-work search must be restricted to Japanese-origin anime");
+assert.match(recommend, /media\\(type:ANIME,countryOfOrigin:JP/, "Recommendation catalog query must be restricted to Japanese-origin anime");
+assert.match(recommend, /countryOfOrigin===.JP./, "Recommendation data must be filtered by Japanese origin on the client as a second guard");
 const questionBlock = recommend.match(/const questions=\[([\s\S]*?)\n\];\nconst questionTitles=/)?.[1];
 assert.ok(questionBlock, "Recommendation question block not found");
 const questionTitles = [...questionBlock.matchAll(/title:'([^']+)'/g)].map(match => match[1].trim());
 const questionDimensions = [...questionBlock.matchAll(/dimension:'([^']+)'/g)].map(match => match[1].trim());
-assert.equal(questionTitles.length, 13, "Recommendation diagnosis must contain exactly 13 questions");
+assert.equal(questionTitles.length, 7, "Recommendation diagnosis must contain seven non-overlapping questions");
 assert.equal(new Set(questionTitles).size, questionTitles.length, "Recommendation question titles must be unique");
-assert.equal(questionDimensions.length, 13, "Every recommendation question must declare a dimension");
+assert.equal(questionDimensions.length, 7, "Every recommendation question must declare a dimension");
 assert.equal(new Set(questionDimensions).size, questionDimensions.length, "Recommendation question dimensions must be unique");
+assert.deepEqual(questionDimensions, ["genre", "pacing", "emotional_intensity", "duration", "character_appeal", "narrative_complexity", "romance_amount"], "Recommendation questions must cover distinct preference dimensions");
 assert.match(recommend, /new Set\(q\.options\.map\(o=>o\.label\.trim\(\)\)\)\.size!==q\.options\.length/, "Runtime duplicate-option guard missing");
 const recommendationLabels = [...questionBlock.matchAll(/label:'([^']+)'/g)].map(match => match[1]);
-assert.equal(recommendationLabels.length, 52, "Each of the 13 recommendation questions must have four options");
+assert.equal(recommendationLabels.length, 28, "Each of the seven recommendation questions must have four options");
+assert.equal(new Set(recommendationLabels).size, recommendationLabels.length, "Recommendation option labels must not be duplicated across questions");
 assert.ok(recommendationLabels.every(label => [...label].length <= 30), "Recommendation choices must stay short and easy to scan");
 assert.match(questionBlock, /help:'[^']+'/g, "Recommendation questions must include simple guidance");
 assert.doesNotMatch(questionBlock, /NDCG|IDF|重み付け|希少性/, "Technical recommendation terms must not appear in user-facing questions");
@@ -99,6 +104,9 @@ assert.doesNotMatch(relationAllowlist, /PARENT/, "A side story parent relation m
 assert.match(recommend, /独立したサイドストーリーは親作品と別候補として残す/, "Side-story separation regression test missing");
 
 const index = source.get("index.html");
+assert.match(index, /type:ANIME,countryOfOrigin:JP/, "Quiz search query must be restricted to Japanese-origin anime");
+assert.match(index, /media\\(type:ANIME,countryOfOrigin:JP/, "Quiz catalog query must be restricted to Japanese-origin anime");
+assert.match(index, /countryOfOrigin===.JP./, "Quiz data must be filtered by Japanese origin on the client as a second guard");
 assert.match(index, /term\.normalize\('NFKC'\)/, "Community search input must be normalized before building PostgREST filters");
 assert.match(index, /safeTerm\.length<2|\[\.\.\.safeTerm\]\.length<2/, "Community search must reject terms shorter than two searchable characters");
 assert.match(index, /body\.textContent\s*=\s*post\.body/, "User-generated post text must be rendered with textContent");
