@@ -69,7 +69,7 @@ body{background:#f6f7f9;color:#202936;letter-spacing:.005em}
 <small style="color:var(--muted);font-weight:400">最大3作品。作品名は「、」またはカンマで区切ってください。</small></label>
 <label style="display:block;font-weight:700;font-size:.92rem">苦手なアニメ（任意）
 <input id="dislikedTitles" type="text" maxlength="180" placeholder="例：作品A、作品B" style="display:block;width:100%;margin-top:6px;padding:11px;border:1px solid var(--line);border-radius:8px;font:inherit;font-weight:400">
-<small style="color:var(--muted);font-weight:400">最大3作品。推薦候補からの除外ではなく、傾向の調整に使います。</small></label>
+<small style="color:var(--muted);font-weight:400">最大3作品。入力した作品自体を推薦候補から除外し、共通するジャンル・物語要素も推薦順位の調整に使います。</small></label>
 </div>
 <div class="actions"><button id="back" type="button" disabled>戻る</button><button id="next" class="primary" type="button" disabled>次へ</button></div>
 <p class="save-note">診断の回答と結果は、このブラウザに自動保存されます。別の端末とは共有されません。</p>
@@ -400,6 +400,10 @@ function calculateSelectionAdjustment(candidate,selected,discovery=false,maxPopu
  return {similarityPenalty,genreConcentrationPenalty,noveltyBonus,total:-similarityPenalty-genreConcentrationPenalty+noveltyBonus};
 }
 
+function buildExcludedSeedIds(favorites,dislikes){
+ return new Set([...(Array.isArray(favorites)?favorites:[]),...(Array.isArray(dislikes)?dislikes:[])].map(item=>item?.id).filter(id=>id!==undefined&&id!==null));
+}
+
 function runRecommendationSelfTests(){
  const tests=[];
  const check=(name,condition)=>tests.push({name,passed:Boolean(condition)});
@@ -411,6 +415,10 @@ function runRecommendationSelfTests(){
   [{id:1,title:{native:'作品A',english:'Title A',romaji:'Title A'}}],
   [{id:2,title:{native:'作品B',english:'Title B',romaji:'Title B'}},{id:3,title:{native:'作品A',english:'Another Title',romaji:'Another Title'}}]
  );
+ check('好きな作品そのものを推薦候補から除外する',buildExcludedSeedIds([{id:11}],[]).has(11));
+ check('苦手な作品そのものを推薦候補から除外する',buildExcludedSeedIds([],[{id:12}]).has(12));
+ check('好き・苦手の両方に入力した作品も推薦候補から除外する',buildExcludedSeedIds([{id:13}],[{id:13}]).has(13));
+ check('未解決の作品入力は他の候補IDを誤って除外しない',buildExcludedSeedIds([{id:null}],[]).size===0);
  check('13問すべてに異なる分類が設定されている',new Set(questions.map(q=>q.dimension)).size===13);
   check('全13問の選択肢ラベルが重複していない',!duplicateChoiceLabels&&questions.every(q=>q.options.length===4));
   check('ジャンル質問と舞台質問が同じジャンル加点に依存しない',questions.find(q=>q.dimension==='setting').options.every(o=>!o.genres?.length));
@@ -652,7 +660,7 @@ async function getRecommendations(profile){
  seedReport.conflicts=[...favoriteSeeds.filter(x=>conflictingIds.has(x.id)).map(x=>x.title?.native||x.title?.english||x.title?.romaji||x._requestedTitle)];
  const activeFavoriteSeeds=favoriteSeeds.filter(x=>!conflictingIds.has(x.id));
  const activeDislikedSeeds=dislikedSeeds.filter(x=>!conflictingIds.has(x.id));
- const excludedSeedIds=new Set([...favoriteIdsAll,...dislikedIdsAll]);
+ const excludedSeedIds=buildExcludedSeedIds(favoriteSeeds,dislikedSeeds);
  const genreEntries=Object.entries(profile.genres),tagEntries=Object.entries(profile.tags);
  const tagFrequency=new Map();
  for(const anime of items){
