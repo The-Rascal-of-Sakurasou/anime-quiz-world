@@ -69,6 +69,11 @@ assert.equal(new Set(questionTitles).size, questionTitles.length, "Recommendatio
 assert.equal(questionDimensions.length, 13, "Every recommendation question must declare a dimension");
 assert.equal(new Set(questionDimensions).size, questionDimensions.length, "Recommendation question dimensions must be unique");
 assert.match(recommend, /new Set\(q\.options\.map\(o=>o\.label\.trim\(\)\)\)\.size!==q\.options\.length/, "Runtime duplicate-option guard missing");
+const recommendationLabels = [...questionBlock.matchAll(/label:'([^']+)'/g)].map(match => match[1]);
+assert.equal(recommendationLabels.length, 52, "Each of the 13 recommendation questions must have four options");
+assert.ok(recommendationLabels.every(label => [...label].length <= 30), "Recommendation choices must stay short and easy to scan");
+assert.match(questionBlock, /help:'[^']+'/g, "Recommendation questions must include simple guidance");
+assert.doesNotMatch(questionBlock, /NDCG|IDF|重み付け|希少性/, "Technical recommendation terms must not appear in user-facing questions");
 
 const index = source.get("index.html");
 assert.match(index, /term\.normalize\('NFKC'\)/, "Community search input must be normalized before building PostgREST filters");
