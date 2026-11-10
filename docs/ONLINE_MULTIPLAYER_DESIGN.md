@@ -8,10 +8,11 @@ Implementation status (2026-11-10):
 - `supabase/config.toml` enables platform JWT verification for that function.
 - The gateway verifies the caller with `auth.getUser(token)`, derives the actor ID from that verified user, restricts actions and payload fields, and HMAC-hashes room codes with an Edge Function secret.
 - The gateway calls `public.aqw_match_dispatch`, which has **not** been implemented yet. The function is therefore a source draft, not deployable or usable.
-- The SQL schema remains a design draft. It has not been applied to the hosted database. Its Realtime topic-validation regex and duplicated trailing SQL fragment were corrected in the draft.
+- The SQL draft now includes a private question bank, a service-role-only dispatcher, server-side answer scoring, question deadlines, result ranking, and room lifecycle operations. It has not been applied to the hosted database.
+- The question bank is empty: an authenticated admin/import workflow and reviewed question data are still required before a match can start.
 - No production database schema, RLS policy, Realtime setting, secret, or Edge Function has been changed.
 
-The next required work is the service-role-only SQL dispatcher, a server-side question bank, isolated database tests, then a lobby client.
+The next required work is to validate the SQL on an isolated database, populate a reviewed question bank through a trusted process, deploy the Edge Function only after tests, and then build the lobby client.
 
 The current Supabase project has Auth and social/profile tables, but no multiplayer tables and no deployed Edge Functions. The first implementation must therefore add a separate, auditable multiplayer layer.
 
@@ -40,8 +41,9 @@ Random matchmaking can follow after private rooms are stable.
 
 | Object | Schema | Purpose |
 |---|---|---|
-| `aqw_match_rooms` | public | Room code hash, host, status, capacity, expiry |
-| `aqw_match_players` | public | Match membership, ready state, connection state |
+| `aqw_match_rooms` | private | Room code hash, host, status, capacity, expiry |
+| `aqw_match_players` | private | Match membership, ready state, connection state |
+| `aqw_question_bank` | private | Curated question payload and server-only correct option |
 | `aqw_match_questions` | private | Ordered question payload and answer key |
 | `aqw_match_answers` | private | One submitted answer per player per question |
 | `aqw_match_results` | private | Server-calculated final result |
@@ -57,8 +59,7 @@ Implement as authenticated Edge Function actions:
 - `set_ready`: update only the caller's ready state.
 - `start_match`: host-only; generate and persist the shared question set; transition lobby to in-progress.
 - `submit_answer`: accept only the caller's answer for the active question; enforce one answer per question and server-side deadline.
-- `advance_question`: advance only when all players answered or deadline passed.
-- `finish_match`: calculate and persist scores from server-side answer keys and timestamps.
+- Question advancement and match completion are currently internal SQL operations: advance when all players answer or the 20-second server deadline passes, then calculate results from private answer rows.
 - `reconnect`: restore the caller's membership during the reconnect window.
 - `leave_room`: leave safely; transfer host only under defined conditions.
 
@@ -95,9 +96,19 @@ The project's Realtime setting **Allow public access** must be disabled before p
 5. Run two-browser end-to-end tests, including mobile layout and network interruption.
 6. Run Supabase security advisors and only then prepare production migration/deployment.
 
+## Current SQL draft behavior
+
+- The public RPC dispatcher accepts only the actions currently allowlisted by the Edge Function: `create_room`, `join_room`, `set_ready`, `start_match`, `submit_answer`, `get_match_state`, `reconnect`, and `leave_room`.
+- The dispatcher is intended to be executable only by `service_role`; the Edge Function must continue deriving the actor ID from a verified user JWT.
+- Each question is open for 20 seconds. A correct answer earns up to 1,500 points, with the speed component calculated by the server. Incorrect answers earn zero.
+- The server sends the question payload and deadline, but not the stored correct option ID.
+- The draft currently selects from a private question bank. It contains no seed questions, so starting a match correctly fails until enough active questions have been curated and loaded.
+- A player who leaves during an active match is marked disconnected rather than removed, so the match can still finish consistently. Host migration is not implemented in this draft.
+
 ## Current blockers
 
-- No multiplayer tables exist.
+- The draft has not been applied, so no multiplayer tables exist in the hosted database.
 - No Edge Functions are deployed.
+- The question bank has no imported questions and no admin import workflow yet.
 - Realtime private-channel authorization and the project-wide public-access setting have not been configured for matches.
 - The current database has a Supabase Auth warning: leaked-password protection is disabled. This is unrelated to multiplayer, but should be reviewed in Auth settings.
