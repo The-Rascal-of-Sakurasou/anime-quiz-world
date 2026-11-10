@@ -101,6 +101,8 @@ The GitHub Actions workflow runs:
 - Successful reconnect before the grace period expires.
 - The 10-attempt room-code throttle.
 - Realtime membership policy allows member Presence and blocks client-originated Broadcast messages.
+- Question-bank generator validation tests, including duplicate detection and answer-key leakage prevention.
+- Applying the generated seed twice and confirming that source-key upserts do not create duplicates.
 - Deno type checking of the Edge Function.
 
 Workflow: `.github/workflows/multiplayer-sql-tests.yml`.
@@ -120,7 +122,7 @@ Do not deploy the Edge Function or apply the SQL to production until:
 
 ## Known limitations in the current draft
 
-- The question bank is empty and there is no admin/import interface.
+- The question bank is empty. An offline JSON-to-SQL seed generator exists, but there is no admin import interface or reviewed anime question dataset.
 - The room-code throttle is per authenticated account, not per IP or device.
 - A player who leaves during an active match is marked disconnected; automatic host migration is not implemented.
 - Question timeout advancement currently happens when a client requests match state after the deadline. A scheduled server-side advance mechanism is not yet implemented.
