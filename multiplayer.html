@@ -414,7 +414,6 @@ async function startMatch(){
 
 function stopGamePolling(){
  if(gamePollTimer){clearInterval(gamePollTimer);gamePollTimer=null}
- gamePollBusy=false;
 }
 function renderGameScores(players=[]){
  const box=$('gameScoreboard');box.replaceChildren();
@@ -480,9 +479,11 @@ function renderGameState(data){
 }
 async function refreshGameState(){
  if(!room||gamePollBusy)return;
+ const roomCode=room.room_code;
  gamePollBusy=true;
  try{
-  const data=await invoke('aqw_match_game_state',{p_room_code:room.room_code});
+  const data=await invoke('aqw_match_game_state',{p_room_code:roomCode});
+  if(!room||room.room_code!==roomCode)return;
   renderGameState(data);
  }catch(e){status($('gameStatus'),errorText(e),'error')}
  finally{gamePollBusy=false}
