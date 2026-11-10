@@ -125,11 +125,11 @@ const questions=[
 {label:'バトル・アクション',genres:['Action','Adventure']},
 {label:'ドラマ・コメディ・日常',genres:['Drama','Comedy','Slice of Life']}
 ]},
-{title:'物語の中心にあるテーマは？',help:'物語の中で、特に見てみたい展開やテーマを1つ選んでください。',options:[
-{label:'謎や秘密を追い、真相に迫る',genres:['Mystery','Thriller'],tags:['Conspiracy']},
-{label:'大切な人との絆や選択を描く',genres:['Drama'],tags:['Family','Friendship']},
-{label:'生き残りや強敵との対立を描く',genres:['Action','Thriller'],tags:['Survival','Battle Royale']},
-{label:'日常の出来事や社会を笑いに変える',genres:['Comedy'],tags:['Parody','Gag Humor']}
+{title:'主人公が直面する課題は？',help:'ジャンルではなく、主人公が何に立ち向かう物語を見たいかで選んでください。',options:[
+{label:'隠された真実や謎を解き明かす',genres:['Mystery','Thriller'],tags:['Conspiracy']},
+{label:'厳しい状況を乗り越え、生き抜く',genres:['Action','Thriller'],tags:['Survival','Battle Royale']},
+{label:'大きな目標に向かって努力し、挑戦する',genres:['Adventure','Drama'],tags:['Quest','Character Development']},
+{label:'自分自身の弱さや価値観と向き合う',genres:['Drama','Psychological'],tags:['Philosophy','Coming of Age']}
 ]},
 {title:'好みの展開テンポは？',help:'序盤から速く進む作品か、時間をかけて描く作品か。好みに近いものを選んでください。',options:[
 {label:'序盤から次々と展開する',tags:['Fast-Paced']},
@@ -137,11 +137,11 @@ const questions=[
 {label:'ゆっくりと時間をかけて進む',genres:['Drama','Slice of Life']},
 {label:'緩急が大きく、静と動の差がある',genres:['Thriller','Drama']}
 ]},
-{title:'作品全体の雰囲気はどれが好み？',help:'見ている間にどんな雰囲気を楽しみたいかで選んでください。',options:[
-{label:'シリアスで緊張感がある',genres:['Thriller','Psychological','Drama']},
-{label:'明るさとシリアスさの両方がある',genres:['Adventure','Fantasy','Sci-Fi']},
-{label:'明るく、気楽に楽しめる',genres:['Comedy','Slice of Life']},
-{label:'静かで落ち着いた雰囲気',genres:['Slice of Life','Drama']}
+{title:'視聴中に求める感情の強さは？',help:'作品を見ている間、どの程度強く感情を揺さぶられたいかを選んでください。',options:[
+{label:'常に緊張感があり、ハラハラしたい',genres:['Thriller','Psychological'],tags:['Survival']},
+{label:'感情が大きく動く場面をじっくり味わいたい',genres:['Drama'],tags:['Character Development']},
+{label:'重くなりすぎず、気楽に楽しみたい',genres:['Comedy'],tags:['Gag Humor']},
+{label:'刺激は控えめで、穏やかに楽しみたい',genres:['Slice of Life'],tags:['Iyashikei']}
 ]},
 {title:'好みの舞台・世界は？',help:'現代・学校・異世界・宇宙など、好きな舞台に近いものを選んでください。',options:[
 {label:'異世界・魔法・未知の大陸',genres:['Fantasy','Adventure'],tags:['Magic','Isekai']},
@@ -199,7 +199,7 @@ const questions=[
 ]}
 ];
 let step=0;const answers=Array(questions.length).fill(null);
-const SAVE_KEY='aqw-recommendation-v1';
+const SAVE_KEY='aqw-recommendation-v2';
 const FEEDBACK_KEY='aqw-recommendation-feedback-v1';
 const EVALUATION_HISTORY_KEY='aqw-recommendation-evaluation-history-v1';
 function readRecommendationFeedback(){
