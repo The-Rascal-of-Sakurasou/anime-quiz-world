@@ -90,6 +90,20 @@ li{padding-left:3px;margin:8px 0}
   .jump{grid-template-columns:minmax(0,1fr)}
 }
 
+/* Mobile refinement: prevent clipping and improve touch/accessibility */
+@media(max-width:700px){
+  html{scroll-padding-top:14px}
+  body{overflow-wrap:anywhere}
+  img,video,canvas{max-width:100%;height:auto}
+  iframe{max-width:100%}
+  button,input,select,textarea{max-width:100%;min-width:0}
+  button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  :focus-visible{outline:3px solid #3978c8;outline-offset:2px}
+  [id]{scroll-margin-top:14px}
+  pre{max-width:100%;overflow-x:auto}
+  code{overflow-wrap:anywhere}
+}
+
 </style>
 </head>
 <body>
