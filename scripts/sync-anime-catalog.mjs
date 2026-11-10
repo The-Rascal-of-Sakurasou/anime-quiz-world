@@ -19,19 +19,20 @@ const normalize = (value) => {
 function isJapaneseOriginAnime(anime) {
   if (!anime || anime.countryOfOrigin !== 'JP') return false;
   if (anime.source === 'ORIGINAL') return true;
-  const sourceFormats = {
-    MANGA: ['MANGA', 'ONE_SHOT'],
-    LIGHT_NOVEL: ['NOVEL'],
-    NOVEL: ['NOVEL'],
-    DOUJINSHI: ['MANGA', 'ONE_SHOT', 'NOVEL'],
+  const sourceRules = {
+    MANGA: { type: 'MANGA', formats: ['MANGA', 'ONE_SHOT'] },
+    LIGHT_NOVEL: { type: 'MANGA', formats: ['NOVEL'] },
+    NOVEL: { type: 'MANGA', formats: ['NOVEL'] },
+    DOUJINSHI: { type: 'MANGA', formats: ['MANGA', 'ONE_SHOT', 'NOVEL'] },
+    ANIME: { type: 'ANIME', formats: ['TV', 'TV_SHORT', 'MOVIE', 'OVA', 'ONA', 'SPECIAL'] },
   };
-  const allowedFormats = sourceFormats[anime.source];
-  if (!allowedFormats) return false;
-  return Array.isArray(anime.relations?.edges) && anime.relations.edges.some((edge) =>
+  const rule = sourceRules[anime.source];
+  if (!rule || !Array.isArray(anime.relations?.edges)) return false;
+  return anime.relations.edges.some((edge) =>
     (edge?.relationType === 'SOURCE' || edge?.relationType === 'ADAPTATION') &&
-    edge.node?.type === 'MANGA' &&
+    edge.node?.type === rule.type &&
     edge.node?.countryOfOrigin === 'JP' &&
-    allowedFormats.includes(edge.node?.format)
+    rule.formats.includes(edge.node?.format)
   );
 }
 
@@ -50,10 +51,13 @@ function isUsableAnime(anime) {
   );
 }
 
-async function fetchBatch(pages, sort, format) {
+async function fetchBatch(pages, sort, format, yearStart, yearEnd) {
+  const dateFilter = Number.isInteger(yearStart) && Number.isInteger(yearEnd)
+    ? ',startDate_greater:' + (yearStart * 10000) + ',startDate_lesser:' + ((yearEnd + 1) * 10000)
+    : '';
   const aliases = pages.map((page, index) =>
     'p' + index + ': Page(page:' + page + ',perPage:50) { pageInfo { hasNextPage } media(type:ANIME,countryOfOrigin:JP,sort:' +
-    sort + ',isAdult:false,format_in:[' + format + ']) { ' + FIELDS + ' } }'
+    sort + ',isAdult:false,format_in:[' + format + ']' + dateFilter + ') { ' + FIELDS + ' } }'
   ).join(' ');
   const query = 'query { ' + aliases + ' }';
   let lastError;
@@ -94,11 +98,11 @@ let requests = 0;
 let accepted = 0;
 let filtered = 0;
 
-async function scanScope(format, sort) {
+async function scanScope(format, sort, yearStart, yearEnd) {
   for (let page = 1; page <= 100; page += 3) {
     const pages = [page, page + 1, page + 2].filter((value) => value <= 100);
     await sleep(1200);
-    const results = await fetchBatch(pages, sort, format);
+    const results = await fetchBatch(pages, sort, format, yearStart, yearEnd);
     requests++;
     for (const result of results) {
       for (const anime of result.items) {
@@ -137,15 +141,25 @@ function mergeRecord(existing, incoming) {
   return merge(existing, incoming);
 }
 
+async function scanDateRanges(format, sort) {
+  for (let startYear = 1900; startYear <= 2030; startYear += 10) {
+    await scanScope(format, sort, startYear, startYear + 9);
+  }
+}
+
 for (const format of FORMATS) {
   let overflow = false;
   for (const sort of BASE_SORTS) {
     const reachedLimit = await scanScope(format, sort);
     overflow ||= reachedLimit;
+    if (reachedLimit) await scanDateRanges(format, sort);
   }
   if (overflow) {
     console.log('Format ' + format + ' reached AniList pagination limits; scanning complementary sort orders.');
-    for (const sort of OVERFLOW_SORTS) await scanScope(format, sort);
+    for (const sort of OVERFLOW_SORTS) {
+      const reachedLimit = await scanScope(format, sort);
+      if (reachedLimit) await scanDateRanges(format, sort);
+    }
   }
 }
 
