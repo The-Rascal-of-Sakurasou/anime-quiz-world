@@ -261,6 +261,13 @@ begin
   );
   if v_state ->> 'status' <> 'completed' then raise exception 'Match did not complete'; end if;
   if v_state -> 'question' <> 'null'::jsonb then raise exception 'Completed match still exposes an active question'; end if;
+  if jsonb_array_length(v_state -> 'players') <> 2 then
+    raise exception 'Completed match did not return both player results';
+  end if;
+  if (v_state -> 'players' -> 0 ->> 'rank')::integer <> 1
+     or (v_state -> 'players' -> 1 ->> 'rank')::integer <> 2 then
+    raise exception 'Final player ranks were not returned in score order';
+  end if;
 
   -- Ten join-code checks are allowed; the eleventh is denied.
   for v_n in 1..10 loop
