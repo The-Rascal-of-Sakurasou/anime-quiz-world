@@ -2022,7 +2022,7 @@ async function loadFeaturedRail(){
  };
  const addItems=items=>{
   for(const anime of items||[]){
-   if(anime?.countryOfOrigin!=='JP'||!Number.isFinite(Number(anime.id)))continue;
+   if(!isJapaneseOriginAnime(anime)||!Number.isFinite(Number(anime.id)))continue;
    const year=Number(anime.startDate?.year),month=Number(anime.startDate?.month);
    const belongsToSeason=year===current.year&&month>=seasonStartMonth&&month<=seasonEndMonth;
    const seasonFallback=Number(anime.seasonYear)===current.year&&anime.season===current.season;
@@ -2032,7 +2032,7 @@ async function loadFeaturedRail(){
  try{
   // そのシーズンに初回放送・配信が始まる作品。日付が月単位のデータも拾えるよう前月から取得し、月で再判定する。
   for(let page=1;page<=pageLimit;page++){
-   const queryText='query { Page(page:'+page+',perPage:'+perPage+') { pageInfo { hasNextPage } media(type:ANIME,countryOfOrigin:JP,format_in:[TV,ONA],startDate_greater:'+startBound+',startDate_lesser:'+endBound+',isAdult:false,sort:POPULARITY_DESC) { id countryOfOrigin season seasonYear startDate { year month day } title { romaji english native } coverImage { large medium } externalLinks { url site type isDisabled } } } }';
+   const queryText='query { Page(page:'+page+',perPage:'+perPage+') { pageInfo { hasNextPage } media(type:ANIME,countryOfOrigin:JP,format_in:[TV,ONA],startDate_greater:'+startBound+',startDate_lesser:'+endBound+',isAdult:false,sort:POPULARITY_DESC) { id countryOfOrigin source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } season seasonYear startDate { year month day } title { romaji english native } coverImage { large medium } externalLinks { url site type isDisabled } } } }';
    const data=await requestPage(queryText);
    addItems(data?.media);
    if(!data?.pageInfo?.hasNextPage)break;
@@ -2040,10 +2040,10 @@ async function loadFeaturedRail(){
   }
   // 前のシーズンから続いて現在も放送・配信中の日本作品も追加する。
   for(let page=1;page<=activePageLimit;page++){
-   const queryText='query { Page(page:'+page+',perPage:'+perPage+') { pageInfo { hasNextPage } media(type:ANIME,status:RELEASING,countryOfOrigin:JP,format_in:[TV,ONA],isAdult:false,sort:POPULARITY_DESC) { id countryOfOrigin season seasonYear startDate { year month day } title { romaji english native } coverImage { large medium } externalLinks { url site type isDisabled } } } }';
+   const queryText='query { Page(page:'+page+',perPage:'+perPage+') { pageInfo { hasNextPage } media(type:ANIME,status:RELEASING,countryOfOrigin:JP,format_in:[TV,ONA],isAdult:false,sort:POPULARITY_DESC) { id countryOfOrigin source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } season seasonYear startDate { year month day } title { romaji english native } coverImage { large medium } externalLinks { url site type isDisabled } } } }';
    const data=await requestPage(queryText);
    for(const anime of data?.media||[]){
-    if(anime?.countryOfOrigin==='JP'&&Number.isFinite(Number(anime.id)))byId.set(Number(anime.id),anime);
+    if(isJapaneseOriginAnime(anime)&&Number.isFinite(Number(anime.id)))byId.set(Number(anime.id),anime);
    }
    if(!data?.pageInfo?.hasNextPage)break;
    if(page===activePageLimit)console.warn('Ongoing anime rail reached the pagination safety limit.');
