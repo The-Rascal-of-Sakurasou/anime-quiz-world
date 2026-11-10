@@ -145,6 +145,7 @@ with check (
 
 create table private.aqw_question_bank (
   id bigint generated always as identity primary key,
+  source_key text not null unique default gen_random_uuid()::text,
   category text not null default 'general',
   question_payload jsonb not null
     check (jsonb_typeof(question_payload) = 'object')
