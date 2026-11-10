@@ -1989,30 +1989,48 @@ function renderFeaturedRail(source){
  root.onfocusout=resume;
 }
 function getCurrentAnimeSeason(date=new Date()){
- const month=date.getMonth()+1;
- if(month<=3)return {season:'WINTER',label:'冬',year:date.getFullYear()};
- if(month<=6)return {season:'SPRING',label:'春',year:date.getFullYear()};
- if(month<=9)return {season:'SUMMER',label:'夏',year:date.getFullYear()};
- return {season:'FALL',label:'秋',year:date.getFullYear()};
+ // ブラウザーの設定地域に依存せず、日本時間でシーズンを判定する
+ const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tokyo',year:'numeric',month:'numeric'}).formatToParts(date);
+ const year=Number(parts.find(part=>part.type==='year')?.value);
+ const month=Number(parts.find(part=>part.type==='month')?.value);
+ if(month<=3)return {season:'WINTER',label:'冬',year};
+ if(month<=6)return {season:'SPRING',label:'春',year};
+ if(month<=9)return {season:'SUMMER',label:'夏',year};
+ return {season:'FALL',label:'秋',year};
 }
 async function loadFeaturedRail(){
  const root=document.getElementById('featuredRail');if(!root)return;
- // 日本時間の現在の年月からシーズンを自動判定
  const current=getCurrentAnimeSeason();
- const queryText='query { Page(page:1,perPage:20) { media(type:ANIME,season:'+current.season+',seasonYear:'+current.year+',countryOfOrigin:JP,format_in:[TV,ONA],isAdult:false,sort:POPULARITY_DESC) { id countryOfOrigin source relations { edges { relationType node { id type countryOfOrigin format } } } title { romaji english native } coverImage { large medium } externalLinks { url site type isDisabled } } } }';
- const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),12000);
+ const monthStart={WINTER:101,SPRING:401,SUMMER:701,FALL:1001}[current.season];
+ const nextSeasonStart={WINTER:401,SPRING:701,SUMMER:1001,FALL:current.year===9999?1231:101}[current.season];
+ const startBound=current.year*10000+monthStart-1;
+ const endBound=(current.season==='FALL'?(current.year+1)*10000+101:current.year*10000+nextSeasonStart)-1;
+ const pageLimit=6,perPage=50,byId=new Map();
  try{
-  const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query:queryText}),signal:controller.signal});
-  if(!response.ok)throw new Error('Seasonal anime request failed: '+response.status);
-  const json=await response.json();
-  if(json.errors?.length)throw new Error(json.errors.map(e=>e.message).join(' / '));
-  const items=normalizeUnicode(json.data?.Page?.media||[]).filter(isJapaneseOriginAnime);
+  for(let page=1;page<=pageLimit;page++){
+   const queryText='query { Page(page:'+page+',perPage:'+perPage+') { pageInfo { hasNextPage } media(type:ANIME,countryOfOrigin:JP,format_in:[TV,ONA],startDate_greater:'+startBound+',startDate_lesser:'+endBound+',isAdult:false,sort:POPULARITY_DESC) { id countryOfOrigin title { romaji english native } coverImage { large medium } externalLinks { url site type isDisabled } } } }';
+   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);
+   let response,json;
+   try{
+    response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query:queryText}),signal:controller.signal});
+    if(!response.ok)throw new Error('Seasonal anime request failed: HTTP '+response.status);
+    json=await response.json();
+    if(json.errors?.length)throw new Error(json.errors.map(error=>error.message).join(' / '));
+   }finally{clearTimeout(timeout)}
+   const data=normalizeUnicode(json.data?.Page);
+   for(const anime of data?.media||[]){
+    if(anime?.countryOfOrigin==='JP'&&Number.isFinite(Number(anime.id)))byId.set(Number(anime.id),anime);
+   }
+   if(!data?.pageInfo?.hasNextPage)break;
+   if(page===pageLimit)console.warn('Seasonal anime rail reached the pagination safety limit.');
+  }
+  const items=[...byId.values()];
   if(items.length)renderFeaturedRail(items);
-  else root.innerHTML='<p class="featured-empty">'+current.year+'年'+current.label+'シーズンの日本アニメは見つかりませんでした。</p>';
+  else root.innerHTML='<p class="featured-empty">'+current.year+'年'+current.label+'シーズンの日本アニメは見つかりませんでした。作品データの登録状況を確認してください。</p>';
  }catch(error){
   console.warn('Seasonal anime rail loading failed:',error);
-  root.innerHTML='<p class="featured-empty">今シーズンの日本アニメを読み込めませんでした。時間をおいて再読み込みしてください。</p>';
- }finally{clearTimeout(timeout)}
+  root.innerHTML='<p class="featured-empty">今シーズンの日本アニメを読み込めませんでした。通信状態を確認して再読み込みしてください。</p>';
+ }
 }
 loadFeaturedRail();
 applyRushLeaderboardLanguage();
