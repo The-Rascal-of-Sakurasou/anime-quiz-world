@@ -617,7 +617,7 @@ function normalizeSeedTitle(value){
  return String(value||'').toLocaleLowerCase().normalize('NFKC')
   .replace(/[\s・：:!！?？。、,.'’"「」『』()（）［］【】_ｰ-]/g,'');
 }
-function isJapaneseOriginAnime(media){if(!a||media.countryOfOrigin!=='JP')return false;if(media.source==='ORIGINAL')return true;const sourceRules={MANGA:{type:'MANGA',formats:['MANGA','ONE_SHOT']},LIGHT_NOVEL:{type:'MANGA',formats:['NOVEL']},NOVEL:{type:'MANGA',formats:['NOVEL']},DOUJINSHI:{type:'MANGA',formats:['MANGA','ONE_SHOT','NOVEL']},ANIME:{type:'ANIME',formats:['TV','TV_SHORT','MOVIE','OVA','ONA','SPECIAL']}};const rule=sourceRules[media.source];if(!rule||!Array.isArray(media.relations?.edges))return false;return media.relations.edges.some(edge=>(edge?.relationType==='SOURCE'||edge?.relationType==='ADAPTATION')&&edge.node?.type===rule.type&&edge.node?.countryOfOrigin==='JP'&&rule.formats.includes(edge.node?.format))}
+function isJapaneseOriginAnime(media){if(!media||media.countryOfOrigin!=='JP')return false;if(media.source==='ORIGINAL')return true;const sourceRules={MANGA:{type:'MANGA',formats:['MANGA','ONE_SHOT']},LIGHT_NOVEL:{type:'MANGA',formats:['NOVEL']},NOVEL:{type:'MANGA',formats:['NOVEL']},DOUJINSHI:{type:'MANGA',formats:['MANGA','ONE_SHOT','NOVEL']},ANIME:{type:'ANIME',formats:['TV','TV_SHORT','MOVIE','OVA','ONA','SPECIAL']}};const rule=sourceRules[media.source];if(!rule||!Array.isArray(media.relations?.edges))return false;return media.relations.edges.some(edge=>(edge?.relationType==='SOURCE'||edge?.relationType==='ADAPTATION')&&edge.node?.type===rule.type&&edge.node?.countryOfOrigin==='JP'&&rule.formats.includes(edge.node?.format))}
 function matchesSeedTitle(media,title){
  const wanted=normalizeSeedTitle(title);
  if(!wanted)return false;
