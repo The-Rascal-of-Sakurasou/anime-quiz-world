@@ -73,6 +73,12 @@ footer{color:var(--muted);font-size:.85rem;padding:10px 0 30px}
 <p class="muted">表示名・自己紹介・ランキング掲載状態を変更できます。メールアドレスや認証情報は表示しません。</p>
 <div class="table-wrap"><table><thead><tr><th>ユーザー名</th><th>表示名</th><th>登録日</th><th>自己紹介</th><th>ランキング掲載</th><th>操作</th></tr></thead><tbody id="profiles"><tr><td colspan="4">読み込み中…</td></tr></tbody></table></div>
 </div>
+<div class="card">
+<h2>アカウント管理</h2>
+<p class="muted">認証済みユーザーのメールアドレス・登録日・最終ログインを確認できます。一般ユーザーの利用停止・再開が可能です。管理者アカウントは停止できません。</p>
+<div class="actions" style="margin-bottom:12px"><button id="reloadUsers" type="button">アカウント一覧を更新</button></div>
+<div class="table-wrap"><table><thead><tr><th>メールアドレス</th><th>登録日</th><th>最終ログイン</th><th>状態</th><th>操作</th></tr></thead><tbody id="authUsers"><tr><td colspan="5">読み込み中…</td></tr></tbody></table></div>
+</div>
 </section>
 </main>
 <footer class="wrap">Anime Quiz World — 管理操作はSupabaseのRow Level Securityによって保護されています。</footer>
@@ -130,7 +136,7 @@ async function refreshAll(){
   $('postCount').textContent=posts.toLocaleString('ja-JP');
   $('notificationCount').textContent=notifications.toLocaleString('ja-JP');
   $('messageCount').textContent=messages.toLocaleString('ja-JP');
-  await Promise.all([loadPosts(),loadProfiles()]);
+  await Promise.all([loadPosts(),loadProfiles(),loadAuthUsers()]);
   say('管理情報を更新しました。','success');
  }catch(error){say('データを取得できませんでした：'+(error.message||String(error)),'error')}
  finally{$('refreshButton').disabled=false}
@@ -189,6 +195,39 @@ async function deletePost(post,button){
   await refreshAll();
  }catch(error){button.disabled=false;say('削除できませんでした：'+(error.message||String(error)),'error')}
 }
+async function loadAuthUsers(){
+ const root=$('authUsers');root.replaceChildren();
+ const {data,error}=await client.functions.invoke('aqw-admin-control',{body:{action:'list_users',page:1}});
+ if(error)throw error;
+ const users=data?.users||[];
+ if(!users.length){const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=5;cell.textContent='アカウントはありません。';row.append(cell);root.append(row);return}
+ for(const user of users){
+  const row=document.createElement('tr');
+  const email=document.createElement('td');email.textContent=user.email||'メール未登録';row.append(email);
+  const created=document.createElement('td');created.textContent=date(user.created_at);row.append(created);
+  const last=document.createElement('td');last.textContent=date(user.last_sign_in_at);row.append(last);
+  const banned=!!(user.banned_until&&new Date(user.banned_until).getTime()>Date.now());
+  const statusCell=document.createElement('td');statusCell.textContent=user.is_admin?'管理者':banned?'利用停止中':'利用可能';row.append(statusCell);
+  const action=document.createElement('td');
+  if(user.is_admin){action.textContent='保護対象'}
+  else{
+   const button=document.createElement('button');button.type='button';button.className=banned?'primary':'danger';button.textContent=banned?'利用を再開':'利用停止';
+   button.addEventListener('click',async()=>{
+    const message=banned?'このアカウントの利用停止を解除しますか？':'このアカウントを利用停止にしますか？';
+    if(!confirm(message))return;
+    button.disabled=true;
+    try{
+     const {error:callError}=await client.functions.invoke('aqw-admin-control',{body:{action:'set_ban',user_id:user.id,banned:!banned}});
+     if(callError)throw callError;
+     say(banned?'アカウントの利用を再開しました。':'アカウントを利用停止にしました。','success');
+     await loadAuthUsers();
+    }catch(error){say('アカウントを変更できませんでした：'+(error.message||String(error)),'error');button.disabled=false}
+   });
+   action.append(button);
+  }
+  row.append(action);root.append(row);
+ }
+}
 async function loadProfiles(){
  const root=$('profiles');root.replaceChildren();
  const {data,error}=await client.from('profiles').select('id,username,display_name,bio,created_at,leaderboard_enabled').order('created_at',{ascending:false}).limit(100);
@@ -217,6 +256,7 @@ $('logoutButton').addEventListener('click',async()=>{
  await startSession(null);
 });
 $('refreshButton').addEventListener('click',refreshAll);
+$('reloadUsers').addEventListener('click',loadAuthUsers);
 say('メールアドレスとパスワードを入力して管理者認証を行ってください。');
 $('loginCard').classList.remove('hidden');
 $('console').classList.add('hidden');
