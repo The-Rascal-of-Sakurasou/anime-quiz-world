@@ -176,11 +176,11 @@ begin
   select
     p_match_id,
     p.user_id,
-    count(a.*) filter (where a.is_correct)::smallint,
+    count(*) filter (where a.is_correct)::smallint,
     coalesce(sum(a.points), 0)::integer,
     dense_rank() over (
       order by coalesce(sum(a.points), 0) desc,
-               count(a.*) filter (where a.is_correct) desc,
+               count(*) filter (where a.is_correct) desc,
                coalesce(sum(a.response_ms), 2147483647) asc
     )::smallint
   from private.aqw_match_players p
@@ -452,7 +452,13 @@ begin
       select jsonb_agg(jsonb_build_object(
         'user_id', p.user_id, 'display_name', p.display_name, 'is_ready', p.is_ready,
         'total_points', coalesce(s.total_points, 0),
-        'correct_count', coalesce(s.correct_count, 0)
+        'correct_count', coalesce(s.correct_count, 0),
+        'has_answered', exists (
+          select 1 from private.aqw_match_answers own_answer
+          where own_answer.match_id = v_match_id
+            and own_answer.question_no = v_question.question_no
+            and own_answer.user_id = p.user_id
+        )
       ) order by coalesce(s.total_points, 0) desc, p.joined_at asc)
       into v_result
       from private.aqw_match_players p
