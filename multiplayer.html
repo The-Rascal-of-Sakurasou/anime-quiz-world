@@ -148,6 +148,7 @@ input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{ou
 <ul id="playerList" class="player-list"></ul>
 <div class="form-actions">
 <button class="primary" id="toggleReady">準備完了にする</button>
+<button class="primary hidden" id="startMatch" disabled>対戦を開始</button>
 <button id="refreshRoom">状態を更新</button>
 </div>
 <p id="roomActionStatus" class="status" role="status" aria-live="polite"></p>
@@ -171,7 +172,7 @@ let matchmakingTimer=null,matchmakingBusy=false,matchmakingPrefs=null,matchmakin
 const errorText=e=>e?.message||'処理に失敗しました。';
 function setBusy(value){
  busy=value;
- ['createRoom','joinRoom','toggleReady','leaveRoom','refreshRoom','copyInvite','findMatch','cancelMatch'].forEach(id=>$(id).disabled=value);
+ ['createRoom','joinRoom','toggleReady','startMatch','leaveRoom','refreshRoom','copyInvite','findMatch','cancelMatch'].forEach(id=>$(id).disabled=value);
  if(room){
   const mine=room.players?.find(player=>player.user_id===user?.id);
   $('toggleReady').disabled=value||room.status!=='waiting'||!mine;
@@ -214,8 +215,11 @@ function renderPlayers(){
  const mine=players.find(p=>p.user_id===user.id);
  $('toggleReady').textContent=mine?.is_ready?'準備を取り消す':'準備完了にする';
  $('toggleReady').disabled=room.status!=='waiting'||busy;
- const allReady=players.length>=2&&players.every(p=>p.is_ready);
- status($('roomStatus'),room.status==='waiting'?(allReady?'全員の準備が完了しました。':'参加者を待っています。'):room.status==='playing'?'対戦ルームは開始状態です。':room.status==='completed'?'対戦は終了しました。':'このルームは終了しました。',allReady?'good':'');
+ const allReady=players.length===2&&players.every(p=>p.is_ready);
+ const isHost=room.host_id===user.id;
+ $('startMatch').classList.toggle('hidden',!isHost||room.status!=='waiting');
+ $('startMatch').disabled=busy||!allReady||room.status!=='waiting';
+ status($('roomStatus'),room.status==='waiting'?(allReady?'全員の準備が完了しました。ホストは対戦を開始できます。':'参加者全員の準備完了を待っています。'):room.status==='playing'?'対戦ルームは開始状態です。':room.status==='completed'?'対戦は終了しました。':'このルームは終了しました。',allReady?'good':'');
 }
 async function announce(){
  if(channel)await channel.send({type:'broadcast',event:'room_changed',payload:{changed:true}});
@@ -346,6 +350,21 @@ async function toggleReady(){
  try{room=await invoke('aqw_match_set_ready',{p_room_code:room.room_code,p_is_ready:!mine.is_ready});renderPlayers();await announce()}
  catch(e){status($('roomActionStatus'),errorText(e),'error')}finally{setBusy(false);if(room)renderPlayers()}
 }
+async function startMatch(){
+ if(!room||busy||room.host_id!==user.id)return;
+ const players=Array.isArray(room.players)?room.players:[];
+ if(players.length!==2||!players.every(p=>p.is_ready)){
+  status($('roomActionStatus'),'参加者2人全員の準備完了が必要です。','error');return;
+ }
+ setBusy(true);
+ try{
+  room=await invoke('aqw_match_start_room',{p_room_code:room.room_code});
+  renderPlayers();
+  await announce();
+  status($('roomActionStatus'),'対戦ルームを開始しました。同期クイズ機能は次の実装段階です。','good');
+ }catch(e){status($('roomActionStatus'),errorText(e),'error')}
+ finally{setBusy(false);if(room)renderPlayers()}
+}
 async function leaveRoom(){
  if(!room||busy)return;stopMatchmakingPolling();matchmakingPrefs=null;setBusy(true);
  try{await invoke('aqw_match_leave_room',{p_room_code:room.room_code});await removeChannel();room=null;$('roomPanel').classList.add('hidden');$('createPanel').classList.remove('hidden');$('joinPanel').classList.remove('hidden');$('randomMatchPanel').classList.remove('hidden');history.replaceState(null,'',location.pathname);status($('pageStatus'),'ルームから退出しました。','good')}
@@ -369,6 +388,7 @@ async function init(){
  $('findMatch').addEventListener('click',findRandomMatch);
  $('cancelMatch').addEventListener('click',cancelRandomMatch);
  $('toggleReady').addEventListener('click',toggleReady);
+ $('startMatch').addEventListener('click',startMatch);
  $('leaveRoom').addEventListener('click',leaveRoom);
  $('copyInvite').addEventListener('click',copyInvite);
  $('refreshRoom').addEventListener('click',()=>refreshRoom(false).catch(e=>status($('roomActionStatus'),errorText(e),'error')));
