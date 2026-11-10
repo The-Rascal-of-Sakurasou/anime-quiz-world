@@ -30,6 +30,7 @@ create table realtime.messages (
   topic text not null
 );
 alter table realtime.messages enable row level security;
+grant select, insert on realtime.messages to authenticated;
 create or replace function realtime.topic()
 returns text
 language sql
@@ -277,7 +278,33 @@ $$;
 
 reset role;
 
-do $$
+select id as test_match_id
+from private.aqw_match_rooms
+where room_code_hash = repeat('a', 64)
+\gset
+
+set role authenticated;
+select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000001', false);
+select set_config('realtime.topic', 'aqw-match:' || :'test_match_id', false);
+
+insert into realtime.messages(extension, topic)
+values ('presence', 'aqw-match:' || :'test_match_id');
+
+do $
+begin
+  begin
+    insert into realtime.messages(extension, topic)
+    values ('broadcast', 'aqw-match:' || current_setting('realtime.topic'));
+    raise exception 'Authenticated client unexpectedly sent a broadcast';
+  exception
+    when insufficient_privilege then null;
+  end;
+end
+$;
+
+reset role;
+
+do $
 declare
   v_result_count integer;
 begin
