@@ -92,7 +92,7 @@ const normalizeSharedAnswers = vm.runInNewContext(`(${shareNormalizerSource})`, 
 assert.deepEqual([...normalizeSharedAnswers({ v: 3, a: [0, 1, 2, 3, 0, 1, 2] })], [0, 1, 2, 3, 0, 1, 2], "Current seven-answer share links must restore exactly");
 assert.deepEqual([...normalizeSharedAnswers({ v: 2, a: [0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0] })], [0, 2, 3, 1, 2, 3, 2], "Legacy 13-question share links must map to current dimensions");
 assert.deepEqual([...normalizeSharedAnswers({ v: 2, a: [0, 1, 2, 3, 0, 1] })], [0, 2, 3, 1, null, null, null], "Legacy six-question share links must preserve compatible answers");
-assert.deepEqual([...normalizeSharedAnswers({ v: 2, a: [0, 1, 2, 3, 0, 1, 2, 3, 0, 1] })], [0, 2, 3, 1, 0, 3, null], "Legacy ten-question share links must preserve compatible answers");
+assert.deepEqual([...normalizeSharedAnswers({ v: 2, a: [0, 1, 2, 3, 0, 1, 2, 3, 0, 1] })], [0, 2, 3, 1, 2, 3, null], "Legacy ten-question share links must preserve compatible answers");
 assert.equal(normalizeSharedAnswers({ v: 3, a: [0, 1, 2, 3, 0, 1] }), null, "Current share links with an incomplete answer count must be rejected");
 assert.equal(normalizeSharedAnswers({ v: 3, a: [0, 1, 2, 3, 0, 1, 4] }), null, "Out-of-range shared answers must be rejected");
 assert.doesNotMatch(questionBlock, /NDCG|IDF|重み付け|希少性/, "Technical recommendation terms must not appear in user-facing questions");
