@@ -65,7 +65,7 @@ assert.doesNotMatch(privacy, /コレクション/, "Privacy policy must not desc
 const recommend = source.get("recommend.html");
 assert.ok(recommend.includes("media(search:$search,type:ANIME,countryOfOrigin:JP"), "Favorite-work search must be restricted to Japanese-origin anime");
 assert.ok(recommend.includes("media(type:ANIME,countryOfOrigin:JP"), "Recommendation catalog query must be restricted to Japanese-origin anime");
-assert.match(recommend, /countryOfOrigin===.JP./, "Recommendation data must be filtered by Japanese origin on the client as a second guard");
+assert.match(recommend, /countryOfOrigin!==.JP./, "Recommendation data must reject non-Japanese production countries on the client");
 
 const recommendOriginHelper = recommend.match(/function isJapaneseOriginAnime\(media\)\{[^\n]*\}/)?.[0];
 assert.ok(recommendOriginHelper, "Recommendation Japanese-origin verification helper missing");
@@ -145,7 +145,7 @@ assert.match(index, /safeStorage\.removeItem\('aqw-collection'\)/, "Legacy per-u
 assert.match(index, /\[t\.fifty,runs>=50\]/, "The 50-play achievement must not depend on a stored anime collection");
 assert.match(index, /type:ANIME,countryOfOrigin:JP/, "Quiz search query must be restricted to Japanese-origin anime");
 assert.ok(index.includes("media(type:ANIME,countryOfOrigin:JP"), "Quiz catalog query must be restricted to Japanese-origin anime");
-assert.match(index, /countryOfOrigin===.JP./, "Quiz data must be filtered by Japanese origin on the client as a second guard");
+assert.match(index, /countryOfOrigin!==.JP./, "Quiz data must reject non-Japanese production countries on the client");
 
 assert.ok(index.includes("media(type:ANIME,countryOfOrigin:JP"), "Quiz catalog query must be restricted to Japanese-origin anime");
 const indexOriginHelper = index.match(/function isJapaneseOriginAnime\(a\)\{[^\n]*\}/)?.[0];
@@ -162,6 +162,9 @@ assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", rela
 assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "KR", format: "MANGA" } }] } }), false, "Non-Japanese source adaptations must be excluded from the quiz");
 assert.equal(isQuizOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL" }), false, "Non-Japanese animation must be excluded from the quiz");
 assert.match(index, /const cacheKey='aqw-anime-pool-v18-japanese-original-source-verified'/, "Verified original-source eligibility must rebuild the browser catalogue");
+assert.ok(index.includes("source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } }"), "Quiz queries must request detailed source metadata and adaptation-origin evidence");
+assert.ok(recommend.includes("source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } }"), "Recommendation queries must request detailed source metadata and adaptation-origin evidence");
+
 assert.match(index, /const sorts=\['POPULARITY_DESC','ID','ID_DESC'\]/, "Format-specific catalogue backfill must use complementary sort orders");
 
 assert.match(index, /function isUsableAnime\(a\)\{[^\n]*isJapaneseOriginAnime\(a\)/, "Every cached and live quiz record must pass strict Japanese-source eligibility");
