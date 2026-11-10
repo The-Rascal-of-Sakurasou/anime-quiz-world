@@ -75,6 +75,8 @@ assert.match(cancelMatchmakingSource, /if\(matchmakingPollPromise\)await matchma
 assert.ok(cancelMatchmakingSource.indexOf("await matchmakingPollPromise") < cancelMatchmakingSource.indexOf("aqw_matchmaking_cancel"), "Queue cancellation must run after any in-flight poll");
 assert.match(cancelMatchmakingSource, /if\(room\)/, "Cancellation must preserve a room created by a poll that completed concurrently");
 
+assert.match(multiplayer, /現在は1対1の対戦のみ利用できます/, "The matchmaking UI and server must be 1v1-only");
+assert.doesNotMatch(multiplayer, /<option value="3">3人|<option value="4">4人/, "The room UI must not offer unsupported group sizes");
 const privacy = source.get("privacy.html");
 assert.doesNotMatch(privacy, /コレクション/, "Privacy policy must not describe the removed anime collection feature");
 
