@@ -551,6 +551,7 @@ function normalizeSeedTitle(value){
  return String(value||'').toLocaleLowerCase().normalize('NFKC')
   .replace(/[\s・：:!！?？。、,.'’"「」『』()（）［］【】_ｰ-]/g,'');
 }
+function isJapaneseOriginAnime(media){if(!media||media.countryOfOrigin!=='JP')return false;if(media.source==='ORIGINAL')return true;return Array.isArray(media.relations?.edges)&&media.relations.edges.some(edge=>edge?.relationType==='ADAPTATION'&&edge.node?.type==='MANGA'&&edge.node?.countryOfOrigin==='JP')}
 function matchesSeedTitle(media,title){
  const wanted=normalizeSeedTitle(title);
  if(!wanted)return false;
@@ -558,14 +559,14 @@ function matchesSeedTitle(media,title){
  return aliases.some(alias=>normalizeSeedTitle(alias)===wanted);
 }
 async function findSeedAnime(title){
- const query='query ($search:String) { Page(perPage:25) { media(search:$search,type:ANIME,countryOfOrigin:JP,isAdult:false,sort:SEARCH_MATCH) { id countryOfOrigin title { romaji english native } synonyms genres tags { name rank isMediaSpoiler } } } }';
+ const query='query ($search:String) { Page(perPage:25) { media(search:$search,type:ANIME,countryOfOrigin:JP,isAdult:false,sort:SEARCH_MATCH) { id countryOfOrigin source relations { edges { relationType node { id type countryOfOrigin format } } } title { romaji english native } synonyms genres tags { name rank isMediaSpoiler } } } }';
  let lastError=null;
  for(let attempt=0;attempt<3;attempt++){
   try{
    const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query,variables:{search:title}}),signal:AbortSignal.timeout(12000)});
    const json=await response.json().catch(()=>null);
    if(response.ok&&!json?.errors?.length&&json?.data?.Page){
-    const candidates=(json.data.Page.media||[]).filter(media=>media.countryOfOrigin==='JP');
+    const candidates=(json.data.Page.media||[]).filter(isJapaneseOriginAnime);
     // 検索結果を25件まで確認し、別名を含む完全一致だけを採用する。
     return candidates.find(media=>matchesSeedTitle(media,title))||null;
    }
@@ -607,14 +608,14 @@ function calculateSeedSimilarity(candidate,seeds,rarityWeight,genreRarity){
  return {score:Math.min(8.5,best*0.7+average*0.3),matchedGenres:[...new Set(matchedGenres)],matchedTags};
 }
 async function getRecommendations(profile){
- const query='query ($page:Int,$sort:[MediaSort]) { Page(page:$page,perPage:50) { media(type:ANIME,countryOfOrigin:JP,sort:$sort,isAdult:false) { id countryOfOrigin format title { romaji english native } description(asHtml:false) coverImage { extraLarge large } episodes seasonYear averageScore popularity genres tags { name rank isMediaSpoiler } relations { edges { relationType node { id type } } } siteUrl } } }';
+ const query='query ($page:Int,$sort:[MediaSort]) { Page(page:$page,perPage:50) { media(type:ANIME,countryOfOrigin:JP,sort:$sort,isAdult:false) { id countryOfOrigin source format title { romaji english native } description(asHtml:false) coverImage { extraLarge large } episodes seasonYear averageScore popularity genres tags { name rank isMediaSpoiler } relations { edges { relationType node { id type countryOfOrigin format } } } siteUrl } } }';
  const fetchPage=async (page,sort)=>{
   let lastError=null;
   for(let attempt=0;attempt<3;attempt++){
    try{
     const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query,variables:{page,sort:[sort]}}),signal:AbortSignal.timeout(15000)});
     const json=await response.json().catch(()=>null);
-    if(response.ok&&!json?.errors?.length&&json?.data?.Page)return (json.data.Page.media||[]).filter(media=>media.countryOfOrigin==='JP');
+    if(response.ok&&!json?.errors?.length&&json?.data?.Page)return (json.data.Page.media||[]).filter(isJapaneseOriginAnime);
     const apiMessage=(json?.errors||[]).map(error=>error.message).filter(Boolean).join(' / ');
     const error=new Error('作品データ取得エラー（HTTP '+response.status+'）'+(apiMessage?'：'+apiMessage:'。'));
     error.retryable=response.status===429||response.status>=500;
@@ -687,7 +688,7 @@ async function getRecommendations(profile){
  // 候補作品側のタグ評価も使い、弱いタグ一致を過大評価しない。
  const seedScore=(candidate,seeds)=>calculateSeedSimilarity(candidate,seeds,rarityWeight,genreRarity);
  const favoriteIds=new Set(favoriteSeeds.map(x=>x.id)),dislikedIds=new Set(dislikedSeeds.map(x=>x.id));
- const scored=items.filter(a=>a.countryOfOrigin==='JP'&&a.coverImage?.large&&a.title&&(a.format==='TV'||a.format==='TV_SHORT'||a.format==='MOVIE'||a.format==='ONA'||a.format==='OVA'||a.format==='SPECIAL')).map(a=>{
+ const scored=items.filter(a=>isJapaneseOriginAnime(a)&&a.coverImage?.large&&a.title&&(a.format==='TV'||a.format==='TV_SHORT'||a.format==='MOVIE'||a.format==='ONA'||a.format==='OVA'||a.format==='SPECIAL')).map(a=>{
   let score=0;const scoreBreakdown=[];const reasons=[];
   const animeGenres=a.genres||[];
   const animeTags=a.tags||[];
