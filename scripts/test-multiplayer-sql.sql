@@ -77,9 +77,35 @@ begin
 end
 $$;
 
+set role authenticated;
+
+do $
+begin
+  begin
+    perform public.aqw_match_dispatch(
+      'get_match_state',
+      '10000000-0000-4000-8000-000000000001',
+      '{}'::jsonb
+    );
+    raise exception 'Authenticated role unexpectedly executed the privileged dispatcher';
+  exception
+    when insufficient_privilege then null;
+  end;
+
+  begin
+    perform public.aqw_match_rate_limit('join_room', '10000000-0000-4000-8000-000000000001');
+    raise exception 'Authenticated role unexpectedly executed the privileged rate limiter';
+  exception
+    when insufficient_privilege then null;
+  end;
+end
+$;
+
+reset role;
+
 set role service_role;
 
-do $$
+do $
 declare
   v_match_id uuid;
   v_result jsonb;
@@ -113,6 +139,30 @@ begin
     jsonb_build_object('match_id', v_match_id, 'ready', true)
   );
 
+  begin
+    perform public.aqw_match_dispatch(
+      'join_room',
+      '10000000-0000-4000-8000-000000000003',
+      jsonb_build_object('room_code_hash', repeat('a', 64), 'display_name', 'Third')
+    );
+    raise exception 'Full room unexpectedly accepted another player';
+  exception
+    when raise_exception then
+      if sqlerrm = 'Full room unexpectedly accepted another player' then raise; end if;
+  end;
+
+  begin
+    perform public.aqw_match_dispatch(
+      'start_match',
+      '10000000-0000-4000-8000-000000000002',
+      jsonb_build_object('match_id', v_match_id)
+    );
+    raise exception 'Non-host unexpectedly started the match';
+  exception
+    when raise_exception then
+      if sqlerrm = 'Non-host unexpectedly started the match' then raise; end if;
+  end;
+
   perform public.aqw_match_dispatch(
     'start_match',
     '10000000-0000-4000-8000-000000000001',
@@ -131,6 +181,19 @@ begin
   if (v_state -> 'question' -> 'payload') ? 'correct_option_id' then
     raise exception 'Correct option ID leaked in match state';
   end if;
+
+  -- Option IDs not in the question payload are rejected.
+  begin
+    perform public.aqw_match_dispatch(
+      'submit_answer',
+      '10000000-0000-4000-8000-000000000001',
+      jsonb_build_object('match_id', v_match_id, 'question_no', 1, 'selected_option_id', 'not-an-option')
+    );
+    raise exception 'Unknown option ID was unexpectedly accepted';
+  exception
+    when raise_exception then
+      if sqlerrm = 'Unknown option ID was unexpectedly accepted' then raise; end if;
+  end;
 
   -- First answer is accepted; a duplicate answer for the same question is rejected.
   perform public.aqw_match_dispatch(
