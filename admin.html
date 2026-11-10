@@ -260,7 +260,15 @@ async function startSession(session){
   $('console').classList.remove('hidden');
   say('管理者として認証されました。','success');
   await refreshAll();
- }catch(error){say('管理者確認に失敗しました：'+(error.message||String(error)),'error')}
+ }catch(error){
+  $('console').classList.add('hidden');
+  $('mfaCard').classList.add('hidden');
+  clearMfaSecrets();
+  activeUser=null;
+  try{await client.auth.signOut()}catch(_){}
+  $('loginCard').classList.remove('hidden');
+  say('管理者確認を完了できませんでした。安全のためログアウトしました。再度ログインしてください。','error');
+ }
 }
 async function refreshAll(){
  $('refreshButton').disabled=true;
@@ -433,7 +441,22 @@ $('mfaForm').addEventListener('submit',async event=>{
   const {data,error:sessionError}=await client.auth.getSession();
   if(sessionError)throw sessionError;
   await startSession(data.session);
- }catch(error){say('追加認証に失敗しました：'+(error.message||String(error)),'error')}
+ }catch(error){
+  $('mfaCode').value='';
+  try{
+   const {data:nextChallenge,error:challengeError}=await client.auth.mfa.challenge({factorId:pendingMfaFactorId});
+   if(challengeError)throw challengeError;
+   pendingMfaChallengeId=nextChallenge.id;
+   say('認証コードを確認できませんでした。認証アプリの最新コードを入力してください。','error');
+  }catch(challengeError){
+   clearMfaSecrets();
+   $('mfaCard').classList.add('hidden');
+   $('loginCard').classList.remove('hidden');
+   activeUser=null;
+   try{await client.auth.signOut()}catch(_){}
+   say('追加認証を再開できませんでした。安全のためログアウトしました。再度ログインしてください。','error');
+  }
+ }
  finally{$('mfaVerify').disabled=false}
 });
 $('loginForm').addEventListener('submit',async event=>{
