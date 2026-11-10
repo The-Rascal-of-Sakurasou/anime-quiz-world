@@ -482,6 +482,68 @@ body{background:#f6f7f9;color:#202936;letter-spacing:.005em}
   .aqw-rush-board-actions label{grid-column:auto}
 }
 @media(prefers-reduced-transparency:reduce) and (max-width:700px){.tabs{backdrop-filter:none;-webkit-backdrop-filter:none;background:#fff}}
+
+/* Ranking refresh: clear podium hierarchy and compact mobile cards */
+.aqw-rush-board{padding:clamp(14px,2.5vw,22px);border:1px solid #dce3ec;background:#fff}
+.aqw-rush-board-head{align-items:flex-start}
+.aqw-rush-board-actions{align-items:flex-end}
+.aqw-rush-board-actions label{display:grid;gap:4px}
+.aqw-rush-board-actions select{min-height:42px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;color:var(--text)}
+.aqw-rush-board-scroll{overflow:visible}
+.aqw-rush-board table{width:100%;min-width:0;table-layout:fixed;border-collapse:separate;border-spacing:0}
+.aqw-rush-board th:first-child,.aqw-rush-board td:first-child{width:64px;text-align:center}
+.aqw-rush-board th:nth-child(2){width:46%}
+.aqw-rush-board th,.aqw-rush-board td{white-space:normal;overflow-wrap:anywhere}
+.aqw-rush-board tbody tr{background:#fff}
+.aqw-rush-board tbody tr.podium-1{background:linear-gradient(90deg,#fff8df 0%,#fff 75%)}
+.aqw-rush-board tbody tr.podium-2{background:linear-gradient(90deg,#f1f4f8 0%,#fff 75%)}
+.aqw-rush-board tbody tr.podium-3{background:linear-gradient(90deg,#fff1e8 0%,#fff 75%)}
+.aqw-rush-board .rank-cell{font-size:1.08rem;font-variant-numeric:tabular-nums}
+.aqw-rush-board .rank-cell.podium-1,.aqw-rush-board .rank-cell.podium-2,.aqw-rush-board .rank-cell.podium-3{width:42px;height:42px;padding:8px;border-radius:50%;display:table-cell;vertical-align:middle}
+.aqw-rush-board .aqw-player-cell{min-width:0}
+.aqw-rush-board .aqw-user-avatar{flex:0 0 40px;width:40px;height:40px}
+.aqw-rush-board .player-meta{min-width:0;overflow-wrap:anywhere}
+.aqw-rush-board .player-name{display:block;overflow-wrap:anywhere}
+.aqw-rush-board .player-handle{overflow-wrap:anywhere}
+.aqw-rush-board td:not(.aqw-player-cell):not(.rank-cell){font-weight:650;font-variant-numeric:tabular-nums}
+.aqw-rush-board tr.is-me{outline:2px solid #6e91c0;outline-offset:-2px}
+@media(max-width:700px){
+ .aqw-rush-board{padding:14px 12px;margin:14px 0}
+ .aqw-rush-board-head{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+ .aqw-rush-board-head h3{font-size:1.05rem}
+ .aqw-rush-board-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;gap:8px}
+ .aqw-rush-board-actions label{min-width:0}
+ .aqw-rush-board-actions select,.aqw-rush-board-actions button{width:100%;min-width:0;min-height:42px;font-size:.84rem}
+ .aqw-rush-board table,.aqw-rush-board tbody{display:block;width:100%}
+ .aqw-rush-board thead{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+ .aqw-rush-board tbody{display:grid;gap:9px}
+ .aqw-rush-board tbody tr{display:grid;grid-template-columns:48px minmax(0,1fr) minmax(74px,auto);grid-template-rows:auto auto;grid-template-areas:"rank player metric" "rank player detail";align-items:center;gap:3px 10px;padding:10px 9px;border:1px solid #e2e7ee;border-radius:9px;box-shadow:0 1px 3px #172b4508}
+ .aqw-rush-board tbody tr.podium-1{border-color:#e7c96d;background:#fffaf0}
+ .aqw-rush-board tbody tr.podium-2{border-color:#cbd3dd;background:#f8fafc}
+ .aqw-rush-board tbody tr.podium-3{border-color:#e5c0a8;background:#fff8f3}
+ .aqw-rush-board tbody tr.is-me{outline:2px solid #6e91c0;outline-offset:-2px}
+ .aqw-rush-board tbody td{display:block;min-width:0;padding:2px 0;border:0;text-align:left;white-space:normal}
+ .aqw-rush-board tbody td.rank-cell{grid-area:rank;width:42px;height:42px;display:flex;align-items:center;justify-content:center;align-self:center;padding:0;border-radius:50%;font-size:1rem;background:#f0f2f5}
+ .aqw-rush-board tbody tr.podium-1 td.rank-cell{background:#f3d77e;color:#634900}
+ .aqw-rush-board tbody tr.podium-2 td.rank-cell{background:#dce2e9;color:#3f4b59}
+ .aqw-rush-board tbody tr.podium-3 td.rank-cell{background:#edc5a9;color:#704027}
+ .aqw-rush-board tbody td.aqw-player-cell{grid-area:player;display:flex;align-items:center;gap:9px;min-width:0}
+ .aqw-rush-board .aqw-user-avatar{flex-basis:36px;width:36px;height:36px}
+ .aqw-rush-board .player-name{font-size:.9rem;line-height:1.35}
+ .aqw-rush-board .player-handle{font-size:.73rem;line-height:1.3}
+ .aqw-rush-board tbody td:nth-child(3){grid-area:metric;text-align:right;font-size:.9rem}
+ .aqw-rush-board tbody td:nth-child(4){grid-area:detail;text-align:right;font-size:.78rem;color:var(--muted);font-weight:500}
+ .aqw-rush-board tbody td:nth-child(3)::before{content:attr(data-label);display:block;margin-bottom:1px;color:var(--muted);font-size:.68rem;font-weight:600}
+ .aqw-rush-board tbody td:nth-child(4)::before{content:attr(data-label);display:block;margin-bottom:1px;color:var(--muted);font-size:.68rem;font-weight:600}
+ .aqw-rush-board-desc{font-size:.86rem;line-height:1.6}
+}
+@media(max-width:360px){
+ .aqw-rush-board-actions{grid-template-columns:1fr}
+ .aqw-rush-board tbody tr{grid-template-columns:42px minmax(0,1fr) minmax(64px,auto);gap:3px 7px;padding:9px 7px}
+ .aqw-rush-board tbody td.rank-cell{width:36px;height:36px}
+ .aqw-rush-board .aqw-user-avatar{flex-basis:32px;width:32px;height:32px}
+}
+
 </style>
 </head>
 <body><a class="skip-link" href="#quiz">クイズへ移動</a><div id="app" class="wrap">
