@@ -1,8 +1,8 @@
 # Anime Quiz World — Online Multiplayer Test Plan
 
-Status: **TEST PLAN ONLY — NOT EXECUTED**
+Status: **Automated PostgreSQL 16 integration flow and Deno type check have passed once; extended authorization tests are now included in CI.**
 
-The SQL schema and Edge Function are still drafts. Run these checks only against a disposable Supabase project or local Supabase stack after the SQL has been reviewed and applied there. Never use the production project for negative or destructive tests.
+The SQL schema and Edge Function are still drafts. CI applies the SQL to a disposable PostgreSQL 16 instance with minimal Supabase Auth/Realtime compatibility stubs. This verifies PostgreSQL syntax and the tested database flows, but it is not a full Supabase environment. Additional tests must still be run against a disposable Supabase project or local Supabase stack. Never use the production project for negative or destructive tests.
 
 ## Test fixture requirements
 
@@ -86,6 +86,21 @@ The SQL schema and Edge Function are still drafts. Run these checks only against
 - Simulate a browser refresh and a temporary network interruption.
 - Verify a client cannot alter points, correctness, deadline, player ID, or another player's ready state.
 - Verify a failed/aborted request does not leave a partially transitioned match.
+
+## Automated checks currently covered
+
+The GitHub Actions workflow runs:
+
+- Applying the full SQL draft to disposable PostgreSQL 16.
+- Question-bank trigger validation.
+- Room creation, joining, capacity enforcement, ready state, and host-only start.
+- Answer option validation, duplicate-answer rejection, automatic advancement, and final result persistence.
+- Correct-answer-key omission from match-state output.
+- Rejection of direct dispatcher/rate-limit calls by the `authenticated` role.
+- The 10-attempt room-code throttle.
+- Deno type checking of the Edge Function.
+
+Workflow: `.github/workflows/multiplayer-sql-tests.yml`.
 
 ## Release gates
 
