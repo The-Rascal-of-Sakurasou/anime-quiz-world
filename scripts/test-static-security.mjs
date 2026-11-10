@@ -165,6 +165,11 @@ assert.match(index, /const cacheKey='aqw-anime-pool-v18-japanese-original-source
 assert.match(index, /const sorts=\['POPULARITY_DESC','ID','ID_DESC'\]/, "Format-specific catalogue backfill must use complementary sort orders");
 
 assert.match(index, /function isUsableAnime\(a\)\{[^\n]*isJapaneseOriginAnime\(a\)/, "Every cached and live quiz record must pass strict Japanese-source eligibility");
+
+assert.match(index, /source\\(version:2\\) relations \\{ edges \\{ relationType node \\{ id type countryOfOrigin format \\} \\} \\} season seasonYear/, "Featured seasonal queries must include source and related-origin metadata");
+assert.match(index, /if\\(!isJapaneseOriginAnime\\(anime\\)\\|\\|!Number\\.isFinite\\(Number\\(anime\\.id\\)\\)\\)continue/, "New seasonal anime must pass verified Japanese-source filtering");
+assert.match(index, /if\\(isJapaneseOriginAnime\\(anime\\)&&Number\\.isFinite\\(Number\\(anime\\.id\\)\\)\\)byId\\.set/, "Ongoing seasonal anime must pass verified Japanese-source filtering");
+
 assert.match(index, /function isJapaneseOriginAnime\(a\)\{[^\n]*a\.countryOfOrigin===.JP./, "Japanese-origin eligibility must accept every AniList JP-origin record and reject all others");
 assert.match(index, /const cleanedItems=value\.items\.filter\(isUsableAnime\)/, "Existing IndexedDB catalogues must be purged of non-Japanese-origin anime when loaded");
 assert.match(index, /const cleanedItems=legacy\.items\.filter\(isUsableAnime\)/, "Existing localStorage catalogues must be purged of non-Japanese-origin anime when loaded");
