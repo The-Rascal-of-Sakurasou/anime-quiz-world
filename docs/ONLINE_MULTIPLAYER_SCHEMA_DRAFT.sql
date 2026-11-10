@@ -156,6 +156,9 @@ create table private.aqw_question_bank (
 );
 
 alter table private.aqw_question_bank enable row level security;
+
+alter table private.aqw_match_questions
+  add column bank_question_id bigint references private.aqw_question_bank(id);
 revoke all on all tables in schema private from anon, authenticated;
 revoke all on all sequences in schema private from anon, authenticated;
 revoke all on table private.aqw_question_bank from service_role;
@@ -206,6 +209,7 @@ declare
   v_answer_count integer;
   v_player_count integer;
   v_question_count integer;
+  v_next_bank_id bigint;
   v_next_payload jsonb;
   v_next_correct text;
 begin
@@ -245,14 +249,14 @@ begin
     return;
   end if;
 
-  select q.question_payload, q.correct_option_id
-    into v_next_payload, v_next_correct
+  select q.id, q.question_payload, q.correct_option_id
+    into v_next_bank_id, v_next_payload, v_next_correct
   from private.aqw_question_bank q
   where q.is_active
     and not exists (
       select 1 from private.aqw_match_questions used
       where used.match_id = p_match_id
-        and used.question_payload = q.question_payload
+        and used.bank_question_id = q.id
     )
   order by random()
   limit 1;
@@ -264,9 +268,9 @@ begin
   end if;
 
   insert into private.aqw_match_questions
-    (match_id, question_no, question_payload, correct_option_id, opened_at, deadline_at)
+    (match_id, question_no, bank_question_id, question_payload, correct_option_id, opened_at, deadline_at)
   values
-    (p_match_id, (v_question_count + 1)::smallint, v_next_payload,
+    (p_match_id, (v_question_count + 1)::smallint, v_next_bank_id, v_next_payload,
      v_next_correct, now(), now() + interval '20 seconds');
 end;
 $$;
@@ -392,8 +396,8 @@ begin
         raise exception 'Question bank does not contain enough active questions';
       end if;
 
-      select q.question_payload, q.correct_option_id
-        into v_question.question_payload, v_question.correct_option_id
+      select q.id, q.question_payload, q.correct_option_id
+        into v_question.bank_question_id, v_question.question_payload, v_question.correct_option_id
       from private.aqw_question_bank q
       where q.is_active
       order by random() limit 1;
@@ -401,8 +405,8 @@ begin
       set status = 'in_progress', started_at = now()
       where id = v_match_id;
       insert into private.aqw_match_questions
-        (match_id, question_no, question_payload, correct_option_id, opened_at, deadline_at)
-      values (v_match_id, 1, v_question.question_payload,
+        (match_id, question_no, bank_question_id, question_payload, correct_option_id, opened_at, deadline_at)
+      values (v_match_id, 1, v_question.bank_question_id, v_question.question_payload,
               v_question.correct_option_id, now(), now() + interval '20 seconds');
       return jsonb_build_object('match_id', v_match_id, 'status', 'in_progress');
 
