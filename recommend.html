@@ -126,10 +126,10 @@ const questions=[
 {label:'ドラマ・コメディ・日常',genres:['Drama','Comedy','Slice of Life']}
 ]},
 {dimension:'protagonist_challenge',title:'主人公が直面する課題は？',help:'ジャンルではなく、主人公が何に立ち向かう物語を見たいかで選んでください。',options:[
-{label:'隠された真実や謎を解き明かす',genres:['Mystery','Thriller'],tags:['Conspiracy']},
-{label:'厳しい状況を乗り越え、生き抜く',genres:['Action','Thriller'],tags:['Survival','Battle Royale']},
-{label:'大きな目標に向かって努力し、挑戦する',genres:['Adventure','Drama'],tags:['Quest','Character Development']},
-{label:'自分自身の弱さや価値観と向き合う',genres:['Drama','Psychological'],tags:['Philosophy','Coming of Age']}
+{label:'隠された真実や謎を解き明かす',tags:['Conspiracy','Mystery']},
+{label:'厳しい状況を乗り越え、生き抜く',tags:['Survival','Battle Royale']},
+{label:'大きな目標に向かって努力し、挑戦する',tags:['Quest','Character Development']},
+{label:'自分自身の弱さや価値観と向き合う',tags:['Philosophy','Coming of Age']}
 ]},
 {dimension:'pacing',title:'好みの展開テンポは？',help:'序盤から速く進む作品か、時間をかけて描く作品か。好みに近いものを選んでください。',options:[
 {label:'序盤から次々と展開する',tags:['Fast-Paced']},
@@ -138,16 +138,16 @@ const questions=[
 {label:'緩急が大きく、静と動の差がある',genres:['Thriller','Drama']}
 ]},
 {dimension:'emotional_intensity',title:'視聴中に求める感情の強さは？',help:'作品を見ている間、どの程度強く感情を揺さぶられたいかを選んでください。',options:[
-{label:'常に緊張感があり、ハラハラしたい',genres:['Thriller','Psychological'],tags:['Survival']},
-{label:'感情が大きく動く場面をじっくり味わいたい',genres:['Drama'],tags:['Character Development']},
-{label:'重くなりすぎず、気楽に楽しみたい',genres:['Comedy'],tags:['Gag Humor']},
-{label:'刺激は控えめで、穏やかに楽しみたい',genres:['Slice of Life'],tags:['Iyashikei']}
+{label:'常に緊張感があり、ハラハラしたい',tags:['Survival','Psychological']},
+{label:'感情が大きく動く場面をじっくり味わいたい',tags:['Character Development','Tragedy']},
+{label:'重くなりすぎず、気楽に楽しみたい',tags:['Gag Humor','Parody']},
+{label:'刺激は控えめで、穏やかに楽しみたい',tags:['Iyashikei']}
 ]},
 {dimension:'setting',title:'好みの舞台・世界は？',help:'現代・学校・異世界・宇宙など、好きな舞台に近いものを選んでください。',options:[
-{label:'異世界・魔法・未知の大陸',genres:['Fantasy','Adventure'],tags:['Magic','Isekai']},
-{label:'現代社会・学校・日常',genres:['Slice of Life','Drama']},
-{label:'未来・宇宙・科学技術',genres:['Sci-Fi','Mecha'],tags:['Space','Cyberpunk']},
-{label:'歴史・伝承・和風世界',genres:['Historical','Fantasy'],tags:['Mythology','Samurai']}
+{label:'異世界・魔法・未知の大陸',tags:['Magic','Isekai','World Building']},
+{label:'現代社会・学校・日常',tags:['School','Urban','Coming of Age']},
+{label:'未来・宇宙・科学技術',tags:['Space','Cyberpunk','Mecha']},
+{label:'歴史・伝承・和風世界',tags:['Historical','Mythology','Samurai']}
 ]},
 {dimension:'duration',title:'作品の長さはどれが理想？',help:'一気に見やすい短編か、長く楽しめるシリーズか。視聴スタイルに近いものを選んでください。',options:[
 {label:'短め：映画・1クール程度',length:'short'},
@@ -162,7 +162,7 @@ const questions=[
 {label:'信念が強く、行動力のある人物',genres:['Action','Adventure'],tags:['Leadership','Revenge']}
 ]},
 {dimension:'narrative_complexity',title:'物語の複雑さはどれが好み？',help:'伏線や複雑な設定を考察しながら見るのが好きか、分かりやすさを重視するかで選んでください。',options:[
-{label:'説明が分かりやすく、シンプル'},
+{label:'説明が分かりやすく、シンプル',avoidGenres:['Mystery','Psychological'],avoidTags:['Conspiracy','Politics','World Building','Ensemble Cast']},
 {label:'適度な伏線や意外な展開がある',genres:['Mystery'],tags:['Conspiracy']},
 {label:'複数の出来事や視点が絡み合う',genres:['Psychological','Drama'],tags:['Politics','Ensemble Cast']},
 {label:'独自の設定や専門的な情報が多い',genres:['Sci-Fi','Fantasy'],tags:['World Building','Politics']}
@@ -200,6 +200,7 @@ const questions=[
 ];
 const questionTitles=questions.map(q=>q.title.trim());
 const questionDimensions=questions.map(q=>q.dimension);
+const duplicateChoiceLabels=questions.some(q=>new Set(q.options.map(o=>o.label.trim())).size!==q.options.length);
 if(new Set(questionTitles).size!==questionTitles.length||new Set(questionDimensions).size!==questionDimensions.length||questionDimensions.some(d=>typeof d!=='string'||!d)||questions.some(q=>new Set(q.options.map(o=>o.label.trim())).size!==q.options.length)){
  throw new Error('診断の質問または選択肢に重複があります。');
 }
@@ -410,7 +411,11 @@ function runRecommendationSelfTests(){
   [{id:1,title:{native:'作品A',english:'Title A',romaji:'Title A'}}],
   [{id:2,title:{native:'作品B',english:'Title B',romaji:'Title B'}},{id:3,title:{native:'作品A',english:'Another Title',romaji:'Another Title'}}]
  );
- check('推薦2枠で同じ作品IDを重複表示しない',deduplicateRecommendationGroups([{id:7,title:{native:'A'}}],[{id:7,title:{native:'B'}}]).discoveries.length===0);
+ check('13問すべてに異なる分類が設定されている',new Set(questions.map(q=>q.dimension)).size===13);
+  check('全13問の選択肢ラベルが重複していない',!duplicateChoiceLabels&&questions.every(q=>q.options.length===4));
+  check('ジャンル質問と舞台質問が同じジャンル加点に依存しない',questions.find(q=>q.dimension==='setting').options.every(o=>!o.genres?.length));
+  check('物語の複雑さの「シンプル」回答に明確な減点条件がある',questions.find(q=>q.dimension==='narrative_complexity').options[0].avoidGenres?.includes('Mystery')&&questions.find(q=>q.dimension==='narrative_complexity').options[0].avoidTags?.includes('World Building'));
+  check('推薦2枠で同じ作品IDを重複表示しない',deduplicateRecommendationGroups([{id:7,title:{native:'A'}}],[{id:7,title:{native:'B'}}]).discoveries.length===0);
  check('好きな作品の日本語タイトルを完全一致で照合',matchesSeedTitle({title:{native:'葬送のフリーレン'}},'葬送のフリーレン'));
  check('好きな作品の英語タイトルを完全一致で照合',matchesSeedTitle({title:{english:'Frieren: Beyond Journey’s End'}},'Frieren: Beyond Journey’s End'));
  check('AniList登録の別名でも照合',matchesSeedTitle({title:{native:'作品A'},synonyms:['Alias A']},'Alias A'));
