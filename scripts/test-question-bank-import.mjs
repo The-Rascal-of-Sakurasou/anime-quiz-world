@@ -46,4 +46,9 @@ assert.throws(() => validateQuestionBank([{ ...valid[0], image_url: "http://exam
 assert.throws(() => validateQuestionBank([{ ...valid[0], explanation: "The answer is Option A" }]), /unsupported field/);
 assert.throws(() => validateQuestionBank([valid[0], { ...valid[0], source_key: "different-id" }]), /duplicates another question's content/);
 
+
+assert.throws(() => validateQuestionBank([{ ...valid[0], options: [{ id: "a", text: "Ａ" }, { id: "b", text: "A" }] }]), /duplicate option text after normalization/);
+assert.throws(() => validateQuestionBank([{ ...valid[0], image_url: "https://user:pass@example.test/image.jpg" }]), /must not contain credentials/);
+assert.throws(() => validateQuestionBank([valid[0], { ...valid[0], source_key: "normalized-duplicate", prompt: "  O'Brien's   example question?  " }]), /duplicates another question's content/);
+
 console.log("Question-bank import generator tests passed.");
