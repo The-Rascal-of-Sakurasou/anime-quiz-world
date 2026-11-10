@@ -49,7 +49,8 @@ jobs:
           node scripts/build-question-bank-seed.mjs scripts/fixtures/question-bank-sample.json /tmp/aqw-question-bank-seed.sql
           psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -f /tmp/aqw-question-bank-seed.sql
           psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -f /tmp/aqw-question-bank-seed.sql
-          psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -c "DO \\$\\$ BEGIN IF (SELECT count(*) FROM private.aqw_question_bank WHERE source_key LIKE 'ci:sample:%') <> 2 THEN RAISE EXCEPTION 'Question seed import is not idempotent'; END IF; END \\$\\$;"
+          COUNT=$(psql -h 127.0.0.1 -U postgres -d postgres -Atc "SELECT count(*) FROM private.aqw_question_bank WHERE source_key LIKE 'ci:sample:%'")
+          test "$COUNT" = "2"
 
   edge-function-typecheck:
     name: Edge Function type check
