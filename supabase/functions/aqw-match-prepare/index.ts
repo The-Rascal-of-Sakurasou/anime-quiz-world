@@ -78,7 +78,7 @@ Deno.serve(async (req: Request) => {
       a && a.countryOfOrigin === "JP" && a.isAdult !== true &&
       ["TV", "TV_SHORT", "MOVIE", "OVA", "ONA", "SPECIAL"].includes(a.format)
     ).map((a: any) => {
-      const title = String(a.title?.english || a.title?.romaji || a.title?.native || "").trim();
+      const title = String(a.title?.native || a.title?.romaji || a.title?.english || "").trim();
       const image = String(a.coverImage?.extraLarge || a.coverImage?.large || a.coverImage?.medium || "");
       return { title, image };
     }).filter((a: any) => a.title && /^https:\/\/s[0-9]+\.anilist\.co\/file\/anilistcdn\/media\/anime\/cover\//.test(a.image));
