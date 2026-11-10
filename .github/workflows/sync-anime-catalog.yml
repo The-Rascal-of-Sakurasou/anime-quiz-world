@@ -1,6 +1,11 @@
 name: Sync shared anime catalogue
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/sync-anime-catalog.mjs"
+      - ".github/workflows/sync-anime-catalog.yml"
   schedule:
     - cron: '30 19 * * *'
   workflow_dispatch:
