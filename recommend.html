@@ -386,7 +386,7 @@ function calculateSelectionAdjustment(candidate,selected,discovery=false,maxPopu
   const tagUnion=new Set([...tags,...chosenTags]).size;
   const genreSimilarity=genreUnion?sharedGenres/genreUnion:0;
   const tagSimilarity=tagUnion?sharedTags/tagUnion:0;
-  maxSimilarity=Math.max(maxSimilarity,genreSimilarity*0.65+tagSimilarity*0.35);
+  maxSimilarity=Math.max(maxSimilarity,genreSimilarity*0.5+tagSimilarity*0.5);
  }
  for(const genre of genres){
   const occurrences=(selected||[]).filter(chosen=>(chosen.genres||[]).includes(genre)).length;
@@ -394,8 +394,8 @@ function calculateSelectionAdjustment(candidate,selected,discovery=false,maxPopu
  }
  const popularity=Number(candidate._popularity)||0;
  const novelty=discovery?Math.max(0,1-Math.log(popularity+1)/Math.log(Math.max(2,maxPopularity))):0;
- const similarityPenalty=maxSimilarity*5.5;
- const genreConcentrationPenalty=genreConcentration*0.7;
+ const similarityPenalty=maxSimilarity*7.5;
+ const genreConcentrationPenalty=genreConcentration*1.0;
  const noveltyBonus=novelty*0.8;
  return {similarityPenalty,genreConcentrationPenalty,noveltyBonus,total:-similarityPenalty-genreConcentrationPenalty+noveltyBonus};
 }
@@ -486,6 +486,13 @@ function runRecommendationSelfTests(){
  check('多様性指標は共通要素なしで0',jaccard(['Fantasy'],['Comedy'])===0);
  check('最初の候補には重複ペナルティが発生しない',calculateSelectionAdjustment({genres:['Fantasy'],tags:[],_popularity:10},[],false,100).total===0);
  check('同じジャンルの候補には多様性ペナルティが発生する',calculateSelectionAdjustment({genres:['Fantasy'],tags:[],_popularity:10},[{genres:['Fantasy'],tags:[]}],false,100).total<0);
+  const alreadyShown={genres:['Fantasy','Adventure'],tags:[{name:'Magic',rank:90},{name:'Quest',rank:80}],_popularity:30};
+  const nearDuplicate={genres:['Fantasy','Adventure'],tags:[{name:'Magic',rank:85},{name:'Quest',rank:75}],_popularity:20};
+  const differentPick={genres:['Comedy','Slice of Life'],tags:[{name:'Gag Humor',rank:85}],_popularity:20};
+  const nearPenalty=calculateSelectionAdjustment(nearDuplicate,[alreadyShown],false,100).similarityPenalty;
+  const differentPenalty=calculateSelectionAdjustment(differentPick,[alreadyShown],false,100).similarityPenalty;
+  check('内容が酷似した候補は別ジャンル候補より強く抑制',nearPenalty>differentPenalty);
+  check('タグの一致も多様性ペナルティに反映',nearPenalty>0);
  check('意外なおすすめでは人気度が低いほど意外性ボーナスが大きい',calculateSelectionAdjustment({_popularity:1,genres:[],tags:[]},[],true,100).noveltyBonus>calculateSelectionAdjustment({_popularity:99,genres:[],tags:[]},[],true,100).noveltyBonus);
  const weighted=calculateRankWeightedFeedback([{value:'like',group:'close',rank:1},{value:'dislike',group:'close',rank:4}],'close');
  check('順位加重評価は上位の肯定評価を強く反映',weighted.weightedRate>0.5);
