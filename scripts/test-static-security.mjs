@@ -128,7 +128,8 @@ assert.match(index, /\[t\.fifty,runs>=50\]/, "The 50-play achievement must not d
 assert.match(index, /type:ANIME,countryOfOrigin:JP/, "Quiz search query must be restricted to Japanese-origin anime");
 assert.ok(index.includes("media(type:ANIME,countryOfOrigin:JP"), "Quiz catalog query must be restricted to Japanese-origin anime");
 assert.match(index, /countryOfOrigin===.JP./, "Quiz data must be filtered by Japanese origin on the client as a second guard");
-assert.match(index, /function isUsableAnime\(a\)\{[^\n]*a\.countryOfOrigin===.JP./, "Every cached and live quiz record must pass the Japanese-origin eligibility check");
+assert.match(index, /function isUsableAnime\(a\)\{[^\n]*isJapaneseOriginAnime\(a\)/, "Every cached and live quiz record must pass the Japanese-origin eligibility check");
+assert.match(index, /function isJapaneseOriginAnime\(a\)\{[^\n]*a\.countryOfOrigin!==.JP./, "Japanese-origin eligibility must reject non-Japanese source works");
 assert.match(index, /const cleanedItems=value\.items\.filter\(isUsableAnime\)/, "Existing IndexedDB catalogues must be purged of non-Japanese-origin anime when loaded");
 assert.match(index, /const cleanedItems=legacy\.items\.filter\(isUsableAnime\)/, "Existing localStorage catalogues must be purged of non-Japanese-origin anime when loaded");
 assert.match(index, /normalizeUnicode\(json\.data\?\.Page\?\.media\|\|\[\]\)\.filter\(item=>item\.countryOfOrigin===.JP.\)/, "Featured anime rail must also apply a client-side Japanese-origin check");
