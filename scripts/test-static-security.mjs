@@ -75,7 +75,7 @@ assert.match(cancelMatchmakingSource, /if\(matchmakingPollPromise\)await matchma
 assert.ok(cancelMatchmakingSource.indexOf("await matchmakingPollPromise") < cancelMatchmakingSource.indexOf("aqw_matchmaking_cancel"), "Queue cancellation must run after any in-flight poll");
 assert.match(cancelMatchmakingSource, /if\(room\)/, "Cancellation must preserve a room created by a poll that completed concurrently");
 
-assert.match(multiplayer, /<option value="2" selected>2人（1対1）<\\/option>/, "The room UI must clearly show one-on-one matchmaking");
+assert.ok(multiplayer.includes('<option value="2" selected>2人（1対1）</option>'), "The room UI must clearly show one-on-one matchmaking");
 assert.doesNotMatch(multiplayer, /<option value="3">3人|<option value="4">4人/, "The room UI must not offer unsupported group sizes");
 const matchMigration = fs.readFileSync("supabase/migrations/20261111090000_restrict_aqw_matches_to_one_on_one.sql", "utf8");
 assert.match(matchMigration, /p_max_players <> 2/, "The database must reject match sizes other than two players");
