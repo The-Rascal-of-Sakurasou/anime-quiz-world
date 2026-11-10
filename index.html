@@ -187,7 +187,6 @@ body{background:#f6f7f9;color:#202936;letter-spacing:.005em}
 .featured-card img{display:block;width:100%;height:190px;object-fit:cover;background:#edf0f4}
 .featured-card span{display:-webkit-box;min-height:52px;padding:8px 9px;font-size:.82rem;line-height:1.45;font-weight:700;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:2}
 .featured-card.is-search-link{border-style:dashed}
-.featured-audit{margin:0;color:var(--muted);font-size:.82rem;line-height:1.5}
 .featured-empty{padding:12px 0;color:var(--muted);font-size:.9rem}
 .aqw-rush-board{border-radius:12px;padding:18px;background:#fff;box-shadow:0 2px 12px #172b4508}
 .aqw-rush-board-head h3{font-size:1.08rem}
@@ -1582,9 +1581,6 @@ function renderFeaturedRail(source){
  const root=document.getElementById('featuredRail');if(!root)return;
  const candidates=shuffle(uniqueAnimeById(source).filter(a=>a?.coverImage?.large||a?.coverImage?.medium));
  if(!candidates.length){root.innerHTML='<p class="featured-empty">今シーズンの日本アニメ画像を取得できませんでした。</p>';return}
- const officialCount=candidates.filter(a=>officialAnimeLink(a).kind==='official').length;
- const searchCount=candidates.length-officialCount;
- const audit=document.createElement('p');audit.className='featured-audit';audit.textContent='公式サイト直リンク：'+officialCount+'作品 ／ 公式サイト情報なし：'+searchCount+'作品（該当作品は公式サイト検索へ移動）';
  const makeTrack=(items,reverse=false)=>{
   const track=document.createElement('div');track.className='featured-track'+(reverse?' reverse':'');
   for(const anime of [...items,...items]){
