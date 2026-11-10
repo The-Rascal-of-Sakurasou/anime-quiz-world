@@ -176,11 +176,11 @@ begin
   select
     p_match_id,
     p.user_id,
-    count(*) filter (where a.is_correct)::smallint,
+    count(a.user_id) filter (where a.is_correct)::smallint,
     coalesce(sum(a.points), 0)::integer,
     dense_rank() over (
       order by coalesce(sum(a.points), 0) desc,
-               count(*) filter (where a.is_correct) desc,
+               count(a.user_id) filter (where a.is_correct) desc,
                coalesce(sum(a.response_ms), 2147483647) asc
     )::smallint
   from private.aqw_match_players p
