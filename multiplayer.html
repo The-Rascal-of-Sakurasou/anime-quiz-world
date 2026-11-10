@@ -285,6 +285,7 @@ async function refreshRoom(reconnect=true){
  $('createPanel').classList.add('hidden');$('joinPanel').classList.add('hidden');$('randomMatchPanel').classList.add('hidden');
  renderPlayers();
  if(reconnect)await connectRoom();
+ if(room.status==='playing')startGamePolling();
 }
 async function enterRoom(data){
  room=data;
