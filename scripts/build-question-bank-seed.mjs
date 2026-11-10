@@ -61,7 +61,7 @@ export function validateQuestionBank(input) {
       }
       const id = nonEmptyString(option.id, label + ".options[" + optionIndex + "].id", 100);
       const text = nonEmptyString(option.text, label + ".options[" + optionIndex + "].text", 300);
-      const normalizedText = text.normalize("NFKC").replace(/\\s+/g, " ").trim().toLocaleLowerCase("und");
+      const normalizedText = text.normalize("NFKC").replace(/\s+/g, " ").trim().toLocaleLowerCase("und");
       if (optionIds.has(id)) throw new Error(label + " has duplicate option ID \"" + id + "\"");
       if (optionTextKeys.has(normalizedText)) throw new Error(label + " has duplicate option text after normalization");
       optionIds.add(id);
@@ -89,8 +89,8 @@ export function validateQuestionBank(input) {
     }
 
     const normalizedPayload = {
-      prompt: payload.prompt.normalize("NFKC").replace(/\\s+/g, " ").trim().toLocaleLowerCase("und"),
-      options: payload.options.map((option) => option.text.normalize("NFKC").replace(/\\s+/g, " ").trim().toLocaleLowerCase("und")).sort(),
+      prompt: payload.prompt.normalize("NFKC").replace(/\s+/g, " ").trim().toLocaleLowerCase("und"),
+      options: payload.options.map((option) => option.text.normalize("NFKC").replace(/\s+/g, " ").trim().toLocaleLowerCase("und")).sort(),
     };
     const contentKey = JSON.stringify({ category: category.normalize("NFKC").trim().toLocaleLowerCase("und"), payload: normalizedPayload });
     if (seenContent.has(contentKey)) throw new Error(label + " duplicates another question's content");
