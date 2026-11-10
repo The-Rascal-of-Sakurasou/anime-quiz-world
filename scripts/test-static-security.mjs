@@ -74,6 +74,9 @@ assert.equal(recommendationLabels.length, 52, "Each of the 13 recommendation que
 assert.ok(recommendationLabels.every(label => [...label].length <= 30), "Recommendation choices must stay short and easy to scan");
 assert.match(questionBlock, /help:'[^']+'/g, "Recommendation questions must include simple guidance");
 assert.doesNotMatch(questionBlock, /NDCG|IDF|重み付け|希少性/, "Technical recommendation terms must not appear in user-facing questions");
+assert.match(recommend, /function buildRecommendationDataWarnings\(failedPages,totalPages\)/, "Partial recommendation data warning helper missing");
+assert.match(recommend, /report\.dataWarnings\?\.length/, "Partial recommendation data warning must be shown to users");
+assert.match(recommend, /buildRecommendationDataWarnings\(failedPages,sortModes\.length\*5\)/, "Recommendation fetch failures must be reflected in the result report");
 
 const index = source.get("index.html");
 assert.match(index, /term\.normalize\('NFKC'\)/, "Community search input must be normalized before building PostgREST filters");
