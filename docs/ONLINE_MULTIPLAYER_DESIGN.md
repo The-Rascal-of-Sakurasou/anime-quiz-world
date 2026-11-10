@@ -9,7 +9,7 @@ Implementation status (2026-11-10):
 - The gateway verifies the caller with `auth.getUser(token)`, derives the actor ID from that verified user, restricts actions and payload fields, and HMAC-hashes room codes with an Edge Function secret.
 - The gateway calls `public.aqw_match_dispatch`, which is now defined in the SQL draft with service-role-only execution. Neither the SQL nor the Edge Function has been deployed, so the multiplayer service is not yet usable.
 - The SQL draft now includes a private question bank with record validation, a service-role-only dispatcher, server-side answer scoring, question deadlines, result ranking, room lifecycle operations, a per-account room-code attempt throttle, and a guard against answering while disconnected. The expanded SQL integration flow has passed on disposable PostgreSQL 16 with Auth/Realtime compatibility stubs; the Edge Function has passed Deno type checking. It has not been applied to the hosted database.
-- The question bank is empty: a trusted admin/import workflow and reviewed question data are still required before a match can start.
+- The question bank is empty. An offline JSON-to-SQL seed generator with validation and idempotent source keys now exists, but there is no admin import interface or reviewed anime question dataset yet.
 - No production database schema, RLS policy, Realtime setting, secret, or Edge Function has been changed.
 
 The next required work is to validate the SQL on an isolated database, populate a reviewed question bank through a trusted process, deploy the Edge Function only after tests, and then build the lobby client.
