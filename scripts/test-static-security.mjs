@@ -63,8 +63,11 @@ const recommend = source.get("recommend.html");
 const questionBlock = recommend.match(/const questions=\[([\s\S]*?)\n\];\nconst questionTitles=/)?.[1];
 assert.ok(questionBlock, "Recommendation question block not found");
 const questionTitles = [...questionBlock.matchAll(/title:'([^']+)'/g)].map(match => match[1].trim());
+const questionDimensions = [...questionBlock.matchAll(/dimension:'([^']+)'/g)].map(match => match[1].trim());
 assert.equal(questionTitles.length, 13, "Recommendation diagnosis must contain exactly 13 questions");
 assert.equal(new Set(questionTitles).size, questionTitles.length, "Recommendation question titles must be unique");
+assert.equal(questionDimensions.length, 13, "Every recommendation question must declare a dimension");
+assert.equal(new Set(questionDimensions).size, questionDimensions.length, "Recommendation question dimensions must be unique");
 assert.match(recommend, /new Set\(q\.options\.map\(o=>o\.label\.trim\(\)\)\)\.size!==q\.options\.length/, "Runtime duplicate-option guard missing");
 
 const index = source.get("index.html");
