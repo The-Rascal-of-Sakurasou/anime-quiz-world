@@ -1060,7 +1060,7 @@ async function toggleLeaderboardRegistration(){
  if(!confirm(next?'ランキングに再登録しますか？':'ランキングへの掲載を停止します。保存済みの記録は削除されず、再登録すると再び表示されます。続行しますか？'))return;
  const {data:result,error}=await sb.rpc('set_aqw_leaderboard_enabled',{p_enabled:next});
  if(error){message($s('aqwLeaderboardAccountStatus'),'設定を変更できませんでした：'+errText(error));return}
- await refreshLeaderboardRegistration();await loadRushLeaderboard();await loadPlayerLeaderboard();
+ await refreshLeaderboardRegistration();await loadRushLeaderboard(true);await loadPlayerLeaderboard(true);
 }
 async function resetOnlineLeaderboardRecords(){
  if(!currentUser){message($s('aqwLeaderboardAccountStatus'),'実績のリセットにはログインが必要です。');return}
@@ -1154,7 +1154,7 @@ async function submitPlayerRun(result){
  if(error){message($s('aqwPlayerBoardStatus'),aqwPlayerT('submitError')+errText(error));return}
  pendingPlayerRun=null;
  message($s('aqwPlayerBoardStatus'),data?.duplicate?aqwPlayerT('duplicate'):aqwPlayerT('saved'));
- await loadPlayerLeaderboard();
+ await loadPlayerLeaderboard(true);
 }
 async function loadMyRushRank(period){
  const el=$s('aqwMyRushRank');if(!el)return;
@@ -1207,7 +1207,7 @@ async function submitRushResult(result){
  if(error){message($s('aqwRushBoardStatus'),aqwRushT('submitError')+errText(error));return}
  pendingRushResult=null;
  message($s('aqwRushBoardStatus'),data?.updated?aqwRushT('saved'):aqwRushT('notBetter'));
- await loadRushLeaderboard();
+ await loadRushLeaderboard(true);
 }
 const errText=e=>e?.message||String(e||'Unknown error');
 function initSupabase(){
@@ -1544,11 +1544,11 @@ $s('aqwMessageForm').addEventListener('submit',sendFriendMessage);
 $s('aqwUserSearchForm').addEventListener('submit',searchUsers);
 $s('aqwNotificationsButton').addEventListener('click',async()=>{$s('aqwNotifications').classList.toggle('hidden');if(!$s('aqwNotifications').classList.contains('hidden'))await loadNotifications()});
 $s('aqwEnableBrowserNotifications').addEventListener('click',enableBrowserNotifications);
-$s('aqwRushBoardRefresh').addEventListener('click',loadRushLeaderboard);
-$s('aqwRushBoardPeriod').addEventListener('change',loadRushLeaderboard);
-$s('aqwPlayerBoardRefresh').addEventListener('click',loadPlayerLeaderboard);
-$s('aqwPlayerBoardSort').addEventListener('change',loadPlayerLeaderboard);
-$s('aqwPlayerBoardPeriod').addEventListener('change',loadPlayerLeaderboard);
+$s('aqwRushBoardRefresh').addEventListener('click',()=>loadRushLeaderboard(true));
+$s('aqwRushBoardPeriod').addEventListener('change',()=>loadRushLeaderboard(true));
+$s('aqwPlayerBoardRefresh').addEventListener('click',()=>loadPlayerLeaderboard(true));
+$s('aqwPlayerBoardSort').addEventListener('change',()=>loadPlayerLeaderboard(true));
+$s('aqwPlayerBoardPeriod').addEventListener('change',()=>loadPlayerLeaderboard(true));
 $s('aqwRushBoardShare').addEventListener('click',shareRushBoardImage);
 $s('aqwRushBoardSave').addEventListener('click',saveRushBoardImage);
 $s('aqwPlayerBoardShare').addEventListener('click',sharePlayerBoardImage);
