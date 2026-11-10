@@ -207,7 +207,7 @@ begin
 
   return new;
 end;
-$;
+$$;
 
 create trigger aqw_validate_question_bank_row
 before insert or update of question_payload, correct_option_id
@@ -270,7 +270,7 @@ begin
 
   return v_attempts <= 10;
 end;
-$;
+$$;
 
 revoke all on function public.aqw_match_rate_limit(text, uuid) from public, anon, authenticated;
 grant execute on function public.aqw_match_rate_limit(text, uuid) to service_role;
