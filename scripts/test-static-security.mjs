@@ -62,18 +62,18 @@ assert.match(admin, /aqw-admin-control/, "Protected admin Edge Function call mis
 
 const multiplayer = source.get("multiplayer.html");
 assert.match(multiplayer, /let matchmakingTimer=null,matchmakingBusy=false,matchmakingPrefs=null,matchmakingPollPromise=null;/, "Random matchmaking must track an in-flight poll");
-const stopMatchmakingSource = multiplayer.match(/function stopMatchmakingPolling\\(\\)\\{[\\s\\S]*?\\n\\}/)?.[0];
+const stopMatchmakingSource = multiplayer.match(/function stopMatchmakingPolling\(\)\{[\s\S]*?\n\}/)?.[0];
 assert.ok(stopMatchmakingSource, "Matchmaking timer cleanup helper missing");
 assert.doesNotMatch(stopMatchmakingSource, /matchmakingBusy=false/, "Stopping the timer must not mark an in-flight poll as finished");
-const pollMatchmakingSource = multiplayer.match(/async function pollMatchmaking\\(\\)\\{[\\s\\S]*?\\n\\}/)?.[0];
+const pollMatchmakingSource = multiplayer.match(/async function pollMatchmaking\(\)\{[\s\S]*?\n\}/)?.[0];
 assert.ok(pollMatchmakingSource, "Matchmaking polling function missing");
 assert.match(pollMatchmakingSource, /matchmakingPollPromise=task/, "An active matchmaking poll must be tracked");
 assert.match(pollMatchmakingSource, /await task/, "Polling completion must be awaitable before cancellation");
-const cancelMatchmakingSource = multiplayer.match(/async function cancelRandomMatch\\(\\)\\{[\\s\\S]*?\\n\\}/)?.[0];
+const cancelMatchmakingSource = multiplayer.match(/async function cancelRandomMatch\(\)\{[\s\S]*?\n\}/)?.[0];
 assert.ok(cancelMatchmakingSource, "Matchmaking cancellation function missing");
-assert.match(cancelMatchmakingSource, /if\\(matchmakingPollPromise\\)await matchmakingPollPromise/, "Cancellation must wait for an in-flight poll");
+assert.match(cancelMatchmakingSource, /if\(matchmakingPollPromise\)await matchmakingPollPromise/, "Cancellation must wait for an in-flight poll");
 assert.ok(cancelMatchmakingSource.indexOf("await matchmakingPollPromise") < cancelMatchmakingSource.indexOf("aqw_matchmaking_cancel"), "Queue cancellation must run after any in-flight poll");
-assert.match(cancelMatchmakingSource, /if\\(room\\)/, "Cancellation must preserve a room created by a poll that completed concurrently");
+assert.match(cancelMatchmakingSource, /if\(room\)/, "Cancellation must preserve a room created by a poll that completed concurrently");
 
 const privacy = source.get("privacy.html");
 assert.doesNotMatch(privacy, /コレクション/, "Privacy policy must not describe the removed anime collection feature");
