@@ -63,7 +63,7 @@ const recommend = source.get("recommend.html");
 assert.ok(recommend.includes("media(search:$search,type:ANIME,countryOfOrigin:JP"), "Favorite-work search must be restricted to Japanese-origin anime");
 assert.ok(recommend.includes("media(type:ANIME,countryOfOrigin:JP"), "Recommendation catalog query must be restricted to Japanese-origin anime");
 assert.match(recommend, /countryOfOrigin===.JP./, "Recommendation data must be filtered by Japanese origin on the client as a second guard");
-const questionBlock = recommend.match(/const questions=\[([\s\S]*?)\n\];\nconst questionTitles=/)?.[1];
+const questionBlock = recommend.match(/const questions=\[([\s\S]*?)\n\];/)?.[1];
 assert.ok(questionBlock, "Recommendation question block not found");
 const questionTitles = [...questionBlock.matchAll(/title:'([^']+)'/g)].map(match => match[1].trim());
 const questionDimensions = [...questionBlock.matchAll(/dimension:'([^']+)'/g)].map(match => match[1].trim());
