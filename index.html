@@ -508,9 +508,10 @@ async function fetchAnime(vars={}){
     taskIndex=nextTaskIndex;
     completed=taskIndex;
     batchesSinceSave++;
-    if(batchesSinceSave>=3||taskIndex>=tasks.length){
-     const items=deduplicateQuestionPool([...all.values()]);
-     pool=items;extendQuestionsFromPool(items);
+    if(batchesSinceSave>=12||taskIndex>=tasks.length){
+     // IDs are already unique in the Map. Avoid sorting and re-filtering the entire catalogue every few pages.
+     const items=[...all.values()];
+     pool=items;extendQuestionsFromPool(pageResults.flatMap(result=>result.items||[]));
      // Persist in small intervals to avoid repeatedly serializing the entire growing catalogue.
      await saveProgress(items,taskIndex);
      batchesSinceSave=0;
@@ -1127,7 +1128,7 @@ function renderPlayerLeaderboard(){
   trEl.append(rank,player,value,detail);rows.append(trEl);
  });
 }
-async function loadPlayerLeaderboard(){
+async function loadPlayerLeaderboardRemote(){
  if(!sb)return;
  const statusEl=$s('aqwPlayerBoardStatus'),rows=$s('aqwPlayerBoardRows'),mode=$s('aqwPlayerBoardSort')?.value||'xp',period=$s('aqwPlayerBoardPeriod')?.value||'all';
  message(statusEl,aqwPlayerT('loading'));rows.replaceChildren();
@@ -1136,6 +1137,15 @@ async function loadPlayerLeaderboard(){
  playerLeaderboardCache=data||[];const {data:avatarProfiles}=data.length?await sb.from('profiles').select('id,avatar_path').in('id',data.map(x=>x.user_id)):{data:[]};leaderboardProfiles=new Map((avatarProfiles||[]).map(x=>[x.id,x]));
  renderPlayerLeaderboard();
  await loadMyPlayerRank(mode,period);
+}
+let playerLeaderboardLoadedAt=0,playerLeaderboardLoading=null,playerLeaderboardLoadedKey='';
+async function loadPlayerLeaderboard(force=false){
+ if(!sb)return;
+ const key=($s('aqwPlayerBoardSort')?.value||'xp')+'|'+($s('aqwPlayerBoardPeriod')?.value||'all');
+ if(playerLeaderboardLoading)return playerLeaderboardLoading;
+ if(!force&&playerLeaderboardLoadedKey===key&&Date.now()-playerLeaderboardLoadedAt<30000){renderPlayerLeaderboard();return}
+ playerLeaderboardLoading=loadPlayerLeaderboardRemote().then(()=>{playerLeaderboardLoadedAt=Date.now();playerLeaderboardLoadedKey=key}).finally(()=>{playerLeaderboardLoading=null});
+ return playerLeaderboardLoading;
 }
 async function submitPlayerRun(result){
  if(!result||!result.runId||!Number.isInteger(result.correctCount)||!Number.isInteger(result.questionCount)||![10,15].includes(result.xpMultiplier))return;
@@ -1154,7 +1164,7 @@ async function loadMyRushRank(period){
  if(data==null){message(el,aqwRushT('noPeriodRank'));return}
  message(el,aqwRushT('myRank')+Number(data).toLocaleString()+aqwRushT('rankSuffix'));
 }
-async function loadRushLeaderboard(){
+async function loadRushLeaderboardRemote(){
  if(!sb)return;
  const statusEl=$s('aqwRushBoardStatus'),rows=$s('aqwRushBoardRows'),period=$s('aqwRushBoardPeriod')?.value||'all';
  message(statusEl,aqwRushT('loading'));rows.replaceChildren();
@@ -1179,6 +1189,15 @@ async function loadRushLeaderboard(){
   trEl.append(rank,player,score,time);rows.append(trEl);
  });
  await loadMyRushRank(period);
+}
+let rushLeaderboardLoadedAt=0,rushLeaderboardLoading=null,rushLeaderboardLoadedPeriod='';
+async function loadRushLeaderboard(force=false){
+ if(!sb)return;
+ const period=$s('aqwRushBoardPeriod')?.value||'all';
+ if(rushLeaderboardLoading)return rushLeaderboardLoading;
+ if(!force&&rushLeaderboardLoadedPeriod===period&&Date.now()-rushLeaderboardLoadedAt<30000)return;
+ rushLeaderboardLoading=loadRushLeaderboardRemote().then(()=>{rushLeaderboardLoadedAt=Date.now();rushLeaderboardLoadedPeriod=period}).finally(()=>{rushLeaderboardLoading=null});
+ return rushLeaderboardLoading;
 }
 async function submitRushResult(result){
  if(result.questionCount!==10){message($s('aqwRushBoardStatus'),aqwRushT('needTen'));return}
