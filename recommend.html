@@ -119,79 +119,79 @@ const safeStorage={
 };
 const API='https://graphql.anilist.co';
 const questions=[
-{title:'どんなジャンルの物語に惹かれますか？',help:'ジャンル名だけでなく、普段よく見たい物語のタイプで選んでください。',options:[
+{dimension:'genre',title:'どんなジャンルの物語に惹かれますか？',help:'ジャンル名だけでなく、普段よく見たい物語のタイプで選んでください。',options:[
 {label:'異世界・冒険・ファンタジー',genres:['Fantasy','Adventure']},
 {label:'SF・ミステリー・サスペンス',genres:['Sci-Fi','Mystery','Thriller']},
 {label:'バトル・アクション',genres:['Action','Adventure']},
 {label:'ドラマ・コメディ・日常',genres:['Drama','Comedy','Slice of Life']}
 ]},
-{title:'主人公が直面する課題は？',help:'ジャンルではなく、主人公が何に立ち向かう物語を見たいかで選んでください。',options:[
+{dimension:'protagonist_challenge',title:'主人公が直面する課題は？',help:'ジャンルではなく、主人公が何に立ち向かう物語を見たいかで選んでください。',options:[
 {label:'隠された真実や謎を解き明かす',genres:['Mystery','Thriller'],tags:['Conspiracy']},
 {label:'厳しい状況を乗り越え、生き抜く',genres:['Action','Thriller'],tags:['Survival','Battle Royale']},
 {label:'大きな目標に向かって努力し、挑戦する',genres:['Adventure','Drama'],tags:['Quest','Character Development']},
 {label:'自分自身の弱さや価値観と向き合う',genres:['Drama','Psychological'],tags:['Philosophy','Coming of Age']}
 ]},
-{title:'好みの展開テンポは？',help:'序盤から速く進む作品か、時間をかけて描く作品か。好みに近いものを選んでください。',options:[
+{dimension:'pacing',title:'好みの展開テンポは？',help:'序盤から速く進む作品か、時間をかけて描く作品か。好みに近いものを選んでください。',options:[
 {label:'序盤から次々と展開する',tags:['Fast-Paced']},
 {label:'一定のテンポで着実に進む',genres:['Adventure']},
 {label:'ゆっくりと時間をかけて進む',genres:['Drama','Slice of Life']},
 {label:'緩急が大きく、静と動の差がある',genres:['Thriller','Drama']}
 ]},
-{title:'視聴中に求める感情の強さは？',help:'作品を見ている間、どの程度強く感情を揺さぶられたいかを選んでください。',options:[
+{dimension:'emotional_intensity',title:'視聴中に求める感情の強さは？',help:'作品を見ている間、どの程度強く感情を揺さぶられたいかを選んでください。',options:[
 {label:'常に緊張感があり、ハラハラしたい',genres:['Thriller','Psychological'],tags:['Survival']},
 {label:'感情が大きく動く場面をじっくり味わいたい',genres:['Drama'],tags:['Character Development']},
 {label:'重くなりすぎず、気楽に楽しみたい',genres:['Comedy'],tags:['Gag Humor']},
 {label:'刺激は控えめで、穏やかに楽しみたい',genres:['Slice of Life'],tags:['Iyashikei']}
 ]},
-{title:'好みの舞台・世界は？',help:'現代・学校・異世界・宇宙など、好きな舞台に近いものを選んでください。',options:[
+{dimension:'setting',title:'好みの舞台・世界は？',help:'現代・学校・異世界・宇宙など、好きな舞台に近いものを選んでください。',options:[
 {label:'異世界・魔法・未知の大陸',genres:['Fantasy','Adventure'],tags:['Magic','Isekai']},
 {label:'現代社会・学校・日常',genres:['Slice of Life','Drama']},
 {label:'未来・宇宙・科学技術',genres:['Sci-Fi','Mecha'],tags:['Space','Cyberpunk']},
 {label:'歴史・伝承・和風世界',genres:['Historical','Fantasy'],tags:['Mythology','Samurai']}
 ]},
-{title:'作品の長さはどれが理想？',help:'一気に見やすい短編か、長く楽しめるシリーズか。視聴スタイルに近いものを選んでください。',options:[
+{dimension:'duration',title:'作品の長さはどれが理想？',help:'一気に見やすい短編か、長く楽しめるシリーズか。視聴スタイルに近いものを選んでください。',options:[
 {label:'短め：映画・1クール程度',length:'short'},
 {label:'中程度：2〜3クール程度',length:'medium'},
 {label:'長め：複数シーズン・長編',length:'long'},
 {label:'長さは気にしない',length:'any'}
 ]},
-{title:'登場人物に求めるものは？',help:'キャラクターに期待する魅力を選んでください。複数当てはまる場合は一番近いものを選びます。',options:[
+{dimension:'character_appeal',title:'登場人物に求めるものは？',help:'キャラクターに期待する魅力を選んでください。複数当てはまる場合は一番近いものを選びます。',options:[
 {label:'困難を通じて大きく成長する人物',tags:['Character Development','Coming of Age']},
 {label:'個性や考え方が際立つ人物たち',tags:['Ensemble Cast','Unusual Characters']},
 {label:'複雑な心理や価値観を持つ人物',genres:['Psychological','Drama'],tags:['Philosophy','Psychological']},
 {label:'信念が強く、行動力のある人物',genres:['Action','Adventure'],tags:['Leadership','Revenge']}
 ]},
-{title:'物語の複雑さはどれが好み？',help:'伏線や複雑な設定を考察しながら見るのが好きか、分かりやすさを重視するかで選んでください。',options:[
+{dimension:'narrative_complexity',title:'物語の複雑さはどれが好み？',help:'伏線や複雑な設定を考察しながら見るのが好きか、分かりやすさを重視するかで選んでください。',options:[
 {label:'説明が分かりやすく、シンプル'},
 {label:'適度な伏線や意外な展開がある',genres:['Mystery'],tags:['Conspiracy']},
 {label:'複数の出来事や視点が絡み合う',genres:['Psychological','Drama'],tags:['Politics','Ensemble Cast']},
 {label:'独自の設定や専門的な情報が多い',genres:['Sci-Fi','Fantasy'],tags:['World Building','Politics']}
 ]},
-{title:'視聴後にどんな気持ちが残る作品が好み？',help:'見終わったあとに、どんな気分や余韻が残ってほしいかで選んでください。',options:[
+{dimension:'aftertaste',title:'視聴後にどんな気持ちが残る作品が好み？',help:'見終わったあとに、どんな気分や余韻が残ってほしいかで選んでください。',options:[
 {label:'驚きや衝撃が残る',genres:['Thriller','Mystery'],tags:['Psychological']},
 {label:'感動や切なさ、深い余韻が残る',genres:['Drama'],tags:['Tragedy','Coming of Age']},
 {label:'爽快感や達成感が残る',genres:['Action','Adventure'],tags:['Super Power']},
 {label:'笑いや安心感、前向きな気分が残る',genres:['Comedy'],tags:['Gag Humor']}
 ]},
-{title:'登場人物同士の関係性で惹かれるものは？',help:'登場人物同士の関係で、特に見たいものを選んでください。',options:[
+{dimension:'relationships',title:'登場人物同士の関係性で惹かれるものは？',help:'登場人物同士の関係で、特に見たいものを選んでください。',options:[
 {label:'仲間と協力し、絆を深めていく',tags:['Friendship','Found Family']},
 {label:'ライバル同士が競い合い、高め合う',tags:['Rivalry']},
 {label:'家族や身近な人との関係を描く',tags:['Family','Family Life']},
 {label:'恋愛や複雑な恋愛関係を描く',genres:['Romance'],tags:['Love Triangle']}
 ]},
-{title:'恋愛要素はどのくらい欲しい？',help:'恋愛が物語の中心か、少し含まれる程度か、ほとんどない方がよいかを選んでください。',options:[
+{dimension:'romance_amount',title:'恋愛要素はどのくらい欲しい？',help:'恋愛が物語の中心か、少し含まれる程度か、ほとんどない方がよいかを選んでください。',options:[
 {label:'恋愛が物語の大きな軸になってほしい',genreWeights:{Romance:2.5}},
 {label:'メインではなく、物語の一部として欲しい',genreWeights:{Romance:1.1}},
 {label:'恋愛要素は少ない方がよい',avoidGenres:['Romance'],avoidGenreWeights:{Romance:0.8}},
 {label:'恋愛要素は基本的になくてよい',avoidGenres:['Romance'],avoidGenreWeights:{Romance:1.8}}
 ]},
-{title:'コメディとシリアスのバランスは？',help:'作品全体で、笑いと緊張感のどちらをどの程度楽しみたいかを選んでください。',options:[
+{dimension:'tone_balance',title:'コメディとシリアスのバランスは？',help:'作品全体で、笑いと緊張感のどちらをどの程度楽しみたいかを選んでください。',options:[
 {label:'コメディ中心。笑える場面が多い',genreWeights:{Comedy:2.5}},
 {label:'シリアス中心で、笑いは少しあればよい',genreWeights:{Drama:1.4},avoidGenreWeights:{Comedy:0.5}},
 {label:'シリアスとコメディが同じくらい',genreWeights:{Drama:1.2,Comedy:1.2}},
 {label:'基本的にシリアス。コメディは少なめ',genreWeights:{Drama:1.8},avoidGenres:['Comedy'],avoidGenreWeights:{Comedy:1.2}}
 ]},
-{title:'物語の進み方はどちらが好み？',help:'全体を通した大きなストーリーか、各話ごとのエピソードを楽しむ形式かを選んでください。',options:[
+{dimension:'story_structure',title:'物語の進み方はどちらが好み？',help:'全体を通した大きなストーリーか、各話ごとのエピソードを楽しむ形式かを選んでください。',options:[
 {label:'全話を通して続く大きな物語が好き',avoidTags:['Episodic'],avoidTagWeights:{Episodic:1.2}},
 {label:'各話ごとに区切りがあり、気軽に見られる',tagWeights:{Episodic:2.2}},
 {label:'大きな物語と各話の面白さ、両方ほしい',tagWeights:{Episodic:0.7}},
@@ -199,7 +199,8 @@ const questions=[
 ]}
 ];
 const questionTitles=questions.map(q=>q.title.trim());
-if(new Set(questionTitles).size!==questionTitles.length||questions.some(q=>new Set(q.options.map(o=>o.label.trim())).size!==q.options.length)){
+const questionDimensions=questions.map(q=>q.dimension);
+if(new Set(questionTitles).size!==questionTitles.length||new Set(questionDimensions).size!==questionDimensions.length||questionDimensions.some(d=>typeof d!=='string'||!d)||questions.some(q=>new Set(q.options.map(o=>o.label.trim())).size!==q.options.length)){
  throw new Error('診断の質問または選択肢に重複があります。');
 }
 let step=0;const answers=Array(questions.length).fill(null);
