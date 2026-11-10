@@ -139,7 +139,7 @@ const SUPABASE_KEY='sb_publishable_eL_Da06cmHz3W58jpcBIBQ_YzTThTL4';
 const $=id=>document.getElementById(id);
 const status=(el,text,kind='')=>{el.textContent=text||'';el.className='status'+(kind?' '+kind:'')};
 let sb=null,user=null,room=null,channel=null,presenceUsers=new Set(),busy=false;
-let matchmakingTimer=null,matchmakingBusy=false,matchmakingPrefs=null;
+let matchmakingTimer=null,matchmakingBusy=false,matchmakingPrefs=null,matchmakingPollPromise=null;
 const errorText=e=>e?.message||'処理に失敗しました。';
 function setBusy(value){busy=value;['createRoom','joinRoom','toggleReady','leaveRoom','refreshRoom','copyInvite','findMatch','cancelMatch'].forEach(id=>$(id).disabled=value)}
 async function invoke(name,args){
@@ -222,7 +222,6 @@ async function enterRoom(data){
 }
 function stopMatchmakingPolling(){
  if(matchmakingTimer){clearInterval(matchmakingTimer);matchmakingTimer=null}
- matchmakingBusy=false;
 }
 function showMatchmakingWaiting(data){
  $('matchmakingWait').classList.remove('hidden');
@@ -242,13 +241,21 @@ async function handleMatchmakingResult(data){
 async function pollMatchmaking(){
  if(matchmakingBusy||!matchmakingPrefs||!user||room)return;
  matchmakingBusy=true;
- try{
-  const data=await invoke('aqw_matchmaking_join',matchmakingPrefs);
-  await handleMatchmakingResult(data);
- }catch(e){
-  stopMatchmakingPolling();
-  status($('matchmakingStatus'),errorText(e),'error');
- }finally{matchmakingBusy=false}
+ const task=(async()=>{
+  try{
+   const data=await invoke('aqw_matchmaking_join',matchmakingPrefs);
+   await handleMatchmakingResult(data);
+  }catch(e){
+   stopMatchmakingPolling();
+   status($('matchmakingStatus'),errorText(e),'error');
+  }
+ })();
+ matchmakingPollPromise=task;
+ try{await task}
+ finally{
+  if(matchmakingPollPromise===task)matchmakingPollPromise=null;
+  matchmakingBusy=false;
+ }
 }
 async function findRandomMatch(){
  if(busy||room)return;
@@ -272,6 +279,11 @@ async function cancelRandomMatch(){
  stopMatchmakingPolling();
  setBusy(true);
  try{
+  if(matchmakingPollPromise)await matchmakingPollPromise;
+  if(room){
+   $('matchmakingWait').classList.add('hidden');
+   return;
+  }
   await invoke('aqw_matchmaking_cancel',{});
   matchmakingPrefs=null;
   $('matchmakingWait').classList.add('hidden');
