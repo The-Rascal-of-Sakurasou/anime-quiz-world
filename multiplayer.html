@@ -141,7 +141,15 @@ const status=(el,text,kind='')=>{el.textContent=text||'';el.className='status'+(
 let sb=null,user=null,room=null,channel=null,presenceUsers=new Set(),busy=false;
 let matchmakingTimer=null,matchmakingBusy=false,matchmakingPrefs=null,matchmakingPollPromise=null;
 const errorText=e=>e?.message||'処理に失敗しました。';
-function setBusy(value){busy=value;['createRoom','joinRoom','toggleReady','leaveRoom','refreshRoom','copyInvite','findMatch','cancelMatch'].forEach(id=>$(id).disabled=value)}
+function setBusy(value){
+ busy=value;
+ ['createRoom','joinRoom','toggleReady','leaveRoom','refreshRoom','copyInvite','findMatch','cancelMatch'].forEach(id=>$(id).disabled=value);
+ if(room){
+  const mine=room.players?.find(player=>player.user_id===user?.id);
+  $('toggleReady').disabled=value||room.status!=='waiting'||!mine;
+  $('findMatch').disabled=value||true;
+ }
+}
 async function invoke(name,args){
  const {data,error}=await sb.rpc(name,args);
  if(error)throw error;
