@@ -12,7 +12,7 @@ const ALLOWED_FIELDS = new Set([
 
 function nonEmptyString(value, field, maxLength) {
   if (typeof value !== "string" || value.trim().length === 0 || value.length > maxLength) {
-    throw new Error(\`\${field} must be a non-empty string no longer than \${maxLength} characters\`);
+    throw new Error(field + " must be a non-empty string no longer than " + maxLength + " characters");
   }
   return value.trim();
 }
@@ -30,60 +30,60 @@ export function validateQuestionBank(input) {
   const seenContent = new Set();
 
   return input.map((question, index) => {
-    const label = \`Question \${index + 1}\`;
+    const label = "Question " + (index + 1);
     if (!question || typeof question !== "object" || Array.isArray(question)) {
-      throw new Error(\`\${label} must be an object\`);
+      throw new Error(label + " must be an object");
     }
 
     for (const key of Object.keys(question)) {
       if (!ALLOWED_FIELDS.has(key)) {
-        throw new Error(\`\${label} contains unsupported field "\${key}"; answer explanations and answer keys must stay server-side\`);
+        throw new Error(label + " contains unsupported field \"" + key + "\"; answer explanations and answer keys must stay server-side");
       }
     }
 
-    const sourceKey = nonEmptyString(question.source_key, \`\${label}.source_key\`, 160);
-    const category = nonEmptyString(question.category ?? "general", \`\${label}.category\`, 40);
-    const prompt = nonEmptyString(question.prompt, \`\${label}.prompt\`, 500);
-    const correctOptionId = nonEmptyString(question.correct_option_id, \`\${label}.correct_option_id\`, 100);
+    const sourceKey = nonEmptyString(question.source_key, label + ".source_key", 160);
+    const category = nonEmptyString(question.category ?? "general", label + ".category", 40);
+    const prompt = nonEmptyString(question.prompt, label + ".prompt", 500);
+    const correctOptionId = nonEmptyString(question.correct_option_id, label + ".correct_option_id", 100);
 
-    if (seenKeys.has(sourceKey)) throw new Error(\`Duplicate source_key: \${sourceKey}\`);
+    if (seenKeys.has(sourceKey)) throw new Error("Duplicate source_key: " + sourceKey);
     seenKeys.add(sourceKey);
 
     if (!Array.isArray(question.options) || question.options.length < 2 || question.options.length > 6) {
-      throw new Error(\`\${label}.options must contain between 2 and 6 options\`);
+      throw new Error(label + ".options must contain between 2 and 6 options");
     }
 
     const optionIds = new Set();
     const options = question.options.map((option, optionIndex) => {
       if (!option || typeof option !== "object" || Array.isArray(option)) {
-        throw new Error(\`\${label}.options[\${optionIndex}] must be an object\`);
+        throw new Error(label + ".options[" + optionIndex + "] must be an object");
       }
-      const id = nonEmptyString(option.id, \`\${label}.options[\${optionIndex}].id\`, 100);
-      const text = nonEmptyString(option.text, \`\${label}.options[\${optionIndex}].text\`, 300);
-      if (optionIds.has(id)) throw new Error(\`\${label} has duplicate option ID "\${id}"\`);
+      const id = nonEmptyString(option.id, label + ".options[" + optionIndex + "].id", 100);
+      const text = nonEmptyString(option.text, label + ".options[" + optionIndex + "].text", 300);
+      if (optionIds.has(id)) throw new Error(label + " has duplicate option ID \"" + id + "\"");
       optionIds.add(id);
       return { id, text };
     });
 
     if (!optionIds.has(correctOptionId)) {
-      throw new Error(\`\${label}.correct_option_id must match one of its option IDs\`);
+      throw new Error(label + ".correct_option_id must match one of its option IDs");
     }
 
     const payload = { prompt, options };
     if (question.image_url !== undefined) {
-      const imageUrl = nonEmptyString(question.image_url, \`\${label}.image_url\`, 2048);
+      const imageUrl = nonEmptyString(question.image_url, label + ".image_url", 2048);
       let parsed;
       try {
         parsed = new URL(imageUrl);
       } catch {
-        throw new Error(\`\${label}.image_url must be a valid HTTPS URL\`);
+        throw new Error(label + ".image_url must be a valid HTTPS URL");
       }
-      if (parsed.protocol !== "https:") throw new Error(\`\${label}.image_url must use HTTPS\`);
+      if (parsed.protocol !== "https:") throw new Error(label + ".image_url must use HTTPS");
       payload.image_url = imageUrl;
     }
 
     const contentKey = JSON.stringify({ category, payload });
-    if (seenContent.has(contentKey)) throw new Error(\`\${label} duplicates another question's content\`);
+    if (seenContent.has(contentKey)) throw new Error(label + " duplicates another question's content");
     seenContent.add(contentKey);
 
     return { sourceKey, category, payload, correctOptionId };
@@ -132,7 +132,7 @@ async function main() {
   const input = JSON.parse(raw);
   const sql = buildQuestionBankSql(input);
   await writeFile(outputPath, sql, "utf8");
-  console.log(\`Validated \${input.length} questions and wrote \${outputPath}\`);
+  console.log("Validated " + input.length + " questions and wrote " + outputPath);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
