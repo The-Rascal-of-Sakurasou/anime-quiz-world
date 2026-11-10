@@ -462,7 +462,7 @@ $('mfaForm').addEventListener('submit',async event=>{
 $('loginForm').addEventListener('submit',async event=>{
  event.preventDefault();$('loginButton').disabled=true;say('ログインしています…');
  try{const {data,error}=await client.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;await startSession(data.session)}
- catch(error){say('ログインできませんでした：'+(error.message||String(error)),'error')}
+ catch(error){$('password').value='';say('ログインできませんでした：'+(error.message||String(error)),'error')}
  finally{$('loginButton').disabled=false}
 });
 $('logoutButton').addEventListener('click',async()=>{
