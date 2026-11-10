@@ -79,7 +79,7 @@ $$;
 
 set role authenticated;
 
-do $
+do $$
 begin
   begin
     perform public.aqw_match_dispatch(
@@ -99,13 +99,13 @@ begin
     when insufficient_privilege then null;
   end;
 end
-$;
+$$;
 
 reset role;
 
 set role service_role;
 
-do $
+do $$
 declare
   v_match_id uuid;
   v_result jsonb;
