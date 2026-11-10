@@ -738,7 +738,7 @@ async function fetchAnime(vars={}){
     req.onsuccess=()=>{
      const db=req.result;
      try{
-      const tx=db.transaction('catalogues','readonly'),store=tx.objectStore('catalogues');
+      const tx=db.transaction('catalogues','readwrite'),store=tx.objectStore('catalogues');
       const keysReq=store.getAllKeys();
       keysReq.onsuccess=()=>{
        const keys=keysReq.result||[];
@@ -747,7 +747,7 @@ async function fetchAnime(vars={}){
        const results=[];
        let pending=readKeys.length+1,progress=null;
        const finish=()=>{if(--pending===0)resolve({cachedItems:results.flatMap(x=>Array.isArray(x?.items)?x.items:[]),progress})};
-       readKeys.forEach(key=>{const get=store.get(key);get.onsuccess=()=>{if(get.result)results.push(get.result);finish()};get.onerror=finish});
+       readKeys.forEach(key=>{const get=store.get(key);get.onsuccess=()=>{if(get.result){const value=get.result;if(Array.isArray(value.items)){const cleanedItems=value.items.filter(isUsableAnime);if(cleanedItems.length!==value.items.length)store.put({...value,items:cleanedItems},key);results.push({...value,items:cleanedItems})}else results.push(value)}finish()};get.onerror=finish});
        const progressGet=store.get(cacheKey+'-progress');
        progressGet.onsuccess=()=>{progress=progressGet.result||null;finish()};
        progressGet.onerror=finish;
@@ -767,7 +767,7 @@ async function fetchAnime(vars={}){
    for(const key of safeStorage.keys()){
     if(!key||!new RegExp('^aqw-anime-pool-v\\d+').test(key))continue;
     const legacy=JSON.parse(safeStorage.getItem(key)||'null');
-    if(Array.isArray(legacy?.items))initial.push(...legacy.items.filter(isUsableAnime));
+    if(Array.isArray(legacy?.items)){const cleanedItems=legacy.items.filter(isUsableAnime);if(cleanedItems.length!==legacy.items.length)safeStorage.setItem(key,JSON.stringify({...legacy,items:cleanedItems}));initial.push(...cleanedItems);}
     if(Number(legacy?.savedAt)>cacheSavedAt)cacheSavedAt=Number(legacy.savedAt);
    }
    initial=mergeAnimeCollection(initial);
@@ -875,7 +875,7 @@ async function fetchAnime(vars={}){
  return deduplicateQuestionPool(initial);
 }
 function hasUsableImageUrl(value){const url=String(value||'').trim();return /^https?:\/\//i.test(url)&&!/(?:no[-_ ]?image|placeholder|default[-_ ]?image)/i.test(url)&&!failedImageUrls.has(url)}
-function isUsableAnime(a){const titleImage=a?.coverImage?.large||a?.coverImage?.medium||a?.coverImage?.extraLarge||'';return !!(a&&a.id&&hasUsableImageUrl(titleImage)&&titleOf(a)&&['TV','TV_SHORT','MOVIE','OVA','ONA','SPECIAL'].includes(a.format)&&!((a.genres||[]).includes('Hentai')))}
+function isUsableAnime(a){const titleImage=a?.coverImage?.large||a?.coverImage?.medium||a?.coverImage?.extraLarge||'';return !!(a&&a.id&&a.countryOfOrigin==='JP'&&hasUsableImageUrl(titleImage)&&titleOf(a)&&['TV','TV_SHORT','MOVIE','OVA','ONA','SPECIAL'].includes(a.format)&&!((a.genres||[]).includes('Hentai')))}
 function deduplicateSearchResults(items){
  // AniList search can return multiple media entries with the same displayed title.
  // Keep the most popular representative and suppress exact title duplicates across locales.
@@ -2008,7 +2008,7 @@ async function loadFeaturedRail(){
   if(!response.ok)throw new Error('Seasonal anime request failed: '+response.status);
   const json=await response.json();
   if(json.errors?.length)throw new Error(json.errors.map(e=>e.message).join(' / '));
-  const items=normalizeUnicode(json.data?.Page?.media||[]);
+  const items=normalizeUnicode(json.data?.Page?.media||[]).filter(item=>item.countryOfOrigin==='JP');
   if(items.length)renderFeaturedRail(items);
   else root.innerHTML='<p class="featured-empty">'+current.year+'年'+current.label+'シーズンの日本アニメは見つかりませんでした。</p>';
  }catch(error){
