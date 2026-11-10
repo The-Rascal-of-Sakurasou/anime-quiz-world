@@ -186,8 +186,8 @@ body{background:#f6f7f9;color:#202936;letter-spacing:.005em}
 .featured-card:hover{transform:translateY(-3px);border-color:#9eb3ce}
 .featured-card img{display:block;width:100%;height:190px;object-fit:cover;background:#edf0f4}
 .featured-card span{display:-webkit-box;min-height:52px;padding:8px 9px;font-size:.82rem;line-height:1.45;font-weight:700;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:2}
-.featured-card.is-unlinked{cursor:default}
-.featured-card.is-unlinked:hover{transform:none}
+.featured-card.is-search-link{border-style:dashed}
+.featured-audit{margin:0;color:var(--muted);font-size:.82rem;line-height:1.5}
 .featured-empty{padding:12px 0;color:var(--muted);font-size:.9rem}
 .aqw-rush-board{border-radius:12px;padding:18px;background:#fff;box-shadow:0 2px 12px #172b4508}
 .aqw-rush-board-head h3{font-size:1.08rem}
@@ -1567,29 +1567,38 @@ window.addEventListener('aqw:rush-finished',event=>{
  submitRushResult(detail);
 });
 
-function officialAnimeUrl(anime){
+function officialAnimeLink(anime){
  const links=Array.isArray(anime?.externalLinks)?anime.externalLinks:[];
- const official=links.find(link=>link&&!link.isDisabled&&typeof link.url==='string'&&/^https?:\/\//i.test(link.url)&&/official|公式/i.test(String(link.site||'')));
- return official?.url||'';
+ const official=links.find(link=>{
+  if(!link||link.isDisabled||typeof link.url!=='string'||!/^https?:\/\//i.test(link.url))return false;
+  const site=String(link.site||'').toLowerCase();
+  const type=String(link.type||'').toUpperCase();
+  return /official|公式/i.test(site)&&!/(twitter|x\.com|facebook|instagram|youtube|tiktok|discord|reddit)/i.test(site)&&(!type||type==='INFO');
+ });
+ if(official)return {url:official.url,kind:'official'};
+ return {url:'https://www.google.com/search?q='+encodeURIComponent(titleOf(anime)+' アニメ 公式サイト'),kind:'search'};
 }
 function renderFeaturedRail(source){
  const root=document.getElementById('featuredRail');if(!root)return;
  const candidates=shuffle(uniqueAnimeById(source).filter(a=>a?.coverImage?.large||a?.coverImage?.medium));
  if(!candidates.length){root.innerHTML='<p class="featured-empty">今シーズンの日本アニメ画像を取得できませんでした。</p>';return}
+ const officialCount=candidates.filter(a=>officialAnimeLink(a).kind==='official').length;
+ const searchCount=candidates.length-officialCount;
+ const audit=document.createElement('p');audit.className='featured-audit';audit.textContent='公式サイト直リンク：'+officialCount+'作品 ／ 公式サイト情報なし：'+searchCount+'作品（該当作品は公式サイト検索へ移動）';
  const makeTrack=(items,reverse=false)=>{
   const track=document.createElement('div');track.className='featured-track'+(reverse?' reverse':'');
   for(const anime of [...items,...items]){
-   const url=officialAnimeUrl(anime),card=url?document.createElement('a'):document.createElement('div');
-   card.className='featured-card'+(url?'':' is-unlinked');
-   if(url){card.href=url;card.target='_blank';card.rel='noopener noreferrer';card.title='公式サイトを新しいタブで開く'}
+   const link=officialAnimeLink(anime),card=document.createElement('a');
+   card.className='featured-card'+(link.kind==='search'?' is-search-link':'');
+   card.href=link.url;card.target='_blank';card.rel='noopener noreferrer';
+   card.title=link.kind==='official'?'公式サイトを新しいタブで開く':'公式サイトを検索（検索結果から公式ページを選択）';
    const image=document.createElement('img');image.src=anime.coverImage?.large||anime.coverImage?.medium||'';image.alt=titleOf(anime);image.loading='lazy';image.decoding='async';
-   const label=document.createElement('span');label.textContent=titleOf(anime);card.append(image,label);
-   if(!url){card.setAttribute('aria-label',titleOf(anime)+'（公式サイト情報なし）');card.title='公式サイト情報が登録されていません'}
+   const label=document.createElement('span');label.textContent=titleOf(anime)+(link.kind==='search'?' · 公式サイトを検索':'');card.append(image,label);
    track.append(card);
   }
   return track;
  };
- root.replaceChildren(makeTrack(candidates),makeTrack(shuffle(candidates),true));
+ root.replaceChildren(audit,makeTrack(candidates),makeTrack(shuffle(candidates),true));
  // ホバー・キーボード操作時は一時停止し、一定時間後に自動再開する
  let resumeTimer=null;
  const tracks=()=>root.querySelectorAll('.featured-track');
@@ -1611,14 +1620,15 @@ async function loadFeaturedRail(){
  const root=document.getElementById('featuredRail');if(!root)return;
  // 日本時間の現在の年月からシーズンを自動判定
  const current=getCurrentAnimeSeason();
- const queryText='query { first: Page(page:1,perPage:50) { media(type:ANIME,season:'+current.season+',seasonYear:'+current.year+',countryOfOrigin:JP,format_in:[TV,ONA],isAdult:false,sort:POPULARITY_DESC) { id title { romaji english native } coverImage { large medium } externalLinks { url site type isDisabled } } } second: Page(page:2,perPage:50) { media(type:ANIME,season:'+current.season+',seasonYear:'+current.year+',countryOfOrigin:JP,format_in:[TV,ONA],isAdult:false,sort:POPULARITY_DESC) { id title { romaji english native } coverImage { large medium } externalLinks { url site type isDisabled } } } }';
+ const pageQuery=page=>'Page(page:'+page+',perPage:25) { media(type:ANIME,season:'+current.season+',seasonYear:'+current.year+',countryOfOrigin:JP,format_in:[TV,ONA],isAdult:false,sort:POPULARITY_DESC) { id title { romaji english native } coverImage { large medium } externalLinks { url site type isDisabled } } }';
+ const queryText='query { '+[1,2,3,4].map(page=>'p'+page+': '+pageQuery(page)).join(' ')+' }';
  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),12000);
  try{
   const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query:queryText}),signal:controller.signal});
   if(!response.ok)throw new Error('Seasonal anime request failed: '+response.status);
   const json=await response.json();
   if(json.errors?.length)throw new Error(json.errors.map(e=>e.message).join(' / '));
-  const items=normalizeUnicode([...(json.data?.first?.media||[]),...(json.data?.second?.media||[])]);
+  const items=normalizeUnicode([1,2,3,4].flatMap(page=>json.data?.['p'+page]?.media||[]));
   if(items.length)renderFeaturedRail(items);
   else root.innerHTML='<p class="featured-empty">'+current.year+'年'+current.label+'シーズンの日本アニメは見つかりませんでした。</p>';
  }catch(error){
