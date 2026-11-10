@@ -132,7 +132,7 @@ assert.match(index, /function isUsableAnime\(a\)\{[^\n]*isJapaneseOriginAnime\(a
 assert.match(index, /function isJapaneseOriginAnime\(a\)\{[^\n]*a\.countryOfOrigin!==.JP./, "Japanese-origin eligibility must reject non-Japanese source works");
 assert.match(index, /const cleanedItems=value\.items\.filter\(isUsableAnime\)/, "Existing IndexedDB catalogues must be purged of non-Japanese-origin anime when loaded");
 assert.match(index, /const cleanedItems=legacy\.items\.filter\(isUsableAnime\)/, "Existing localStorage catalogues must be purged of non-Japanese-origin anime when loaded");
-assert.match(index, /normalizeUnicode\(json\.data\?\.Page\?\.media\|\|\[\]\)\.filter\(item=>item\.countryOfOrigin===.JP.\)/, "Featured anime rail must also apply a client-side Japanese-origin check");
+assert.match(index, /normalizeUnicode\(json\.data\?\.Page\?\.media\|\|\[\]\)\.filter\(isJapaneseOriginAnime\)/, "Featured anime rail must also apply the Japanese-origin source verification");
 assert.match(index, /term\.normalize\('NFKC'\)/, "Community search input must be normalized before building PostgREST filters");
 assert.match(index, /safeTerm\.length<2|\[\.\.\.safeTerm\]\.length<2/, "Community search must reject terms shorter than two searchable characters");
 assert.match(index, /body\.textContent\s*=\s*post\.body/, "User-generated post text must be rendered with textContent");
