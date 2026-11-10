@@ -24,6 +24,32 @@ li{padding-left:3px;margin:8px 0}
 .doc-footer{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;padding:18px 4px 0;color:var(--muted);font-size:.82rem}
 .doc-footer nav{display:flex;flex-wrap:wrap;gap:8px 16px}
 @media(max-width:560px){.toc ol{columns:1}.wrap{width:calc(100% - 24px)}header,main{padding:20px 17px}}
+
+/* Site-wide mobile pass: terms of service */
+@media(max-width:700px){
+  html{scroll-padding-top:14px}
+  body{font-size:16px;line-height:1.85;overflow-wrap:anywhere}
+  .wrap{width:calc(100% - 22px);padding:12px 0 calc(30px + env(safe-area-inset-bottom))}
+  header,main{border-radius:12px;margin-bottom:12px}
+  header{padding:15px}
+  main{padding:20px 16px}
+  h1{font-size:clamp(1.55rem,6.5vw,2.1rem);line-height:1.35}
+  h2{font-size:1.12rem;line-height:1.5;margin-top:25px}
+  .page-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .page-nav a{display:flex;align-items:center;justify-content:center;min-height:44px;padding:8px;text-align:center}
+  .toc{padding:13px;margin-bottom:17px}
+  .toc ol{columns:1;padding-left:1.25rem}
+  .toc li{font-size:.92rem;line-height:1.55}
+  .doc-meta{gap:6px 12px}
+  .doc-footer{display:grid;gap:10px}
+  .doc-footer nav{gap:10px 14px}
+  a{overflow-wrap:anywhere}
+}
+@media(max-width:380px){
+  .wrap{width:calc(100% - 16px)}
+  header,main{padding-left:13px;padding-right:13px}
+}
+
 </style></head><body><div class="wrap"><a class="back" href="./index.html">← AQWに戻る</a><nav class="page-nav" aria-label="サイト内ナビゲーション"><a href="./index.html">ホーム</a><a href="./guide.html">遊び方・お知らせ</a><a href="./terms.html">利用規約</a><a href="./privacy.html">プライバシーポリシー</a></nav><header><p class="muted">ANIME QUIZ WORLD</p><h1>利用規約</h1><div class="doc-meta"><span>最終更新日：2026年11月10日</span><span>Anime Quiz World</span></div><p>この利用規約（以下「本規約」）は、Anime Quiz World（以下「本サービス」）の利用条件を定めるものです。本サービスを利用する前に、本規約をご確認ください。利用を開始した時点で、本規約に同意したものとして取り扱います。</p></header><main><nav class="toc" aria-label="目次"><strong>このページの内容</strong><ol><li><a href="#section-1">第1条　本規約の適用</a></li><li><a href="#section-2">第2条　本サービスについて</a></li><li><a href="#section-3">第3条　アカウント</a></li><li><a href="#section-4">第4条　投稿・コミュニティ機能</a></li><li><a href="#section-5">第5条　禁止事項</a></li><li><a href="#section-6">第6条　知的財産権</a></li><li><a href="#section-7">第7条　外部サービス</a></li><li><a href="#section-8">第8条　免責・責任の範囲</a></li><li><a href="#section-9">第9条　サービスの変更・停止</a></li><li><a href="#section-10">第10条　規約の変更</a></li><li><a href="#section-11">第11条　利用停止・退会</a></li><li><a href="#section-12">第12条　準拠法</a></li><li><a href="#section-13">お問い合わせ</a></li></ol></nav>
 <h2 id="section-1">第1条　本規約の適用</h2><p>本規約は、本サービスを利用するすべての方に適用されます。本サービス内の個別の案内と本規約の内容が異なる場合は、個別の案内に別段の定めがあるときを除き、本規約を優先します。</p><h2 id="section-2">第2条　本サービスについて</h2><p>本サービスは、アニメに関するクイズ、作品検索、プレイ記録、実績・デイリークエスト、アカウント、プロフィール、投稿、返信、いいね、フォロー、通知、フレンド間のメッセージ等を提供するファン向けサービスです。提供機能は予告なく追加、変更、一時停止または終了する場合があります。</p>
 <h2 id="section-3">第3条　アカウント</h2><ul><li>登録にはメールアドレスとパスワードが必要です。本サービスの登録画面では、12文字以上128文字以下で、大文字・小文字・数字・記号をそれぞれ1文字以上含むパスワードを求めます。これは登録画面側の入力チェックであり、サーバー側の認証設定は別途適用されます。プロフィールにはユーザー名、表示名、自己紹介、アバター画像等を登録できます。登録画面では利用規約・プライバシーポリシーへの同意チェックが必要ですが、同意日時や同意した規約の版を別途記録する仕組みは確認できていません。登録メールアドレスの確認が必要かどうかはSupabase Authの設定に従います。登録情報は正確に入力し、パスワード等の認証情報を適切に管理してください。</li><li>第三者へのなりすまし、他人のアカウントの不正利用、認証機能への攻撃を禁止します。</li><li>アカウントに関する問題がある場合、運営側は安全確保のため機能を制限することがあります。</li></ul>
