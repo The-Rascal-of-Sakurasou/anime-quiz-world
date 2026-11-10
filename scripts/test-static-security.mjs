@@ -164,11 +164,14 @@ assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "OTHER", rela
 assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "NOVEL" } }] } }), false, "Manga source must match manga format in the quiz");
 assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "KR", format: "MANGA" } }] } }), false, "Non-Japanese source adaptations must be excluded from the quiz");
 assert.equal(isQuizOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL" }), false, "Non-Japanese animation must be excluded from the quiz");
-assert.match(index, /const cacheKey='aqw-anime-pool-v18-japanese-original-source-verified'/, "Verified original-source eligibility must rebuild the browser catalogue");
+assert.match(index, /const cacheKey='aqw-anime-pool-v19-pagination-source-metadata'/, "Verified original-source eligibility must rebuild the browser catalogue");
 assert.ok(index.includes("source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } }"), "Quiz queries must request detailed source metadata and adaptation-origin evidence");
 assert.ok(recommend.includes("source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } }"), "Recommendation queries must request detailed source metadata and adaptation-origin evidence");
 
 assert.match(index, /const sorts=\['POPULARITY_DESC','ID','ID_DESC'\]/, "Format-specific catalogue backfill must use complementary sort orders");
+assert.match(index, /pageInfo \{ hasNextPage \} media\(id_in:\$id_in/, "Base AniList query must expose source pagination metadata");
+assert.match(index, /items\.hasNextPage=pageData\?\.pageInfo\?\.hasNextPage===true/, "Filtered results must retain the upstream hasNextPage flag");
+assert.match(index, /hasNextPage:items\.hasNextPage===true/, "Fallback pagination must not infer page completion from filtered result count");
 
 assert.match(index, /function isUsableAnime\(a\)\{[^\n]*isJapaneseOriginAnime\(a\)/, "Every cached and live quiz record must pass strict Japanese-source eligibility");
 assert.match(index, /function isUsableAnime\(a\)\{[^\n]*a\.isAdult!==true/, "Adult-flagged records must be excluded from live and cached quiz data");
