@@ -73,6 +73,9 @@ assert.equal(questionDimensions.length, 7, "Every recommendation question must d
 assert.equal(new Set(questionDimensions).size, questionDimensions.length, "Recommendation question dimensions must be unique");
 assert.deepEqual(questionDimensions, ["genre", "pacing", "emotional_intensity", "duration", "character_appeal", "narrative_complexity", "romance_amount"], "Recommendation questions must cover distinct preference dimensions");
 assert.match(recommend, /new Set\(q\.options\.map\(o=>o\.label\.trim\(\)\)\)\.size!==q\.options\.length/, "Runtime duplicate-option guard missing");
+assert.match(recommend, /new Set\(allQuestionTitles\)\.size!==questions\.length/, "Runtime duplicate-question-title guard missing");
+assert.match(recommend, /new Set\(allQuestionDimensions\)\.size!==questions\.length/, "Runtime duplicate-dimension guard missing");
+assert.match(recommend, /new Set\(allQuestionLabels\)\.size!==allQuestionLabels\.length/, "Runtime duplicate-option-label guard missing");
 const recommendationLabels = [...questionBlock.matchAll(/label:'([^']+)'/g)].map(match => match[1]);
 assert.equal(recommendationLabels.length, 28, "Each of the seven recommendation questions must have four options");
 assert.equal(new Set(recommendationLabels).size, recommendationLabels.length, "Recommendation option labels must not be duplicated across questions");
