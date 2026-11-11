@@ -1195,9 +1195,9 @@ function difficultyScoreForMode(a,mode,workRarity){
  const stats=empiricalDifficultyStats.get(Number(a?.id)+'|'+mode);
  if(stats&&stats.attempts>=50&&Number.isFinite(stats.correctRate)){
   const empirical=clampDifficultyScore((1-stats.correctRate)*100);
-  return clampDifficultyScore(workRarity*.35+heuristic*.25+empirical*.40);
+  return clampDifficultyScore(workRarity*.30+heuristic*.20+empirical*.50);
  }
- return clampDifficultyScore(workRarity*.7+heuristic*.3);
+ return clampDifficultyScore(workRarity*.80+heuristic*.20);
 }
 function popularityTier(a,requestedMode){
  const id=Number(a?.id),workRarity=difficultyRarityById.has(id)?difficultyRarityById.get(id):50;
