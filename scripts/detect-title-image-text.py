@@ -78,9 +78,9 @@ def download_image(url):
     raise RuntimeError(str(last_error or "Image download failed"))
 
 
-def run_ocr(image_bytes):
+def run_ocr(image_bytes, page_segmentation_mode=11):
     result = subprocess.run(
-        ["tesseract", "stdin", "stdout", "-l", "jpn+eng", "--psm", "11"],
+        ["tesseract", "stdin", "stdout", "-l", "jpn+eng", "--psm", str(page_segmentation_mode)],
         input=image_bytes,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -92,6 +92,11 @@ def run_ocr(image_bytes):
     return normalize(result.stdout.decode("utf-8", "replace"))
 
 
+def title_matches(ocr_text, candidates):
+    normalized_text = normalize(ocr_text)
+    return [(label, key) for label, key in candidates if key in normalized_text]
+
+
 def detect_one(anime):
     anime_id = str(anime.get("id", ""))
     url = cover_url(anime)
@@ -99,8 +104,11 @@ def detect_one(anime):
     if not anime_id.isdigit() or not url or not candidates:
         return None, "missing-data"
     image = download_image(url)
-    ocr_text = run_ocr(image)
-    matches = [(label, key) for label, key in candidates if key in ocr_text]
+    ocr_text = run_ocr(image, 11)
+    matches = title_matches(ocr_text, candidates)
+    if not matches:
+        # Block-oriented OCR can recover centered or stacked title layouts.
+        matches = title_matches(run_ocr(image, 6), candidates)
     return {
         "id": int(anime_id),
         "imageUrl": url,
@@ -117,8 +125,8 @@ def self_test():
     sample = {"title": {"native": "青春ブタ野郎はバニーガール先輩の夢を見ない", "english": "Rascal Does Not Dream of Bunny Girl Senpai"}}
     candidates = title_candidates(sample)
     text = normalize("青春ブタ野郎はバニーガール先輩の夢を見ない")
-    assert any(key in text for _, key in candidates)
-    assert not any(key in normalize("random text only") for _, key in candidates)
+    assert title_matches(text, candidates)
+    assert not title_matches("random text only", candidates)
     print("Title-image OCR self-tests passed.")
 
 
@@ -145,12 +153,16 @@ def main():
 
     records = {}
     todo = []
+    skipped = 0
+    eligible_count = 0
     for anime in items:
         anime_id = str(anime.get("id", ""))
         url = cover_url(anime)
         candidates = title_candidates(anime)
         if not anime_id.isdigit() or not url or not candidates:
+            skipped += 1
             continue
+        eligible_count += 1
         old = previous.get(anime_id)
         current_fingerprint = fingerprint(candidates)
         if old and old.get("imageUrl") == url and old.get("titleFingerprint") == current_fingerprint and isinstance(old.get("hasTitleText"), bool):
@@ -177,6 +189,24 @@ def main():
             if (completed + len(failures)) % 100 == 0:
                 print(f"OCR progress: {completed + len(failures)}/{len(todo)} new images")
 
+    excluded_now = sorted(row["id"] for row in records.values() if row.get("hasTitleText") is True)
+    report = {
+        "schemaVersion": 1,
+        "generatedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "catalogCount": len(items),
+        "eligibleCount": eligible_count,
+        "checkedCount": len(records),
+        "reusedPreviousCount": max(0, len(records) - completed),
+        "newlyProcessedCount": completed,
+        "skippedCount": skipped,
+        "failedCount": len(failures),
+        "excludedCount": len(excluded_now),
+        "failures": [{"animeId": anime_id, "reason": reason} for anime_id, reason in failures[:1000]],
+    }
+    report_path = Path("artifacts/title-image-audit/report.json")
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + chr(10), encoding="utf-8")
+
     if todo and len(failures) / len(todo) > 0.15:
         raise RuntimeError(f"OCR incomplete: {len(failures)}/{len(todo)} images failed; refusing to publish partial results.")
 
@@ -200,7 +230,7 @@ def main():
     }
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_text(json.dumps(output, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
-    print(f"Checked {len(ordered)} images; excluded {len(excluded)} title-bearing covers; failed {len(failures)}.")
+    print(f"Checked {len(ordered)} images; excluded {len(excluded)} title-bearing covers; failed {len(failures)}; skipped {skipped}.")
     if failures:
         print("Some images will be retried on the next scheduled run.")
         print("First failures:", failures[:10])
