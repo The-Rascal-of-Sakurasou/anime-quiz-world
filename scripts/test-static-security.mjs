@@ -456,7 +456,7 @@ assert.deepEqual(aliasResults, ["Private Alias"], "Only aliases owned by exactly
 const questionModes = [
   "image", "studio", "synonym", "titleYear", "titleStudio",
   "character", "characterImage", "characterNameImage", "titleCharacter",
-  "synopsis", "titleSynopsis",
+  "synopsis",
 ];
 const availabilityStart = index.indexOf("function availableQuestionModes(a,format=");
 const validationStart = index.indexOf("function questionModeHasFourChoices(a,mode)");
