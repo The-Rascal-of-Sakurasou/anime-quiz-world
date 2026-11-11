@@ -18,6 +18,20 @@ for (const file of frontendFiles) {
   source.set(file, fs.readFileSync(file, "utf8"));
 }
 
+const matchPreparePath = "supabase/functions/aqw-match-prepare/index.ts";
+assert.ok(fs.existsSync(matchPreparePath), "Active match-preparation Edge Function source is missing");
+const matchPrepare = fs.readFileSync(matchPreparePath, "utf8");
+assert.match(matchPrepare, /const ALLOWED_ORIGIN = "https:\/\/the-rascal-of-sakurasou\.github\.io"/, "Match preparation must restrict its browser origin");
+assert.match(matchPrepare, /userClient\.auth\.getUser\(token\)/, "Match preparation must validate the bearer token with Supabase Auth");
+assert.match(matchPrepare, /room\.host_id !== userData\.user\.id/, "Only the authenticated room host may prepare questions");
+assert.match(matchPrepare, /room\.players\.length !== 2/, "Match preparation must require exactly two players");
+assert.match(matchPrepare, /room\.players\.every\(\(p: any\) => p\.is_ready\)/, "Both players must be ready before question preparation");
+assert.match(matchPrepare, /a\.countryOfOrigin === "JP" && a\.isAdult !== true/, "Match questions must be restricted to non-adult Japanese-origin anime");
+assert.match(matchPrepare, /correct_option_index: options\.findIndex/, "The server must preserve the correct answer index after shuffling options");
+assert.match(matchPrepare, /admin\.rpc\("aqw_match_prepare_questions"/, "Question keys must be stored through the privileged server-side RPC");
+const supabaseConfig = fs.readFileSync("supabase/config.toml", "utf8");
+assert.match(supabaseConfig, /\[functions\.aqw-match-prepare\][\s\S]*?verify_jwt = true/, "The active match-preparation Edge Function must require JWT verification");
+
 let checkedScripts = 0;
 for (const [file, html] of source) {
   const scripts = html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi);
