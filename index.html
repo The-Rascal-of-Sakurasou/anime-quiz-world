@@ -1381,12 +1381,14 @@ let animeLoadPromise=null;async function prepare(){if(animeLoadPromise)return an
  // expensive first-use work out of the click handler, so the quiz screen can
  // switch directly to the first question instead of freezing while indexes build.
  const warmIndexes=()=>{if(!pool.length)return;try{prepareDifficultyTiers(pool);questionChoiceSummary()}catch(error){console.warn('Quiz index warm-up deferred:',error)}};
- await new Promise(resolve=>{
-  let finished=false;
-  const done=()=>{if(finished)return;finished=true;resolve()};
-  if('requestIdleCallback' in window)requestIdleCallback(()=>{warmIndexes();done()},{timeout:1200});
-  else setTimeout(()=>{warmIndexes();done()},0);
- });
+ // Do not hold the Start button behind optional index warm-up.
+ // The quiz can begin with the already loaded pool; expensive summaries are
+ // prepared when the browser is idle and never gate the first question.
+ if('requestIdleCallback' in window){
+  requestIdleCallback(()=>{warmIndexes()},{timeout:2500});
+ }else{
+  setTimeout(()=>{warmIndexes()},0);
+ }
  const poolProgress=$('#animePoolProgress');if(poolProgress)poolProgress.textContent=sharedCatalogActive?(lang==='ja'?('共通カタログ：'+pool.length.toLocaleString()+'作品（毎日更新）'):('Shared catalogue: '+pool.length.toLocaleString()+' anime (updated daily)')):(lang==='ja'?('現在利用可能：'+pool.length.toLocaleString()+'作品。取得可能な作品をバックグラウンドで追加します。'):('Currently available: '+pool.length.toLocaleString()+' anime. More available entries are loading in the background.'));$('#quizStatus').textContent=sharedCatalogActive?(lang==='ja'?pool.length+'作品の共通カタログを読み込みました。クイズを開始できます。':pool.length+' shared anime loaded. Ready to start.'):(lang==='ja'?pool.length+'作品を読み込みました。クイズを開始できます。残りはバックグラウンドで追加します。':pool.length+' anime loaded. Ready to start; more are loading in the background.');$('#start').classList.remove('hidden');$('#start').textContent=tr('start');if(typeof renderFeaturedRail==='function')renderFeaturedRail();return pool}catch(e){console.error('Anime data loading failed:',e);$('#quizStatus').textContent=lang==='ja'?('読み込み失敗：'+e.message+' 「再読み込みして開始」を押して再試行してください。'):('Load failed: '+e.message+' Press retry to try again.');$('#start').classList.remove('hidden');$('#start').textContent=tr('retry');return []}finally{animeLoadPromise=null}})();return animeLoadPromise}
 function dateKey(d=new Date()){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function dailyOrder(list){const day=dateKey();const hash=s=>{let h=2166136261;for(const ch of s){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return h>>>0};return [...list].sort((a,b)=>hash(day+':'+a.id)-hash(day+':'+b.id))}
@@ -1445,7 +1447,7 @@ async function begin(){
  }
  quizStartInProgress=true;$('#start').disabled=true;quizFinished=false;
  try{
-  clearInterval(questionTimer);clearInterval(clockTimer);isPaused=false;pausedAt=0;totalPausedMs=0;pausedQuestionSeconds=0;skippedQuestionCount=0;$('#quizArea').inert=false;$('#pauseButton').classList.remove('hidden');$('#quitQuizButton').classList.remove('hidden');$('#pauseNotice').classList.add('hidden');$('#pauseButton').textContent=pauseButtonLabel(false);$('#setupControls').classList.add('hidden');$('#result').classList.add('hidden');reviewMode=false;missedQuestions=[];questionAttemptResults=[];roundFailed=false;playMode=$('#playMode').value;mixedModeCounts={};adaptiveDifficultyOverride=null;if(typeof window.aqwLoadPersonalDifficultyProfile==='function')await window.aqwLoadPersonalDifficultyProfile();adaptiveDifficultyOverride=calculatePersonalDifficultyOverride();prepareDifficultyTiers(pool);
+  clearInterval(questionTimer);clearInterval(clockTimer);isPaused=false;pausedAt=0;totalPausedMs=0;pausedQuestionSeconds=0;skippedQuestionCount=0;$('#quizArea').inert=false;$('#pauseButton').classList.remove('hidden');$('#quitQuizButton').classList.remove('hidden');$('#pauseNotice').classList.add('hidden');$('#pauseButton').textContent=pauseButtonLabel(false);$('#setupControls').classList.add('hidden');$('#result').classList.add('hidden');reviewMode=false;missedQuestions=[];questionAttemptResults=[];roundFailed=false;playMode=$('#playMode').value;mixedModeCounts={};adaptiveDifficultyOverride=null;if(typeof window.aqwLoadPersonalDifficultyProfile==='function'){Promise.resolve().then(()=>window.aqwLoadPersonalDifficultyProfile()).catch(error=>console.warn('Personal difficulty profile could not be refreshed:',error))}adaptiveDifficultyOverride=calculatePersonalDifficultyOverride();prepareDifficultyTiers(pool);
   let mode=$('#modeSelect').value;const format=(playMode==='daily'||playMode==='rush')?'choices':$('#answerFormatSelect').value;
   requestedQuestionCount=playMode==='endless'?Infinity:(playMode==='daily'||playMode==='rush')?10:Math.max(1,Math.floor(Number($('#questionCount').value)||10));
   const target=playMode==='endless'?Infinity:requestedQuestionCount;
