@@ -2009,6 +2009,7 @@ async function submitPlayerRun(result){
   removePendingRun(pendingPlayerRuns,result.runId);
   message($s('aqwPlayerBoardStatus'),data?.duplicate?aqwPlayerT('duplicate'):aqwPlayerT('saved'));
   await loadPlayerLeaderboard(true);
+  await loadQuestionDifficultyStats();
  }catch(error){
   queuePendingRun(pendingPlayerRuns,summaryOnly);
   message($s('aqwPlayerBoardStatus'),aqwPlayerT('submitError')+errText(error));
