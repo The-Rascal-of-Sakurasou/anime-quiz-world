@@ -1102,9 +1102,27 @@ function animeYear(a){return Number.isInteger(a?.seasonYear)?a.seasonYear:(Numbe
 function descriptionOf(a){return (a?.description||'').replace(/<[^>]*>/g,' ').replace(/\[[^\]]*\]\([^)]*\)/g,' ').replace(/\\[nrt]/gi,' ').replace(/&nbsp;/gi,' ').replace(/&amp;/gi,'&').replace(/&quot;/gi,'"').replace(/&#39;/g,"'").replace(/\s+/g,' ').trim()}
 function hasJapanese(text){return /[ぁ-んァ-ヶ一-龯]/.test(String(text||''))}
 function titleUsable(a){return lang!=='ja'||!!titleOf(a)}
-function difficultyModes(){return $('#difficultySelect')?.value||'normal'}
+let personalDifficultyProfile={attempts:0,runs:0,correctRate:null};
+let adaptiveDifficultyOverride=null;
+function difficultyModes(){return adaptiveDifficultyOverride||$('#difficultySelect')?.value||'normal'}
+function calculatePersonalDifficultyOverride(){
+ const levels=['veryEasy','easy','normal','hard','veryHard'];
+ const base=$('#difficultySelect')?.value||'normal',baseIndex=Math.max(0,levels.indexOf(base));
+ if(personalDifficultyProfile.attempts<20||personalDifficultyProfile.runs<3||!Number.isFinite(personalDifficultyProfile.correctRate))return null;
+ const adjustment=personalDifficultyProfile.correctRate>=.85?1:personalDifficultyProfile.correctRate<=.45?-1:0;
+ return levels[Math.max(0,Math.min(levels.length-1,baseIndex+adjustment))]===base?null:levels[Math.max(0,Math.min(levels.length-1,baseIndex+adjustment))];
+}
 let difficultyRarityById=new Map(),difficultyStudioCounts=new Map(),difficultyYearCounts=new Map(),difficultyMaxStudioCount=1,difficultyMaxYearCount=1,empiricalDifficultyStats=new Map();
 let difficultyThresholds={total:0},difficultyTierPreparedPool=null,difficultyTierPreparedLength=-1;
+window.addEventListener('aqw:personal-difficulty-profile',event=>{
+ const profile=event.detail||{};
+ personalDifficultyProfile={
+  attempts:Math.max(0,Number(profile.attempts)||0),
+  runs:Math.max(0,Number(profile.runs)||0),
+  correctRate:Number.isFinite(Number(profile.correctRate))?Number(profile.correctRate):null
+ };
+ updateDifficultyUI();
+});
 window.addEventListener('aqw:question-difficulty-stats',event=>{
  const records=Array.isArray(event.detail)?event.detail:[];
  const next=new Map();
@@ -1209,7 +1227,19 @@ function updateDifficultyUI(){
  const names=translations[lang]||translations.en;
  label.textContent=names.label;[...select.options].forEach(o=>o.textContent=names[o.value]||o.textContent);
  select.disabled=false;select.title='';
- if(help){const base=names.desc[select.value]||names.desc.normal;const count=difficultyThresholds.total?(' '+(lang==='ja'?'評価対象：':'Evaluated anime: ')+difficultyThresholds.total.toLocaleString()):'';const feedback=lang==='ja'?' 回答データが20回以上・5人以上に達した問題は、実測正答率も20%反映します。':' With at least 20 answers from 5 players, observed accuracy contributes 20%.';help.textContent=base+count+feedback;}
+ if(help){
+  const base=names.desc[select.value]||names.desc.normal;
+  const count=difficultyThresholds.total?(' '+(lang==='ja'?'評価対象：':'Evaluated anime: ')+difficultyThresholds.total.toLocaleString()):'';
+  const feedback=lang==='ja'?' 全体の回答データが20回以上・5人以上に達した問題は実測正答率も反映します。':' Global accuracy data is used after 20 answers from 5 players.';
+  let personal='';
+  if(personalDifficultyProfile.attempts>=20&&personalDifficultyProfile.runs>=3&&Number.isFinite(personalDifficultyProfile.correctRate)){
+   const rate=Math.round(personalDifficultyProfile.correctRate*100);
+   personal=lang==='ja'?' あなたの直近'+personalDifficultyProfile.attempts+'問の正答率：'+rate+'%（個人適応対象）':' Your recent accuracy: '+rate+'% across '+personalDifficultyProfile.attempts+' answers (personal adaptation active).';
+  }else{
+   personal=lang==='ja'?' 個人適応には20問以上・3回以上のプレイ記録が必要です。':' Personal adaptation requires at least 20 answers across 3 runs.';
+  }
+  help.textContent=base+count+feedback+personal;
+ }
 }
 function synopsisText(a){const s=descriptionOf(a);return s.length>260?s.slice(0,257).trimEnd()+'…':s}
 function hasUsableSynopsis(a){const s=descriptionOf(a);if(s.length<45)return false;if(/^(no synopsis|no description|not available|tba|unknown|未定|あらすじなし|情報なし)\.?$/i.test(s.trim()))return false;if(lang==='ja'){const jp=(s.match(/[ぁ-んァ-ヶ一-龯]/g)||[]).length,latin=(s.match(/[A-Za-z]/g)||[]).length;return (jp>=10&&jp/s.length>=0.16)||latin>=30}if(lang==='ko'){const ko=(s.match(/[가-힣]/g)||[]).length;return ko>=10&&ko/s.length>=0.12}if(lang==='zh'){const zh=(s.match(/[\u3400-\u9fff]/g)||[]).length;return zh>=10&&zh/s.length>=0.16}if(lang==='en'){const latin=(s.match(/[A-Za-z]/g)||[]).length;const jp=(s.match(/[ぁ-んァ-ヶ]/g)||[]).length;return latin>=30&&jp/s.length<0.08}return s.length>=45}
@@ -1399,7 +1429,7 @@ async function begin(){
  }
  quizStartInProgress=true;$('#start').disabled=true;quizFinished=false;
  try{
-  clearInterval(questionTimer);clearInterval(clockTimer);isPaused=false;pausedAt=0;totalPausedMs=0;pausedQuestionSeconds=0;skippedQuestionCount=0;$('#quizArea').inert=false;$('#pauseButton').classList.remove('hidden');$('#quitQuizButton').classList.remove('hidden');$('#pauseNotice').classList.add('hidden');$('#pauseButton').textContent=pauseButtonLabel(false);$('#setupControls').classList.add('hidden');$('#result').classList.add('hidden');reviewMode=false;missedQuestions=[];questionAttemptResults=[];roundFailed=false;playMode=$('#playMode').value;mixedModeCounts={};prepareDifficultyTiers(pool);
+  clearInterval(questionTimer);clearInterval(clockTimer);isPaused=false;pausedAt=0;totalPausedMs=0;pausedQuestionSeconds=0;skippedQuestionCount=0;$('#quizArea').inert=false;$('#pauseButton').classList.remove('hidden');$('#quitQuizButton').classList.remove('hidden');$('#pauseNotice').classList.add('hidden');$('#pauseButton').textContent=pauseButtonLabel(false);$('#setupControls').classList.add('hidden');$('#result').classList.add('hidden');reviewMode=false;missedQuestions=[];questionAttemptResults=[];roundFailed=false;playMode=$('#playMode').value;mixedModeCounts={};adaptiveDifficultyOverride=null;if(typeof window.aqwLoadPersonalDifficultyProfile==='function')await window.aqwLoadPersonalDifficultyProfile();adaptiveDifficultyOverride=calculatePersonalDifficultyOverride();prepareDifficultyTiers(pool);
   let mode=$('#modeSelect').value;const format=(playMode==='daily'||playMode==='rush')?'choices':$('#answerFormatSelect').value;
   requestedQuestionCount=playMode==='endless'?Infinity:(playMode==='daily'||playMode==='rush')?10:Math.max(1,Math.floor(Number($('#questionCount').value)||10));
   const target=playMode==='endless'?Infinity:requestedQuestionCount;
@@ -1998,6 +2028,21 @@ async function loadQuestionDifficultyStats(){
   if(Array.isArray(data))window.dispatchEvent(new CustomEvent('aqw:question-difficulty-stats',{detail:data}));
  }catch(error){console.warn('Question difficulty feedback could not be loaded:',error)}
 }
+async function loadMyDifficultyProfile(){
+ if(!sb||!currentUser){window.dispatchEvent(new CustomEvent('aqw:personal-difficulty-profile',{detail:null}));return null}
+ try{
+  const {data,error}=await sb.rpc('get_aqw_my_difficulty_profile');
+  if(error)throw error;
+  const profile=data&&typeof data==='object'?data:{};
+  window.dispatchEvent(new CustomEvent('aqw:personal-difficulty-profile',{detail:profile}));
+  return profile;
+ }catch(error){
+  console.warn('Personal difficulty profile could not be loaded:',error);
+  window.dispatchEvent(new CustomEvent('aqw:personal-difficulty-profile',{detail:null}));
+  return null;
+ }
+}
+window.aqwLoadPersonalDifficultyProfile=loadMyDifficultyProfile;
 async function submitPlayerRun(result){
  if(!result||!result.runId||!Number.isInteger(result.correctCount)||!Number.isInteger(result.questionCount)||![10,15].includes(result.xpMultiplier))return;
  const summaryOnly={runId:result.runId,correctCount:result.correctCount,questionCount:result.questionCount,xpMultiplier:result.xpMultiplier};
@@ -2010,6 +2055,7 @@ async function submitPlayerRun(result){
   message($s('aqwPlayerBoardStatus'),data?.duplicate?aqwPlayerT('duplicate'):aqwPlayerT('saved'));
   await loadPlayerLeaderboard(true);
   await loadQuestionDifficultyStats();
+  await loadMyDifficultyProfile();
  }catch(error){
   queuePendingRun(pendingPlayerRuns,summaryOnly);
   message($s('aqwPlayerBoardStatus'),aqwPlayerT('submitError')+errText(error));
@@ -2129,7 +2175,7 @@ async function refreshSession(session){
  $s('aqwForgotPassword').classList.toggle('hidden',!!currentUser);
  $s('aqwSignIn').classList.toggle('hidden',!!currentUser);
  $s('aqwSignUp').classList.toggle('hidden',!!currentUser);
- if(!currentUser){await closeFriendConversation();setStatus(localJa()?'ログインするとフォローとフレンドとのチャットを利用できます。':'Sign in to follow users and chat with friends.');await Promise.all([loadRushLeaderboard(),loadPlayerLeaderboard()]);return}
+ if(!currentUser){window.dispatchEvent(new CustomEvent('aqw:personal-difficulty-profile',{detail:null}));await closeFriendConversation();setStatus(localJa()?'ログインするとフォローとフレンドとのチャットを利用できます。':'Sign in to follow users and chat with friends.');await Promise.all([loadRushLeaderboard(),loadPlayerLeaderboard()]);return}
  try{
   const {data,error}=await sb.from('profiles').select('*').eq('id',currentUser.id).single();if(error)throw error;
   currentProfile=data;
@@ -2138,6 +2184,7 @@ async function refreshSession(session){
   $s('aqwBio').value=data.bio||'';updateAvatarPreview(data.avatar_path||null);$s('aqwAvatarFile').value='';
   setStatus((localJa()?'ログイン中：@':'Signed in as @')+data.username);
   await Promise.all([loadFriends(),updateNotificationCount(),loadRushLeaderboard(),loadPlayerLeaderboard()]);
+  await loadMyDifficultyProfile();
   for(const run of [...pendingRushResults])await submitRushResult(run);
   for(const run of [...pendingPlayerRuns])await submitPlayerRun(run);
  }catch(e){setStatus(rt('profileError')+errText(e))}
