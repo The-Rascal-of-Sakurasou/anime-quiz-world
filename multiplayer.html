@@ -202,6 +202,7 @@ input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{ou
   <p id="gameResultText"></p>
  </div>
  <p id="gameStatus" class="status" role="status" aria-live="polite">対戦状態を確認しています…</p>
+ <div class="form-actions"><button type="button" class="danger" id="surrenderMatch">降参する</button></div>
 </section>
 
 <section class="card" id="matchHistoryPanel">
@@ -465,17 +466,20 @@ function renderGameState(data){
  $('gamePanel').classList.remove('hidden');
  $('gameProgress').textContent=data.status==='completed'?'終了':(data.current_question+' / '+data.question_count+'問');
  if(data.status==='completed'||data.status==='cancelled'){
+  $('surrenderMatch').classList.add('hidden');
   $('gameQuestionArea').classList.add('hidden');$('gameResult').classList.remove('hidden');
   const me=(data.players||[]).find(p=>p.user_id===user.id),opponent=(data.players||[]).find(p=>p.user_id!==user.id),winner=data.winner_id;
   $('gameResultTitle').textContent=data.status==='cancelled'?'対戦が中断されました':winner===null?'引き分け':winner===user.id?'あなたの勝ち':'あなたの負け';
-  $('gameResultText').textContent=data.status==='cancelled'?'対戦相手が退出したため、対戦を終了しました。':'最終スコア：あなた '+(me?.score||0)+'点 / 相手 '+(opponent?.score||0)+'点';
+  $('gameResultText').textContent=data.status==='cancelled'?'対戦相手が退出したため、対戦を終了しました。':data.end_reason==='surrender'?(winner===user.id?'相手が降参しました。あなたの勝利です。':'あなたが降参しました。')+' 最終スコア：あなた '+(me?.score||0)+'点 / 相手 '+(opponent?.score||0)+'点':'最終スコア：あなた '+(me?.score||0)+'点 / 相手 '+(opponent?.score||0)+'点';
   status($('gameStatus'),data.status==='cancelled'?'対戦が中断されました。':'対戦が終了しました。','good');
   stopGamePolling();
   loadMatchHistory();return;
  }
  if(data.status!=='playing'||!data.question){
+  $('surrenderMatch').classList.add('hidden');
   status($('gameStatus'),'対戦データを準備しています…');return;
  }
+ $('surrenderMatch').classList.remove('hidden');$('surrenderMatch').disabled=false;
  $('gameResult').classList.add('hidden');$('gameQuestionArea').classList.remove('hidden');
  const q=data.question;
  if(gameRenderedQuestion!==q.question_no){
@@ -510,6 +514,18 @@ function renderGameState(data){
   status($('gameStatus'),'回答を締め切りました。');
  }else{
   status($('gameStatus'),'制限時間内に回答してください。');
+ }
+}
+async function surrenderGame(){
+ if(!room||!gameState||gameState.status!=='playing'||busy)return;
+ if(!window.confirm('この対戦を降参して終了しますか？'))return;
+ $('surrenderMatch').disabled=true;
+ try{
+  await invoke('aqw_match_surrender',{p_room_code:room.room_code});
+  await refreshGameState();
+ }catch(e){
+  status($('gameStatus'),errorText(e),'error');
+  $('surrenderMatch').disabled=false;
  }
 }
 async function refreshGameState(){
@@ -588,7 +604,7 @@ async function loadMatchHistory(){
    detail.textContent=date+' ・ '+match.question_count+'問 ・ '+match.my_score+' - '+match.opponent_score;
    meta.append(opponent,detail);
    const result=document.createElement('span');result.className='match-history-result '+match.result;
-   result.textContent=match.result==='win'?'勝利':match.result==='loss'?'敗北':'引き分け';
+   result.textContent=match.end_reason==='surrender'?(match.result==='win'?'降参勝利':'降参敗北'):match.result==='win'?'勝利':match.result==='loss'?'敗北':'引き分け';
    item.append(meta,result);list.append(item);
   }
   status($('matchHistoryStatus'),'直近'+matches.length+'件を表示しています。','good');
@@ -611,6 +627,7 @@ async function init(){
  $('cancelMatch').addEventListener('click',cancelRandomMatch);
  $('toggleReady').addEventListener('click',toggleReady);
  $('startMatch').addEventListener('click',startMatch);
+ $('surrenderMatch').addEventListener('click',surrenderGame);
  $('leaveRoom').addEventListener('click',leaveRoom);
  $('copyInvite').addEventListener('click',copyInvite);
  $('refreshMatchHistory').addEventListener('click',loadMatchHistory);
