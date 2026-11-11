@@ -1103,44 +1103,95 @@ function descriptionOf(a){return (a?.description||'').replace(/<[^>]*>/g,' ').re
 function hasJapanese(text){return /[ぁ-んァ-ヶ一-龯]/.test(String(text||''))}
 function titleUsable(a){return lang!=='ja'||!!titleOf(a)}
 function difficultyModes(){return $('#difficultySelect')?.value||'normal'}
-let difficultyTierById=new Map(),difficultyThresholds={p07:Infinity,p23:Infinity,p47:Infinity,p77:Infinity,total:0},difficultyBoundaries=[];
-let difficultyTierPreparedPool=null,difficultyTierPreparedLength=-1;
+let difficultyRarityById=new Map(),difficultyStudioCounts=new Map(),difficultyYearCounts=new Map(),difficultyMaxStudioCount=1,difficultyMaxYearCount=1;
+let difficultyThresholds={total:0},difficultyTierPreparedPool=null,difficultyTierPreparedLength=-1;
 function prepareDifficultyTiers(items=pool){
  if(items===difficultyTierPreparedPool&&items.length===difficultyTierPreparedLength&&difficultyThresholds.total)return difficultyThresholds;
  difficultyTierPreparedPool=items;difficultyTierPreparedLength=items.length;
  const ranked=(items||[]).filter(a=>Number.isFinite(Number(a?.id))&&Number.isFinite(Number(a?.popularity))&&Number(a.popularity)>0).sort((a,b)=>Number(b.popularity)-Number(a.popularity)||Number(a.id)-Number(b.id));
- const total=ranked.length,cutoffs=[0.07,0.23,0.47,0.77].map(p=>total?Math.max(1,Math.ceil(total*p)):0);
- const tiers=new Map();
- ranked.forEach((a,i)=>tiers.set(Number(a.id),i<cutoffs[0]?'veryEasy':i<cutoffs[1]?'easy':i<cutoffs[2]?'normal':i<cutoffs[3]?'hard':'veryHard'));
- difficultyTierById=tiers;
- difficultyBoundaries=cutoffs.map((cutoff,index)=>{const item=ranked[cutoff-1];return item?{popularity:Number(item.popularity),id:Number(item.id),tier:['veryEasy','easy','normal','hard'][index]}:null});
- difficultyThresholds={p07:cutoffs[0]?Number(ranked[cutoffs[0]-1].popularity):Infinity,p23:cutoffs[1]?Number(ranked[cutoffs[1]-1].popularity):Infinity,p47:cutoffs[2]?Number(ranked[cutoffs[2]-1].popularity):Infinity,p77:cutoffs[3]?Number(ranked[cutoffs[3]-1].popularity):Infinity,total};
+ const total=ranked.length,rarity=new Map();
+ ranked.forEach((a,i)=>rarity.set(Number(a.id),total<=1?50:(i/(total-1))*100));
+ difficultyRarityById=rarity;
+ difficultyStudioCounts=new Map();difficultyYearCounts=new Map();
+ for(const anime of items||[]){
+  const studios=[...new Set((anime?.studios?.nodes||[]).map(node=>String(node?.name||'').trim()).filter(Boolean))];
+  for(const studio of studios)difficultyStudioCounts.set(studio,(difficultyStudioCounts.get(studio)||0)+1);
+  const year=animeYear(anime);if(Number.isInteger(year))difficultyYearCounts.set(year,(difficultyYearCounts.get(year)||0)+1);
+ }
+ difficultyMaxStudioCount=Math.max(1,...difficultyStudioCounts.values());
+ difficultyMaxYearCount=Math.max(1,...difficultyYearCounts.values());
+ difficultyThresholds={total};
  return difficultyThresholds;
 }
-function popularityTier(a){
- const id=Number(a?.id);if(difficultyTierById.has(id))return difficultyTierById.get(id);
- const popularity=Number(a?.popularity);if(!Number.isFinite(id)||!Number.isFinite(popularity)||popularity<=0||!difficultyThresholds.total)return 'unknown';
- for(const boundary of difficultyBoundaries){if(boundary&&(popularity>boundary.popularity||(popularity===boundary.popularity&&id<=boundary.id)))return boundary.tier}
- return 'veryHard';
+function clampDifficultyScore(value){return Math.max(0,Math.min(100,Number(value)||0))}
+function difficultyModesForAnime(a){
+ const modes=[];
+ if(titleImageIsSafe(a))modes.push('image');
+ if(a?.studios?.nodes?.[0]?.name)modes.push('studio','titleStudio');
+ if(characterNames(a).length)modes.push('character','titleCharacter');
+ if(characterRecords([a]).length)modes.push('characterImage','characterNameImage');
+ if(uniqueAliasCandidates(a).length)modes.push('synonym');
+ if(!titleImageExcludedIds.has(Number(a?.id))&&Number.isInteger(animeYear(a))&&animeYear(a)>1900)modes.push('titleYear');
+ if(hasUsableSynopsis(a)&&titleUsable(a))modes.push('synopsis','titleSynopsis');
+ return modes;
 }
-function animeHasMode(a,mode,format){if(format==='typed'&&!typedTitleEligible(a))return false;if(format==='typed'&&mode==='titleSynopsis')return false;if(['image','studio','synonym','titleYear','titleStudio','synopsis','titleSynopsis','character','titleCharacter','characterImage','characterNameImage'].includes(mode)&&!titleUsable(a))return false;if(mode==='image')return titleImageIsSafe(a)&&titleUsable(a);if(mode==='studio'||mode==='titleStudio')return !!a.studios?.nodes?.[0]?.name;if(mode==='character'||mode==='titleCharacter')return characterNames(a).length>0;if(mode==='characterImage'||mode==='characterNameImage')return characterRecords([a]).length>0&&characterRecords(pool.filter(item=>Number(item.id)!==Number(a.id)&&matchesDifficulty(item)&&titleUsable(item))).length>=3;if(mode==='synonym')return uniqueAliasCandidates(a).length>0;if(mode==='titleYear')return Number.isInteger(animeYear(a))&&animeYear(a)>1900;if(mode==='synopsis'||mode==='titleSynopsis')return hasUsableSynopsis(a)&&titleUsable(a);return false}
+function questionModeDifficultyScore(a,mode){
+ const base={image:18,studio:42,titleStudio:48,synonym:42,titleYear:46,character:52,titleCharacter:56,characterImage:63,characterNameImage:68,synopsis:68,titleSynopsis:63};
+ let score=base[mode]??50;
+ if(mode==='studio'||mode==='titleStudio'){
+  const studios=[...new Set((a?.studios?.nodes||[]).map(node=>String(node?.name||'').trim()).filter(Boolean))];
+  if(studios.length){const rarity=studios.reduce((sum,name)=>sum+100*(1-(difficultyStudioCounts.get(name)||0)/difficultyMaxStudioCount),0)/studios.length;score=score*.7+rarity*.3}
+ }
+ if(mode==='titleYear'){
+  const count=difficultyYearCounts.get(animeYear(a))||0;
+  score=score*.7+(100*(1-count/difficultyMaxYearCount))*.3;
+ }
+ if(mode==='character'||mode==='titleCharacter'||mode==='characterImage'||mode==='characterNameImage'){
+  const count=Math.max(1,characterNames(a).length);
+  score+=Math.max(0,5-count)*2.5;
+ }
+ if(mode==='synopsis'||mode==='titleSynopsis'){
+  const length=descriptionOf(a).length;
+  if(length<90)score+=8;else if(length>220)score-=6;
+ }
+ if(mode==='synonym'){
+  const count=uniqueAliasCandidates(a).length;
+  if(count<=1)score+=6;else if(count>=5)score-=4;
+ }
+ return clampDifficultyScore(score);
+}
+function popularityTier(a,requestedMode){
+ const id=Number(a?.id),workRarity=difficultyRarityById.has(id)?difficultyRarityById.get(id):50;
+ const selectedMode=requestedMode||$('#modeSelect')?.value||'mixed';
+ let questionScore;
+ if(selectedMode!=='mixed')questionScore=questionModeDifficultyScore(a,selectedMode);
+ else{
+  const modes=difficultyModesForAnime(a);
+  questionScore=modes.length?modes.reduce((sum,mode)=>sum+questionModeDifficultyScore(a,mode),0)/modes.length:50;
+ }
+ const finalScore=clampDifficultyScore(workRarity*.5+questionScore*.5);
+ return finalScore<=20?'veryEasy':finalScore<=40?'easy':finalScore<=60?'normal':finalScore<=80?'hard':'veryHard';
+}
+function matchesDifficulty(a,format,mode){return popularityTier(a,mode)===difficultyModes()}
+function animeHasMode(a,mode,format){if(format==='typed'&&!typedTitleEligible(a))return false;if(format==='typed'&&mode==='titleSynopsis')return false;if(['image','studio','synonym','titleYear','titleStudio','synopsis','titleSynopsis','character','titleCharacter','characterImage','characterNameImage'].includes(mode)&&!titleUsable(a))return false;if(mode==='image')return titleImageIsSafe(a)&&titleUsable(a);if(mode==='studio'||mode==='titleStudio')return !!a.studios?.nodes?.[0]?.name;if(mode==='character'||mode==='titleCharacter')return characterNames(a).length>0;if(mode==='characterImage'||mode==='characterNameImage')return characterRecords([a]).length>0&&characterRecords(pool.filter(item=>Number(item.id)!==Number(a.id)&&matchesDifficulty(item,format,mode)&&titleUsable(item))).length>=3;if(mode==='synonym')return uniqueAliasCandidates(a).length>0;if(mode==='titleYear')return Number.isInteger(animeYear(a))&&animeYear(a)>1900;if(mode==='synopsis'||mode==='titleSynopsis')return hasUsableSynopsis(a)&&titleUsable(a);return false}
 function matchesDifficulty(a,format){return popularityTier(a)===difficultyModes()}
 function difficultyDistractors(excludeId){return pool.filter(item=>Number(item?.id)!==Number(excludeId)&&titleUsable(item))}
 function updateDifficultyUI(){
  const select=$('#difficultySelect'),label=$('#difficultyLabel'),help=$('#difficultyHelp');if(!select||!label)return;
- const names={
- ja:{label:'難易度',veryEasy:'とても簡単',easy:'簡単',normal:'ふつう',hard:'難しい',veryHard:'とても難しい',desc:{veryEasy:'収録作品の人気度上位7%から出題します。',easy:'収録作品の人気度上位7〜23%から出題します。',normal:'収録作品の人気度上位23〜47%から出題します。',hard:'収録作品の人気度上位47〜77%から出題します。',veryHard:'収録作品の人気度下位23%から出題します。',disabled:'すべての出題形式で難易度を選択できます。'}},
- en:{label:'Difficulty',veryEasy:'Very easy',easy:'Easy',normal:'Normal',hard:'Hard',veryHard:'Very hard',desc:{veryEasy:'Top 7% by popularity in the loaded catalogue.',easy:'Top 7–23% by popularity.',normal:'Top 23–47% by popularity.',hard:'Top 47–77% by popularity.',veryHard:'Bottom 23% by popularity.',disabled:'Difficulty can be selected for every question type.'}},
- ko:{label:'난이도',veryEasy:'매우 쉬움',easy:'쉬움',normal:'보통',hard:'어려움',veryHard:'매우 어려움',desc:{veryEasy:'불러온 작품 중 인기도 상위 7%.',easy:'인기도 상위 7~23%.',normal:'인기도 상위 23~47%.',hard:'인기도 상위 47~77%.',veryHard:'인기도 하위 23%.',disabled:'모든 문제 유형에서 난이도를 선택할 수 있습니다.'}},
- zh:{label:'难度',veryEasy:'非常简单',easy:'简单',normal:'普通',hard:'困难',veryHard:'非常困难',desc:{veryEasy:'已加载作品中 人气排名前 7%。',easy:'人气排名前 7% 至 23%。',normal:'人气排名前 23% 至 47%。',hard:'人气排名前 47% 至 77%。',veryHard:'人气排名后 23%。',disabled:'所有题目类型均可选择难度。'}},
- es:{label:'Dificultad',veryEasy:'Muy fácil',easy:'Fácil',normal:'Normal',hard:'Difícil',veryHard:'Muy difícil',desc:{veryEasy:'7% superior por popularidad.',easy:'Del 7% al 23% superior por popularidad.',normal:'Del 23% al 47% superior.',hard:'Del 47% al 77% superior.',veryHard:'23% inferior por popularidad.',disabled:'La dificultad está disponible para todos los tipos de preguntas.'}},
- fr:{label:'Difficulté',veryEasy:'Très facile',easy:'Facile',normal:'Normale',hard:'Difficile',veryHard:'Très difficile',desc:{veryEasy:'Les 7 % les plus populaires.',easy:'Du 7e au 23e percentile de popularité.',normal:'Du 23e au 47e percentile.',hard:'Du 47e au 77e percentile.',veryHard:'Les 23 % les moins populaires.',disabled:'La difficulté est disponible pour tous les types de questions.'}},
- pt:{label:'Dificuldade',veryEasy:'Muito fácil',easy:'Fácil',normal:'Normal',hard:'Difícil',veryHard:'Muito difícil',desc:{veryEasy:'7% mais populares.',easy:'Entre os 7% e 23% mais populares.',normal:'Entre os 23% e 47% mais populares.',hard:'Entre os 47% e 77% mais populares.',veryHard:'23% menos populares.',disabled:'A dificuldade pode ser selecionada em todos os tipos de perguntas.'}},
- de:{label:'Schwierigkeit',veryEasy:'Sehr einfach',easy:'Einfach',normal:'Normal',hard:'Schwer',veryHard:'Sehr schwer',desc:{veryEasy:'Die beliebtesten 7 %.',easy:'Beliebtheitsrang 7–23 %.',normal:'Beliebtheitsrang 23–47 %.',hard:'Beliebtheitsrang 47–77 %.',veryHard:'Die unteren 23 % nach Beliebtheit.',disabled:'Die Schwierigkeit ist für alle Fragetypen verfügbar.'}}
- }[lang]||{label:'Difficulty',veryEasy:'Very easy',easy:'Easy',normal:'Normal',hard:'Hard',veryHard:'Very hard',desc:{veryEasy:'Top 7% by popularity.',easy:'Top 7–23% by popularity.',normal:'Top 23–47% by popularity.',hard:'Top 47–77% by popularity.',veryHard:'Bottom 23% by popularity.',disabled:'Difficulty can be selected for every question type.'}};
+ const translations={
+ ja:{label:'難易度',veryEasy:'とても簡単',easy:'簡単',normal:'ふつう',hard:'難しい',veryHard:'とても難しい',desc:{veryEasy:'作品の知名度と問題形式を組み合わせた難易度スコア0〜20点。',easy:'難易度スコア21〜40点。',normal:'難易度スコア41〜60点。',hard:'難易度スコア61〜80点。',veryHard:'難易度スコア81〜100点。',disabled:'作品の知名度と問題形式の両方から判定します。'}},
+ en:{label:'Difficulty',veryEasy:'Very easy',easy:'Easy',normal:'Normal',hard:'Hard',veryHard:'Very hard',desc:{veryEasy:'Combined anime familiarity and question complexity: 0–20.',easy:'Difficulty score: 21–40.',normal:'Difficulty score: 41–60.',hard:'Difficulty score: 61–80.',veryHard:'Difficulty score: 81–100.',disabled:'Uses both anime familiarity and question complexity.'}},
+ ko:{label:'난이도',veryEasy:'매우 쉬움',easy:'쉬움',normal:'보통',hard:'어려움',veryHard:'매우 어려움',desc:{veryEasy:'작품 인지도와 문제 유형을 결합한 난이도 0~20점.',easy:'난이도 21~40점.',normal:'난이도 41~60점.',hard:'난이도 61~80점.',veryHard:'난이도 81~100점.',disabled:'작품 인지도와 문제 유형을 함께 평가합니다.'}},
+ zh:{label:'难度',veryEasy:'非常简单',easy:'简单',normal:'普通',hard:'困难',veryHard:'非常困难',desc:{veryEasy:'结合作品知名度和题型难度：0–20分。',easy:'难度分数：21–40。',normal:'难度分数：41–60。',hard:'难度分数：61–80。',veryHard:'难度分数：81–100。',disabled:'同时评估作品知名度和题型难度。'}},
+ es:{label:'Dificultad',veryEasy:'Muy fácil',easy:'Fácil',normal:'Normal',hard:'Difícil',veryHard:'Muy difícil',desc:{veryEasy:'Popularidad de la serie y complejidad: 0–20.',easy:'Puntuación: 21–40.',normal:'Puntuación: 41–60.',hard:'Puntuación: 61–80.',veryHard:'Puntuación: 81–100.',disabled:'Combina popularidad y complejidad de la pregunta.'}},
+ fr:{label:'Difficulté',veryEasy:'Très facile',easy:'Facile',normal:'Normale',hard:'Difficile',veryHard:'Très difficile',desc:{veryEasy:'Notoriété de la série et complexité : 0–20.',easy:'Score : 21–40.',normal:'Score : 41–60.',hard:'Score : 61–80.',veryHard:'Score : 81–100.',disabled:'Combine la notoriété et la complexité de la question.'}},
+ pt:{label:'Dificuldade',veryEasy:'Muito fácil',easy:'Fácil',normal:'Normal',hard:'Difícil',veryHard:'Muito difícil',desc:{veryEasy:'Popularidade do anime e complexidade: 0–20.',easy:'Pontuação: 21–40.',normal:'Pontuação: 41–60.',hard:'Pontuação: 61–80.',veryHard:'Pontuação: 81–100.',disabled:'Combina popularidade e complexidade da pergunta.'}},
+ de:{label:'Schwierigkeit',veryEasy:'Sehr einfach',easy:'Einfach',normal:'Normal',hard:'Schwer',veryHard:'Sehr schwer',desc:{veryEasy:'Bekanntheit des Anime und Fragekomplexität: 0–20.',easy:'Punktzahl: 21–40.',normal:'Punktzahl: 41–60.',hard:'Punktzahl: 61–80.',veryHard:'Punktzahl: 81–100.',disabled:'Kombiniert Bekanntheit und Fragekomplexität.'}}
+ };
+ const names=translations[lang]||translations.en;
  label.textContent=names.label;[...select.options].forEach(o=>o.textContent=names[o.value]||o.textContent);
  select.disabled=false;select.title='';
- if(help){const base=names.desc[select.value]||names.desc.normal;help.textContent=difficultyThresholds.total?base+(' '+(lang==='ja'?'判定対象：':'Reference set: ')+difficultyThresholds.total.toLocaleString()+(lang==='ja'?'作品':' anime')):base;}
+ if(help){const base=names.desc[select.value]||names.desc.normal;help.textContent=difficultyThresholds.total?base+' '+(lang==='ja'?'評価対象：':'Evaluated anime: ')+difficultyThresholds.total.toLocaleString():base;}
 }
 function synopsisText(a){const s=descriptionOf(a);return s.length>260?s.slice(0,257).trimEnd()+'…':s}
 function hasUsableSynopsis(a){const s=descriptionOf(a);if(s.length<45)return false;if(/^(no synopsis|no description|not available|tba|unknown|未定|あらすじなし|情報なし)\.?$/i.test(s.trim()))return false;if(lang==='ja'){const jp=(s.match(/[ぁ-んァ-ヶ一-龯]/g)||[]).length,latin=(s.match(/[A-Za-z]/g)||[]).length;return (jp>=10&&jp/s.length>=0.16)||latin>=30}if(lang==='ko'){const ko=(s.match(/[가-힣]/g)||[]).length;return ko>=10&&ko/s.length>=0.12}if(lang==='zh'){const zh=(s.match(/[\u3400-\u9fff]/g)||[]).length;return zh>=10&&zh/s.length>=0.16}if(lang==='en'){const latin=(s.match(/[A-Za-z]/g)||[]).length;const jp=(s.match(/[ぁ-んァ-ヶ]/g)||[]).length;return latin>=30&&jp/s.length<0.08}return s.length>=45}
@@ -1209,7 +1260,7 @@ function usablePool(mode,answerFormat=$('#answerFormatSelect')?.value||'choices'
 function extendQuestionsFromPool(items){
  if(!items||!questions.length||$('#quizArea').classList.contains('hidden'))return;
  if(playMode!=='endless'&&!(playMode==='normal'&&questions.length<requestedQuestionCount))return;
- const mode=$('#modeSelect').value,format=$('#answerFormatSelect').value,eligible=uniqueAnimeById(mode==='mixed'?items.filter(a=>isUsableAnime(a)&&titleUsable(a)&&availableQuestionModes(a,format).length>0):usablePool(mode,format)).filter(a=>matchesDifficulty(a,format)).filter(a=>format!=='typed'||typedTitleEligible(a)),seen=new Set(questions.map(a=>Number(a.id)));
+ const mode=$('#modeSelect').value,format=$('#answerFormatSelect').value,eligible=uniqueAnimeById(mode==='mixed'?items.filter(a=>isUsableAnime(a)&&titleUsable(a)&&availableQuestionModes(a,format).length>0):usablePool(mode,format)).filter(a=>matchesDifficulty(a,format,mode)).filter(a=>format!=='typed'||typedTitleEligible(a)),seen=new Set(questions.map(a=>Number(a.id)));
  const additions=shuffle(eligible.filter(a=>!seen.has(Number(a.id))));
  const limit=playMode==='endless'?additions.length:Math.max(0,requestedQuestionCount-questions.length);
  if(limit>0)questions.push(...additions.slice(0,limit));
@@ -1277,7 +1328,7 @@ function dailyOrder(list){const day=dateKey();const hash=s=>{let h=2166136261;fo
 function uniqueAnimeById(items){const seen=new Set();return (items||[]).filter(item=>{const id=Number(item?.id);if(!Number.isFinite(id)||id<=0||seen.has(id))return false;seen.add(id);return true})}
 let startRetryInProgress=false,quizStartInProgress=false,quizFinished=false;
 async function collectEligibleAnime(mode,format,target,ignoreDifficulty=false){
- const base=uniqueAnimeById(mode==='mixed'?pool.filter(a=>isUsableAnime(a)&&titleUsable(a)):usablePool(mode,format,false)).filter(a=>ignoreDifficulty||matchesDifficulty(a,format)).filter(a=>format!=='typed'||typedTitleEligible(a));
+ const base=uniqueAnimeById(mode==='mixed'?pool.filter(a=>isUsableAnime(a)&&titleUsable(a)):usablePool(mode,format,false)).filter(a=>ignoreDifficulty||matchesDifficulty(a,format,mode)).filter(a=>format!=='typed'||typedTitleEligible(a));
  const candidates=[...base],eligible=[];
  // Partial Fisher–Yates: each examined candidate is random, but the unneeded tail is never shuffled.
  for(let i=0;i<candidates.length;i++){
