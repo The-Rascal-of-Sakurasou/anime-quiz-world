@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "data/anime-catalog.json"
+      - "data/title-image-exclusions.json"
       - "scripts/detect-title-image-text.py"
       - ".github/workflows/detect-title-image-text.yml"
   pull_request:
