@@ -353,10 +353,10 @@ assert.match(index, /if\(mode===.synonym.\)return !!titleKey&&hasFourDistinctTit
 assert.match(index, /const syn=shuffle\(uniqueAliasCandidates\(a\)\)\[0\]/, "Synonym question generation must choose from the same globally unique alias candidates");
 const aliasHelper = index.match(/function uniqueAliasCandidates\(a,summary=questionChoiceSummary\(\)\)\{([\s\S]*?)\}function validAlias/)?.[1];
 assert.ok(aliasHelper, "Unique alias helper not found");
-const uniqueAliasCandidates = new Function("a", "summary", "aliasCandidates", `return (function(a,summary){${aliasHelper}})(a,summary)`);
+const uniqueAliasCandidates = new Function("a", "summary", "aliasCandidates", "normalizeAnswer", `return (function(a,summary){${aliasHelper}})(a,summary)`);
 const aliasOwnerFixture = { aliasAnimeOwners: new Map([["sharedalias", new Set([1,2])], ["privatealias", new Set([1])]]) };
 const fixtureAnime = { id: 1 };
-const aliasResults = uniqueAliasCandidates(fixtureAnime, aliasOwnerFixture, () => ["Shared Alias", "Private Alias"]);
+const aliasResults = uniqueAliasCandidates(fixtureAnime, aliasOwnerFixture, () => ["Shared Alias", "Private Alias"], value => String(value || "").normalize("NFKC").toLowerCase().replace(/\\s+/g, ""));
 assert.deepEqual(aliasResults, ["Private Alias"], "Only aliases owned by exactly one anime may be used");
 
 console.log(`Static security checks passed. Checked ${checkedScripts} inline script(s) across ${frontendFiles.length} pages.`);
