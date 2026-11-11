@@ -14,8 +14,7 @@ on:
       - "scripts/test-static-security.mjs"
       - "scripts/sync-anime-catalog.mjs"
       - ".github/workflows/sync-anime-catalog.yml"
-      - "scripts/sync-anime-catalog.mjs"
-      - ".github/workflows/sync-anime-catalog.yml"
+      - "supabase/migrations/**"
       - ".github/workflows/aqw-static-security.yml"
   pull_request:
     paths:
