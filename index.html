@@ -1394,21 +1394,41 @@ function dateKey(d=new Date()){return d.getFullYear()+'-'+String(d.getMonth()+1)
 function dailyOrder(list){const day=dateKey();const hash=s=>{let h=2166136261;for(const ch of s){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return h>>>0};return [...list].sort((a,b)=>hash(day+':'+a.id)-hash(day+':'+b.id))}
 function uniqueAnimeById(items){const seen=new Set();return (items||[]).filter(item=>{const id=Number(item?.id);if(!Number.isFinite(id)||id<=0||seen.has(id))return false;seen.add(id);return true})}
 let startRetryInProgress=false,quizStartInProgress=false,quizFinished=false;
+// Cache expensive eligibility checks for repeated rounds with the same pool and settings.
+let eligibleCandidateCache=new Map(),eligibleCandidateCachePool=null,eligibleCandidateCacheLength=0;
+function getEligibleCandidatePool(mode,format,ignoreDifficulty=false){
+ if(eligibleCandidateCachePool!==pool||eligibleCandidateCacheLength!==pool.length){
+  eligibleCandidateCache.clear();eligibleCandidateCachePool=pool;eligibleCandidateCacheLength=pool.length;
+ }
+ const difficulty=difficultyModes();
+ const key=[mode,format,playMode,difficulty,ignoreDifficulty?'all':'filtered'].join('|');
+ const cached=eligibleCandidateCache.get(key);
+ if(cached)return cached;
+ const base=uniqueAnimeById(mode==='mixed'?pool.filter(a=>isUsableAnime(a)&&titleUsable(a)):usablePool(mode,format,false))
+  .filter(a=>ignoreDifficulty||matchesDifficulty(a,format,mode))
+  .filter(a=>format!=='typed'||typedTitleEligible(a));
+ const eligible=base.filter(anime=>mode==='mixed'
+  ?availableQuestionModes(anime,format).length>0
+  :(format==='typed'||questionModeHasFourChoices(anime,mode)));
+ eligibleCandidateCache.set(key,eligible);
+ // Keep memory bounded when players switch between many settings.
+ while(eligibleCandidateCache.size>12)eligibleCandidateCache.delete(eligibleCandidateCache.keys().next().value);
+ return eligible;
+}
 async function collectEligibleAnime(mode,format,target,ignoreDifficulty=false){
- const base=uniqueAnimeById(mode==='mixed'?pool.filter(a=>isUsableAnime(a)&&titleUsable(a)):usablePool(mode,format,false)).filter(a=>ignoreDifficulty||matchesDifficulty(a,format,mode)).filter(a=>format!=='typed'||typedTitleEligible(a));
- const candidates=[...base],eligible=[];
- // Partial Fisher–Yates: each examined candidate is random, but the unneeded tail is never shuffled.
+ const startedAt=performance.now();
+ const candidates=[...getEligibleCandidatePool(mode,format,ignoreDifficulty)],eligible=[];
+ // Partial Fisher–Yates: sample without replacement and stop as soon as enough questions are ready.
  for(let i=0;i<candidates.length;i++){
   const j=i+randomInt(candidates.length-i);[candidates[i],candidates[j]]=[candidates[j],candidates[i]];
-  const anime=candidates[i];
-  const canAsk=mode==='mixed'?availableQuestionModes(anime,format).length>0:(format==='typed'||questionModeHasFourChoices(anime,mode));
-  if(canAsk)eligible.push(anime);
-  if(eligible.length>=target)return eligible;
+  eligible.push(candidates[i]);
+  if(eligible.length>=target)break;
   if((i+1)%512===0&&i+1<candidates.length){
-   const status=$('#quizStatus');if(status)status.textContent=lang==='ja'?'出題候補を確認中… '+(i+1).toLocaleString()+' / '+candidates.length.toLocaleString()+'作品':'Checking questions… '+(i+1)+' / '+candidates.length;
+   const status=$('#quizStatus');if(status)status.textContent=lang==='ja'?'出題候補を抽出中… '+(i+1).toLocaleString()+' / '+candidates.length.toLocaleString()+'作品':'Selecting questions… '+(i+1)+' / '+candidates.length;
    await new Promise(resolve=>setTimeout(resolve,0));
   }
  }
+ window.__aqwLastCandidateSelectionMs=Math.round(performance.now()-startedAt);
  return eligible;
 }
 async function begin(){
@@ -1446,6 +1466,7 @@ async function begin(){
   }
  }
  quizStartInProgress=true;$('#start').disabled=true;quizFinished=false;
+ const quizPreparationStartedAt=performance.now();
  try{
   clearInterval(questionTimer);clearInterval(clockTimer);isPaused=false;pausedAt=0;totalPausedMs=0;pausedQuestionSeconds=0;skippedQuestionCount=0;$('#quizArea').inert=false;$('#pauseButton').classList.remove('hidden');$('#quitQuizButton').classList.remove('hidden');$('#pauseNotice').classList.add('hidden');$('#pauseButton').textContent=pauseButtonLabel(false);$('#setupControls').classList.add('hidden');$('#result').classList.add('hidden');reviewMode=false;missedQuestions=[];questionAttemptResults=[];roundFailed=false;playMode=$('#playMode').value;mixedModeCounts={};adaptiveDifficultyOverride=null;if(typeof window.aqwLoadPersonalDifficultyProfile==='function'){Promise.resolve().then(()=>window.aqwLoadPersonalDifficultyProfile()).catch(error=>console.warn('Personal difficulty profile could not be refreshed:',error))}adaptiveDifficultyOverride=calculatePersonalDifficultyOverride();prepareDifficultyTiers(pool);
   let mode=$('#modeSelect').value;const format=(playMode==='daily'||playMode==='rush')?'choices':$('#answerFormatSelect').value;
@@ -1456,6 +1477,8 @@ async function begin(){
   const ordered=playMode==='daily'?dailyOrder(eligible):shuffle(eligible),count=(playMode==='daily'||playMode==='rush')?Math.min(10,ordered.length):playMode==='endless'?ordered.length:Math.min(requestedQuestionCount,ordered.length);
   questions=ordered.slice(0,count);index=0;points=0;combo=0;bestCombo=0;choiceHintUsed=false;typedHintUsed=false;elapsedSeconds=0;startedAt=Date.now();
   $('#score').textContent=tr('score')+' 0';$('#quizArea').classList.remove('hidden');$('#start').classList.add('hidden');
+  window.__aqwLastQuizPreparationMs=Math.round(performance.now()-quizPreparationStartedAt);
+  console.info('[AQW performance] quiz preparation', {totalMs:window.__aqwLastQuizPreparationMs,candidateSelectionMs:window.__aqwLastCandidateSelectionMs??null,candidateCount:eligible.length,questionCount:questions.length,mode,format});
   clockTimer=setInterval(()=>{elapsedSeconds=Math.floor((Date.now()-startedAt-totalPausedMs)/1000);$('#elapsedLabel').textContent=({ja:'経過時間：',en:'Elapsed: ',ko:'경과 시간: ',zh:'已用时间：',es:'Tiempo transcurrido: ',fr:'Temps écoulé : ',pt:'Tempo decorrido: ',de:'Verstrichene Zeit: '}[lang]||'Elapsed: ')+elapsedSeconds+({ja:'秒',en:'s',ko:'초',zh:'秒',es:' s',fr:' s',pt:' s',de:' s'}[lang]||'s')},250);
   showQuestion();
  }catch(error){console.error('AQW quiz start failed.',error);document.body.classList.remove('quiz-active','quiz-preparing');clearInterval(questionTimer);clearInterval(clockTimer);clearTimeout(autoNextTimer);autoNextTimer=null;locked=true;isPaused=false;pausedAt=0;totalPausedMs=0;pausedQuestionSeconds=0;$('#quizArea').inert=false;$('#pauseButton').classList.add('hidden');$('#quitQuizButton').classList.add('hidden');$('#pauseNotice').classList.add('hidden');$('#quizArea').classList.add('hidden');$('#setupControls').classList.remove('hidden');$('#start').classList.remove('hidden');$('#start').textContent=tr('start');$('#quizStatus').textContent=lang==='ja'?'問題の準備中にエラーが発生しました：'+String(error?.message||error)+'。ページを再読み込みして再試行してください。':'Could not prepare questions: '+String(error?.message||error)+'. Reload the page and try again.'}
