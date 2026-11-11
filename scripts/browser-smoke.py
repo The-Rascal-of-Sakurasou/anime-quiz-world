@@ -193,6 +193,104 @@ def test_quiz_start_answer_finish(browser):
 
 
 
+
+def test_live_quiz_preparation_performance(browser):
+    """Measure real deployed-catalog startup and warm replays in Chromium."""
+    context = browser.new_context(
+        viewport={"width": 1280, "height": 900},
+        locale="ja-JP",
+        service_workers="block",
+    )
+    page = context.new_page()
+    page_errors = []
+    performance_logs = []
+    page.on("pageerror", lambda error: page_errors.append(str(error)))
+    page.on(
+        "console",
+        lambda message: performance_logs.append(message.text)
+        if "[AQW performance] quiz preparation" in message.text else None,
+    )
+
+    navigation_started = __import__("time").perf_counter()
+    page.goto(f"{BASE_URL}/index.html", wait_until="domcontentloaded", timeout=60000)
+    page.wait_for_function(
+        """() => {
+          const button = document.querySelector('#start');
+          return button && !button.classList.contains('hidden') && !button.disabled;
+        }""",
+        timeout=120000,
+    )
+    ready_ms = round((__import__("time").perf_counter() - navigation_started) * 1000, 1)
+
+    # Capture the profile-fetch duration without changing the returned profile.
+    page.evaluate("""() => {
+      window.__aqwProfileLoadSamples = [];
+      const original = window.aqwLoadPersonalDifficultyProfile;
+      if (typeof original === 'function' && !original.__aqwPerfWrapped) {
+        const wrapped = async function(...args) {
+          const started = performance.now();
+          try { return await original.apply(this, args); }
+          finally { window.__aqwProfileLoadSamples.push(Math.round(performance.now() - started)); }
+        };
+        wrapped.__aqwPerfWrapped = true;
+        window.aqwLoadPersonalDifficultyProfile = wrapped;
+      }
+    }""")
+
+    page.locator("#modeSelect").select_option("image")
+    page.locator("#answerFormatSelect").select_option("choices")
+    page.locator("#difficultySelect").select_option("easy")
+    page.locator("#questionCount").fill("1")
+
+    rounds = []
+    for round_index in range(3):
+        log_start = len(performance_logs)
+        profile_start = page.evaluate("() => window.__aqwProfileLoadSamples.length")
+        started = __import__("time").perf_counter()
+        start_button = page.locator("#start" if round_index == 0 else "#restart")
+        start_button.wait_for(state="visible", timeout=30000)
+        start_button.click()
+        page.locator("#answers button.answer").first.wait_for(state="visible", timeout=120000)
+        first_question_ms = round((__import__("time").perf_counter() - started) * 1000, 1)
+
+        metrics = page.evaluate("""() => ({
+          candidateSelectionMs: window.__aqwLastCandidateSelectionMs ?? null,
+          quizPreparationMs: window.__aqwLastQuizPreparationMs ?? null,
+          profileLoadSamples: (window.__aqwProfileLoadSamples || []).slice(),
+          candidateCount: (window.__aqwLastCandidateSelectionMs == null) ? null :
+            (window.__aqwLastCandidateCount ?? null),
+          catalogueResources: performance.getEntriesByType('resource')
+            .filter(entry => /anime-catalog|title-image-exclusions/.test(entry.name))
+            .map(entry => ({name: entry.name.split('/').pop(), durationMs: Math.round(entry.duration * 10) / 10,
+              transferSize: entry.transferSize || null}))
+        })""")
+        profile_samples = metrics["profileLoadSamples"][profile_start:]
+        log_text = performance_logs[log_start:]
+        rounds.append({
+            "round": round_index + 1,
+            "clickToFirstQuestionMs": first_question_ms,
+            "candidateSelectionMs": metrics["candidateSelectionMs"],
+            "quizPreparationMs": metrics["quizPreparationMs"],
+            "profileLoadMs": profile_samples[-1] if profile_samples else None,
+            "performanceLog": log_text[-1] if log_text else None,
+            "catalogueResources": metrics["catalogueResources"],
+        })
+
+        page.locator("#answers button.answer").first.click()
+        page.locator("#result:not(.hidden)").wait_for(state="visible", timeout=30000)
+        if round_index < 2:
+            page.locator("#restart").wait_for(state="visible", timeout=30000)
+
+    assert not page_errors, "Live quiz raised JavaScript errors: " + " | ".join(page_errors)
+    print("PERFORMANCE: " + json.dumps({
+        "browser": "Playwright Chromium (GitHub Actions Linux runner)",
+        "catalogueReadyMs": ready_ms,
+        "rounds": rounds,
+        "note": "First question timing includes quiz preparation and question rendering; profile duration is captured only when the profile loader exists."
+    }, ensure_ascii=False))
+    context.close()
+
+
 def test_mobile_quiz_layout(browser):
     """Check that the quiz controls and four choices fit a narrow mobile viewport."""
     context = browser.new_context(viewport={"width": 390, "height": 844}, device_scale_factor=2, is_mobile=True, has_touch=True, locale="ja-JP")
@@ -420,6 +518,8 @@ def main():
             print("PASS: featured seasonal rail -> visible cards and loaded images")
             test_quiz_start_answer_finish(browser)
             print("PASS: quiz start -> answer -> finish")
+            test_live_quiz_preparation_performance(browser)
+            print("PASS: live-catalog quiz preparation performance (3 rounds)")
             test_mobile_quiz_layout(browser)
             print("PASS: mobile quiz layout and touch answer")
             test_auth_form_reads_filled_inputs(browser)
