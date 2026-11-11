@@ -471,7 +471,8 @@ const questionRenderer = index.slice(rendererStart, rendererEnd);
 for (const mode of questionModes) {
   const availabilityMode = mode === "studio" ? "titleStudio" : mode;
   assert.ok(modeAvailability.includes("'" + availabilityMode + "'"), `Question mode ${mode} must be considered by availability filtering`);
-  assert.ok(modeValidation.includes("mode==='" + mode + "'"), `Question mode ${mode} must have four-choice eligibility validation`);
+  const validationMode = mode === "studio" ? "titleStudio" : mode;
+  assert.ok(modeValidation.includes("mode==='" + validationMode + "'"), `Question mode ${mode} must have four-choice eligibility validation`);
   assert.ok(questionRenderer.includes("actualMode==='" + mode + "'"), `Question mode ${mode} must have a renderer`);
 }
 assert.ok(index.includes("if(mode==='image'&&!titleImageIsSafe(a))return false"), "Image questions must require an OCR-audited, title-free cover");
