@@ -1174,7 +1174,6 @@ function popularityTier(a,requestedMode){
 }
 function matchesDifficulty(a,format,mode){return popularityTier(a,mode)===difficultyModes()}
 function animeHasMode(a,mode,format){if(format==='typed'&&!typedTitleEligible(a))return false;if(format==='typed'&&mode==='titleSynopsis')return false;if(['image','studio','synonym','titleYear','titleStudio','synopsis','titleSynopsis','character','titleCharacter','characterImage','characterNameImage'].includes(mode)&&!titleUsable(a))return false;if(mode==='image')return titleImageIsSafe(a)&&titleUsable(a);if(mode==='studio'||mode==='titleStudio')return !!a.studios?.nodes?.[0]?.name;if(mode==='character'||mode==='titleCharacter')return characterNames(a).length>0;if(mode==='characterImage'||mode==='characterNameImage')return characterRecords([a]).length>0&&characterRecords(pool.filter(item=>Number(item.id)!==Number(a.id)&&matchesDifficulty(item,format,mode)&&titleUsable(item))).length>=3;if(mode==='synonym')return uniqueAliasCandidates(a).length>0;if(mode==='titleYear')return Number.isInteger(animeYear(a))&&animeYear(a)>1900;if(mode==='synopsis'||mode==='titleSynopsis')return hasUsableSynopsis(a)&&titleUsable(a);return false}
-function matchesDifficulty(a,format){return popularityTier(a)===difficultyModes()}
 function difficultyDistractors(excludeId){return pool.filter(item=>Number(item?.id)!==Number(excludeId)&&titleUsable(item))}
 function updateDifficultyUI(){
  const select=$('#difficultySelect'),label=$('#difficultyLabel'),help=$('#difficultyHelp');if(!select||!label)return;
