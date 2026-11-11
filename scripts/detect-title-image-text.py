@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Detect AniList cover images that visibly contain an anime title.
+"""Audit AniList cover images for visible text using Japanese/English Tesseract OCR.
 
-Only high-confidence literal OCR matches are excluded. Failed image downloads or OCR
-runs are retried on the next workflow run and never treated as clean images.
+Any recognized text makes an image unsafe, even without an exact title match.
+Failed image downloads or OCR runs are retried and never treated as clean images.
 """
 import argparse
 import concurrent.futures
