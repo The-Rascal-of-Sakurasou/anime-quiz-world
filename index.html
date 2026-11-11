@@ -1288,7 +1288,8 @@ async function begin(){
  $('#setupControls').classList.add('hidden');$('#start').classList.add('hidden');
  $('#quizStatus').textContent=lang==='ja'?'クイズ画面を準備しています…':'Preparing quiz screen…';
  $('#quizArea').classList.remove('hidden');$('#cover').classList.add('hidden');$('#answerPrompt').textContent=lang==='ja'?'問題を準備しています…':'Preparing your first question…';$('#answers').replaceChildren();$('#answers').classList.remove('hidden');$('#typedAnswerBox').classList.add('hidden');
- await new Promise(resolve=>requestAnimationFrame(()=>resolve()));
+ // Let the preparing screen paint before running candidate selection on the main thread.
+ await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
  if(!pool.length){
   startRetryInProgress=true;
   const status=$('#quizStatus');
