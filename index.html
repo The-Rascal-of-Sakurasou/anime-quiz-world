@@ -1220,7 +1220,7 @@ function popularityTier(a,requestedMode){
  return finalScore<=20?'veryEasy':finalScore<=40?'easy':finalScore<=60?'normal':finalScore<=80?'hard':'veryHard';
 }
 function matchesDifficulty(a,format,mode){return popularityTier(a,mode)===difficultyModes()}
-function animeHasMode(a,mode,format){if(format==='typed'&&!typedTitleEligible(a))return false;if(['image','studio','synonym','titleYear','titleStudio','year','synopsis','character','characterImage'].includes(mode)&&!titleUsable(a))return false;if(mode==='image')return titleImageIsSafe(a)&&titleUsable(a);if(mode==='studio'||mode==='titleStudio')return !!a.studios?.nodes?.[0]?.name;if(mode==='character'||mode==='titleCharacter')return characterNames(a).length>0;if(mode==='characterImage'||mode==='characterNameImage')return characterRecords([a]).length>0&&characterRecords(pool.filter(item=>Number(item.id)!==Number(a.id)&&matchesDifficulty(item,format,mode)&&titleUsable(item))).length>=3;if(mode==='synonym')return uniqueAliasCandidates(a).length>0;if(mode==='titleYear'||mode==='year')return Number.isInteger(animeYear(a))&&animeYear(a)>1900;if(mode==='synopsis')return hasUsableSynopsis(a)&&titleUsable(a);return false}
+function animeHasMode(a,mode,format){if(format==='typed'&&!typedTitleEligible(a))return false;if(['image','studio','synonym','year','synopsis','character','characterImage'].includes(mode)&&!titleUsable(a))return false;if(mode==='image')return titleImageIsSafe(a)&&titleUsable(a);if(mode==='studio')return !!a.studios?.nodes?.[0]?.name;if(mode==='character'||mode==='titleCharacter')return characterNames(a).length>0;if(mode==='characterImage'||mode==='characterNameImage')return characterRecords([a]).length>0&&characterRecords(pool.filter(item=>Number(item.id)!==Number(a.id)&&matchesDifficulty(item,format,mode)&&titleUsable(item))).length>=3;if(mode==='synonym')return uniqueAliasCandidates(a).length>0;if(mode==='year')return Number.isInteger(animeYear(a))&&animeYear(a)>1900&&(format==='typed'||yearTitleChoiceRecordsForAnime(a).length>=4);if(mode==='synopsis')return hasUsableSynopsis(a)&&titleUsable(a);return false}
 function difficultyDistractors(excludeId){return pool.filter(item=>Number(item?.id)!==Number(excludeId)&&titleUsable(item))}
 function updateDifficultyUI(){
  const select=$('#difficultySelect'),label=$('#difficultyLabel'),help=$('#difficultyHelp');if(!select||!label)return;
@@ -1313,14 +1313,14 @@ function availableQuestionModes(a,format=$('#answerFormatSelect')?.value||'choic
  if(a?.studios?.nodes?.[0]?.name)modes.push('studio');
  if(characterRecords([a]).length)modes.push('character','titleCharacter','characterImage','characterNameImage');
  if(uniqueAliasCandidates(a).length)modes.push('synonym');
- if(Number.isInteger(animeYear(a))&&animeYear(a)>1900&&yearTitleChoiceRecordsForAnime(a).length>=4)modes.push('year');
+ if(Number.isInteger(animeYear(a))&&animeYear(a)>1900&&(format==='typed'||yearTitleChoiceRecordsForAnime(a).length>=4))modes.push('year');
  
  if(hasUsableSynopsis(a)&&titleUsable(a))modes.push('synopsis');
  const typingOnly=playMode!=='daily'&&playMode!=='rush'&&format==='typed';
  if(typingOnly)modes=modes.filter(mode=>!['titleSynopsis','characterImage','characterNameImage'].includes(mode));
  return modes.filter(mode=>questionModeHasFourChoices(a,mode));
 }
-function usablePool(mode,answerFormat=$('#answerFormatSelect')?.value||'choices',validateChoices=true){if(answerFormat==='typed'&&mode==='characterImage')return [];return pool.filter(a=>{if(!isUsableAnime(a))return false;if(mode==='image'&&!titleImageIsSafe(a))return false;if(answerFormat==='typed'&&!typedTitleEligible(a))return false;if(['image','studio','year','synonym','titleYear','titleStudio','synopsis','character','characterImage'].includes(mode)&&!titleUsable(a))return false;if((mode==='titleStudio'||mode==='studio')&&!a.studios?.nodes?.[0]?.name)return false;if(mode==='character'||mode==='characterImage'){if(!characterRecords([a]).length)return false}if(mode==='synonym'&&!uniqueAliasCandidates(a).length)return false;if(['titleYear','year'].includes(mode)&&(!Number.isInteger(animeYear(a))||animeYear(a)<=1900))return false;if(mode==='year'&&yearTitleChoiceRecordsForAnime(a).length<4)return false;if(mode==='synopsis'&&!hasUsableSynopsis(a))return false;return answerFormat==='typed'||!validateChoices||questionModeHasFourChoices(a,mode)})}
+function usablePool(mode,answerFormat=$('#answerFormatSelect')?.value||'choices',validateChoices=true){if(answerFormat==='typed'&&mode==='characterImage')return [];return pool.filter(a=>{if(!isUsableAnime(a))return false;if(mode==='image'&&!titleImageIsSafe(a))return false;if(answerFormat==='typed'&&!typedTitleEligible(a))return false;if(['image','studio','year','synonym','titleYear','titleStudio','synopsis','character','characterImage'].includes(mode)&&!titleUsable(a))return false;if((mode==='titleStudio'||mode==='studio')&&!a.studios?.nodes?.[0]?.name)return false;if(mode==='character'||mode==='characterImage'){if(!characterRecords([a]).length)return false}if(mode==='synonym'&&!uniqueAliasCandidates(a).length)return false;if(['titleYear','year'].includes(mode)&&(!Number.isInteger(animeYear(a))||animeYear(a)<=1900))return false;if(mode==='year'&&format!=='typed'&&yearTitleChoiceRecordsForAnime(a).length<4)return false;if(mode==='synopsis'&&!hasUsableSynopsis(a))return false;return answerFormat==='typed'||!validateChoices||questionModeHasFourChoices(a,mode)})}
 function extendQuestionsFromPool(items){
  if(!items||!questions.length||$('#quizArea').classList.contains('hidden'))return;
  prepareDifficultyTiers(pool);
@@ -1410,7 +1410,7 @@ function isEligibleBaseAnime(a,mode,format){
  if((mode==='titleStudio'||mode==='studio')&&!a.studios?.nodes?.[0]?.name)return false;
  if(['character','characterImage'].includes(mode)&&!characterRecords([a]).length)return false;
  if(mode==='synonym'&&!uniqueAliasCandidates(a).length)return false;
- if(['titleYear','year'].includes(mode)&&(!Number.isInteger(animeYear(a))||animeYear(a)<=1900))return false;if(mode==='year'&&yearTitleChoiceRecordsForAnime(a).length<4)return false;
+ if(['titleYear','year'].includes(mode)&&(!Number.isInteger(animeYear(a))||animeYear(a)<=1900))return false;if(mode==='year'&&format!=='typed'&&yearTitleChoiceRecordsForAnime(a).length<4)return false;
  if(mode==='synopsis'&&!hasUsableSynopsis(a))return false;
  return true;
 }
