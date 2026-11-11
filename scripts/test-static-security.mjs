@@ -262,6 +262,9 @@ assert.match(index, /mode===\'mixed\'\?availableQuestionModes\(anime,format\)\.l
 assert.match(index, /mode===\'mixed\'\?items\.filter\(a=>isUsableAnime\(a\)&&titleUsable\(a\)&&availableQuestionModes\(a,format\)\.length>0\)/, "Background loading in mixed mode must use the same per-anime question-type eligibility");
 assert.ok(index.includes("let modesForFormat=availableQuestionModes(a,$('#answerFormatSelect').value)"), "Question rendering must use the same available-mode calculation");
 
+assert.match(index, /function synopsisChoiceRecords\(a,answerIsTitle=false\)/, "Synopsis question eligibility and generation must share one candidate builder");
+assert.match(index, /function hasFourDistinctSynopsisChoices\(a,answerIsTitle=false\)\{return synopsisChoiceRecords\(a,answerIsTitle\)\.length>=4\}/, "Synopsis eligibility must validate the exact generated option set");
+assert.match(index, /function makeSynopsisOptions\(a,answerIsTitle=false\)\{return shuffle\(synopsisChoiceRecords\(a,answerIsTitle\)\)\}/, "Synopsis generation must shuffle only the validated option set");
 assert.match(index, /function uniqueCharacterRecordsForAnime\(anime,summary=questionChoiceSummary\(\)\)\{return characterRecords\(\[anime\]\)\.filter\(record=>summary\.uniqueCharacterNameKeys\.has\(normalizeAnswer\(record\.name\)\)\)\}/, "Character-name questions must only use globally unique character names");
 assert.match(index, /function characterRecordsWithFourTitleChoicesForAnime\(anime,summary=questionChoiceSummary\(\)\)/, "Title-to-character mode must validate the real distractor pool");
 assert.match(index, /if\(mode===\'titleCharacter\'\)return characterRecordsWithFourTitleChoicesForAnime\(a,summary\)\.length>0/, "Title-to-character eligibility must validate three unique distractors");
