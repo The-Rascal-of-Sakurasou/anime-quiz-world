@@ -262,6 +262,13 @@ assert.match(index, /mode===\'mixed\'\?availableQuestionModes\(anime,format\)\.l
 assert.match(index, /mode===\'mixed\'\?items\.filter\(a=>isUsableAnime\(a\)&&titleUsable\(a\)&&availableQuestionModes\(a,format\)\.length>0\)/, "Background loading in mixed mode must use the same per-anime question-type eligibility");
 assert.ok(index.includes("let modesForFormat=availableQuestionModes(a,$('#answerFormatSelect').value)"), "Question rendering must use the same available-mode calculation");
 
+assert.match(index, /function studioChoiceRecordsForAnime\(a\)/, "Studio question eligibility and generation must share the same studio candidate builder");
+assert.match(index, /function hasFourDistinctStudioChoices\(a\)\{return studioChoiceRecordsForAnime\(a\)\.length>=4\}/, "Studio question eligibility must validate the exact generated options");
+assert.match(index, /function makeStudioOptions\(a\)/, "Studio question generation must use the shared studio candidate builder");
+assert.match(index, /function yearChoiceRecordsForAnime\(a\)/, "Year question eligibility and generation must share the same year candidate builder");
+assert.match(index, /if\(mode===\'titleYear\'\)return yearChoiceRecordsForAnime\(a\)\.length>=4/, "Year question eligibility must validate the exact generated year options");
+assert.match(index, /function makeYearOptions\(a\)\{return shuffle\(yearChoiceRecordsForAnime\(a\)\)\.slice\(0,4\)\}/, "Year question generation must use the validated year candidate set");
+assert.match(index, /if\(actualMode===\'titleStudio\'\)\{prompt=titleOf\(a\)\+qText\(\'titleStudio\'\);opts=makeStudioOptions\(a\)/, "Title-to-studio generation must use the shared validated studio options");
 assert.match(index, /function titleChoiceRecordsForAnime\(a\)/, "Title-based question eligibility and generation must share the same alias-safe option builder");
 assert.match(index, /function hasFourDistinctTitleChoices\(anime,summary=questionChoiceSummary\(\)\)\{return titleChoiceRecordsForAnime\(anime\)\.length>=4\}/, "Title-based question eligibility must count the exact generated title options");
 assert.match(index, /function makeTitleOptions\(a\)\{return shuffle\(titleChoiceRecordsForAnime\(a\)\.slice\(0,4\)\)\}/, "Title-based question generation must use the validated alias-safe title options");
