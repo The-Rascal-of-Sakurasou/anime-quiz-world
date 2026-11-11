@@ -285,6 +285,18 @@ assert.match(index, /function synopsisChoiceRecords\(a,answerIsTitle=false\)/, "
 assert.match(index, /function hasFourDistinctSynopsisChoices\(a,answerIsTitle=false\)\{return synopsisChoiceRecords\(a,answerIsTitle\)\.length>=4\}/, "Synopsis eligibility must validate the exact generated option set");
 assert.match(index, /function makeSynopsisOptions\(a,answerIsTitle=false\)\{return shuffle\(synopsisChoiceRecords\(a,answerIsTitle\)\)\}/, "Synopsis generation must shuffle only the validated option set");
 assert.match(index, /function uniqueCharacterRecordsForAnime\(anime,summary=questionChoiceSummary\(\)\)\{return characterRecords\(\[anime\]\)\.filter\(record=>summary\.uniqueCharacterNameKeys\.has\(normalizeAnswer\(record\.name\)\)\)\}/, "Character-name questions must only use globally unique character names");
+assert.match(index, /function isSingleAnimeCharacter\(record,summary=questionChoiceSummary\(\)\)/, "Character-to-anime questions must validate single-work appearances");
+assert.match(index, /if\(mode===['"]character['"]\)return characterRecords\(\[a\]\)\.some\(record=>isSingleAnimeCharacter\(record,summary\)\)/, "Character-to-anime eligibility must exclude characters appearing in multiple works");
+assert.match(index, /characterRecords\(\[a\]\)\.filter\(record=>isSingleAnimeCharacter\(record,summary\)\)/, "Character-to-anime generation must use the same unambiguous character filter");
+const singleAnimeCharacterStart = index.indexOf("function isSingleAnimeCharacter(");
+const singleAnimeCharacterEnd = index.indexOf("function characterRecords(", singleAnimeCharacterStart);
+assert.ok(singleAnimeCharacterStart >= 0 && singleAnimeCharacterEnd > singleAnimeCharacterStart, "Single-anime character helper must exist");
+const isSingleAnimeCharacter = vm.runInNewContext(`(${index.slice(singleAnimeCharacterStart, singleAnimeCharacterEnd).trim()})`, {
+  normalizeAnswer: value => String(value || "").normalize("NFKC").toLocaleLowerCase().replace(/[\s　・･:：!！?？.,，。'"“”「」『』()（）‐‑–—_-]/g, "").trim()
+});
+assert.equal(isSingleAnimeCharacter({ name: "Only Character" }, { uniqueCharacterNameKeys: new Set(["onlycharacter"]), characterNamesByAnime: new Map([[1, new Set(["onlycharacter"])]]) }), true, "A character appearing in one anime must remain eligible");
+assert.equal(isSingleAnimeCharacter({ name: "Shared Character" }, { uniqueCharacterNameKeys: new Set(["sharedcharacter"]), characterNamesByAnime: new Map([[1, new Set(["sharedcharacter"])], [2, new Set(["sharedcharacter"])]]) }), false, "A character appearing in multiple anime must be excluded");
+
 assert.match(index, /function characterRecordsWithFourTitleChoicesForAnime\(anime,summary=questionChoiceSummary\(\)\)/, "Title-to-character mode must validate the real distractor pool");
 assert.match(index, /if\(mode===\'titleCharacter\'\)return characterRecordsWithFourTitleChoicesForAnime\(a,summary\)\.length>0/, "Title-to-character eligibility must validate three unique distractors");
 assert.match(index, /shuffle\(characterRecordsWithFourTitleChoicesForAnime\(a\)\)/, "Title-to-character generation must use only eligible correct characters");
