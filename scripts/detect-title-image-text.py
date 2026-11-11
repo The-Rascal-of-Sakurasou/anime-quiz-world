@@ -41,7 +41,7 @@ def title_candidates(anime):
         # common word. Japanese names can be shorter than Latin-script names.
         # Japanese titles can be short; Latin-script titles need a longer match
         # to avoid excluding covers for common short words or numbers.
-        has_japanese = any("\\u3040" <= ch <= "\\u30ff" or "\\u3400" <= ch <= "\\u9fff" for ch in str(value))
+        has_japanese = any("\u3040" <= ch <= "\u30ff" or "\u3400" <= ch <= "\u9fff" for ch in str(value))
         if len(key) < (2 if has_japanese else 4):
             continue
         seen.add(key)
