@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 
-const FILE = "data/anime-catalog.json";
+const FILE = process.argv[2] || "data/anime-catalog.json";
 const FORMATS = new Set(["TV", "TV_SHORT", "MOVIE", "OVA", "ONA", "SPECIAL"]);
 
 function isJapaneseOriginAnime(anime) {
