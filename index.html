@@ -1331,7 +1331,7 @@ async function begin(){
  try{
   clearInterval(questionTimer);clearInterval(clockTimer);isPaused=false;pausedAt=0;totalPausedMs=0;pausedQuestionSeconds=0;skippedQuestionCount=0;$('#quizArea').inert=false;$('#pauseButton').classList.remove('hidden');$('#quitQuizButton').classList.remove('hidden');$('#pauseNotice').classList.add('hidden');$('#pauseButton').textContent=pauseButtonLabel(false);$('#setupControls').classList.add('hidden');$('#result').classList.add('hidden');reviewMode=false;missedQuestions=[];roundFailed=false;playMode=$('#playMode').value;mixedModeCounts={};prepareDifficultyTiers(pool);
   let mode=$('#modeSelect').value;const format=(playMode==='daily'||playMode==='rush')?'choices':$('#answerFormatSelect').value;
-  requestedQuestionCount=playMode==='endless'?Infinity:(playMode==='daily'||playMode==='rush')?10:(Number($('#questionCount').value)||10);
+  requestedQuestionCount=playMode==='endless'?Infinity:(playMode==='daily'||playMode==='rush')?10:Math.max(1,Math.floor(Number($('#questionCount').value)||10));
   const target=playMode==='endless'?Infinity:requestedQuestionCount;
   let activeMode=mode,activeFormat=format,eligible=await collectEligibleAnime(mode,format,target),usedSafeFallback=false;
   if(!eligible.length&&mode!=='mixed'){activeMode='mixed';activeFormat='choices';eligible=await collectEligibleAnime('mixed','choices',target);usedSafeFallback=eligible.length>0;if(usedSafeFallback){$('#modeSelect').value='mixed';$('#answerFormatSelect').value='choices'}}
