@@ -123,7 +123,7 @@ body{background:#f6f7f9;color:#202936;letter-spacing:.005em}
 <a class="skip-link" href="#mainContent">診断コンテンツへ移動</a>
 <div class="wrap">
 <header class="top"><a class="site-brand" href="./index.html" aria-label="Anime Quiz World トップページ"><svg class="site-brand-logo" viewBox="0 0 100 100" role="img" aria-label="AQW"><rect x="2" y="2" width="96" height="96" fill="#064675"/><text x="50" y="64" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="34" font-weight="800" font-style="italic" letter-spacing="-1" textLength="80" lengthAdjust="spacingAndGlyphs" fill="#fff">AQW</text></svg><span class="site-brand-copy"><span class="site-brand-title">Anime Quiz World</span><span class="site-brand-tagline">知識を試して、新しい作品と出会う。</span></span></a><a href="./index.html">クイズに戻る</a></header>
-<section class="hero"><div class="eyebrow">ANIME RECOMMENDATION ANALYSIS</div><h1>あなたに合うアニメを分析</h1><p>好きなジャンルだけでなく、物語の展開・雰囲気・作品の長さなどから好みの傾向を分析し、次に見る候補を提案します。全13問＋任意の作品入力で診断します。</p></section>
+<section class="hero"><div class="eyebrow">ANIME RECOMMENDATION ANALYSIS</div><h1>あなたに合うアニメを分析</h1><p>好きなジャンルだけでなく、物語の展開・雰囲気・作品の長さなどから好みの傾向を分析し、次に見る候補を提案します。最大20問の質問に回答すると、好みに合う作品を提案します。好きな作品・苦手な作品も任意で入力できます。</p></section>
 <main class="panel" id="mainContent" tabindex="-1">
 <div id="diagnosis">
 <div class="progress" aria-label="診断の進行状況"><div id="progressBar"></div></div>
@@ -185,83 +185,83 @@ const safeStorage={
 };
 const API='https://graphql.anilist.co';
 const questions=[
-{dimension:'genre',title:'どんな作品を見たい？',help:'今の気分に一番近いものを選んでください。',options:[
-{label:'冒険やファンタジーの世界を楽しみたい',genres:['Fantasy','Adventure']},
-{label:'SFや謎解きなど、先が気になる話が見たい',genres:['Sci-Fi','Mystery','Thriller']},
-{label:'バトルやアクションを楽しみたい',genres:['Action','Adventure']},
-{label:'日常や人間ドラマ、コメディを楽しみたい',genres:['Drama','Comedy','Slice of Life']}
+{dimension:'genre',title:'どんなジャンルのアニメが見たい？',help:'今見たいジャンルを1つ選んでください。',options:[
+{label:'冒険やファンタジー',genres:['Fantasy','Adventure']},
+{label:'SFやミステリー',genres:['Sci-Fi','Mystery','Thriller']},
+{label:'バトルやアクション',genres:['Action','Adventure']},
+{label:'日常や人間ドラマ、コメディ',genres:['Drama','Comedy','Slice of Life']}
 ]},
-{dimension:'protagonist_challenge',title:'どんな展開に惹かれる？',help:'物語の中で見てみたい展開を選んでください。',options:[
-{label:'謎や事件の真相を明らかにしていく',tags:['Crime','Detective']},
-{label:'ピンチや困難を乗り越えていく',tags:['Survival','Battle Royale']},
-{label:'大きな目標に向かって挑戦していく',tags:['Quest','Training']},
-{label:'自分の信念や生き方と向き合っていく',tags:['Philosophy','Coming of Age']}
+{dimension:'protagonist_challenge',title:'どんな展開が見たい？',help:'特に見たい展開を1つ選んでください。',options:[
+{label:'謎や事件の真相を解き明かす',tags:['Crime','Detective']},
+{label:'困難を乗り越える',tags:['Survival','Battle Royale']},
+{label:'目標に向かって挑戦する',tags:['Quest','Training']},
+{label:'自分の生き方を見つけていく',tags:['Philosophy','Coming of Age']}
 ]},
-{dimension:'pacing',title:'物語のテンポはどれが好き？',help:'展開が進む速さについて、好みに近いものを選んでください。',options:[
-{label:'序盤から次々と展開が進む',tags:['Fast-Paced']},
-{label:'落ち着いた一定のペースで進む'},
-{label:'時間をかけてじっくり進む',tags:['Slow Burn']},
-{label:'静かな場面と盛り上がる場面の差がある',tags:['Slow Burn','Fast-Paced']}
+{dimension:'pacing',title:'話が進む速さはどれが好き？',help:'好きな展開の速さを選んでください。',options:[
+{label:'次々と話が進む',tags:['Fast-Paced']},
+{label:'落ち着いた速さで進む'},
+{label:'ゆっくり話が進む',tags:['Slow Burn']},
+{label:'静かな場面と盛り上がる場面がある',tags:['Slow Burn','Fast-Paced']}
 ]},
-{dimension:'emotional_intensity',title:'見ている間、どんな気分を味わいたい？',help:'視聴中に感じたい気分を選んでください。',options:[
-{label:'緊張感があって、ハラハラしたい',tags:['Psychological']},
-{label:'感動して、心を動かされたい',tags:['Tragedy','Coming of Age']},
-{label:'気楽に笑って楽しみたい',tags:['Gag Humor','Parody']},
-{label:'穏やかな気分で、ゆったり楽しみたい',tags:['Iyashikei']}
+{dimension:'emotional_intensity',title:'見ているとき、どんな気分になりたい？',help:'見ている間に感じたいことを選んでください。',options:[
+{label:'ハラハラしながら見たい',tags:['Psychological']},
+{label:'感動したい',tags:['Tragedy','Coming of Age']},
+{label:'気楽に笑いたい',tags:['Gag Humor','Parody']},
+{label:'落ち着いた気分で見たい',tags:['Iyashikei']}
 ]},
-{dimension:'setting',title:'どんな世界・舞台が好み？',help:'物語の舞台として、気になるものを選んでください。',options:[
-{label:'魔法や異世界、未知の場所',tags:['Magic','Isekai','World Building']},
-{label:'現代の街や学校、身近な日常',tags:['School','Urban','Coming of Age']},
-{label:'未来や宇宙、科学技術の世界',tags:['Space','Cyberpunk','Mecha']},
-{label:'歴史や神話、和風の世界',tags:['Historical','Mythology','Samurai']}
+{dimension:'setting',title:'どんな場所が舞台のアニメが見たい？',help:'気になる舞台を1つ選んでください。',options:[
+{label:'魔法や異世界',tags:['Magic','Isekai','World Building']},
+{label:'現代の街や学校',tags:['School','Urban','Coming of Age']},
+{label:'未来や宇宙',tags:['Space','Cyberpunk','Mecha']},
+{label:'歴史や神話の世界',tags:['Historical','Mythology','Samurai']}
 ]},
-{dimension:'duration',title:'どのくらいの長さの作品が見たい？',help:'今の視聴時間や気分に近いものを選んでください。',options:[
-{label:'短めがいい（映画・1クール程度）',length:'short'},
-{label:'ほどよい長さがいい（2〜3クール程度）',length:'medium'},
-{label:'長くじっくり楽しみたい',length:'long'},
+{dimension:'duration',title:'どのくらいの長さのアニメが見たい？',help:'見やすい長さを選んでください。',options:[
+{label:'短め（映画・1クール程度）',length:'short'},
+{label:'中くらい（2〜3クール程度）',length:'medium'},
+{label:'長い作品をじっくり見たい',length:'long'},
 {label:'作品の長さは気にしない',length:'any'}
 ]},
-{dimension:'character_appeal',title:'どんなキャラクターが好き？',help:'キャラクターの性格や魅力について選んでください。',options:[
-{label:'物語の中で成長していくキャラクター',tags:['Character Development','Coming of Age']},
-{label:'個性的で、印象に残るキャラクター',tags:['Unusual Characters','Ensemble Cast']},
-{label:'頭が切れたり、心理描写が深かったりするキャラクター',tags:['Genius','Strategic','Psychological','Philosophy']},
-{label:'強い信念を持ち、自分で道を切り開くキャラクター',tags:['Leadership','Revenge']}
+{dimension:'character_appeal',title:'どんなキャラクターが好き？',help:'好きなキャラクターに近いものを選んでください。',options:[
+{label:'成長していくキャラクター',tags:['Character Development','Coming of Age']},
+{label:'個性的で印象に残るキャラクター',tags:['Unusual Characters','Ensemble Cast']},
+{label:'頭がよく、考え方が深いキャラクター',tags:['Genius','Strategic','Psychological','Philosophy']},
+{label:'自分の信念を貫くキャラクター',tags:['Leadership','Revenge']}
 ]},
-{dimension:'narrative_complexity',title:'物語の分かりやすさはどれが好み？',help:'伏線や設定をどのくらい考えながら見たいか選んでください。',options:[
-{label:'シンプルで、気軽に理解できる話',avoidTags:['Conspiracy','Politics','World Building','Ensemble Cast']},
-{label:'伏線や意外な展開を考えるのが楽しい話',tags:['Conspiracy']},
-{label:'複数の人物や出来事が絡み合う話',tags:['Politics','Ensemble Cast']},
-{label:'独自の設定や世界観を深く楽しめる話',tags:['World Building','Politics']}
+{dimension:'narrative_complexity',title:'どんな分かりやすさの物語が好き？',help:'物語の複雑さについて選んでください。',options:[
+{label:'シンプルで分かりやすい話',avoidTags:['Conspiracy','Politics','World Building','Ensemble Cast']},
+{label:'伏線や謎を考えながら見る話',tags:['Conspiracy']},
+{label:'多くの人物や出来事が関わる話',tags:['Politics','Ensemble Cast']},
+{label:'独自の設定や世界観を楽しむ話',tags:['World Building','Politics']}
 ]},
-{dimension:'aftertaste',title:'見終わったあと、どんな気持ちになりたい？',help:'視聴中ではなく、見終わった後に残ってほしい気持ちを選んでください。',options:[
-{label:'驚きや衝撃が残ってほしい',tags:['Surprise Ending']},
-{label:'切なさや感動が心に残ってほしい',tags:['Bittersweet Ending']},
-{label:'すっきりした達成感がほしい',tags:['Satisfying Ending']},
-{label:'笑顔になれる、明るい余韻がほしい',tags:['Happy Ending']}
+{dimension:'aftertaste',title:'見終わったあと、どんな気持ちが残ってほしい？',help:'見終わった後の気持ちを選んでください。',options:[
+{label:'驚きが残ってほしい',tags:['Surprise Ending']},
+{label:'切なさや感動が残ってほしい',tags:['Bittersweet Ending']},
+{label:'すっきりした気分になりたい',tags:['Satisfying Ending']},
+{label:'明るい気持ちになりたい',tags:['Happy Ending']}
 ]},
-{dimension:'relationships',title:'キャラクター同士の関係で好きなのは？',help:'人物同士のつながり方について選んでください。',options:[
-{label:'仲間と協力し、絆を深めていく',tags:['Friendship','Found Family']},
-{label:'ライバル同士が競い合う',tags:['Rivalry']},
+{dimension:'relationships',title:'キャラクター同士の関係で好きなのは？',help:'好きな関係を1つ選んでください。',options:[
+{label:'仲間と協力し合う',tags:['Friendship','Found Family']},
+{label:'ライバル同士で競い合う',tags:['Rivalry']},
 {label:'家族や身近な人との関係を描く',tags:['Family','Family Life']},
-{label:'師匠や先輩など、立場の違う人が支え合う',tags:['Mentor','Teacher-Student Relationship']}
+{label:'先輩や師匠が後輩を支える',tags:['Mentor','Teacher-Student Relationship']}
 ]},
 {dimension:'romance_amount',title:'恋愛要素はどのくらい欲しい？',help:'恋愛が物語にどのくらい含まれていてほしいか選んでください。',options:[
-{label:'恋愛が物語の中心にある作品が見たい',genreWeights:{Romance:2.5}},
-{label:'恋愛要素が少し入っているとうれしい',genreWeights:{Romance:1.1}},
-{label:'恋愛要素は控えめがいい',avoidGenres:['Romance'],avoidGenreWeights:{Romance:0.8}},
-{label:'恋愛要素はほとんどなくていい',avoidGenres:['Romance'],avoidGenreWeights:{Romance:1.8}}
+{label:'恋愛が中心の作品',genreWeights:{Romance:2.5}},
+{label:'恋愛が少し入っている作品',genreWeights:{Romance:1.1}},
+{label:'恋愛が少ない作品',avoidGenres:['Romance'],avoidGenreWeights:{Romance:0.8}},
+{label:'恋愛がほとんどない作品',avoidGenres:['Romance'],avoidGenreWeights:{Romance:1.8}}
 ]},
-{dimension:'tone_balance',title:'笑いとシリアス、どちらが好み？',help:'作品全体の雰囲気として、近いものを選んでください。',options:[
-{label:'笑える場面が多い、コメディ寄り',genreWeights:{Comedy:2.5}},
-{label:'笑いは少なめで、シリアス寄り',genreWeights:{Drama:1.4},avoidGenreWeights:{Comedy:0.5}},
-{label:'笑いとシリアスが半分ずつくらい',genreWeights:{Drama:1.2,Comedy:1.2}},
-{label:'基本はシリアスで、ときどき笑える',genreWeights:{Drama:1.8},avoidGenres:['Comedy'],avoidGenreWeights:{Comedy:1.2}}
+{dimension:'tone_balance',title:'作品の雰囲気はどれが好き？',help:'笑いとシリアスのバランスを選んでください。',options:[
+{label:'笑える場面が多い',genreWeights:{Comedy:2.5}},
+{label:'笑いは少なく、シリアスな場面が多い',genreWeights:{Drama:1.4},avoidGenreWeights:{Comedy:0.5}},
+{label:'笑いとシリアスが半分ずつ',genreWeights:{Drama:1.2,Comedy:1.2}},
+{label:'シリアスが中心で、ときどき笑える',genreWeights:{Drama:1.8},avoidGenres:['Comedy'],avoidGenreWeights:{Comedy:1.2}}
 ]},
-{dimension:'story_structure',title:'物語の進み方はどれが好み？',help:'各話の区切り方や、物語全体のつながり方について選んでください。',options:[
-{label:'最初から最後まで、ひと続きの物語',avoidTags:['Episodic'],avoidTagWeights:{Episodic:1.2}},
-{label:'1話ごとに区切りよく楽しめる物語',tagWeights:{Episodic:2.2}},
-{label:'大きな物語も、各話ごとの面白さも欲しい',tagWeights:{Episodic:0.7}},
-{label:'物語の進み方にはこだわらない'}
+{dimension:'story_structure',title:'各話のつながり方はどれが好き？',help:'1話ごとのまとまり方を選んでください。',options:[
+{label:'最初から最後まで続く物語',avoidTags:['Episodic'],avoidTagWeights:{Episodic:1.2}},
+{label:'1話ごとに話がまとまる物語',tagWeights:{Episodic:2.2}},
+{label:'全体の物語も、各話の面白さもある作品',tagWeights:{Episodic:0.7}},
+{label:'特にこだわりはない'}
 ]}
 ];
 const allQuestionTitles=questions.map(q=>q.title.trim());
@@ -274,7 +274,8 @@ const duplicateChoiceLabels=questions.some(q=>new Set(q.options.map(o=>o.label.t
 if(new Set(questionTitles).size!==questionTitles.length||new Set(questionDimensions).size!==questionDimensions.length||questionDimensions.some(d=>typeof d!=='string'||!d)||questions.some(q=>new Set(q.options.map(o=>o.label.trim())).size!==q.options.length)){
  throw new Error('診断の質問または選択肢に重複があります。');
 }
-if(questions.length!==13)throw new Error('診断は13問構成である必要があります。');
+const MAX_QUESTIONS=20;
+if(questions.length>MAX_QUESTIONS)throw new Error('診断の質問数が上限の20問を超えています。');
 let step=0;const answers=Array(questions.length).fill(null);
 const SAVE_KEY='aqw-recommendation-v5';
 const PREVIOUS_SAVE_KEY='aqw-recommendation-v4';
