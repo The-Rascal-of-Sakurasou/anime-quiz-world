@@ -421,6 +421,10 @@ assert.match(index, /hasNextPage:items\.hasNextPage===true/, "Fallback paginatio
 
 assert.match(index, /function isUsableAnime\(a\)\{[^\n]*isJapaneseOriginAnime\(a\)/, "Every cached and live quiz record must pass strict Japanese-source eligibility");
 assert.match(index, /function isUsableAnime\(a\)\{[^\n]*a\.isAdult!==true/, "Adult-flagged records must be excluded from live and cached quiz data");
+assert.match(index, /function hasUsableImageUrl\(value\)\{[^\n]*no\[-_ \]\?image/i, "NO IMAGE placeholders must be excluded from all image displays");
+assert.match(index, /function isUsableAnime\(a\)\{[^\n]*hasUsableImageUrl\(titleImage\)/, "Anime without a usable cover image must be excluded from image-backed displays and quiz data");
+assert.match(index, /function titleImageIsSafe\(anime\)\{[^\n]*titleImageAuditedIds\.has\(id\)[^\n]*!titleImageExcludedIds\.has\(id\)/, "Artwork restored for display must still require OCR approval before entering title-identification image questions");
+assert.ok(index.includes("const candidates=shuffle(uniqueAnimeById(source).filter(a=>isUsableAnime(a)));"), "Featured artwork must restore every usable image while excluding placeholders");
 
 assert.match(index, /source\(version:2\) relations \{ edges \{ relationType node \{ id type countryOfOrigin format \} \} \}/, "Featured seasonal queries must include source and related-origin metadata");
 assert.ok(index.includes("season seasonYear startDate { year month day }"), "Featured seasonal queries must include season and start-date metadata");
