@@ -780,7 +780,7 @@ function titleImageIsSafe(anime){const id=Number(anime?.id),image=anime?.coverIm
 async function fetchSharedAnimeCatalog(){
  try{
   // Load the small OCR audit index first so unverified cover images are never shown.
-  const exclusionResponse=await fetch(new URL('data/title-image-exclusions.json',document.baseURI),{cache:'default',headers:{'Accept':'application/json'}}).catch(()=>null);
+  const exclusionResponse=await fetch(new URL('data/title-image-exclusions.json',document.baseURI),{cache:'no-store',headers:{'Accept':'application/json'}}).catch(()=>null);
   if(exclusionResponse?.ok){
    try{
     const exclusions=await exclusionResponse.json();
