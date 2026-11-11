@@ -775,21 +775,21 @@ const ph=document.getElementById('query');if(ph)ph.placeholder=lang==='ja'?'例�
 const query=`query ($page:Int,$perPage:Int,$search:String,$id_in:[Int],$format_in:[MediaFormat],$startDate_greater:FuzzyDateInt,$startDate_lesser:FuzzyDateInt) { Page(page:$page,perPage:$perPage) { pageInfo { hasNextPage } media(id_in:$id_in,format_in:$format_in,startDate_greater:$startDate_greater,startDate_lesser:$startDate_lesser,type:ANIME,countryOfOrigin:JP,sort:POPULARITY_DESC,search:$search,isAdult:false) { id countryOfOrigin source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } format popularity title { romaji english native } description(asHtml:false) synonyms coverImage { large medium extraLarge } episodes seasonYear averageScore genres studios { nodes { name } } startDate { year } characters(sort:ROLE,perPage:5) { nodes { id name { full native } image { large } } } externalLinks { url site type isDisabled } } } }`;
 function normalizeUnicode(value){if(typeof value==='string')return value.normalize('NFC');if(Array.isArray(value))return value.map(normalizeUnicode);if(value&&typeof value==='object'){const out={};for(const [key,item] of Object.entries(value))out[key]=normalizeUnicode(item);return out}return value}
 function isJapaneseOriginAnime(a){if(!a||a.countryOfOrigin!=='JP')return false;if(a.originVerified===true)return true;if(a.source==='ORIGINAL')return true;const sourceRules={MANGA:{type:'MANGA',formats:['MANGA','ONE_SHOT']},LIGHT_NOVEL:{type:'MANGA',formats:['NOVEL']},NOVEL:{type:'MANGA',formats:['NOVEL']},DOUJINSHI:{type:'MANGA',formats:['MANGA','ONE_SHOT','NOVEL']},ANIME:{type:'ANIME',formats:['TV','TV_SHORT','MOVIE','OVA','ONA','SPECIAL']}};const rule=sourceRules[a.source];if(!rule||!Array.isArray(a.relations?.edges))return false;return a.relations.edges.some(edge=>(edge?.relationType==='SOURCE'||edge?.relationType==='ADAPTATION')&&edge.node?.type===rule.type&&edge.node?.countryOfOrigin==='JP'&&rule.formats.includes(edge.node?.format))}
-const $=s=>document.querySelector(s);let pool=[],questions=[],index=0,points=0,skippedQuestionCount=0,locked=false,questionTimer=null,clockTimer=null,secondsLeft=15,questionDeadline=0,pausedQuestionSeconds=0,isPaused=false,pausedAt=0,totalPausedMs=0,startedAt=0,elapsedSeconds=0,missedQuestions=[],reviewMode=false,playMode='normal',roundFailed=false,lastResultData=null,combo=0,bestCombo=0,choiceHintUsed=false,typedHintUsed=false,backgroundLoadPromise=null,sharedCatalogActive=false,requestedQuestionCount=10,rateLimitedUntil=0,failedImageUrls=new Set(),titleImageExcludedIds=new Set(),autoNextTimer=null,questionAdvanceToken=0;
+const $=s=>document.querySelector(s);let pool=[],questions=[],index=0,points=0,skippedQuestionCount=0,locked=false,questionTimer=null,clockTimer=null,secondsLeft=15,questionDeadline=0,pausedQuestionSeconds=0,isPaused=false,pausedAt=0,totalPausedMs=0,startedAt=0,elapsedSeconds=0,missedQuestions=[],reviewMode=false,playMode='normal',roundFailed=false,lastResultData=null,combo=0,bestCombo=0,choiceHintUsed=false,typedHintUsed=false,backgroundLoadPromise=null,sharedCatalogActive=false,requestedQuestionCount=10,rateLimitedUntil=0,failedImageUrls=new Set(),titleImageExcludedIds=new Set(),titleImageAuditedIds=new Set(),lateSharedCatalogItems=[],autoNextTimer=null,questionAdvanceToken=0;
 async function fetchSharedAnimeCatalog(){
  try{
-  const [response,exclusionResponse]=await Promise.all([
-   fetch(new URL('data/anime-catalog.json',document.baseURI),{cache:'default',headers:{'Accept':'application/json'}}),
-   fetch(new URL('data/title-image-exclusions.json',document.baseURI),{cache:'default',headers:{'Accept':'application/json'}}).catch(()=>null)
-  ]);
+  // Load the small OCR audit index first so unverified cover images are never shown.
+  const exclusionResponse=await fetch(new URL('data/title-image-exclusions.json',document.baseURI),{cache:'no-store',headers:{'Accept':'application/json'}}).catch(()=>null);
   if(exclusionResponse?.ok){
    try{
     const exclusions=await exclusionResponse.json();
-    if(exclusions?.schemaVersion===1&&Array.isArray(exclusions.excludedIds)){
+    if(exclusions?.schemaVersion===1&&Array.isArray(exclusions.excludedIds)&&Array.isArray(exclusions.records)){
      titleImageExcludedIds=new Set(exclusions.excludedIds.map(Number).filter(id=>Number.isSafeInteger(id)&&id>0));
+     titleImageAuditedIds=new Set(exclusions.records.filter(row=>Number.isSafeInteger(Number(row?.id))&&typeof row?.hasTitleText==='boolean').map(row=>Number(row.id)));
     }
    }catch(error){console.warn('Title-image exclusion data is invalid:',error)}
   }
+  const response=await fetch(new URL('data/anime-catalog.json',document.baseURI),{cache:'default',headers:{'Accept':'application/json'}});
   if(!response.ok)return [];
   const payload=await response.json();
   if(payload?.schemaVersion!==2||!Array.isArray(payload.items))return [];
@@ -899,10 +899,29 @@ async function fetchAnime(vars={}){
  }catch(e){}
  // Merge the shared GitHub Pages catalogue so every visitor starts with the same expanded dataset.
  let sharedCatalogItems=[];
+ const sharedCatalogPromise=fetchSharedAnimeCatalog();
+ let sharedResult={timedOut:false,items:[]},sharedTimer;
  try{
-  sharedCatalogItems=await fetchSharedAnimeCatalog();
-  if(sharedCatalogItems.length)initial=mergeAnimeCollection([...initial,...sharedCatalogItems]);
- }catch(e){}
+  sharedResult=await Promise.race([
+   sharedCatalogPromise.then(items=>({timedOut:false,items})),
+   new Promise(resolve=>{sharedTimer=setTimeout(()=>resolve({timedOut:true,items:[]}),7000)})
+  ]);
+ }catch(e){}finally{clearTimeout(sharedTimer)}
+ sharedCatalogItems=sharedResult.items||[];
+ if(sharedCatalogItems.length)initial=mergeAnimeCollection([...initial,...sharedCatalogItems]);
+ if(sharedResult.timedOut){
+  // Do not make the start button wait for a large shared JSON download.
+  // The first usable AniList/cache batch can start the quiz; the shared catalogue
+  // is merged in when its download eventually completes.
+  sharedCatalogPromise.then(items=>{
+   if(!items.length)return;
+   if(pool.length){
+    pool=deduplicateQuestionPool(mergeAnimeCollection([...pool,...items]));
+    sharedCatalogActive=true;
+    extendQuestionsFromPool(items);
+   }else lateSharedCatalogItems=items;
+  }).catch(error=>console.warn('Late shared catalogue load failed:',error));
+ }
  initial=deduplicateQuestionPool(initial);
  sharedCatalogActive=sharedCatalogItems.length>0;
  if(sharedCatalogActive){
@@ -1137,17 +1156,17 @@ function yearChoiceRecordsForAnime(a){const correct=animeYear(a);if(!Number.isIn
 function questionModeHasFourChoices(a,mode){if($('#answerFormatSelect')?.value==='typed'&&playMode!=='daily'&&playMode!=='rush')return true;const summary=questionChoiceSummary(),titleKey=normalizeAnswer(titleOf(a));if(mode==='image')return !!titleKey&&hasFourDistinctTitleChoices(a,summary);if(mode==='synonym')return !!titleKey&&hasFourDistinctTitleChoices(a,summary)&&uniqueAliasCandidates(a,summary).length>0;if(mode==='character')return characterRecords([a]).some(record=>isSingleAnimeCharacter(record,summary))&&!!titleKey&&hasFourDistinctTitleChoices(a,summary);if(mode==='studio')return !!a.studios?.nodes?.[0]?.name&&!!titleKey&&hasFourDistinctTitleChoices(a,summary);if(mode==='titleYear')return yearChoiceRecordsForAnime(a).length>=4;if(mode==='titleStudio')return !!a.studios?.nodes?.[0]?.name&&hasFourDistinctStudioChoices(a);if(mode==='titleCharacter')return characterRecordsWithFourTitleChoicesForAnime(a,summary).length>0;if(mode==='characterImage'||mode==='characterNameImage')return characterRecordsWithFourChoicesForAnime(a,summary,mode==='characterNameImage').length>0;if(mode==='synopsis'||mode==='titleSynopsis')return hasFourDistinctSynopsisChoices(a,mode==='synopsis');return false}
 
 function availableQuestionModes(a,format=$('#answerFormatSelect')?.value||'choices'){
- let modes=titleImageExcludedIds.has(Number(a?.id))?[]:['image'];
+ let modes=titleImageAuditedIds.has(Number(a?.id))&&!titleImageExcludedIds.has(Number(a?.id))?['image'] : [];
  if(a?.studios?.nodes?.[0]?.name)modes.push('studio','titleStudio');
  if(characterRecords([a]).length)modes.push('character','titleCharacter','characterImage','characterNameImage');
  if(uniqueAliasCandidates(a).length)modes.push('synonym');
- if(!titleImageExcludedIds.has(Number(a?.id))&&Number.isInteger(animeYear(a))&&animeYear(a)>1900)modes.push('titleYear');
+ if(titleImageAuditedIds.has(Number(a?.id))&&!titleImageExcludedIds.has(Number(a?.id))&&Number.isInteger(animeYear(a))&&animeYear(a)>1900)modes.push('titleYear');
  if(hasUsableSynopsis(a)&&titleUsable(a))modes.push('synopsis','titleSynopsis');
  const typingOnly=playMode!=='daily'&&playMode!=='rush'&&format==='typed';
  if(typingOnly)modes=modes.filter(mode=>!['titleSynopsis','characterImage','characterNameImage'].includes(mode));
  return modes.filter(mode=>questionModeHasFourChoices(a,mode));
 }
-function usablePool(mode,answerFormat=$('#answerFormatSelect')?.value||'choices',validateChoices=true){if(answerFormat==='typed'&&['characterImage','characterNameImage'].includes(mode))return [];return pool.filter(a=>{if(!isUsableAnime(a))return false;if(['image','titleYear'].includes(mode)&&titleImageExcludedIds.has(Number(a.id)))return false;if(answerFormat==='typed'&&!typedTitleEligible(a))return false;if(['image','studio','synonym','titleYear','titleStudio','synopsis','titleSynopsis','character','titleCharacter','characterImage','characterNameImage'].includes(mode)&&!titleUsable(a))return false;if(mode==='studio'||mode==='titleStudio'){if(!a.studios?.nodes?.[0]?.name)return false}if(mode==='character'||mode==='titleCharacter'||mode==='characterImage'||mode==='characterNameImage'){if(!characterRecords([a]).length)return false}if(mode==='synonym'&&!uniqueAliasCandidates(a).length)return false;if(mode==='titleYear'&&(!Number.isInteger(animeYear(a))||animeYear(a)<=1900))return false;if((mode==='synopsis'||mode==='titleSynopsis')&&!hasUsableSynopsis(a))return false;return answerFormat==='typed'||!validateChoices||questionModeHasFourChoices(a,mode)})}
+function usablePool(mode,answerFormat=$('#answerFormatSelect')?.value||'choices',validateChoices=true){if(answerFormat==='typed'&&['characterImage','characterNameImage'].includes(mode))return [];return pool.filter(a=>{if(!isUsableAnime(a))return false;if(['image','titleYear'].includes(mode)&&(!titleImageAuditedIds.has(Number(a.id))||titleImageExcludedIds.has(Number(a.id))))return false;if(answerFormat==='typed'&&!typedTitleEligible(a))return false;if(['image','studio','synonym','titleYear','titleStudio','synopsis','titleSynopsis','character','titleCharacter','characterImage','characterNameImage'].includes(mode)&&!titleUsable(a))return false;if(mode==='studio'||mode==='titleStudio'){if(!a.studios?.nodes?.[0]?.name)return false}if(mode==='character'||mode==='titleCharacter'||mode==='characterImage'||mode==='characterNameImage'){if(!characterRecords([a]).length)return false}if(mode==='synonym'&&!uniqueAliasCandidates(a).length)return false;if(mode==='titleYear'&&(!Number.isInteger(animeYear(a))||animeYear(a)<=1900))return false;if((mode==='synopsis'||mode==='titleSynopsis')&&!hasUsableSynopsis(a))return false;return answerFormat==='typed'||!validateChoices||questionModeHasFourChoices(a,mode)})}
 function extendQuestionsFromPool(items){
  if(!items||!questions.length||$('#quizArea').classList.contains('hidden'))return;
  if(playMode!=='endless'&&!(playMode==='normal'&&questions.length<requestedQuestionCount))return;
@@ -1199,7 +1218,7 @@ function randomInt(maxExclusive){if(!Number.isSafeInteger(maxExclusive)||maxExcl
 // Fisher–Yates: uniform shuffle without replacement over the currently loaded eligible catalogue.
 function shuffle(a){const out=[...a];for(let i=out.length-1;i>0;i--){const j=randomInt(i+1);[out[i],out[j]]=[out[j],out[i]]}return out}
 const questionImagePreloadCache=new Map();
-let animeLoadPromise=null;async function prepare(){if(animeLoadPromise)return animeLoadPromise;animeLoadPromise=(async()=>{ $('#quizStatus').textContent=tr('loading');$('#start').classList.add('hidden');try{pool=await fetchAnime();if(!pool.length)throw new Error('作品データが0件でした。');const poolProgress=$('#animePoolProgress');if(poolProgress)poolProgress.textContent=sharedCatalogActive?(lang==='ja'?('共通カタログ：'+pool.length.toLocaleString()+'作品（毎日更新）'):('Shared catalogue: '+pool.length.toLocaleString()+' anime (updated daily)')):(lang==='ja'?('現在利用可能：'+pool.length.toLocaleString()+'作品。取得可能な作品をバックグラウンドで追加します。'):('Currently available: '+pool.length.toLocaleString()+' anime. More available entries are loading in the background.'));$('#quizStatus').textContent=sharedCatalogActive?(lang==='ja'?pool.length+'作品の共通カタログを読み込みました。クイズを開始できます。':pool.length+' shared anime loaded. Ready to start.'):(lang==='ja'?pool.length+'作品を読み込みました。クイズを開始できます。残りはバックグラウンドで追加します。':pool.length+' anime loaded. Ready to start; more are loading in the background.');$('#start').classList.remove('hidden');$('#start').textContent=tr('start');if(typeof renderFeaturedRail==='function')renderFeaturedRail();return pool}catch(e){console.error('Anime data loading failed:',e);$('#quizStatus').textContent=lang==='ja'?('読み込み失敗：'+e.message+' 「再読み込みして開始」を押して再試行してください。'):('Load failed: '+e.message+' Press retry to try again.');$('#start').classList.remove('hidden');$('#start').textContent=tr('retry');return []}finally{animeLoadPromise=null}})();return animeLoadPromise}
+let animeLoadPromise=null;async function prepare(){if(animeLoadPromise)return animeLoadPromise;animeLoadPromise=(async()=>{ $('#quizStatus').textContent=tr('loading');$('#start').classList.add('hidden');try{pool=await fetchAnime();if(lateSharedCatalogItems.length){pool=deduplicateQuestionPool(mergeAnimeCollection([...pool,...lateSharedCatalogItems]));lateSharedCatalogItems=[];sharedCatalogActive=true;}if(!pool.length)throw new Error('作品データが0件でした。');const poolProgress=$('#animePoolProgress');if(poolProgress)poolProgress.textContent=sharedCatalogActive?(lang==='ja'?('共通カタログ：'+pool.length.toLocaleString()+'作品（毎日更新）'):('Shared catalogue: '+pool.length.toLocaleString()+' anime (updated daily)')):(lang==='ja'?('現在利用可能：'+pool.length.toLocaleString()+'作品。取得可能な作品をバックグラウンドで追加します。'):('Currently available: '+pool.length.toLocaleString()+' anime. More available entries are loading in the background.'));$('#quizStatus').textContent=sharedCatalogActive?(lang==='ja'?pool.length+'作品の共通カタログを読み込みました。クイズを開始できます。':pool.length+' shared anime loaded. Ready to start.'):(lang==='ja'?pool.length+'作品を読み込みました。クイズを開始できます。残りはバックグラウンドで追加します。':pool.length+' anime loaded. Ready to start; more are loading in the background.');$('#start').classList.remove('hidden');$('#start').textContent=tr('start');if(typeof renderFeaturedRail==='function')renderFeaturedRail();return pool}catch(e){console.error('Anime data loading failed:',e);$('#quizStatus').textContent=lang==='ja'?('読み込み失敗：'+e.message+' 「再読み込みして開始」を押して再試行してください。'):('Load failed: '+e.message+' Press retry to try again.');$('#start').classList.remove('hidden');$('#start').textContent=tr('retry');return []}finally{animeLoadPromise=null}})();return animeLoadPromise}
 function dateKey(d=new Date()){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function dailyOrder(list){const day=dateKey();const hash=s=>{let h=2166136261;for(const ch of s){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return h>>>0};return [...list].sort((a,b)=>hash(day+':'+a.id)-hash(day+':'+b.id))}
 function uniqueAnimeById(items){const seen=new Set();return (items||[]).filter(item=>{const id=Number(item?.id);if(!Number.isFinite(id)||id<=0||seen.has(id))return false;seen.add(id);return true})}
