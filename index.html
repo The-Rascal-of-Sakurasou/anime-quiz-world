@@ -1160,7 +1160,7 @@ function difficultyModesForAnime(a){
  if(characterNames(a).length)modes.push('character','titleCharacter');
  if(characterRecords([a]).length)modes.push('characterImage','characterNameImage');
  if(uniqueAliasCandidates(a).length)modes.push('synonym');
- if(!titleImageExcludedIds.has(Number(a?.id))&&Number.isInteger(animeYear(a))&&animeYear(a)>1900)modes.push('titleYear');
+ if(titleImageIsSafe(a)&&Number.isInteger(animeYear(a))&&animeYear(a)>1900)modes.push('titleYear');
  if(hasUsableSynopsis(a)&&titleUsable(a))modes.push('synopsis','titleSynopsis');
  return modes;
 }
@@ -1301,13 +1301,13 @@ function availableQuestionModes(a,format=$('#answerFormatSelect')?.value||'choic
  if(a?.studios?.nodes?.[0]?.name)modes.push('studio','titleStudio');
  if(characterRecords([a]).length)modes.push('character','titleCharacter','characterImage','characterNameImage');
  if(uniqueAliasCandidates(a).length)modes.push('synonym');
- if(!titleImageExcludedIds.has(Number(a?.id))&&Number.isInteger(animeYear(a))&&animeYear(a)>1900)modes.push('titleYear');
+ if(titleImageIsSafe(a)&&Number.isInteger(animeYear(a))&&animeYear(a)>1900)modes.push('titleYear');
  if(hasUsableSynopsis(a)&&titleUsable(a))modes.push('synopsis','titleSynopsis');
  const typingOnly=playMode!=='daily'&&playMode!=='rush'&&format==='typed';
  if(typingOnly)modes=modes.filter(mode=>!['titleSynopsis','characterImage','characterNameImage'].includes(mode));
  return modes.filter(mode=>questionModeHasFourChoices(a,mode));
 }
-function usablePool(mode,answerFormat=$('#answerFormatSelect')?.value||'choices',validateChoices=true){if(answerFormat==='typed'&&['characterImage','characterNameImage'].includes(mode))return [];return pool.filter(a=>{if(!isUsableAnime(a))return false;if(mode==='image'&&!titleImageIsSafe(a))return false;if(mode==='titleYear'&&titleImageExcludedIds.has(Number(a.id)))return false;if(answerFormat==='typed'&&!typedTitleEligible(a))return false;if(['image','studio','synonym','titleYear','titleStudio','synopsis','titleSynopsis','character','titleCharacter','characterImage','characterNameImage'].includes(mode)&&!titleUsable(a))return false;if(mode==='studio'||mode==='titleStudio'){if(!a.studios?.nodes?.[0]?.name)return false}if(mode==='character'||mode==='titleCharacter'||mode==='characterImage'||mode==='characterNameImage'){if(!characterRecords([a]).length)return false}if(mode==='synonym'&&!uniqueAliasCandidates(a).length)return false;if(mode==='titleYear'&&(!Number.isInteger(animeYear(a))||animeYear(a)<=1900))return false;if((mode==='synopsis'||mode==='titleSynopsis')&&!hasUsableSynopsis(a))return false;return answerFormat==='typed'||!validateChoices||questionModeHasFourChoices(a,mode)})}
+function usablePool(mode,answerFormat=$('#answerFormatSelect')?.value||'choices',validateChoices=true){if(answerFormat==='typed'&&['characterImage','characterNameImage'].includes(mode))return [];return pool.filter(a=>{if(!isUsableAnime(a))return false;if(mode==='image'&&!titleImageIsSafe(a))return false;if(mode==='titleYear'&&!titleImageIsSafe(a))return false;if(answerFormat==='typed'&&!typedTitleEligible(a))return false;if(['image','studio','synonym','titleYear','titleStudio','synopsis','titleSynopsis','character','titleCharacter','characterImage','characterNameImage'].includes(mode)&&!titleUsable(a))return false;if(mode==='studio'||mode==='titleStudio'){if(!a.studios?.nodes?.[0]?.name)return false}if(mode==='character'||mode==='titleCharacter'||mode==='characterImage'||mode==='characterNameImage'){if(!characterRecords([a]).length)return false}if(mode==='synonym'&&!uniqueAliasCandidates(a).length)return false;if(mode==='titleYear'&&(!Number.isInteger(animeYear(a))||animeYear(a)<=1900))return false;if((mode==='synopsis'||mode==='titleSynopsis')&&!hasUsableSynopsis(a))return false;return answerFormat==='typed'||!validateChoices||questionModeHasFourChoices(a,mode)})}
 function extendQuestionsFromPool(items){
  if(!items||!questions.length||$('#quizArea').classList.contains('hidden'))return;
  prepareDifficultyTiers(pool);
