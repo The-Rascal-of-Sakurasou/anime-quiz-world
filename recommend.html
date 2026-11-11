@@ -191,7 +191,7 @@ const questions=[
 {label:'バトルやアクション',genres:['Action','Adventure']},
 {label:'日常や人間ドラマ、コメディ',genres:['Drama','Comedy','Slice of Life']}
 ]},
-{dimension:'protagonist_challenge',title:'どんな展開が見たい？',help:'特に見たい展開を1つ選んでください。',options:[
+{dimension:'protagonist_challenge',title:'どんな物語の展開が好き？',help:'物語の中で見たい展開を1つ選んでください。',options:[
 {label:'謎や事件の真相を解き明かす',tags:['Crime','Detective']},
 {label:'困難を乗り越える',tags:['Survival','Battle Royale']},
 {label:'目標に向かって挑戦する',tags:['Quest','Training']},
@@ -227,7 +227,7 @@ const questions=[
 {label:'頭がよく、考え方が深いキャラクター',tags:['Genius','Strategic','Psychological','Philosophy']},
 {label:'自分の信念を貫くキャラクター',tags:['Leadership','Revenge']}
 ]},
-{dimension:'narrative_complexity',title:'どんな分かりやすさの物語が好き？',help:'物語の複雑さについて選んでください。',options:[
+{dimension:'narrative_complexity',title:'物語の複雑さはどれくらいが好き？',help:'物語の分かりやすさや、考察する楽しさについて選んでください。',options:[
 {label:'シンプルで分かりやすい話',avoidTags:['Conspiracy','Politics','World Building','Ensemble Cast']},
 {label:'伏線や謎を考えながら見る話',tags:['Conspiracy']},
 {label:'多くの人物や出来事が関わる話',tags:['Politics','Ensemble Cast']},
@@ -251,7 +251,7 @@ const questions=[
 {label:'恋愛が少ない作品',avoidGenres:['Romance'],avoidGenreWeights:{Romance:0.8}},
 {label:'恋愛がほとんどない作品',avoidGenres:['Romance'],avoidGenreWeights:{Romance:1.8}}
 ]},
-{dimension:'tone_balance',title:'作品の雰囲気はどれが好き？',help:'笑いとシリアスのバランスを選んでください。',options:[
+{dimension:'tone_balance',title:'笑いとシリアスのバランスは？',help:'作品全体で、笑える場面と真剣な場面のどちらを多く見たいか選んでください。',options:[
 {label:'笑える場面が多い',genreWeights:{Comedy:2.5}},
 {label:'笑いは少なく、シリアスな場面が多い',genreWeights:{Drama:1.4},avoidGenreWeights:{Comedy:0.5}},
 {label:'笑いとシリアスが半分ずつ',genreWeights:{Drama:1.2,Comedy:1.2}},
