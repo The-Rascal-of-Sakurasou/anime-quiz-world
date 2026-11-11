@@ -1309,7 +1309,7 @@ function makeYearTitleOptions(a){const records=yearTitleChoiceRecordsForAnime(a)
 function questionModeHasFourChoices(a,mode){if($('#answerFormatSelect')?.value==='typed'&&playMode!=='daily'&&playMode!=='rush')return true;const summary=questionChoiceSummary(),titleKey=normalizeAnswer(titleOf(a));if(mode==='image'||mode==='studio')return !!titleKey&&hasFourDistinctTitleChoices(a,summary);if(mode==='synonym')return !!titleKey&&hasFourDistinctTitleChoices(a,summary)&&uniqueAliasCandidates(a,summary).length>0;if(mode==='character')return characterRecords([a]).some(record=>isSingleAnimeCharacter(record,summary))&&!!titleKey&&hasFourDistinctTitleChoices(a,summary);if(mode==='titleYear')return yearChoiceRecordsForAnime(a).length>=4;if(mode==='year')return yearTitleChoiceRecordsForAnime(a).length>=4;if(mode==='titleStudio')return !!a.studios?.nodes?.[0]?.name&&hasFourDistinctStudioChoices(a);if(mode==='titleCharacter')return characterRecordsWithFourTitleChoicesForAnime(a,summary).length>0;if(mode==='characterImage')return characterRecordsWithFourChoicesForAnime(a,summary,false).length>0;if(mode==='characterNameImage')return characterRecordsWithFourChoicesForAnime(a,summary,true).length>0;if(mode==='synopsis')return hasFourDistinctSynopsisChoices(a,true);return false}
 
 function availableQuestionModes(a,format=$('#answerFormatSelect')?.value||'choices'){
- let modes=titleImageIsSafe(a)?['image'] : [];\n if(a?.studios?.nodes?.[0]?.name)modes.push('studio');
+ let modes=titleImageIsSafe(a)?['image'] : [];
  if(a?.studios?.nodes?.[0]?.name)modes.push('studio');
  if(characterRecords([a]).length)modes.push('character','titleCharacter','characterImage','characterNameImage');
  if(uniqueAliasCandidates(a).length)modes.push('synonym');
@@ -1406,7 +1406,7 @@ function isEligibleBaseAnime(a,mode,format){
  if(format==='typed'&&mode==='characterImage')return false;
  if(mode==='image'&&!titleImageIsSafe(a))return false;
  if(format==='typed'&&!typedTitleEligible(a))return false;
- if(['image','synonym','titleYear','titleStudio','synopsis','character','characterImage'].includes(mode)&&!titleUsable(a))return false;
+ if(['image','studio','year','synonym','titleYear','titleStudio','synopsis','character','characterImage'].includes(mode)&&!titleUsable(a))return false;
  if((mode==='titleStudio'||mode==='studio')&&!a.studios?.nodes?.[0]?.name)return false;
  if(['character','characterImage'].includes(mode)&&!characterRecords([a]).length)return false;
  if(mode==='synonym'&&!uniqueAliasCandidates(a).length)return false;
