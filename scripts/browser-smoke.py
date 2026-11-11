@@ -143,7 +143,12 @@ def install_routes(page):
                 "checkedCount": 0,
                 "excludedCount": 0,
                 "excludedIds": [],
-                "records": [],
+                # These synthetic SVG fixtures contain no lettering, so mark
+                # them as OCR-audited clean images for the isolated browser test.
+                "records": [
+                    {"id": anime["id"], "hasText": False, "hasTitleText": False}
+                    for anime in QUIZ_FIXTURES
+                ],
             }),
         ),
     )
