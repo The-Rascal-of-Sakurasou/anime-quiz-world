@@ -492,6 +492,10 @@ function buildRecommendationDataWarnings(failedPages,totalPages){
 function runRecommendationSelfTests(){
  const tests=[];
  const check=(name,condition)=>tests.push({name,passed:Boolean(condition)});
+ check('HTTPS形式の公式サイトを取得できる',getOfficialAnimeSiteUrl({externalLinks:[{url:'https://example.jp/',site:'Official Site',language:'Japanese'}]})==='https://example.jp/');
+ check('HTTP形式の公式サイトも取得できる',getOfficialAnimeSiteUrl({externalLinks:[{url:'http://example.jp/',site:'Official Site',language:'Japanese'}]})==='http://example.jp/');
+ check('公式以外の外部リンクは公式サイトとして扱わない',getOfficialAnimeSiteUrl({externalLinks:[{url:'https://example.jp/',site:'Twitter',language:'Japanese'}]})==='');
+ check('無効化された公式リンクは除外する',getOfficialAnimeSiteUrl({externalLinks:[{url:'https://example.jp/',site:'Official Site',isDisabled:true}]})==='');
  const allCandidates=[{id:1,_score:100,_popularity:100},{id:2,_score:-80,_popularity:5},{id:3,_score:0,_popularity:20}];
  const openPool=buildDiscoveryPool(allCandidates,new Set([1]));
  check('相性スコアが低い作品も意外なおすすめ候補に残る',openPool.some(a=>a.id===2));
@@ -757,7 +761,10 @@ function getOfficialAnimeSiteUrl(anime){
  const links=Array.isArray(anime?.externalLinks)?anime.externalLinks:[];
  const officialLinks=links.filter(item=>{
   if(!item||item.isDisabled||typeof item.url!=='string'||!/(official|公式)/i.test(String(item.site||'')))return false;
-  try{return new URL(item.url).protocol==='https:'}catch(_){return false}
+  try{
+   const url=new URL(item.url);
+   return url.protocol==='https:'||url.protocol==='http:';
+  }catch(_){return false}
  });
  const japaneseLink=officialLinks.find(item=>/(japanese|日本語|^ja(?:\b|[-_]))/i.test(String(item.language||'')));
  return (japaneseLink||officialLinks[0])?.url||'';
