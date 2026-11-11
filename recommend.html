@@ -184,6 +184,7 @@ const safeStorage={
  keys(){try{return Object.keys(window.localStorage)}catch(_){return []}}
 };
 const API='https://graphql.anilist.co';
+const MAX_RECOMMENDATION_PAGES_PER_SORT=100;
 const questions=[
 {dimension:'genre',title:'どんなジャンルのアニメが見たい？',help:'今見たいジャンルを1つ選んでください。',options:[
 {label:'冒険やファンタジー',genres:['Fantasy','Adventure']},
@@ -540,7 +541,7 @@ function runRecommendationSelfTests(){
  check('苦手な作品そのものを推薦候補から除外する',buildExcludedSeedIds([],[{id:12}]).has(12));
  check('好き・苦手の両方に入力した作品も推薦候補から除外する',buildExcludedSeedIds([{id:13}],[{id:13}]).has(13));
  check('未解決の作品入力は他の候補IDを誤って除外しない',buildExcludedSeedIds([{id:null}],[]).size===0);
- check('推薦データの取得範囲は4並び順×20ページ',4*20*50===4000);
+ check('推薦データの取得上限は4並び順×最大100ページ',4*MAX_RECOMMENDATION_PAGES_PER_SORT*50===20000);
  check('全ページ取得成功時はデータ不足警告を表示しない',buildRecommendationDataWarnings(0,20).length===0);
  check('一部ページ失敗時は候補の偏りを警告する',buildRecommendationDataWarnings(3,20)[0]?.includes('3/20ページ'));
  check('全ページ失敗は別のエラー処理に任せ、部分取得警告を誤用しない',buildRecommendationDataWarnings(20,20).length===1);
@@ -829,7 +830,7 @@ async function getRecommendations(profile){
  // API負荷と待ち時間を抑えるため、各並び順は5ページずつ取得し、1並び順あたり最大100ページまでとする。
  // 上限を超える場合は取得上限到達として警告し、取得済みデータで診断を続行する。
  const sortModes=['POPULARITY_DESC','SCORE_DESC','TRENDING_DESC','START_DATE_DESC'];
- const maxPagesPerSort=100;
+ const maxPagesPerSort=MAX_RECOMMENDATION_PAGES_PER_SORT;
  const pages=[];let failedPages=0;let totalPages=0;let cappedSorts=0;
  const firstResults=await Promise.allSettled(sortModes.map(sort=>fetchPage(1,sort)));
  const sortPlans=[];
