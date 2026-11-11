@@ -113,11 +113,16 @@ def detect_one(anime):
     for ocr_text in ocr_texts:
         matches.extend(title_matches(ocr_text, candidates))
     matches = list(dict.fromkeys(matches))
+    # Conservative policy: any recognized text makes the image unsafe.
+    # Exact title matches are recorded separately, but OCR can miss stylized
+    # lettering, so a non-empty OCR result must never be marked clean.
+    has_any_text = any(bool(text) for text in ocr_texts)
     return {
         "id": int(anime_id),
         "imageUrl": url,
         "titleFingerprint": fingerprint(candidates),
-        "hasTitleText": bool(matches),
+        "hasText": has_any_text,
+        "hasTitleText": bool(matches) or has_any_text,
         "matchedTitle": matches[0][0] if matches else None,
     }, None
 
@@ -131,6 +136,8 @@ def self_test():
     text = normalize("青春ブタ野郎はバニーガール先輩の夢を見ない")
     assert title_matches(text, candidates)
     assert not title_matches("random text only", candidates)
+    # OCR text without a literal title match must still be treated as unsafe.
+    assert bool(normalize("random text only"))
     short_sample = {"title": {"native": "蟲師"}}
     short_candidates = title_candidates(short_sample)
     assert ("蟲師", normalize("蟲師")) in short_candidates
@@ -173,7 +180,7 @@ def main():
         eligible_count += 1
         old = previous.get(anime_id)
         current_fingerprint = fingerprint(candidates)
-        if old and old.get("imageUrl") == url and old.get("titleFingerprint") == current_fingerprint and isinstance(old.get("hasTitleText"), bool):
+        if old and old.get("imageUrl") == url and old.get("titleFingerprint") == current_fingerprint and isinstance(old.get("hasText"), bool) and isinstance(old.get("hasTitleText"), bool):
             records[anime_id] = old
         else:
             todo.append(anime)
@@ -197,7 +204,7 @@ def main():
             if (completed + len(failures)) % 100 == 0:
                 print(f"OCR progress: {completed + len(failures)}/{len(todo)} new images")
 
-    excluded_now = sorted(row["id"] for row in records.values() if row.get("hasTitleText") is True)
+    excluded_now = sorted(row["id"] for row in records.values() if row.get("hasText") is True or row.get("hasTitleText") is True)
     report = {
         "schemaVersion": 1,
         "generatedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -223,7 +230,7 @@ def main():
     # of quiz use until a later successful audit verifies them.
     failed_ids = [int(anime_id) for anime_id, _reason in failures if str(anime_id).isdigit()]
     excluded = sorted(set(
-        [row["id"] for row in ordered if row.get("hasTitleText") is True] + failed_ids
+        [row["id"] for row in ordered if row.get("hasText") is True or row.get("hasTitleText") is True] + failed_ids
     ))
     previous_payload = {}
     try:
@@ -243,7 +250,7 @@ def main():
     }
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_text(json.dumps(output, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
-    print(f"Checked {len(ordered)} images; excluded {len(excluded)} title-bearing covers; failed {len(failures)}; skipped {skipped}.")
+    print(f"Checked {len(ordered)} images; excluded {len(excluded)} images with detected text or failed OCR; failed {len(failures)}; skipped {skipped}.")
     if failures:
         print("Some images will be retried on the next scheduled run.")
         print("First failures:", failures[:10])
