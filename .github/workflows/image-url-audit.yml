@@ -1,10 +1,6 @@
 name: AQW image URL audit
 
 on:
-  workflow_run:
-    workflows: ["Sync shared anime catalogue"]
-    types: [completed]
-    branches: [main]
   schedule:
     - cron: '15 21 * * 0'
   workflow_dispatch:
@@ -18,7 +14,6 @@ concurrency:
 
 jobs:
   audit:
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
