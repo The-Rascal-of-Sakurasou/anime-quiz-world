@@ -1112,7 +1112,7 @@ function calculatePersonalDifficultyOverride(){
  const adjustment=personalDifficultyProfile.correctRate>=.85?1:personalDifficultyProfile.correctRate<=.45?-1:0;
  return levels[Math.max(0,Math.min(levels.length-1,baseIndex+adjustment))]===base?null:levels[Math.max(0,Math.min(levels.length-1,baseIndex+adjustment))];
 }
-let difficultyRarityById=new Map(),difficultyStudioCounts=new Map(),difficultyYearCounts=new Map(),difficultyMaxStudioCount=1,difficultyMaxYearCount=1,empiricalDifficultyStats=new Map();
+let difficultyRarityById=new Map(),difficultyStudioCounts=new Map(),difficultyYearCounts=new Map(),difficultyMaxStudioCount=1,difficultyMaxYearCount=1,empiricalDifficultyStats=new Map(),difficultyStatsRevision=0;
 let difficultyThresholds={total:0},difficultyTierPreparedPool=null,difficultyTierPreparedLength=-1;
 window.addEventListener('aqw:personal-difficulty-profile',event=>{
  const profile=event.detail||{};
@@ -1130,7 +1130,7 @@ window.addEventListener('aqw:question-difficulty-stats',event=>{
   const animeId=Number(record?.animeId),mode=String(record?.questionMode||''),attempts=Number(record?.attempts),uniquePlayers=Number(record?.uniquePlayers),effectiveAnswers=Number(record?.effectiveAnswers),correctRate=Number(record?.correctRate);
   if(Number.isSafeInteger(animeId)&&animeId>0&&attempts>=50&&effectiveAnswers>=30&&uniquePlayers>=30&&correctRate>=0&&correctRate<=1&&Number.isFinite(correctRate)&&Number.isFinite(effectiveAnswers))next.set(animeId+'|'+mode,{attempts,uniquePlayers,effectiveAnswers,correctRate});
  }
- empiricalDifficultyStats=next;
+ empiricalDifficultyStats=next;difficultyStatsRevision++;
  if(pool.length)prepareDifficultyTiers(pool);
  updateDifficultyUI();
 });
@@ -1401,7 +1401,7 @@ function getEligibleCandidatePool(mode,format,ignoreDifficulty=false){
   eligibleCandidateCache.clear();eligibleCandidateCachePool=pool;eligibleCandidateCacheLength=pool.length;
  }
  const difficulty=difficultyModes();
- const key=[mode,format,playMode,difficulty,ignoreDifficulty?'all':'filtered'].join('|');
+ const key=[mode,format,playMode,difficulty,difficultyStatsRevision,ignoreDifficulty?'all':'filtered'].join('|');
  const cached=eligibleCandidateCache.get(key);
  if(cached)return cached;
  const base=uniqueAnimeById(mode==='mixed'?pool.filter(a=>isUsableAnime(a)&&titleUsable(a)):usablePool(mode,format,false))
@@ -1468,7 +1468,7 @@ async function begin(){
  quizStartInProgress=true;$('#start').disabled=true;quizFinished=false;
  const quizPreparationStartedAt=performance.now();
  try{
-  clearInterval(questionTimer);clearInterval(clockTimer);isPaused=false;pausedAt=0;totalPausedMs=0;pausedQuestionSeconds=0;skippedQuestionCount=0;$('#quizArea').inert=false;$('#pauseButton').classList.remove('hidden');$('#quitQuizButton').classList.remove('hidden');$('#pauseNotice').classList.add('hidden');$('#pauseButton').textContent=pauseButtonLabel(false);$('#setupControls').classList.add('hidden');$('#result').classList.add('hidden');reviewMode=false;missedQuestions=[];questionAttemptResults=[];roundFailed=false;playMode=$('#playMode').value;mixedModeCounts={};adaptiveDifficultyOverride=null;if(typeof window.aqwLoadPersonalDifficultyProfile==='function'){Promise.resolve().then(()=>window.aqwLoadPersonalDifficultyProfile()).catch(error=>console.warn('Personal difficulty profile could not be refreshed:',error))}adaptiveDifficultyOverride=calculatePersonalDifficultyOverride();prepareDifficultyTiers(pool);
+  clearInterval(questionTimer);clearInterval(clockTimer);isPaused=false;pausedAt=0;totalPausedMs=0;pausedQuestionSeconds=0;skippedQuestionCount=0;$('#quizArea').inert=false;$('#pauseButton').classList.remove('hidden');$('#quitQuizButton').classList.remove('hidden');$('#pauseNotice').classList.add('hidden');$('#pauseButton').textContent=pauseButtonLabel(false);$('#setupControls').classList.add('hidden');$('#result').classList.add('hidden');reviewMode=false;missedQuestions=[];questionAttemptResults=[];roundFailed=false;playMode=$('#playMode').value;mixedModeCounts={};adaptiveDifficultyOverride=null;if(typeof window.aqwLoadPersonalDifficultyProfile==='function'){try{await window.aqwLoadPersonalDifficultyProfile()}catch(error){console.warn('Personal difficulty profile could not be refreshed:',error)}}adaptiveDifficultyOverride=calculatePersonalDifficultyOverride();prepareDifficultyTiers(pool);
   let mode=$('#modeSelect').value;const format=(playMode==='daily'||playMode==='rush')?'choices':$('#answerFormatSelect').value;
   requestedQuestionCount=playMode==='endless'?Infinity:(playMode==='daily'||playMode==='rush')?10:Math.max(1,Math.floor(Number($('#questionCount').value)||10));
   const target=playMode==='endless'?Infinity:requestedQuestionCount;
