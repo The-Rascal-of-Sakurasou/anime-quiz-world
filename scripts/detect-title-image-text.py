@@ -233,11 +233,11 @@ def main():
             except Exception as error:  # Keep failed images retryable on the next run.
                 failures.append((anime_id, str(error)[:200]))
             processed_since_checkpoint += 1
-            if processed_since_checkpoint >= 100:
+            if processed_since_checkpoint >= 20:
                 save_checkpoint()
                 processed_since_checkpoint = 0
                 print(f"OCR checkpoint saved: {len(records)} verified records; {len(failures)} failures")
-            if (completed + len(failures)) % 100 == 0:
+            if (completed + len(failures)) % 20 == 0:
                 print(f"OCR progress: {completed + len(failures)}/{len(todo)} new images")
 
     # Persist the final partial batch too, so interrupted runs retain completed work.
