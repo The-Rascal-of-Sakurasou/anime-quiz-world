@@ -250,6 +250,9 @@ assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", rela
 assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "KR", format: "MANGA" } }] } }), false, "Non-Japanese source adaptations must be excluded from the quiz");
 assert.equal(isQuizOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL" }), false, "Non-Japanese animation must be excluded from the quiz");
 assert.match(index, /async function fetchSharedAnimeCatalog\(\)/, "The quiz must load the shared catalogue");
+assert.match(index, /function uniqueCharacterRecordsForAnime\(anime,summary=questionChoiceSummary\(\)\)\{return characterRecords\(\[anime\]\)\.filter\(record=>summary\.uniqueCharacterNameKeys\.has\(normalizeAnswer\(record\.name\)\)\)\}/, "Character-name questions must only use globally unique character names");
+assert.match(index, /if\(mode===\'titleCharacter\'\)\{const own=new Set\(uniqueCharacterRecordsForAnime\(a,summary\)/, "Character-name question eligibility must require a unique correct character");
+assert.match(index, /if\(actualMode===\'titleCharacter\'\)\{const characterRecord=shuffle\(uniqueCharacterRecordsForAnime\(a\)\)/, "Character-name question generation must choose a unique character");
 assert.ok(index.slice(index.indexOf("async function fetchSharedAnimeCatalog"),index.indexOf("async function fetchAnime")).includes("cache:'default'"), "The shared catalogue should use the browser HTTP cache to avoid repeatedly downloading the large JSON file");
 assert.ok(!index.slice(index.indexOf("async function fetchSharedAnimeCatalog"),index.indexOf("async function fetchAnime")).includes("cache:'no-cache'"), "Shared catalogue requests must not force revalidation on every visit");
 assert.match(index, /payload\?\.schemaVersion!==2/, "The quiz must require the compact shared-catalogue schema");
