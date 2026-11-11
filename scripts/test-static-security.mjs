@@ -316,7 +316,7 @@ assert.equal(isQuizOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL" })
 assert.match(index, /async function fetchSharedAnimeCatalog\(\)/, "The quiz must load the shared catalogue");
 
 // The exact shared character-choice builder is asserted below.
-assert.match(index, /if\(mode===\'characterImage\'\|\|mode===\'characterNameImage\'\)return characterRecordsWithFourChoicesForAnime\(a,summary,mode===\'characterNameImage\'\)\.length>0/, "Character-image question eligibility must validate the actual name or image distractor pool");
+assert.match(index, /if\(mode===\'characterImage\'\)return characterRecordsWithFourChoicesForAnime\(a,summary,false\)\.length>0/, "Character-image question eligibility must validate four distinct character portraits");
 assert.match(index, /shuffle\(characterRecordsWithFourChoicesForAnime\(a,questionChoiceSummary\(\),true\)\)/, "Character-name-to-image questions must choose from records with four distinct portraits");
 assert.match(index, /if\(\[\'image\',\'titleYear\',\'character\',\'characterImage\',\'titleCharacter\'\]\.includes\(currentQuestionMode\)\)skipBrokenImageQuestion\(brokenUrl\)/, "A failed question cover must skip image-dependent questions instead of leaving an unanswerable prompt");
 
