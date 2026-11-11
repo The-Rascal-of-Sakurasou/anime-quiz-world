@@ -2234,7 +2234,7 @@ async function loadFeaturedRail(){
  let cached=null;
  try{
   const saved=JSON.parse(localStorage.getItem(cacheKey)||'null');
-  if(saved&&Array.isArray(saved.items)){cached=saved.items;renderItems(cached);}
+  if(saved&&Array.isArray(saved.items)){cached=saved.items;renderItems(cached);if(Number.isFinite(saved.savedAt)&&Date.now()-saved.savedAt<cacheMaxAge)return;}
  }catch(error){console.warn('Featured anime cache unavailable:',error)}
  const request=async(queryText)=>{
   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),8000);
