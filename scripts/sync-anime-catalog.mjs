@@ -18,6 +18,7 @@ const normalize = (value) => {
 
 function isJapaneseOriginAnime(anime) {
   if (!anime || anime.countryOfOrigin !== 'JP') return false;
+  if (anime.originVerified === true) return true;
   if (anime.source === 'ORIGINAL') return true;
   const sourceRules = {
     MANGA: { type: 'MANGA', formats: ['MANGA', 'ONE_SHOT'] },
