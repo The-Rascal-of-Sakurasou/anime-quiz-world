@@ -104,8 +104,11 @@ def detect_one(anime):
     if not anime_id.isdigit() or not url or not candidates:
         return None, "missing-data"
     image = download_image(url)
-    ocr_text = run_ocr(image)
-    matches = [(label, key) for label, key in candidates if key in ocr_text]
+    ocr_text = run_ocr(image, 11)
+    matches = title_matches(ocr_text, candidates)
+    if not matches:
+        # Block-oriented OCR can recover centered or stacked title layouts.
+        matches = title_matches(run_ocr(image, 6), candidates)
     return {
         "id": int(anime_id),
         "imageUrl": url,
