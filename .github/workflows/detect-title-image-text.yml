@@ -1,8 +1,13 @@
 name: Detect anime title text in cover images
 
 on:
+  # Run OCR when its implementation or workflow changes.
   # Catalogue changes are audited by the sync workflow's title-image-audit job.
-  # Keeping this workflow to schedule/manual dispatch avoids duplicate OCR runs.
+  push:
+    branches: [main]
+    paths:
+      - "scripts/detect-title-image-text.py"
+      - ".github/workflows/detect-title-image-text.yml"
   pull_request:
     paths:
       - "index.html"
