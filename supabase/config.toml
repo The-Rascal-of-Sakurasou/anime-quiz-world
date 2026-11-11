@@ -1,3 +1,6 @@
 # Local Supabase CLI configuration. This does not deploy or modify the hosted project.
 [functions.match]
 verify_jwt = true
+
+[functions.aqw-match-prepare]
+verify_jwt = true
