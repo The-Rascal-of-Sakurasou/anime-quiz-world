@@ -39,8 +39,10 @@ def title_candidates(anime):
             continue
         # Avoid excluding a cover because OCR happened to recognize a short,
         # common word. Japanese names can be shorter than Latin-script names.
-        # Japanese titles can be short; keep two-character titles in the OCR audit.
-        if len(key) < 2:
+        # Japanese titles can be short; Latin-script titles need a longer match
+        # to avoid excluding covers for common short words or numbers.
+        has_japanese = any("\\u3040" <= ch <= "\\u30ff" or "\\u3400" <= ch <= "\\u9fff" for ch in str(value))
+        if len(key) < (2 if has_japanese else 4):
             continue
         seen.add(key)
         result.append((str(value), key))
@@ -209,8 +211,8 @@ def main():
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + chr(10), encoding="utf-8")
 
-    if todo and len(failures) / len(todo) > 0.15:
-        raise RuntimeError(f"OCR incomplete: {len(failures)}/{len(todo)} images failed; refusing to publish partial results.")
+    if failures:
+        print(f"OCR could not verify {len(failures)} images; those image IDs will be excluded until a later successful audit.")
 
     ordered = sorted(records.values(), key=lambda row: int(row["id"]))
     # Fail closed: images that could not be downloaded or OCR-checked stay out
