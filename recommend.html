@@ -324,16 +324,27 @@ function renderSessionNdcgAnalytics(root){
  note.textContent='NDCGは評価済み作品だけを対象に、肯定評価を関連あり・否定評価を関連なしとして計算します。未評価作品は除外され、各グループ2件以上の評価がある診断だけを集計します。全推薦候補の順位品質や一般的な推薦精度を示すものではありません。';section.append(note);
  root.append(section);
 }
-function buildLearnedPreferences(feedback){
+// 評価の経過時間に応じて影響を減衰させる。180日で重みが半分になる。
+const LEARNING_HALF_LIFE_DAYS=180;
+const LEARNING_HALF_LIFE_MS=LEARNING_HALF_LIFE_DAYS*24*60*60*1000;
+function getFeedbackRecencyWeight(item,now=Date.now()){
+ const timestamp=Number(item?.updatedAt??item?.recordedAt??item?.createdAt);
+ // 日時がない旧データは失効させず、従来どおりの重みで扱う。
+ if(!Number.isFinite(timestamp)||timestamp<=0)return 1;
+ const age=Math.max(0,now-timestamp);
+ return Math.pow(0.5,age/LEARNING_HALF_LIFE_MS);
+}
+function buildLearnedPreferences(feedback,now=Date.now()){
  const preferences={genres:new Map(),tags:new Map()};
  for(const item of Object.values(feedback||{})){
   if(!item||!['like','dislike'].includes(item.value))continue;
-  const weight=item.value==='like'?1:0;
+  const recencyWeight=getFeedbackRecencyWeight(item,now);
+  const weight=item.value==='like'?recencyWeight:0;
   for(const [kind,names] of [['genres',item.genres],['tags',item.tags]]){
    if(!Array.isArray(names))continue;
    for(const name of new Set(names.filter(x=>typeof x==='string'&&x))){
-    const counts=preferences[kind].get(name)||{likes:0,total:0};
-    counts.likes+=weight;counts.total++;preferences[kind].set(name,counts);
+    const counts=preferences[kind].get(name)||{likes:0,total:0,rawCount:0};
+    counts.likes+=weight;counts.total+=recencyWeight;counts.rawCount++;preferences[kind].set(name,counts);
    }
   }
  }
@@ -343,17 +354,18 @@ function calculateLearnedAdjustment(names,countsMap,cap){
  const signals=[];
  for(const name of new Set(names||[])){
   const counts=countsMap.get(name);
-  if(!counts||counts.total<2)continue;
+  if(!counts||counts.rawCount<2)continue;
   const rate=(counts.likes+1)/(counts.total+2);
   const confidence=counts.total/(counts.total+4);
   signals.push((rate-.5)*2*confidence*cap);
  }
  return signals.length?signals.reduce((sum,value)=>sum+value,0)/signals.length:0;
 }
-// 評価総数に応じて個人学習の影響度を滑らかに上げる。少数評価では初期診断を優先する。
-function calculateLearningStrength(feedback){
- const total=Object.values(feedback||{}).filter(item=>item&&['like','dislike'].includes(item.value)).length;
- return {total,strength:Math.min(0.85,total/(total+20))};
+// 評価数と新しさの両方を反映し、少数・古い評価の影響を抑える。
+function calculateLearningStrength(feedback,now=Date.now()){
+ const entries=Object.values(feedback||{}).filter(item=>item&&['like','dislike'].includes(item.value));
+ const effectiveCount=entries.reduce((sum,item)=>sum+getFeedbackRecencyWeight(item,now),0);
+ return {total:entries.length,effectiveCount,strength:Math.min(0.85,effectiveCount/(effectiveCount+20))};
 }
 function calculateLearnedTotalAdjustment(genres,tags,preferences,weights={}){
  const genreWeight=Number.isFinite(weights.genre)?weights.genre:2.4;
@@ -541,6 +553,14 @@ function runRecommendationSelfTests(){
  check('評価0件では学習反映率0%',calculateLearningStrength({}).strength===0);
  check('評価が増えると学習反映率が上がる',calculateLearningStrength({a:{value:'like'}}).strength<calculateLearningStrength({a:{value:'like'},b:{value:'dislike'},c:{value:'like'},d:{value:'dislike'}}).strength);
  check('学習反映率は85%を超えない',calculateLearningStrength(Object.fromEntries(Array.from({length:500},(_,i)=>[String(i),{value:i%2?'like':'dislike'}]))).strength===0.85);
+ const recencyNow=Date.UTC(2026,0,1),halfLifeAgo=recencyNow-LEARNING_HALF_LIFE_MS;
+ check('新しい評価の重みは1',Math.abs(getFeedbackRecencyWeight({updatedAt:recencyNow},recencyNow)-1)<0.000001);
+ check('180日前の評価の重みは約0.5',Math.abs(getFeedbackRecencyWeight({updatedAt:halfLifeAgo},recencyNow)-0.5)<0.000001);
+ check('古い評価より新しい評価の重みが大きい',getFeedbackRecencyWeight({updatedAt:recencyNow-30*86400000},recencyNow)>getFeedbackRecencyWeight({updatedAt:recencyNow-365*86400000},recencyNow));
+ check('未来日時の評価は重みを増やさない',getFeedbackRecencyWeight({updatedAt:recencyNow+86400000},recencyNow)===1);
+ check('日時のない旧評価は従来どおり扱う',getFeedbackRecencyWeight({value:'like'},recencyNow)===1);
+ const recentPreference=buildLearnedPreferences({a:{value:'like',genres:['Drama'],updatedAt:recencyNow},b:{value:'dislike',genres:['Drama'],updatedAt:halfLifeAgo}},recencyNow).genres.get('Drama');
+ check('ジャンル学習は評価の新しさを重みに反映する',recentPreference.rawCount===2&&recentPreference.likes>recentPreference.total/2);
 
  check('上位4作品以外も全候補から意外なおすすめ候補に残る',openPool.length===2&&openPool.some(a=>a.id===3));
  const dedup=deduplicateRecommendationGroups(
@@ -958,7 +978,7 @@ async function getRecommendations(profile){
   const learnedTotalAdjustment=calculateLearnedTotalAdjustment(animeGenres,animeTags.filter(t=>!t.isMediaSpoiler&&t.rank>=40).map(t=>t.name),learnedPreferences,{strength:learningReliability.strength});
   score+=learnedTotalAdjustment;if(learnedTotalAdjustment)scoreBreakdown.push({label:'過去の評価傾向',points:learnedTotalAdjustment});
   const priorFeedback=recommendationFeedback[String(a.id)];
-  const feedbackPoints=(priorFeedback?.value==='like'?4:priorFeedback?.value==='dislike'?-8:0)*learningReliability.strength;score+=feedbackPoints;if(feedbackPoints)scoreBreakdown.push({label:'この作品への過去評価',points:feedbackPoints});
+  const feedbackPoints=(priorFeedback?.value==='like'?4:priorFeedback?.value==='dislike'?-8:0)*getFeedbackRecencyWeight(priorFeedback)*learningReliability.strength;score+=feedbackPoints;if(feedbackPoints)scoreBreakdown.push({label:'この作品への過去評価',points:feedbackPoints});
 
   const details=[];
    if(priorFeedback?.value==='like')details.push({label:'過去の推薦評価',items:['以前「合っている」と評価'],kind:'positive'});
@@ -1344,7 +1364,7 @@ function renderFeedbackAnalytics(){
  const learnableTags=Object.values(tagCounts).filter(count=>count.like+count.dislike>=2).length;
  const learning=document.createElement('p');learning.className='status';
  const reliability=calculateLearningStrength(readRecommendationFeedback());
- learning.textContent='推薦への学習反映：評価 '+reliability.total+' 件・全体の学習反映率 '+Math.round(reliability.strength*100)+'%。ジャンル '+learnableGenres+' 種類、タグ '+learnableTags+' 種類（各2件以上の評価がある特徴）。評価が少ない間は初期診断を優先し、評価が増えるにつれて個人の好みを強く反映します。反映率の上限は85%です。';
+ learning.textContent='推薦への学習反映：評価 '+reliability.total+' 件（新しさを加味した有効評価 '+reliability.effectiveCount.toFixed(1)+' 件）・全体の学習反映率 '+Math.round(reliability.strength*100)+'%。ジャンル '+learnableGenres+' 種類、タグ '+learnableTags+' 種類（各2件以上の評価がある特徴）。評価が少ない間は初期診断を優先し、最近の評価ほど強く反映します。評価の重みは180日で半分になり、反映率の上限は85%です。';
  root.append(learning);
  // 新しい評価に保存された診断時の類似度を、評価結果と照合する。
  const metricRecords=rated.filter(item=>item.evaluationMetrics&&Number.isFinite(Number(item.evaluationMetrics.favoriteSimilarity)));
