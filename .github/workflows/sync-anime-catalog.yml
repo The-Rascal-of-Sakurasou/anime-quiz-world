@@ -49,3 +49,64 @@ jobs:
           git commit -m "Update shared anime catalogue"
           git pull --rebase origin main
           git push
+
+  title-image-audit:
+    needs: sync
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Install Japanese and English OCR engine
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tesseract-ocr tesseract-ocr-jpn tesseract-ocr-eng
+      - name: Verify OCR engine and script
+        run: |
+          tesseract --list-langs
+          python3 -m py_compile scripts/detect-title-image-text.py
+          python3 scripts/detect-title-image-text.py --self-test
+      - name: Detect titles in cover images
+        run: python3 scripts/detect-title-image-text.py
+      - name: Commit title-image exclusions when changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/title-image-exclusions.json
+          if git diff --cached --quiet; then
+            echo "Title-image exclusion list has no changes."
+            exit 0
+          fi
+          git commit -m "Update title-image OCR exclusions"
+          git pull --rebase origin main
+          git push
+
+  image-url-audit:
+    needs: sync
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate image audit script
+        run: |
+          node --check scripts/audit-anime-image-urls.mjs
+          node scripts/audit-anime-image-urls.mjs --self-test
+      - name: Audit catalogue image URLs
+        run: node scripts/audit-anime-image-urls.mjs
+      - name: Upload detailed image URL report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aqw-image-url-audit
+          path: artifacts/image-url-audit/report.json
+          if-no-files-found: warn
+          retention-days: 30

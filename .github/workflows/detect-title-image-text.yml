@@ -11,12 +11,6 @@ on:
       - "index.html"
       - "scripts/detect-title-image-text.py"
       - ".github/workflows/detect-title-image-text.yml"
-  workflow_run:
-    workflows: ["Sync shared anime catalogue"]
-    types: [completed]
-    branches: [main]
-  schedule:
-    - cron: '20 20 * * 0'
   workflow_dispatch:
 
 permissions:
