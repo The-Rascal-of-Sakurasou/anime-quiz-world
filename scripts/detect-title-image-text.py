@@ -188,6 +188,36 @@ def main():
 
     failures = []
     completed = 0
+    processed_since_checkpoint = 0
+
+    def save_checkpoint():
+        ordered_checkpoint = sorted(records.values(), key=lambda row: int(row["id"]))
+        failed_checkpoint_ids = [
+            int(anime_id) for anime_id, _reason in failures if str(anime_id).isdigit()
+        ]
+        excluded_checkpoint = sorted(set(
+            [row["id"] for row in ordered_checkpoint
+             if row.get("hasText") is True or row.get("hasTitleText") is True]
+            + failed_checkpoint_ids
+        ))
+        checkpoint = {
+            "schemaVersion": 1,
+            "generatedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "source": "Tesseract OCR (Japanese + English), literal title matching",
+            "catalogCount": len(items),
+            "checkedCount": len(ordered_checkpoint),
+            "excludedCount": len(excluded_checkpoint),
+            "excludedIds": excluded_checkpoint,
+            "records": ordered_checkpoint,
+        }
+        OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+        temporary_output = OUTPUT.with_suffix(".json.tmp")
+        temporary_output.write_text(
+            json.dumps(checkpoint, ensure_ascii=False, separators=(",", ":")) + "\n",
+            encoding="utf-8",
+        )
+        temporary_output.replace(OUTPUT)
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=WORKERS) as executor:
         futures = {executor.submit(detect_one, anime): anime for anime in todo}
         for future in concurrent.futures.as_completed(futures):
@@ -202,8 +232,17 @@ def main():
                     failures.append((anime_id, error or "unknown"))
             except Exception as error:  # Keep failed images retryable on the next run.
                 failures.append((anime_id, str(error)[:200]))
+            processed_since_checkpoint += 1
+            if processed_since_checkpoint >= 100:
+                save_checkpoint()
+                processed_since_checkpoint = 0
+                print(f"OCR checkpoint saved: {len(records)} verified records; {len(failures)} failures")
             if (completed + len(failures)) % 100 == 0:
                 print(f"OCR progress: {completed + len(failures)}/{len(todo)} new images")
+
+    # Persist the final partial batch too, so interrupted runs retain completed work.
+    if processed_since_checkpoint:
+        save_checkpoint()
 
     excluded_now = sorted(row["id"] for row in records.values() if row.get("hasText") is True or row.get("hasTitleText") is True)
     report = {
