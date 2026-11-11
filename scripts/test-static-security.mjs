@@ -259,7 +259,7 @@ assert.match(index, /function availableQuestionModes\(a,format=/, "Mixed mode mu
 assert.match(index, /titleImageExcludedIds\.has\(Number\(a\?\.id\)\)\?\[\]:\['image'\]/, "Title-bearing cover images must be excluded from image questions without excluding other question types");
 assert.match(index, /mode===\'mixed\'\?availableQuestionModes\(anime,format\)\.length>0/, "Initial mixed-mode selection must accept any anime with at least one valid question type");
 assert.match(index, /mode===\'mixed\'\?items\.filter\(a=>isUsableAnime\(a\)&&titleUsable\(a\)&&availableQuestionModes\(a,format\)\.length>0\)/, "Background loading in mixed mode must use the same per-anime question-type eligibility");
-assert.match(index, /let modesForFormat=availableQuestionModes\(a,\$\('\\#answerFormatSelect'\)\.value\)/, "Question rendering must use the same available-mode calculation");
+assert.ok(index.includes("let modesForFormat=availableQuestionModes(a,$('#answerFormatSelect').value)"), "Question rendering must use the same available-mode calculation");
 
 assert.match(index, /function uniqueCharacterRecordsForAnime\(anime,summary=questionChoiceSummary\(\)\)\{return characterRecords\(\[anime\]\)\.filter\(record=>summary\.uniqueCharacterNameKeys\.has\(normalizeAnswer\(record\.name\)\)\)\}/, "Character-name questions must only use globally unique character names");
 assert.match(index, /if\(mode===\'titleCharacter\'\)\{const own=new Set\(uniqueCharacterRecordsForAnime\(a,summary\)/, "Character-name question eligibility must require a unique correct character");
