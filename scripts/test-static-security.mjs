@@ -319,8 +319,8 @@ assert.match(index, /shuffle\(characterRecordsWithFourChoicesForAnime\(a,questio
 assert.match(index, /if\(\[\'image\',\'titleYear\',\'character\',\'characterImage\',\'titleCharacter\'\]\.includes\(currentQuestionMode\)\)skipBrokenImageQuestion\(brokenUrl\)/, "A failed question cover must skip image-dependent questions instead of leaving an unanswerable prompt");
 
 assert.match(index, /function availableQuestionModes\(a,format=/, "Mixed mode must derive the available question types for each anime");
-assert.match(index, /titleImageExcludedIds\.has\(Number\(a\?\.id\)\)\?\[\]:\['image'\]/, "Title-bearing cover images must be excluded from image questions without excluding other question types");
-assert.match(index, /if\(!typingOnly&&opts\.length<4&&!titleImageExcludedIds\.has\(Number\(a\?\.id\)\)/, "A title-bearing cover must never be used by the image-question fallback");
+assert.match(index, /let modes=titleImageIsSafe\(a\)\?\['image'\]:\[\]/, "Only OCR-audited, title-free cover images may enter image questions");
+assert.match(index, /if\(!typingOnly&&opts\.length<4&&titleImageIsSafe\(a\)/, "Image-question fallback must only use an OCR-audited, title-free cover");
 assert.match(index, /mode===\'mixed\'\?availableQuestionModes\(anime,format\)\.length>0/, "Initial mixed-mode selection must accept any anime with at least one valid question type");
 assert.match(index, /mode===\'mixed\'\?items\.filter\(a=>isUsableAnime\(a\)&&titleUsable\(a\)&&availableQuestionModes\(a,format\)\.length>0\)/, "Background loading in mixed mode must use the same per-anime question-type eligibility");
 assert.ok(index.includes("let modesForFormat=availableQuestionModes(a,$('#answerFormatSelect').value)"), "Question rendering must use the same available-mode calculation");
@@ -469,7 +469,7 @@ for (const mode of questionModes) {
   assert.ok(modeValidation.includes("mode==='" + mode + "'"), `Question mode ${mode} must have four-choice eligibility validation`);
   assert.ok(questionRenderer.includes("actualMode==='" + mode + "'"), `Question mode ${mode} must have a renderer`);
 }
-assert.ok(index.includes("if(mode==='image'&&titleImageExcludedIds.has(Number(a.id)))return false"), "Image questions must exclude title images containing the work's title");
+assert.ok(index.includes("if(mode==='image'&&!titleImageIsSafe(a))return false"), "Image questions must require an OCR-audited, title-free cover");
 assert.ok(questionRenderer.includes("if(!typingOnly&&opts.length<4)throw new Error('Four unique answer choices could not be prepared.')"), "Choice questions must fail safely instead of displaying fewer than four choices");
 assert.ok(index.includes("function normalizeAnswer(value){return String(value||'').normalize('NFKC')"), "Answer de-duplication must normalize full-width and compatibility characters");
 
