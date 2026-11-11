@@ -262,7 +262,10 @@ assert.match(index, /mode===\'mixed\'\?items\.filter\(a=>isUsableAnime\(a\)&&tit
 assert.ok(index.includes("let modesForFormat=availableQuestionModes(a,$('#answerFormatSelect').value)"), "Question rendering must use the same available-mode calculation");
 
 assert.match(index, /function uniqueCharacterRecordsForAnime\(anime,summary=questionChoiceSummary\(\)\)\{return characterRecords\(\[anime\]\)\.filter\(record=>summary\.uniqueCharacterNameKeys\.has\(normalizeAnswer\(record\.name\)\)\)\}/, "Character-name questions must only use globally unique character names");
-assert.match(index, /if\(mode===\'titleCharacter\'\)\{const own=new Set\(uniqueCharacterRecordsForAnime\(a,summary\)/, "Character-name question eligibility must require a unique correct character");
+assert.match(index, /function characterRecordsWithFourTitleChoicesForAnime\(anime,summary=questionChoiceSummary\(\)\)/, "Title-to-character mode must validate the real distractor pool");
+assert.match(index, /if\(mode===\'titleCharacter\'\)return characterRecordsWithFourTitleChoicesForAnime\(a,summary\)\.length>0/, "Title-to-character eligibility must validate three unique distractors");
+assert.match(index, /shuffle\(characterRecordsWithFourTitleChoicesForAnime\(a\)\)/, "Title-to-character generation must use only eligible correct characters");
+assert.match(index, /shuffle\(characterDistractors\(a\.id\)\)/, "Title-to-character generation must use globally unique distractors from other anime");
 assert.match(index, /if\(actualMode===\'titleCharacter\'\)\{const characterRecord=shuffle\(uniqueCharacterRecordsForAnime\(a\)\)/, "Character-name question generation must choose a unique character");
 assert.ok(index.slice(index.indexOf("async function fetchSharedAnimeCatalog"),index.indexOf("async function fetchAnime")).includes("cache:'default'"), "The shared catalogue should use the browser HTTP cache to avoid repeatedly downloading the large JSON file");
 assert.ok(!index.slice(index.indexOf("async function fetchSharedAnimeCatalog"),index.indexOf("async function fetchAnime")).includes("cache:'no-cache'"), "Shared catalogue requests must not force revalidation on every visit");
