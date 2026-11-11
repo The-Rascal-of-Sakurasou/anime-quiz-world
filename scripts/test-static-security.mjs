@@ -109,7 +109,8 @@ assert.match(matchMigration, /p_max_players <> 2/, "The database must reject mat
 assert.match(matchMigration, /現在のオンライン対戦は1対1のみ対応しています/, "The database must explain the one-on-one restriction");
 assert.match(multiplayer, /id="startMatch"/, "Host start-match control missing");
 assert.match(multiplayer, /async function startMatch\(\)/, "Host start-match handler missing");
-assert.match(multiplayer, /invoke\('aqw_match_start_room'/, "Starting a match must use the server-side room-start RPC");
+assert.match(multiplayer, /functions\/v1\/aqw-match-prepare/, "Starting a match must use the protected server-side match preparation function");
+assert.match(multiplayer, /Authorization:'Bearer '\+session\.access_token/, "Starting a match must send the authenticated user's access token");
 assert.match(multiplayer, /players\.length!==2\|\|!players\.every\(p=>p\.is_ready\)/, "Client must require both players ready before starting");
 assert.match(multiplayer, /room\.host_id===user\.id/, "Only the room host may start a match in the UI");
 const privacy = source.get("privacy.html");
