@@ -1157,8 +1157,8 @@ function difficultyModesForAnime(a){
  const modes=[];
  if(titleImageIsSafe(a))modes.push('image');
  if(a?.studios?.nodes?.[0]?.name)modes.push('titleStudio');
- if(characterNames(a).length)modes.push('character');
- if(characterRecords([a]).length)modes.push('characterImage');
+ if(characterNames(a).length)modes.push('character','titleCharacter');
+ if(characterRecords([a]).length)modes.push('characterImage','characterNameImage');
  if(uniqueAliasCandidates(a).length)modes.push('synonym');
  if(titleImageIsSafe(a)&&Number.isInteger(animeYear(a))&&animeYear(a)>1900)modes.push('titleYear');
  
@@ -1166,7 +1166,7 @@ function difficultyModesForAnime(a){
  return modes;
 }
 function questionModeDifficultyScore(a,mode){
- const base={image:18,titleStudio:48,synonym:42,titleYear:46,character:52,characterImage:63,synopsis:68};
+ const base={image:18,titleStudio:48,synonym:42,titleYear:46,character:52,titleCharacter:52,characterImage:63,characterNameImage:63,synopsis:68};
  let score=base[mode]??50;
  if(mode==='titleStudio'){
   const studios=[...new Set((a?.studios?.nodes||[]).map(node=>String(node?.name||'').trim()).filter(Boolean))];
@@ -1176,7 +1176,7 @@ function questionModeDifficultyScore(a,mode){
   const count=difficultyYearCounts.get(animeYear(a))||0;
   score=score*.7+(100*(1-count/difficultyMaxYearCount))*.3;
  }
- if(mode==='character'||mode==='characterImage'){
+ if(['character','titleCharacter','characterImage','characterNameImage'].includes(mode)){
   const count=Math.max(1,characterNames(a).length);
   score+=Math.max(0,5-count)*2.5;
  }
