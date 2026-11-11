@@ -252,8 +252,8 @@ assert.equal(isQuizOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL" })
 assert.match(index, /async function fetchSharedAnimeCatalog\(\)/, "The quiz must load the shared catalogue");
 
 // The exact shared character-choice builder is asserted below.
-assert.match(index, /if\(mode===\'characterImage\'\|\|mode===\'characterNameImage\'\)return characterRecordsWithFourChoicesForAnime\(a,summary\)\.length>0/, "Character-image question eligibility must validate the actual distractor pool");
-assert.equal((index.match(/shuffle\(characterRecordsWithFourChoicesForAnime\(a\)\)/g)||[]).length, 2, "Both character-image question modes must choose from characters with four complete choices");
+assert.match(index, /if\(mode===\'characterImage\'\|\|mode===\'characterNameImage\'\)return characterRecordsWithFourChoicesForAnime\(a,summary,mode===\'characterNameImage\'\)\.length>0/, "Character-image question eligibility must validate the actual name or image distractor pool");
+assert.match(index, /shuffle\(characterRecordsWithFourChoicesForAnime\(a,questionChoiceSummary\(\),true\)\)/, "Character-name-to-image questions must choose from records with four distinct portraits");
 assert.match(index, /if\(\[\'image\',\'character\',\'characterImage\',\'titleCharacter\'\]\.includes\(currentQuestionMode\)\)skipBrokenImageQuestion\(brokenUrl\)/, "A failed character portrait must skip title-to-character questions instead of leaving an unanswerable prompt");
 
 assert.match(index, /function availableQuestionModes\(a,format=/, "Mixed mode must derive the available question types for each anime");
@@ -273,7 +273,9 @@ assert.match(index, /function titleChoiceRecordsForAnime\(a\)/, "Title-based que
 assert.match(index, /function hasFourDistinctTitleChoices\(anime,summary=questionChoiceSummary\(\)\)\{return titleChoiceRecordsForAnime\(anime\)\.length>=4\}/, "Title-based question eligibility must count the exact generated title options");
 assert.match(index, /function makeTitleOptions\(a\)\{return shuffle\(titleChoiceRecordsForAnime\(a\)\.slice\(0,4\)\)\}/, "Title-based question generation must use the validated alias-safe title options");
 assert.match(index, /function characterChoiceRecordsForAnime\(anime,correctRecord,imageAnswers=false\)/, "Character image question eligibility and generation must share the exact four-choice builder");
-assert.match(index, /function characterRecordsWithFourChoicesForAnime\(anime,summary=questionChoiceSummary\(\)\)\{return uniqueCharacterRecordsForAnime\(anime,summary\)\.filter\(record=>characterChoiceRecordsForAnime\(anime,record,false\)\.length===4\)\}/, "Character image questions must only use records that produce exactly four unique name choices");
+assert.match(index, /function characterRecordsWithFourChoicesForAnime\(anime,summary=questionChoiceSummary\(\),imageAnswers=false\)\{return uniqueCharacterRecordsForAnime\(anime,summary\)\.filter\(record=>characterChoiceRecordsForAnime\(anime,record,imageAnswers\)\.length===4\)\}/, "Character image questions must only use records that produce exactly four unique name or image choices");
+assert.match(index, /seenImages=new Set\(imageAnswers\?\[String\(correctRecord\?\.image\|\|''\)\]:\[\]\)/, 'Character image answers must reject duplicate image URLs');
+assert.match(index, /characterRecordsWithFourChoicesForAnime\(a,questionChoiceSummary\(\),true\)/, 'Character-name-to-image generation must use image-distinct eligibility');
 assert.match(index, /function titleCharacterChoiceRecordsForAnime\(anime,correctRecord\)/, "Title-to-character question eligibility and generation must share the exact choice builder");
 assert.match(index, /function characterRecordsWithFourTitleChoicesForAnime\(anime,summary=questionChoiceSummary\(\)\)\{return uniqueCharacterRecordsForAnime\(anime,summary\)\.filter\(record=>titleCharacterChoiceRecordsForAnime\(anime,record\)\.length===4\)\}/, "Title-to-character questions must only use characters with four valid unique choices");
 assert.match(index, /opts=titleCharacterChoiceRecordsForAnime\(a,characterRecord\)/, "Title-to-character generation must use the validated shared choice set");
@@ -332,3 +334,7 @@ assert.match(beginBlock, /\$\([\x27"]#pauseButton[\x27"]\)\.classList\.add\([\x2
 assert.match(beginBlock, /\$\([\x27"]#quitQuizButton[\x27"]\)\.classList\.add\([\x27"]hidden[\x27"]\)/, "Quiz start failure must hide quit control");
 
 console.log(`Static security checks passed. Checked ${checkedScripts} inline script(s) across ${frontendFiles.length} pages.`);
+
+// Regression coverage: character image choices require unique portrait URLs.
+
+// Ensure this suite tracks the final image-aware validation implementation.
