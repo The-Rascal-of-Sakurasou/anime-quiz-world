@@ -2672,21 +2672,23 @@ function renderFeaturedRail(source){
  root.replaceChildren(makeTrack(candidates),makeTrack(staggered,true));
  // Keep the off-screen marquee paused to reduce mobile CPU and GPU work.
  if(root._aqwVisibilityObserver)root._aqwVisibilityObserver.disconnect();
- const railTracks=()=>root.querySelectorAll('.featured-track');
+ if(root._aqwVisibilityHandler)document.removeEventListener('visibilitychange',root._aqwVisibilityHandler);
+ let railVisible=!('IntersectionObserver' in window);
+ const tracks=()=>root.querySelectorAll('.featured-track');
+ const syncRailAnimation=()=>tracks().forEach(track=>track.style.animationPlayState=railVisible&&!document.hidden?'running':'paused');
  if('IntersectionObserver' in window){
-  railTracks().forEach(track=>track.style.animationPlayState='paused');
+  syncRailAnimation();
   root._aqwVisibilityObserver=new IntersectionObserver(entries=>{
-   const visible=entries.some(entry=>entry.isIntersecting);
-   railTracks().forEach(track=>track.style.animationPlayState=visible&&!document.hidden?'running':'paused');
+   railVisible=entries.some(entry=>entry.isIntersecting);
+   syncRailAnimation();
   },{threshold:0.05});
   root._aqwVisibilityObserver.observe(root);
- }else{
-  railTracks().forEach(track=>track.style.animationPlayState=document.hidden?'paused':'running');
  }
+ root._aqwVisibilityHandler=syncRailAnimation;
+ document.addEventListener('visibilitychange',root._aqwVisibilityHandler);
  // ホバー・キーボード操作時は一時停止し、一定時間後に自動再開する
  let resumeTimer=null;
- const tracks=()=>root.querySelectorAll('.featured-track');
- const resume=()=>{if(resumeTimer)clearTimeout(resumeTimer);tracks().forEach(track=>track.style.animationPlayState='running');resumeTimer=null};
+ const resume=()=>{if(resumeTimer)clearTimeout(resumeTimer);syncRailAnimation();resumeTimer=null};
  const pauseBriefly=()=>{if(resumeTimer)clearTimeout(resumeTimer);tracks().forEach(track=>track.style.animationPlayState='paused');resumeTimer=setTimeout(resume,2200)};
  root.onpointerenter=pauseBriefly;
  root.onpointerleave=resume;
