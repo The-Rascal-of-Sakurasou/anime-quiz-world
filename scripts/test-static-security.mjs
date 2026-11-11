@@ -334,3 +334,5 @@ assert.match(beginBlock, /\$\([\x27"]#pauseButton[\x27"]\)\.classList\.add\([\x2
 assert.match(beginBlock, /\$\([\x27"]#quitQuizButton[\x27"]\)\.classList\.add\([\x27"]hidden[\x27"]\)/, "Quiz start failure must hide quit control");
 
 console.log(`Static security checks passed. Checked ${checkedScripts} inline script(s) across ${frontendFiles.length} pages.`);
+
+// Regression coverage: character image choices require unique portrait URLs.
