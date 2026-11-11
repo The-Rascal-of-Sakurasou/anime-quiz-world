@@ -28,6 +28,9 @@ function isJapaneseOriginAnime(anime) {
   );
 }
 
+function metadataKey(value) {
+  return String(value || '').normalize('NFKC').toLocaleLowerCase().replace(/\s+/g, '');
+}
 export function validateCatalog(catalog) {
   if (!catalog || typeof catalog !== "object" || Array.isArray(catalog)) {
     throw new Error("Catalogue root must be a JSON object.");
@@ -62,6 +65,30 @@ export function validateCatalog(catalog) {
     if (!FORMATS.has(anime?.format)) failures.push(label + ": unsupported anime format");
     if (anime?.isAdult === true) failures.push(label + ": adult content is not allowed");
     if ((anime?.genres || []).includes("Hentai")) failures.push(label + ": Hentai genre is not allowed");
+
+    const synonymKeys = new Set();
+    for (const synonym of Array.isArray(anime?.synonyms) ? anime.synonyms : []) {
+      const key = metadataKey(synonym);
+      if (!key) failures.push(label + ': empty synonym');
+      else if (synonymKeys.has(key)) failures.push(label + ': duplicate normalized synonym ' + synonym);
+      else synonymKeys.add(key);
+    }
+
+    const characterIds = new Set();
+    const characterFallbackKeys = new Set();
+    for (const character of Array.isArray(anime?.characters?.nodes) ? anime.characters.nodes : []) {
+      const characterId = Number(character?.id);
+      const characterName = character?.name?.full || character?.name?.native || '';
+      if (Number.isSafeInteger(characterId) && characterId > 0) {
+        if (characterIds.has(characterId)) failures.push(label + ': duplicate character ID ' + characterId);
+        characterIds.add(characterId);
+      } else {
+        const key = metadataKey(characterName) + '|' + String(character?.image?.large || '');
+        if (!metadataKey(characterName)) failures.push(label + ': character without a usable name or ID');
+        else if (characterFallbackKeys.has(key)) failures.push(label + ': duplicate character record ' + characterName);
+        characterFallbackKeys.add(key);
+      }
+    }
 
     const title = anime?.title;
     if (![title?.native, title?.english, title?.romaji].some((value) => typeof value === "string" && value.trim())) {
