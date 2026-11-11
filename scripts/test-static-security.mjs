@@ -254,6 +254,13 @@ assert.match(index, /async function fetchSharedAnimeCatalog\(\)/, "The quiz must
 assert.match(index, /function characterRecordsWithFourChoicesForAnime\(anime,summary=questionChoiceSummary\(\)\)\{return uniqueCharacterRecordsForAnime\(anime,summary\)\.filter\(record=>\{const ownKey=normalizeAnswer\(record\.name\),distractorKeys=new Set\(characterDistractors\(record\.animeId\)\.map\(item=>normalizeAnswer\(item\.name\)\)\.filter\(key=>key&&key!==ownKey\)\);return distractorKeys\.size>=3\}\)\}/, "Character-image modes must only use characters with three distinct eligible distractors");
 assert.match(index, /if\(mode===\'characterImage\'\|\|mode===\'characterNameImage\'\)return characterRecordsWithFourChoicesForAnime\(a,summary\)\.length>0/, "Character-image question eligibility must validate the actual distractor pool");
 assert.equal((index.match(/shuffle\(characterRecordsWithFourChoicesForAnime\(a\)\)/g)||[]).length, 2, "Both character-image question modes must choose from characters with four complete choices");
+
+assert.match(index, /function availableQuestionModes\(a,format=/, "Mixed mode must derive the available question types for each anime");
+assert.match(index, /titleImageExcludedIds\.has\(Number\(a\?\.id\)\)\?\[\]:\['image'\]/, "Title-bearing cover images must be excluded from image questions without excluding other question types");
+assert.match(index, /mode===\'mixed\'\?availableQuestionModes\(anime,format\)\.length>0/, "Initial mixed-mode selection must accept any anime with at least one valid question type");
+assert.match(index, /mode===\'mixed\'\?items\.filter\(a=>isUsableAnime\(a\)&&titleUsable\(a\)&&availableQuestionModes\(a,format\)\.length>0\)/, "Background loading in mixed mode must use the same per-anime question-type eligibility");
+assert.ok(index.includes("let modesForFormat=availableQuestionModes(a,$('#answerFormatSelect').value)"), "Question rendering must use the same available-mode calculation");
+
 assert.match(index, /function uniqueCharacterRecordsForAnime\(anime,summary=questionChoiceSummary\(\)\)\{return characterRecords\(\[anime\]\)\.filter\(record=>summary\.uniqueCharacterNameKeys\.has\(normalizeAnswer\(record\.name\)\)\)\}/, "Character-name questions must only use globally unique character names");
 assert.match(index, /if\(mode===\'titleCharacter\'\)\{const own=new Set\(uniqueCharacterRecordsForAnime\(a,summary\)/, "Character-name question eligibility must require a unique correct character");
 assert.match(index, /if\(actualMode===\'titleCharacter\'\)\{const characterRecord=shuffle\(uniqueCharacterRecordsForAnime\(a\)\)/, "Character-name question generation must choose a unique character");
