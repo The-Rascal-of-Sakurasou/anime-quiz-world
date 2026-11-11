@@ -187,7 +187,9 @@ assert.match(recommend, /new Set\(q\.options\.map\(o=>o\.label\.trim\(\)\)\)\.si
 assert.match(recommend, /new Set\(allQuestionTitles\)\.size!==questions\.length/, "Runtime duplicate-question-title guard missing");
 assert.match(recommend, /new Set\(allQuestionDimensions\)\.size!==questions\.length/, "Runtime duplicate-dimension guard missing");
 assert.match(recommend, /new Set\(allQuestionLabels\)\.size!==allQuestionLabels\.length/, "Runtime duplicate-option-label guard missing");
-assert.match(recommend, /if\(questions\.length!==13\)/, "Runtime thirteen-question guard missing");
+assert.match(recommend, /const MAX_QUESTIONS=20;/, "The recommendation diagnosis must retain its twenty-question maximum");
+assert.match(recommend, /if\(questions\.length>MAX_QUESTIONS\)/, "Runtime question-limit guard missing");
+assert.ok(parsedQuestions.length<=20, "Recommendation diagnosis must not exceed twenty questions");
 const complexityQuestion = questionBlock.match(/\{dimension:\'narrative_complexity\'[\s\S]*?\n\]\}/)?.[0] || "";
 assert.ok(complexityQuestion, "Narrative complexity question must exist");
 assert.doesNotMatch(complexityQuestion, /genres:|avoidGenres:/, "Narrative complexity must not double-count the genre preference axis");
