@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-11T00:00:00.000Z",
+  "source": "AniList GraphQL API",
+  "originRule": "Japanese-origin verification matching the AQW client filter",
+  "count": 2,
+  "items": [
+    {
+      "id": 1,
+      "countryOfOrigin": "JP",
+      "source": "ORIGINAL",
+      "format": "TV",
+      "title": {
+        "native": "テスト作品",
+        "romaji": "Test Sakuhin"
+      },
+      "coverImage": {
+        "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx1-test.jpg"
+      },
+      "genres": [
+        "Drama"
+      ],
+      "relations": {
+        "edges": []
+      }
+    },
+    {
+      "id": 2,
+      "countryOfOrigin": "JP",
+      "source": "MANGA",
+      "format": "MOVIE",
+      "title": {
+        "native": "漫画原作テスト",
+        "romaji": "Manga Gensaku Test"
+      },
+      "coverImage": {
+        "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx2-test.jpg"
+      },
+      "genres": [
+        "Action"
+      ],
+      "relations": {
+        "edges": [
+          {
+            "relationType": "ADAPTATION",
+            "node": {
+              "type": "MANGA",
+              "countryOfOrigin": "JP",
+              "format": "MANGA"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "scripts/sync-anime-catalog.mjs"
+      - "scripts/validate-anime-catalog.mjs"
       - ".github/workflows/sync-anime-catalog.yml"
   schedule:
     - cron: '30 19 * * *'
@@ -34,6 +35,8 @@ jobs:
         run: node --check scripts/sync-anime-catalog.mjs
       - name: Build shared Japanese-origin anime catalogue
         run: node scripts/sync-anime-catalog.mjs
+      - name: Validate generated catalogue
+        run: node scripts/validate-anime-catalog.mjs
       - name: Commit catalogue when changed
         run: |
           git config user.name "github-actions[bot]"
