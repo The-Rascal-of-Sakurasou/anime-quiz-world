@@ -745,7 +745,7 @@ async function init(){
  $('roomCodeInput').addEventListener('input',()=>{$('roomCodeInput').value=$('roomCodeInput').value.toUpperCase().replace(/[^0-9A-F]/g,'').slice(0,10)});
  const params=new URLSearchParams(location.search),code=params.get('room');
  if(code){$('roomCodeInput').value=code.toUpperCase();await joinRoom()}
- sb.auth.onAuthStateChange((event,nextSession)=>{if(event==='SIGNED_OUT'||!nextSession?.user){removeChannel();stopGamePolling();user=null;room=null;$('mainArea').classList.add('hidden');$('authGate').classList.remove('hidden')}});
+ sb.auth.onAuthStateChange((event,nextSession)=>{if(event==='SIGNED_OUT'||!nextSession?.user){removeChannel();stopGamePolling();stopRematchPolling();user=null;room=null;$('mainArea').classList.add('hidden');$('authGate').classList.remove('hidden')}});
 }
 init().catch(e=>status($('pageStatus'),errorText(e),'error'));
 })();
