@@ -363,7 +363,7 @@ assert.equal(permutationCounts.size, 24, "All 24 answer-choice permutations must
 
 assert.match(index, /function characterChoiceRecordsForAnime\(anime,correctRecord,imageAnswers=false\)/, "Character image question eligibility and generation must share the exact four-choice builder");
 assert.match(index, /function characterRecordsWithFourChoicesForAnime\(anime,summary=questionChoiceSummary\(\),imageAnswers=false\)\{return uniqueCharacterRecordsForAnime\(anime,summary\)\.filter\(record=>characterChoiceRecordsForAnime\(anime,record,imageAnswers\)\.length===4\)\}/, "Character image questions must only use records that produce exactly four unique name or image choices");
-assert.match(index, /seenImages=new Set\(imageAnswers\?\[String\(correctRecord\?\.image\|\|''\)\]:\[\]\)/, 'Character image answers must reject duplicate image URLs');
+assert.match(index, /seenImages=new Set\(imageAnswers&&excludeImage\?\[String\(excludeImage\)\]:\[\]\)/, 'Character image answers must reject duplicate image URLs including the correct answer image');
 assert.match(index, /characterRecordsWithFourChoicesForAnime\(a,questionChoiceSummary\(\),true\)/, 'Character-name-to-image generation must use image-distinct eligibility');
 assert.match(index, /function titleCharacterChoiceRecordsForAnime\(anime,correctRecord\)/, "Title-to-character question eligibility and generation must share the exact choice builder");
 assert.match(index, /function characterRecordsWithFourTitleChoicesForAnime\(anime,summary=questionChoiceSummary\(\)\)\{return uniqueCharacterRecordsForAnime\(anime,summary\)\.filter\(record=>titleCharacterChoiceRecordsForAnime\(anime,record\)\.length===4\)\}/, "Title-to-character questions must only use characters with four valid unique choices");
