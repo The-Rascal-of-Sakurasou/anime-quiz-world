@@ -258,6 +258,7 @@ assert.match(index, /if\(\[\'image\',\'character\',\'characterImage\',\'titleCha
 
 assert.match(index, /function availableQuestionModes\(a,format=/, "Mixed mode must derive the available question types for each anime");
 assert.match(index, /titleImageExcludedIds\.has\(Number\(a\?\.id\)\)\?\[\]:\['image'\]/, "Title-bearing cover images must be excluded from image questions without excluding other question types");
+assert.match(index, /if\(!typingOnly&&opts\.length<4&&!titleImageExcludedIds\.has\(Number\(a\?\.id\)\)/, "A title-bearing cover must never be used by the image-question fallback");
 assert.match(index, /mode===\'mixed\'\?availableQuestionModes\(anime,format\)\.length>0/, "Initial mixed-mode selection must accept any anime with at least one valid question type");
 assert.match(index, /mode===\'mixed\'\?items\.filter\(a=>isUsableAnime\(a\)&&titleUsable\(a\)&&availableQuestionModes\(a,format\)\.length>0\)/, "Background loading in mixed mode must use the same per-anime question-type eligibility");
 assert.ok(index.includes("let modesForFormat=availableQuestionModes(a,$('#answerFormatSelect').value)"), "Question rendering must use the same available-mode calculation");
