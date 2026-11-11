@@ -1,0 +1,34 @@
+name: AQW catalogue validation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/validate-anime-catalog.mjs"
+      - "scripts/fixtures/anime-catalog-sample.json"
+      - ".github/workflows/catalog-validation.yml"
+  pull_request:
+    paths:
+      - "scripts/validate-anime-catalog.mjs"
+      - "scripts/fixtures/anime-catalog-sample.json"
+      - ".github/workflows/catalog-validation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-catalogue:
+    name: Validate catalogue schema and origin rules
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check validator syntax
+        run: node --check scripts/validate-anime-catalog.mjs
+      - name: Validate known-good Japanese-origin fixtures
+        run: node scripts/validate-anime-catalog.mjs scripts/fixtures/anime-catalog-sample.json
