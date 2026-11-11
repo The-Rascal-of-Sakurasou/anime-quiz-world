@@ -6,6 +6,7 @@ const FORMATS = new Set(["TV", "TV_SHORT", "MOVIE", "OVA", "ONA", "SPECIAL"]);
 
 function isJapaneseOriginAnime(anime) {
   if (!anime || anime.countryOfOrigin !== "JP") return false;
+  if (anime.originVerified === true) return true;
   if (anime.source === "ORIGINAL") return true;
 
   const sourceRules = {
@@ -31,7 +32,7 @@ export function validateCatalog(catalog) {
   if (!catalog || typeof catalog !== "object" || Array.isArray(catalog)) {
     throw new Error("Catalogue root must be a JSON object.");
   }
-  if (catalog.schemaVersion !== 1) {
+  if (catalog.schemaVersion !== 2) {
     throw new Error("Unsupported catalogue schemaVersion: " + String(catalog.schemaVersion));
   }
   if (!Array.isArray(catalog.items) || catalog.items.length === 0) {
@@ -56,6 +57,7 @@ export function validateCatalog(catalog) {
     else if (ids.has(id)) failures.push(label + ": duplicate AniList ID " + id);
     else ids.add(id);
 
+    if (anime?.originVerified !== true) failures.push(label + ": build-time Japanese-origin verification marker is missing");
     if (!isJapaneseOriginAnime(anime)) failures.push(label + ": Japanese origin could not be verified");
     if (!FORMATS.has(anime?.format)) failures.push(label + ": unsupported anime format");
     if (anime?.isAdult === true) failures.push(label + ": adult content is not allowed");
