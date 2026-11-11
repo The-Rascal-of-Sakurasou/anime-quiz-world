@@ -328,7 +328,9 @@ async function refreshRoom(reconnect=true){
  if(room.status==='playing')startGamePolling();
 }
 async function enterRoom(data){
- stopRematchPolling();room=data;
+ stopRematchPolling();stopGamePolling();gameState=null;gameRenderedQuestion=0;
+ $('gamePanel').classList.add('hidden');$('gameResult').classList.add('hidden');$('gameQuestionArea').classList.add('hidden');
+ room=data;
  $('roomCodeInput').value=room.room_code;
  await refreshRoom(true);
  if(room.status==='playing')startGamePolling();
