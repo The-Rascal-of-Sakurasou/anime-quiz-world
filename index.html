@@ -1419,7 +1419,7 @@ function showQuestion(preserveMode=false){try{document.body.classList.remove('qu
  const safeTitle=item=>{try{return String(titleOf(item)||'')}catch(e){const t=item?.title||{};return String(t.native||t.romaji||t.english||t.userPreferred||'作品名不明')}};
  const correct=safeTitle(a);
  if(!a||!correct||correct==='作品名不明'){
-  locked=true;
+  locked=true;skippedQuestionCount++;
   $('#feedback').textContent=lang==='ja'?'問題データを読み込めなかったため、この問題をスキップします。':'This question was skipped because its data could not be loaded.';
   $('#next').classList.remove('hidden');
   $('#next').textContent=tr('next');
@@ -1443,9 +1443,19 @@ function showQuestion(preserveMode=false){try{document.body.classList.remove('qu
  $('#typedAnswer').value='';
  $('#typedAnswer').disabled=false;
  $('#submitTypedAnswer').disabled=false;
- $('#typedAnswerBox').classList.toggle('hidden',!typed);
- $('#typedAnswerBox').style.setProperty('display',typed?'block':'none','important');
- $('#typedAnswerBox').style.setProperty('visibility',typed?'visible':'hidden','important');
+ const typedBox=$('#typedAnswerBox'),typedInput=$('#typedAnswer'),typedSubmit=$('#submitTypedAnswer');
+ typedBox.classList.toggle('hidden',!typed);
+ typedBox.style.setProperty('display',typed?'block':'none','important');
+ typedBox.style.setProperty('visibility',typed?'visible':'hidden','important');
+ typedInput.classList.toggle('hidden',!typed);
+ typedInput.disabled=false;typedInput.readOnly=false;
+ typedInput.style.setProperty('display',typed?'block':'none','important');
+ typedInput.style.setProperty('visibility',typed?'visible':'hidden','important');
+ typedInput.style.setProperty('width','100%','important');
+ typedInput.style.setProperty('min-height','44px','important');
+ typedSubmit.classList.toggle('hidden',!typed);
+ typedSubmit.disabled=false;
+ typedSubmit.style.setProperty('display',typed?'inline-block':'none','important');
  $('#answers').classList.toggle('hidden',typed);
  $('#answers').style.setProperty('display',typed?'none':'grid','important');
  $('#answers').style.setProperty('visibility',typed?'hidden':'visible','important');
@@ -1461,7 +1471,7 @@ function showQuestion(preserveMode=false){try{document.body.classList.remove('qu
   addOption(a);
   for(const item of shuffle(pool)){if(options.length>=4)break;if(Number(item?.id)!==Number(a.id))addOption(item)}
   if(options.length<4){
-   locked=true;
+   locked=true;skippedQuestionCount++;
    $('#feedback').textContent=lang==='ja'?'選択肢を4つ用意できないため、この問題をスキップします。':'This question was skipped because four answer choices were unavailable.';
    $('#next').classList.remove('hidden');
    $('#next').textContent=tr('next');
