@@ -1190,9 +1190,10 @@ function wilsonHalfWidth(correctRate,effectiveAnswers){
 function difficultyInitialWeight(effectiveAnswers,correctRate){
  const n=Math.max(0,Number(effectiveAnswers)||0);
  if(n<30)return 1;
- const startWidth=wilsonHalfWidth(.5,30);
- const targetWidth=wilsonHalfWidth(.5,100);
- const currentWidth=wilsonHalfWidth(correctRate,n);
+ const p=Math.max(0,Math.min(1,Number(correctRate)||0));
+ const startWidth=wilsonHalfWidth(p,30);
+ const targetWidth=wilsonHalfWidth(p,100);
+ const currentWidth=wilsonHalfWidth(p,n);
  const progress=Math.max(0,Math.min(1,(startWidth-currentWidth)/(startWidth-targetWidth)));
  return Math.max(0,Math.min(1,(1+Math.cos(Math.PI*progress))/2));
 }
