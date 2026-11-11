@@ -8,7 +8,15 @@ or downloading the full production catalogue.
 import json
 import os
 import re
+from datetime import datetime, timedelta, timezone
+from urllib.request import Request, urlopen
 from playwright.sync_api import sync_playwright
+
+JST = timezone(timedelta(hours=9))
+NOW_JST = datetime.now(JST)
+SEASON_START_MONTH = ((NOW_JST.month - 1) // 3) * 3 + 1
+SEASON_NAMES = ["WINTER", "SPRING", "SUMMER", "FALL"]
+CURRENT_SEASON = SEASON_NAMES[(NOW_JST.month - 1) // 3]
 
 BASE_URL = os.environ.get(
     "AQW_BASE_URL",
@@ -47,7 +55,9 @@ def make_anime(index):
         "description": "これはブラウザ自動検査用の架空作品データです。物語と登場人物の情報を含みます。",
         "coverImage": {"large": cover, "medium": cover, "extraLarge": cover},
         "episodes": 12,
-        "seasonYear": 2010 + index,
+        "season": CURRENT_SEASON,
+        "seasonYear": NOW_JST.year,
+        "startDate": {"year": NOW_JST.year, "month": SEASON_START_MONTH, "day": 1},
         "averageScore": 70 + (index % 20),
         "popularity": 50000 - index * 1000,
         "genres": GENRES[index % len(GENRES)],
@@ -205,10 +215,142 @@ def test_recommendation_diagnosis(browser):
     context.close()
 
 
+
+def test_live_seasonal_anilist():
+    """Verify the real AniList seasonal query, Japanese-origin filter, and at least one image URL."""
+    season_end_month = SEASON_START_MONTH + 2
+    next_month = season_end_month + 1
+    next_year = NOW_JST.year
+    if next_month == 13:
+        next_month = 1
+        next_year += 1
+    start_bound = NOW_JST.year * 10000 + (SEASON_START_MONTH - 1 or 12) * 100
+    start_year = NOW_JST.year if SEASON_START_MONTH > 1 else NOW_JST.year - 1
+    start_bound = start_year * 10000 + (12 if SEASON_START_MONTH == 1 else SEASON_START_MONTH - 1) * 100
+    end_bound = next_year * 10000 + next_month * 100 + 1
+    query = """
+    query {
+      Page(page: 1, perPage: 50) {
+        media(
+          type: ANIME,
+          countryOfOrigin: JP,
+          format_in: [TV, ONA],
+          startDate_greater: %d,
+          startDate_lesser: %d,
+          isAdult: false,
+          sort: POPULARITY_DESC
+        ) {
+          id countryOfOrigin source(version: 2)
+          relations { edges { relationType node { id type countryOfOrigin format } } }
+          format startDate { year month day }
+          title { romaji english native }
+          coverImage { large medium }
+        }
+      }
+    }
+    """ % (start_bound, end_bound)
+    request = Request(
+        "https://graphql.anilist.co",
+        data=json.dumps({"query": query}).encode("utf-8"),
+        headers={"Content-Type": "application/json", "Accept": "application/json", "User-Agent": "AnimeQuizWorld-smoke-test"},
+        method="POST",
+    )
+    with urlopen(request, timeout=20) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+    if payload.get("errors"):
+        raise AssertionError("AniList GraphQL returned errors: " + str(payload["errors"]))
+
+    items = payload.get("data", {}).get("Page", {}).get("media", [])
+    rules = {
+        "MANGA": ("MANGA", {"MANGA", "ONE_SHOT"}),
+        "LIGHT_NOVEL": ("MANGA", {"NOVEL"}),
+        "NOVEL": ("MANGA", {"NOVEL"}),
+        "DOUJINSHI": ("MANGA", {"MANGA", "ONE_SHOT", "NOVEL"}),
+        "ANIME": ("ANIME", {"TV", "TV_SHORT", "MOVIE", "OVA", "ONA", "SPECIAL"}),
+    }
+
+    def japanese_origin(item):
+        if item.get("countryOfOrigin") != "JP":
+            return False
+        if item.get("source") == "ORIGINAL":
+            return True
+        rule = rules.get(item.get("source"))
+        if not rule:
+            return False
+        node_type, formats = rule
+        return any(
+            edge.get("relationType") in {"SOURCE", "ADAPTATION"}
+            and (node := edge.get("node") or {}).get("type") == node_type
+            and node.get("countryOfOrigin") == "JP"
+            and node.get("format") in formats
+            for edge in (item.get("relations") or {}).get("edges", [])
+        )
+
+    season_items = [
+        item for item in items
+        if item.get("startDate", {}).get("year") == NOW_JST.year
+        and SEASON_START_MONTH <= (item.get("startDate", {}).get("month") or 0) <= season_end_month
+    ]
+    eligible = [
+        item for item in season_items
+        if japanese_origin(item)
+        and item.get("format") in {"TV", "TV_SHORT", "MOVIE", "OVA", "ONA", "SPECIAL"}
+        and (item.get("coverImage") or {}).get("large")
+        and (item.get("title") or {}).get("native")
+    ]
+    if not eligible:
+        raise AssertionError(
+            f"No eligible Japanese-origin seasonal anime. AniList returned {len(items)} items; "
+            f"{len(season_items)} matched the current season; "
+            f"{sum(1 for item in season_items if item.get('countryOfOrigin') == 'JP')} had countryOfOrigin=JP."
+        )
+
+    image_errors = []
+    for item in eligible[:8]:
+        image_url = (item.get("coverImage") or {}).get("large") or (item.get("coverImage") or {}).get("medium")
+        if not image_url:
+            continue
+        try:
+            image_request = Request(image_url, headers={"User-Agent": "AnimeQuizWorld-smoke-test"})
+            with urlopen(image_request, timeout=12) as image_response:
+                if image_response.status == 200 and image_response.headers.get("Content-Type", "").startswith("image/"):
+                    print(f"PASS: live seasonal image URL ({item['id']})")
+                    break
+                image_errors.append(f"{item['id']}: HTTP {image_response.status}")
+        except Exception as error:
+            image_errors.append(f"{item.get('id')}: {error}")
+    else:
+        raise AssertionError("No seasonal cover image URL could be loaded: " + " | ".join(image_errors))
+    print(
+        f"PASS: live AniList seasonal query ({len(items)} returned, "
+        f"{len(season_items)} current-season, {len(eligible)} eligible Japanese-origin)"
+    )
+
+
+def test_featured_season_rail(browser):
+    context = browser.new_context(viewport={"width": 1280, "height": 900}, locale="ja-JP")
+    page = context.new_page()
+    errors = []
+    page.on("pageerror", lambda error: errors.append(str(error)))
+    install_routes(page)
+    page.goto(f"{BASE_URL}/index.html", wait_until="domcontentloaded")
+    page.locator("#featuredRail .featured-card").first.wait_for(state="visible", timeout=30000)
+    assert page.locator("#featuredRail .featured-card").count() >= 2, "Seasonal rail must render anime cards"
+    page.wait_for_function(
+        "() => { const image = document.querySelector('#featuredRail .featured-card img'); return image && image.complete && image.naturalWidth > 0; }",
+        timeout=15000,
+    )
+    assert not errors, "Seasonal rail raised JavaScript errors: " + " | ".join(errors)
+    context.close()
+
+
 def main():
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch()
         try:
+            test_live_seasonal_anilist()
+            test_featured_season_rail(browser)
+            print("PASS: featured seasonal rail -> visible cards and loaded images")
             test_quiz_start_answer_finish(browser)
             print("PASS: quiz start -> answer -> finish")
             test_recommendation_diagnosis(browser)
