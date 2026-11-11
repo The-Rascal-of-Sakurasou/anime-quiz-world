@@ -579,6 +579,17 @@ function runRecommendationSelfTests(){
   const tagsFor=dimension=>new Set((questionByDimension.get(dimension)?.options||[]).flatMap(option=>option.tags||[]));
   check('診断は13問を維持',questions.length===13);
   check('13問すべてに異なる分類が設定されている',new Set(questions.map(q=>q.dimension)).size===13);
+  const profileProbeOk=questions.every((question,questionIndex)=>question.options.every((option,optionIndex)=>{
+   const probe=Array(questions.length).fill(null);probe[questionIndex]=optionIndex;
+   const actual=profileFromAnswers(probe);
+   const expected={genres:{},tags:{},avoidGenres:{},avoidTags:{},length:option.length||'any'};
+   for(const [key,listKey,weightKey] of [['genres','genres','genreWeights'],['tags','tags','tagWeights'],['avoidGenres','avoidGenres','avoidGenreWeights'],['avoidTags','avoidTags','avoidTagWeights']]){
+    for(const name of option[listKey]||[])expected[key][name]=(expected[key][name]||0)+1;
+    for(const [name,weight] of Object.entries(option[weightKey]||{}))expected[key][name]=(expected[key][name]||0)+weight;
+   }
+   return JSON.stringify(actual)===JSON.stringify(expected);
+  }));
+  check('全52選択肢の回答が推薦profileへ正しく反映される',profileProbeOk);
   check('全13問の選択肢ラベルが重複していない',!duplicateChoiceLabels&&questions.every(q=>q.options.length===4));
   check('舞台質問はジャンル加点と分離',questionByDimension.get('setting').options.every(o=>!o.genres?.length));
   check('物語の複雑さはジャンル加点と分離',questionByDimension.get('narrative_complexity').options.every(o=>!o.genres?.length&&!o.avoidGenres?.length));
@@ -741,10 +752,10 @@ function render(){
  q.options.forEach((option,i)=>{const b=document.createElement('button');b.type='button';b.className='choice'+(answers[step]===i?' selected':'');const n=document.createElement('span');n.className='n';n.textContent=String.fromCharCode(65+i);const label=document.createElement('span');label.textContent=option.label;b.append(n,label);b.setAttribute('aria-pressed',String(answers[step]===i));b.addEventListener('click',()=>{answers[step]=i;saveDiagnosis();render()});$('choices').append(b)});
  $('back').disabled=step===0;$('next').disabled=answers[step]===null;$('next').textContent=step===questions.length-1?'診断する':'次へ';
 }
-function profileFromAnswers(){
+function profileFromAnswers(answerValues=answers){
  const genres={},tags={},avoidGenres={},avoidTags={};let length='any';
  const addWeights=(target,values)=>{for(const [name,weight] of Object.entries(values||{})){const amount=Number(weight);if(Number.isFinite(amount)&&amount>0)target[name]=(target[name]||0)+amount}};
- answers.forEach((choice,i)=>{if(!Number.isInteger(choice))return;const option=questions[i].options[choice];(option.genres||[]).forEach(g=>genres[g]=(genres[g]||0)+1);(option.tags||[]).forEach(t=>tags[t]=(tags[t]||0)+1);addWeights(genres,option.genreWeights);addWeights(tags,option.tagWeights);(option.avoidGenres||[]).forEach(g=>avoidGenres[g]=(avoidGenres[g]||0)+1);(option.avoidTags||[]).forEach(t=>avoidTags[t]=(avoidTags[t]||0)+1);addWeights(avoidGenres,option.avoidGenreWeights);addWeights(avoidTags,option.avoidTagWeights);if(option.length)length=option.length});
+ answerValues.forEach((choice,i)=>{if(!Number.isInteger(choice)||!questions[i]?.options?.[choice])return;const option=questions[i].options[choice];(option.genres||[]).forEach(g=>genres[g]=(genres[g]||0)+1);(option.tags||[]).forEach(t=>tags[t]=(tags[t]||0)+1);addWeights(genres,option.genreWeights);addWeights(tags,option.tagWeights);(option.avoidGenres||[]).forEach(g=>avoidGenres[g]=(avoidGenres[g]||0)+1);(option.avoidTags||[]).forEach(t=>avoidTags[t]=(avoidTags[t]||0)+1);addWeights(avoidGenres,option.avoidGenreWeights);addWeights(avoidTags,option.avoidTagWeights);if(option.length)length=option.length});
  return {genres,tags,avoidGenres,avoidTags,length};
 }
 function escapeHTML(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
