@@ -483,11 +483,14 @@ function calculateSelectionAdjustment(candidate,selected,discovery=false,maxPopu
 function buildExcludedSeedIds(favorites,dislikes){
  return new Set([...(Array.isArray(favorites)?favorites:[]),...(Array.isArray(dislikes)?dislikes:[])].map(item=>item?.id).filter(id=>id!==undefined&&id!==null));
 }
-function buildRecommendationDataWarnings(failedPages,totalPages){
+function buildRecommendationDataWarnings(failedPages,totalPages,cappedSorts){
  const failed=Number.isInteger(failedPages)?Math.max(0,failedPages):0;
  const total=Number.isInteger(totalPages)?Math.max(0,totalPages):0;
- if(!failed||!total)return [];
- return ['作品データの一部を取得できませんでした（'+failed+'/'+total+'ページ）。推薦候補が偏る可能性があります。時間をおいて再診断してください。'];
+ const capped=Number.isInteger(cappedSorts)?Math.max(0,cappedSorts):0;
+ const warnings=[];
+ if(failed&&total)warnings.push('作品データの一部を取得できませんでした（'+failed+'/'+total+'ページ）。推薦候補が偏る可能性があります。時間をおいて再診断してください。');
+ if(capped)warnings.push('一部の並び順で取得上限（1グループ最大100ページ）に達しました。全作品を網羅できていない可能性があります。');
+ return warnings;
 }
 
 function runRecommendationSelfTests(){
@@ -785,14 +788,14 @@ function isRecommendationCandidate(anime){
  return Boolean(anime&&isJapaneseOriginAnime(anime)&&anime.coverImage?.large&&anime.title&&allowedFormats.has(anime.format));
 }
 async function getRecommendations(profile){
- const query='query ($page:Int,$sort:[MediaSort]) { Page(page:$page,perPage:50) { media(type:ANIME,countryOfOrigin:JP,sort:$sort,isAdult:false) { id countryOfOrigin source format title { romaji english native } description(asHtml:false) coverImage { extraLarge large } episodes seasonYear averageScore popularity genres tags { name rank isMediaSpoiler } relations { edges { relationType node { id type countryOfOrigin format } } } siteUrl externalLinks { url site language isDisabled } } } }';
+ const query='query ($page:Int,$sort:[MediaSort]) { Page(page:$page,perPage:50) { pageInfo { totalPages } media(type:ANIME,countryOfOrigin:JP,sort:$sort,isAdult:false) { id countryOfOrigin source format title { romaji english native } description(asHtml:false) coverImage { extraLarge large } episodes seasonYear averageScore popularity genres tags { name rank isMediaSpoiler } relations { edges { relationType node { id type countryOfOrigin format } } } siteUrl externalLinks { url site language isDisabled } } } }';
  const fetchPage=async (page,sort)=>{
   let lastError=null;
   for(let attempt=0;attempt<3;attempt++){
    try{
     const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query,variables:{page,sort:[sort]}}),signal:AbortSignal.timeout(15000)});
     const json=await response.json().catch(()=>null);
-    if(response.ok&&!json?.errors?.length&&json?.data?.Page)return (json.data.Page.media||[]).filter(isJapaneseOriginAnime);
+    if(response.ok&&!json?.errors?.length&&json?.data?.Page)return {media:(json.data.Page.media||[]).filter(isJapaneseOriginAnime),totalPages:Math.max(1,Number(json.data.Page.pageInfo?.totalPages)||1)};
     const apiMessage=(json?.errors||[]).map(error=>error.message).filter(Boolean).join(' / ');
     const error=new Error('作品データ取得エラー（HTTP '+response.status+'）'+(apiMessage?'：'+apiMessage:'。'));
     error.retryable=response.status===429||response.status>=500;
@@ -806,23 +809,41 @@ async function getRecommendations(profile){
   }
   throw lastError||new Error('作品データを取得できませんでした。');
  };
- // ジャンルで候補を絞らず、4種類の並び順から各20ページ（最大4,000件）を取得。
- // 取得範囲を従来の4倍に拡大。API負荷を抑えるため、各並び順で5ページずつ順番に取得する。
- // 一部のページ取得に失敗しても、成功したページの作品で診断を続行する。
+ // ジャンルで候補を絞らず、4種類の並び順についてAPIが返す総ページ数を確認して取得する。
+ // API負荷と待ち時間を抑えるため、各並び順は5ページずつ取得し、1並び順あたり最大100ページまでとする。
+ // 上限を超える場合は取得上限到達として警告し、取得済みデータで診断を続行する。
  const sortModes=['POPULARITY_DESC','SCORE_DESC','TRENDING_DESC','START_DATE_DESC'];
- const pagesPerSort=20;
- const pageNumbers=Array.from({length:pagesPerSort},(_,index)=>index+1);
- const pages=[];let failedPages=0;
+ const maxPagesPerSort=100;
+ const pages=[];let failedPages=0;let totalPages=0;let cappedSorts=0;
+ const firstResults=await Promise.allSettled(sortModes.map(sort=>fetchPage(1,sort)));
+ const sortPlans=[];
  for(let i=0;i<sortModes.length;i++){
-  const sort=sortModes[i];
-  for(let start=0;start<pageNumbers.length;start+=5){
-   const batchPages=pageNumbers.slice(start,start+5);
-   const batch=await Promise.allSettled(batchPages.map(page=>fetchPage(page,sort)));
+  const result=firstResults[i];
+  if(result.status==='fulfilled'){
+   pages.push(result.value.media);
+   const available=result.value.totalPages;
+   const target=Math.min(available,maxPagesPerSort);
+   totalPages+=target;
+   if(available>maxPagesPerSort)cappedSorts++;
+   sortPlans.push({sort:sortModes[i],available,target,failed:false});
+  }else{
+   failedPages++;
+   console.warn('Recommendation first page failed:',sortModes[i],result.reason);
+   sortPlans.push({sort:sortModes[i],available:1,target:1,failed:true});
+  }
+ }
+ for(let i=0;i<sortPlans.length;i++){
+  const plan=sortPlans[i];
+  if(plan.failed||plan.target<=1)continue;
+  for(let start=2;start<=plan.target;start+=5){
+   const batchPages=Array.from({length:Math.min(5,plan.target-start+1)},(_,index)=>start+index);
+   const batch=await Promise.allSettled(batchPages.map(page=>fetchPage(page,plan.sort)));
    for(const result of batch){
-    if(result.status==='fulfilled')pages.push(result.value);
-    else{failedPages++;console.warn('Recommendation page failed:',sort,result.reason);}
+    if(result.status==='fulfilled')pages.push(result.value.media);
+    else{failedPages++;console.warn('Recommendation page failed:',plan.sort,result.reason);}
    }
-   $('loading').textContent='作品データを取得中… '+(i+1)+' / '+sortModes.length+' グループ・'+Math.min(start+5,pageNumbers.length)+' / '+pagesPerSort+' ページ（取得失敗 '+failedPages+' ページ）';
+   const completed=Math.min(plan.target,start+batchPages.length-1);
+   $('loading').textContent='作品データを取得中… '+(i+1)+' / '+sortPlans.length+' グループ・'+completed+' / '+plan.target+' ページ（取得失敗 '+failedPages+' ページ）';
   }
  }
  if(!pages.length)throw new Error('作品データを取得できませんでした。通信状態を確認して、もう一度お試しください。');
@@ -839,7 +860,7 @@ async function getRecommendations(profile){
  // 評価履歴からジャンル・タグごとの傾向を集計し、少数評価を抑制した補正値を算出する。
  const learnedPreferences=buildLearnedPreferences(recommendationFeedback);
  const favoriteSeeds=[],dislikedSeeds=[];
- const seedReport={unresolvedFavorites:[],unresolvedDislikes:[],conflicts:[],resolvedFavorites:[],resolvedDislikes:[],lookupErrors:[],dataWarnings:buildRecommendationDataWarnings(failedPages,sortModes.length*pagesPerSort)};
+ const seedReport={unresolvedFavorites:[],unresolvedDislikes:[],conflicts:[],resolvedFavorites:[],resolvedDislikes:[],lookupErrors:[],dataWarnings:buildRecommendationDataWarnings(failedPages,totalPages,cappedSorts)};
  for(const name of favoriteNames){
   try{const found=await findSeedAnime(name);if(found){favoriteSeeds.push({...found,_requestedTitle:name});seedReport.resolvedFavorites.push({requested:name,resolved:found.title?.native||found.title?.english||found.title?.romaji||'タイトル不明'})}else seedReport.unresolvedFavorites.push(name)}
   catch(error){seedReport.lookupErrors.push({type:'好きな作品',title:name,message:error.message||'検索に失敗しました'})}
