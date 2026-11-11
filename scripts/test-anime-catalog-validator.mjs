@@ -14,10 +14,11 @@ const rejects = (label, mutate) => {
 rejects("count mismatch", (sample) => { sample.count += 1; });
 rejects("duplicate AniList IDs", (sample) => { sample.items[1].id = sample.items[0].id; });
 rejects("unverified foreign origin", (sample) => { sample.items[0].countryOfOrigin = "US"; });
+rejects("missing build-time origin marker", (sample) => { sample.items[0].originVerified = false; });
 rejects("unsupported format", (sample) => { sample.items[0].format = "MUSIC"; });
 rejects("placeholder cover image", (sample) => { sample.items[0].coverImage.large = "https://example.com/no-image.png"; });
 rejects("adult content", (sample) => { sample.items[0].isAdult = true; });
 rejects("Hentai genre", (sample) => { sample.items[0].genres.push("Hentai"); });
 rejects("missing title", (sample) => { sample.items[0].title = {}; });
 
-console.log("Anime catalogue validator tests passed: 1 valid fixture and 8 rejected invalid cases.");
+console.log("Anime catalogue validator tests passed: 1 valid compact-schema fixture and 9 rejected invalid cases.");

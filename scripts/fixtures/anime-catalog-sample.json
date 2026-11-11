@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "generatedAt": "2026-11-11T00:00:00.000Z",
   "source": "AniList GraphQL API",
   "originRule": "Japanese-origin verification matching the AQW client filter",
@@ -8,6 +8,7 @@
     {
       "id": 1,
       "countryOfOrigin": "JP",
+      "originVerified": true,
       "source": "ORIGINAL",
       "format": "TV",
       "title": {
@@ -27,6 +28,7 @@
     {
       "id": 2,
       "countryOfOrigin": "JP",
+      "originVerified": true,
       "source": "MANGA",
       "format": "MOVIE",
       "title": {
