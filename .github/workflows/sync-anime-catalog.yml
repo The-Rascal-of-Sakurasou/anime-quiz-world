@@ -70,6 +70,14 @@ jobs:
           python3 scripts/detect-title-image-text.py --self-test
       - name: Detect titles in cover images
         run: python3 scripts/detect-title-image-text.py
+      - name: Upload title-image audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aqw-title-image-audit
+          path: artifacts/title-image-audit/report.json
+          if-no-files-found: warn
+          retention-days: 30
       - name: Commit title-image exclusions when changed
         run: |
           git config user.name "github-actions[bot]"
