@@ -1514,8 +1514,20 @@ const aqwPlayerBoardText={
 };
 const aqwPlayerT=key=>(aqwPlayerBoardText[lang]||aqwPlayerBoardText.en)[key]||aqwPlayerBoardText.en[key]||key;
 aqwPlayerBoardText.en.noPeriodRank='No record in this period yet.';aqwPlayerBoardText.ja.noPeriodRank='この期間の記録はまだありません。';
-let pendingPlayerRun=null,playerLeaderboardCache=[],leaderboardProfiles=new Map();
-let pendingRushResult=null;
+let pendingPlayerRuns=[],playerLeaderboardCache=[],leaderboardProfiles=new Map();
+let pendingRushResults=[];
+function queuePendingRun(queue,result){
+ if(!result||!result.runId)return;
+ const copy={...result};
+ const existing=queue.findIndex(item=>item.runId===copy.runId);
+ if(existing>=0)queue.splice(existing,1);
+ queue.push(copy);
+ if(queue.length>25)queue.shift();
+}
+function removePendingRun(queue,runId){
+ const index=queue.findIndex(item=>item.runId===runId);
+ if(index>=0)queue.splice(index,1);
+}
 function applyRushLeaderboardLanguage(){
  const map={aqwRushBoardTitle:'title',aqwRushBoardDescription:'description',aqwRushBoardRefresh:'refresh',aqwRushBoardShare:'share',aqwRushBoardSave:'save',aqwRushRankHeading:'rank',aqwRushPlayerHeading:'player',aqwRushScoreHeading:'score',aqwRushTimeHeading:'time'};
  for(const [id,key] of Object.entries(map)){const el=$s(id);if(el)el.textContent=aqwRushT(key)}
@@ -1707,12 +1719,17 @@ async function loadPlayerLeaderboard(force=false){
 }
 async function submitPlayerRun(result){
  if(!result||!result.runId||!Number.isInteger(result.correctCount)||!Number.isInteger(result.questionCount)||![10,15].includes(result.xpMultiplier))return;
- if(!currentUser){pendingPlayerRun=result;message($s('aqwPlayerBoardStatus'),aqwPlayerT('needLogin'));return}
- const {data,error}=await sb.rpc('submit_aqw_player_run',{p_run_id:result.runId,p_correct_count:result.correctCount,p_question_count:result.questionCount,p_xp_multiplier:result.xpMultiplier});
- if(error){message($s('aqwPlayerBoardStatus'),aqwPlayerT('submitError')+errText(error));return}
- pendingPlayerRun=null;
- message($s('aqwPlayerBoardStatus'),data?.duplicate?aqwPlayerT('duplicate'):aqwPlayerT('saved'));
- await loadPlayerLeaderboard(true);
+ if(!currentUser){queuePendingRun(pendingPlayerRuns,result);message($s('aqwPlayerBoardStatus'),aqwPlayerT('needLogin'));return}
+ try{
+  const {data,error}=await sb.rpc('submit_aqw_player_run',{p_run_id:result.runId,p_correct_count:result.correctCount,p_question_count:result.questionCount,p_xp_multiplier:result.xpMultiplier});
+  if(error){queuePendingRun(pendingPlayerRuns,result);message($s('aqwPlayerBoardStatus'),aqwPlayerT('submitError')+errText(error));return}
+  removePendingRun(pendingPlayerRuns,result.runId);
+  message($s('aqwPlayerBoardStatus'),data?.duplicate?aqwPlayerT('duplicate'):aqwPlayerT('saved'));
+  await loadPlayerLeaderboard(true);
+ }catch(error){
+  queuePendingRun(pendingPlayerRuns,result);
+  message($s('aqwPlayerBoardStatus'),aqwPlayerT('submitError')+errText(error));
+ }
 }
 async function loadMyRushRank(period){
  const el=$s('aqwMyRushRank');if(!el)return;
@@ -1758,14 +1775,19 @@ async function loadRushLeaderboard(force=false){
  return rushLeaderboardLoading;
 }
 async function submitRushResult(result){
- if(result.questionCount!==10){message($s('aqwRushBoardStatus'),aqwRushT('needTen'));return}
- result.runId=result.runId||makeStatsRunId();
- if(!currentUser){pendingRushResult=result;message($s('aqwRushBoardStatus'),aqwRushT('needLogin'));return}
- const {data,error}=await sb.rpc('submit_aqw_speed_rush',{p_correct_count:result.correctCount,p_elapsed_ms:result.elapsedMs,p_run_id:result.runId});
- if(error){message($s('aqwRushBoardStatus'),aqwRushT('submitError')+errText(error));return}
- pendingRushResult=null;
- message($s('aqwRushBoardStatus'),data?.updated?aqwRushT('saved'):aqwRushT('notBetter'));
- await loadRushLeaderboard(true);
+ if(!result||result.questionCount!==10||!Number.isInteger(result.correctCount)||result.correctCount<0||result.correctCount>10||!Number.isFinite(result.elapsedMs)){message($s('aqwRushBoardStatus'),aqwRushT('needTen'));return}
+ result={...result,runId:result.runId||makeStatsRunId()};
+ if(!currentUser){queuePendingRun(pendingRushResults,result);message($s('aqwRushBoardStatus'),aqwRushT('needLogin'));return}
+ try{
+  const {data,error}=await sb.rpc('submit_aqw_speed_rush',{p_correct_count:result.correctCount,p_elapsed_ms:result.elapsedMs,p_run_id:result.runId});
+  if(error){queuePendingRun(pendingRushResults,result);message($s('aqwRushBoardStatus'),aqwRushT('submitError')+errText(error));return}
+  removePendingRun(pendingRushResults,result.runId);
+  message($s('aqwRushBoardStatus'),data?.updated?aqwRushT('saved'):aqwRushT('notBetter'));
+  await loadRushLeaderboard(true);
+ }catch(error){
+  queuePendingRun(pendingRushResults,result);
+  message($s('aqwRushBoardStatus'),aqwRushT('submitError')+errText(error));
+ }
 }
 const errText=e=>e?.message||String(e||'Unknown error');
 function initSupabase(){
@@ -1828,8 +1850,8 @@ async function refreshSession(session){
   $s('aqwBio').value=data.bio||'';updateAvatarPreview(data.avatar_path||null);$s('aqwAvatarFile').value='';
   setStatus((localJa()?'ログイン中：@':'Signed in as @')+data.username);
   await Promise.all([loadFriends(),updateNotificationCount(),loadRushLeaderboard(),loadPlayerLeaderboard()]);
-  if(pendingRushResult)await submitRushResult(pendingRushResult);
-  if(pendingPlayerRun)await submitPlayerRun(pendingPlayerRun);
+  for(const run of [...pendingRushResults])await submitRushResult(run);
+  for(const run of [...pendingPlayerRuns])await submitPlayerRun(run);
  }catch(e){setStatus(rt('profileError')+errText(e))}
 }
 function avatarPublicUrl(path){if(!path)return '';if(/^https?:\/\//i.test(path))return path;return sb.storage.from('aqw-social').getPublicUrl(path).data.publicUrl}
