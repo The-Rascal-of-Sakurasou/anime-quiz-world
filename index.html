@@ -1705,7 +1705,7 @@ async function loadPlayerLeaderboard(force=false){
  playerLeaderboardLoading=loadPlayerLeaderboardRemote().then(()=>{playerLeaderboardLoadedAt=Date.now();playerLeaderboardLoadedKey=key}).finally(()=>{playerLeaderboardLoading=null});
  return playerLeaderboardLoading;
 }
-async async function submitPlayerRun(result){
+async function submitPlayerRun(result){
  if(!result||!result.runId||!Number.isInteger(result.correctCount)||!Number.isInteger(result.questionCount)||![10,15].includes(result.xpMultiplier))return;
  if(!currentUser){pendingPlayerRun=result;message($s('aqwPlayerBoardStatus'),aqwPlayerT('needLogin'));return}
  const {data,error}=await sb.rpc('submit_aqw_player_run',{p_run_id:result.runId,p_correct_count:result.correctCount,p_question_count:result.questionCount,p_xp_multiplier:result.xpMultiplier});
