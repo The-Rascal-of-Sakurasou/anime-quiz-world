@@ -489,9 +489,9 @@ const modeAvailability = index.slice(availabilityStart, index.indexOf("\n}", ava
 const modeValidation = index.slice(validationStart, index.indexOf("\n}", validationStart) + 2);
 const questionRenderer = index.slice(rendererStart, rendererEnd);
 for (const mode of questionModes) {
-  const availabilityMode = mode === "studio" ? "titleStudio" : mode;
+  const availabilityMode = mode;
   assert.ok(modeAvailability.includes("'" + availabilityMode + "'"), `Question mode ${mode} must be considered by availability filtering`);
-  const validationMode = mode === "studio" ? "titleStudio" : mode;
+  const validationMode = mode;
   assert.ok(modeValidation.includes("mode==='" + validationMode + "'"), `Question mode ${mode} must have four-choice eligibility validation`);
   assert.ok(questionRenderer.includes("actualMode==='" + mode + "'"), `Question mode ${mode} must have a renderer`);
 }
