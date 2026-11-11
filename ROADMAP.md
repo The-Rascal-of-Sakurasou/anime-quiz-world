@@ -30,7 +30,7 @@ Tracking issue: https://github.com/The-Rascal-of-Sakurasou/anime-quiz-world/issu
 - [x] Explicit surrender with server-assigned opponent victory
 - [x] Consent-based same-opponent rematch (10-minute request expiry; both players must accept)
 - [x] Aggregate win/loss statistics and recent match-history screen (up to 20 recent matches)
-- [x] Separate 1v1 leaderboard (opt-in profile visibility; wins, win rate, and match count)
+- [x] Separate 1v1 leaderboard (respects the existing profile visibility setting; wins, win rate, and match count)
 - [ ] Full match test with two or more real accounts
 
 ## P1 — Social integration
