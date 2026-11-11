@@ -39,8 +39,8 @@ def title_candidates(anime):
             continue
         # Avoid excluding a cover because OCR happened to recognize a short,
         # common word. Japanese names can be shorter than Latin-script names.
-        has_japanese = any("\u3040" <= ch <= "\u30ff" or "\u4e00" <= ch <= "\u9fff" for ch in str(value))
-        if len(key) < (4 if has_japanese else 7):
+        # Japanese titles can be short; keep two-character titles in the OCR audit.
+        if len(key) < 2:
             continue
         seen.add(key)
         result.append((str(value), key))
@@ -104,11 +104,13 @@ def detect_one(anime):
     if not anime_id.isdigit() or not url or not candidates:
         return None, "missing-data"
     image = download_image(url)
-    ocr_text = run_ocr(image, 11)
-    matches = title_matches(ocr_text, candidates)
-    if not matches:
-        # Block-oriented OCR can recover centered or stacked title layouts.
-        matches = title_matches(run_ocr(image, 6), candidates)
+    # Try multiple segmentation modes because Japanese cover titles may be
+    # vertical, stacked, centered, or embedded in a poster-style layout.
+    ocr_texts = [run_ocr(image, mode) for mode in (11, 6, 3)]
+    matches = []
+    for ocr_text in ocr_texts:
+        matches.extend(title_matches(ocr_text, candidates))
+    matches = list(dict.fromkeys(matches))
     return {
         "id": int(anime_id),
         "imageUrl": url,
@@ -200,7 +202,7 @@ def main():
         "newlyProcessedCount": completed,
         "skippedCount": skipped,
         "failedCount": len(failures),
-        "excludedCount": len(excluded_now),
+        "excludedCount": len(set(excluded_now) | {int(anime_id) for anime_id, _reason in failures if str(anime_id).isdigit()}),
         "failures": [{"animeId": anime_id, "reason": reason} for anime_id, reason in failures[:1000]],
     }
     report_path = Path("artifacts/title-image-audit/report.json")
@@ -211,7 +213,12 @@ def main():
         raise RuntimeError(f"OCR incomplete: {len(failures)}/{len(todo)} images failed; refusing to publish partial results.")
 
     ordered = sorted(records.values(), key=lambda row: int(row["id"]))
-    excluded = sorted(row["id"] for row in ordered if row.get("hasTitleText") is True)
+    # Fail closed: images that could not be downloaded or OCR-checked stay out
+    # of quiz use until a later successful audit verifies them.
+    failed_ids = [int(anime_id) for anime_id, _reason in failures if str(anime_id).isdigit()]
+    excluded = sorted(set(
+        [row["id"] for row in ordered if row.get("hasTitleText") is True] + failed_ids
+    ))
     previous_payload = {}
     try:
         previous_payload = json.loads(OUTPUT.read_text(encoding="utf-8"))
