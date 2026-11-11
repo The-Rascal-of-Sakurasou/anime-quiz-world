@@ -286,7 +286,7 @@ assert.match(index, /function hasFourDistinctSynopsisChoices\(a,answerIsTitle=fa
 assert.match(index, /function makeSynopsisOptions\(a,answerIsTitle=false\)\{return shuffle\(synopsisChoiceRecords\(a,answerIsTitle\)\)\}/, "Synopsis generation must shuffle only the validated option set");
 assert.match(index, /function uniqueCharacterRecordsForAnime\(anime,summary=questionChoiceSummary\(\)\)\{return characterRecords\(\[anime\]\)\.filter\(record=>summary\.uniqueCharacterNameKeys\.has\(normalizeAnswer\(record\.name\)\)\)\}/, "Character-name questions must only use globally unique character names");
 assert.match(index, /function isSingleAnimeCharacter\(record,summary=questionChoiceSummary\(\)\)/, "Character-to-anime questions must validate single-work appearances");
-assert.match(index, /if\(mode===\\'character\\'\)return characterRecords\(\[a\]\)\.some\(record=>isSingleAnimeCharacter\(record,summary\)\)/, "Character-to-anime eligibility must exclude characters appearing in multiple works");
+assert.match(index, /if\(mode===['"]character['"]\)return characterRecords\(\[a\]\)\.some\(record=>isSingleAnimeCharacter\(record,summary\)\)/, "Character-to-anime eligibility must exclude characters appearing in multiple works");
 assert.match(index, /characterRecords\(\[a\]\)\.filter\(record=>isSingleAnimeCharacter\(record,summary\)\)/, "Character-to-anime generation must use the same unambiguous character filter");
 const singleAnimeCharacterStart = index.indexOf("function isSingleAnimeCharacter(");
 const singleAnimeCharacterEnd = index.indexOf("function characterRecords(", singleAnimeCharacterStart);
