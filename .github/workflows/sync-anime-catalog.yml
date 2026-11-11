@@ -64,6 +64,9 @@ jobs:
   title-image-audit:
     needs: sync
     if: needs.sync.outputs.catalog_changed == 'true'
+    concurrency:
+      group: aqw-title-image-ocr
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
