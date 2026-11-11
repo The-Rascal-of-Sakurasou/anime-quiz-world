@@ -1,6 +1,11 @@
 name: AQW image URL audit
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/audit-anime-image-urls.mjs"
+      - ".github/workflows/image-url-audit.yml"
   schedule:
     - cron: '15 21 * * 0'
   workflow_dispatch:
