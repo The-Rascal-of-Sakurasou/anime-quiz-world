@@ -33,6 +33,31 @@ for (const [file, html] of source) {
 }
 assert.ok(checkedScripts > 0, "No inline JavaScript was checked");
 
+const quizIndex = source.get("index.html");
+const resultMarkup = quizIndex.match(/<div id="result" class="hidden">([\\s\\S]*?)<\\/div><button id="start"/)?.[1];
+assert.ok(resultMarkup, "Quiz result screen markup missing");
+for (const id of ["restart", "reviewMissed", "shareResult", "downloadResult", "historySummary"]) {
+  assert.ok(resultMarkup.includes('id="' + id + '"'), `Quiz result control #${id} must exist`);
+}
+assert.ok(resultMarkup.includes('id="shareResult" class="primary">結果を共有</button>'), "The result-sharing button must be labelled 結果を共有");
+const finishStart = quizIndex.indexOf("function finishQuiz()");
+const finishEnd = quizIndex.indexOf("\\nfunction makeStatsRunId", finishStart);
+assert.ok(finishStart >= 0 && finishEnd > finishStart, "Quiz completion handler missing");
+const finishQuizSource = quizIndex.slice(finishStart, finishEnd);
+for (const required of [
+  "$('#quizHeader').classList.add('hidden')",
+  "$('#quizStatus').classList.add('hidden')",
+  "$('#animePoolProgress').classList.add('hidden')",
+  "$('#quizArea').classList.add('hidden')",
+  "$('#setupControls').classList.add('hidden')",
+  "$('#restart').classList.remove('hidden')",
+  "document.querySelector('.share-actions').classList.remove('hidden')",
+  "$('#historySummary').classList.remove('hidden')",
+  "$('#reviewMissed').classList.toggle('hidden',missedQuestions.length===0)"
+]) {
+  assert.ok(finishQuizSource.includes(required), `Quiz completion screen regression: missing ${required}`);
+}
+
 for (const file of ["index.html", "admin.html", "multiplayer.html"]) {
   const html = source.get(file);
   assert.match(html, /http-equiv\s*=\s*["']Content-Security-Policy["']/i, `${file}: CSP meta tag missing`);
