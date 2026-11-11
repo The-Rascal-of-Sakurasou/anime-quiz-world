@@ -1551,9 +1551,19 @@ function scheduleEligibleCandidatePrewarm(){
  if('requestIdleCallback' in window)requestIdleCallback(run,{timeout:8000});
  else setTimeout(run,5000);
 }
-async function collectEligibleAnime(mode,format,target,ignoreDifficulty=false){
+let aqwPreparationStageLog=[];
+async function aqwMeasurePreparationStage(name,task){
  const startedAt=performance.now();
- const candidates=[...(await getEligibleCandidatePoolAsync(mode,format,ignoreDifficulty))],eligible=[];
+ try{return await task()}
+ finally{
+  const durationMs=Math.round((performance.now()-startedAt)*10)/10;
+  aqwPreparationStageLog.push({stage:name,durationMs});
+  window.__aqwQuizPreparationStages=aqwPreparationStageLog.slice();
+ }
+}
+async function collectEligibleAnime(mode,format,target,ignoreDifficulty=false){
+ const candidates=[...(await aqwMeasurePreparationStage('候補プール取得',()=>getEligibleCandidatePoolAsync(mode,format,ignoreDifficulty)))],eligible=[];
+ const startedAt=performance.now();
  // Partial Fisher–Yates: sample without replacement and stop as soon as enough questions are ready.
  for(let i=0;i<candidates.length;i++){
   const j=i+randomInt(candidates.length-i);[candidates[i],candidates[j]]=[candidates[j],candidates[i]];
@@ -1565,6 +1575,8 @@ async function collectEligibleAnime(mode,format,target,ignoreDifficulty=false){
   }
  }
  window.__aqwLastCandidateSelectionMs=Math.round(performance.now()-startedAt);
+ aqwPreparationStageLog.push({stage:'候補の抽出・シャッフル',durationMs:window.__aqwLastCandidateSelectionMs});
+ window.__aqwQuizPreparationStages=aqwPreparationStageLog.slice();
  return eligible;
 }
 async function begin(){
@@ -1603,8 +1615,10 @@ async function begin(){
  }
  quizStartInProgress=true;$('#start').disabled=true;quizFinished=false;
  const quizPreparationStartedAt=performance.now();
+ aqwPreparationStageLog=[];
+ window.__aqwQuizPreparationStages=[];
  try{
-  clearInterval(questionTimer);clearInterval(clockTimer);isPaused=false;pausedAt=0;totalPausedMs=0;pausedQuestionSeconds=0;skippedQuestionCount=0;$('#quizArea').inert=false;$('#pauseButton').classList.remove('hidden');$('#quitQuizButton').classList.remove('hidden');$('#pauseNotice').classList.add('hidden');$('#pauseButton').textContent=pauseButtonLabel(false);$('#setupControls').classList.add('hidden');$('#result').classList.add('hidden');reviewMode=false;missedQuestions=[];questionAttemptResults=[];roundFailed=false;playMode=$('#playMode').value;mixedModeCounts={};adaptiveDifficultyOverride=null;if(typeof window.aqwLoadPersonalDifficultyProfile==='function'){try{await window.aqwLoadPersonalDifficultyProfile()}catch(error){console.warn('Personal difficulty profile could not be refreshed:',error)}}adaptiveDifficultyOverride=calculatePersonalDifficultyOverride();await ensureQuestionChoiceSummaryAsync();prepareDifficultyTiers(pool);
+  clearInterval(questionTimer);clearInterval(clockTimer);isPaused=false;pausedAt=0;totalPausedMs=0;pausedQuestionSeconds=0;skippedQuestionCount=0;$('#quizArea').inert=false;$('#pauseButton').classList.remove('hidden');$('#quitQuizButton').classList.remove('hidden');$('#pauseNotice').classList.add('hidden');$('#pauseButton').textContent=pauseButtonLabel(false);$('#setupControls').classList.add('hidden');$('#result').classList.add('hidden');reviewMode=false;missedQuestions=[];questionAttemptResults=[];roundFailed=false;playMode=$('#playMode').value;mixedModeCounts={};adaptiveDifficultyOverride=null;if(typeof window.aqwLoadPersonalDifficultyProfile==='function'){try{await aqwMeasurePreparationStage('個人別難易度データ読み込み',()=>window.aqwLoadPersonalDifficultyProfile())}catch(error){console.warn('Personal difficulty profile could not be refreshed:',error)}}await aqwMeasurePreparationStage('個人別難易度計算',async()=>{adaptiveDifficultyOverride=calculatePersonalDifficultyOverride()});await aqwMeasurePreparationStage('問題候補データ構築',()=>ensureQuestionChoiceSummaryAsync());await aqwMeasurePreparationStage('難易度データ準備',async()=>{prepareDifficultyTiers(pool)});
   let mode=$('#modeSelect').value;const format=(playMode==='daily'||playMode==='rush')?'choices':$('#answerFormatSelect').value;
   requestedQuestionCount=playMode==='endless'?Infinity:(playMode==='daily'||playMode==='rush')?10:Math.max(1,Math.floor(Number($('#questionCount').value)||10));
   const target=playMode==='endless'?Infinity:requestedQuestionCount;
@@ -1614,7 +1628,7 @@ async function begin(){
   questions=ordered.slice(0,count);index=0;points=0;combo=0;bestCombo=0;choiceHintUsed=false;typedHintUsed=false;elapsedSeconds=0;startedAt=Date.now();
   $('#score').textContent=tr('score')+' 0';$('#quizArea').classList.remove('hidden');$('#start').classList.add('hidden');
   window.__aqwLastQuizPreparationMs=Math.round(performance.now()-quizPreparationStartedAt);
-  console.info('[AQW performance] quiz preparation', {totalMs:window.__aqwLastQuizPreparationMs,candidateSelectionMs:window.__aqwLastCandidateSelectionMs??null,candidateCount:eligible.length,questionCount:questions.length,mode,format});
+  console.info('[AQW performance] quiz preparation', {totalMs:window.__aqwLastQuizPreparationMs,stages:window.__aqwQuizPreparationStages,candidateSelectionMs:window.__aqwLastCandidateSelectionMs??null,candidateCount:eligible.length,questionCount:questions.length,mode,format});
   clockTimer=setInterval(()=>{elapsedSeconds=Math.floor((Date.now()-startedAt-totalPausedMs)/1000);$('#elapsedLabel').textContent=({ja:'経過時間：',en:'Elapsed: ',ko:'경과 시간: ',zh:'已用时间：',es:'Tiempo transcurrido: ',fr:'Temps écoulé : ',pt:'Tempo decorrido: ',de:'Verstrichene Zeit: '}[lang]||'Elapsed: ')+elapsedSeconds+({ja:'秒',en:'s',ko:'초',zh:'秒',es:' s',fr:' s',pt:' s',de:' s'}[lang]||'s')},250);
   showQuestion();
  }catch(error){console.error('AQW quiz start failed.',error);document.body.classList.remove('quiz-active','quiz-preparing');clearInterval(questionTimer);clearInterval(clockTimer);clearTimeout(autoNextTimer);autoNextTimer=null;locked=true;isPaused=false;pausedAt=0;totalPausedMs=0;pausedQuestionSeconds=0;$('#quizArea').inert=false;$('#pauseButton').classList.add('hidden');$('#quitQuizButton').classList.add('hidden');$('#pauseNotice').classList.add('hidden');$('#quizArea').classList.add('hidden');$('#setupControls').classList.remove('hidden');$('#start').classList.remove('hidden');$('#start').textContent=tr('start');$('#quizStatus').textContent=lang==='ja'?'問題の準備中にエラーが発生しました：'+String(error?.message||error)+'。ページを再読み込みして再試行してください。':'Could not prepare questions: '+String(error?.message||error)+'. Reload the page and try again.'}
