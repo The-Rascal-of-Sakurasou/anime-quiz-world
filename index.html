@@ -1026,7 +1026,10 @@ async function fetchAnime(vars={}){
      extendQuestionsFromPool(pageResults.flatMap(result=>result.items||[]));
      await saveProgress(items,taskIndex);
      batchesSinceSave=0;
-     break;
+     sessionBatches=0;
+     const pauseStatus=document.getElementById('quizStatus');
+     if(pauseStatus)pauseStatus.textContent=lang==='ja'?'負荷を抑えるため、作品データの追加取得を1分間休止します。':'Background catalogue loading is taking a one-minute cooldown to reduce load.';
+     await new Promise(resolve=>setTimeout(resolve,60000));
     }
     if(batchesSinceSave>=12||taskIndex>=tasks.length){
      // IDs are already unique in the Map. Avoid sorting and re-filtering the entire catalogue every few pages.
