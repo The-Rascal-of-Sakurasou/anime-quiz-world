@@ -16,7 +16,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: aqw-shared-anime-catalogue
+  group: aqw-shared-anime-catalogue-incremental
   cancel-in-progress: false
 
 jobs:
