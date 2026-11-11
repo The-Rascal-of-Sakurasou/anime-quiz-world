@@ -325,7 +325,7 @@ assert.match(index, /if\(\[\'image\',\'titleYear\',\'character\',\'characterImag
 assert.match(index, /function availableQuestionModes\(a,format=/, "Mixed mode must derive the available question types for each anime");
 assert.match(index, /let modes=titleImageIsSafe\(a\)\?\['image'\]\s*:\s*\[\]/, "Only OCR-audited, title-free cover images may enter image questions");
 assert.match(index, /if\(!typingOnly&&opts\.length<4&&titleImageIsSafe\(a\)/, "Image-question fallback must only use an OCR-audited, title-free cover");
-assert.match(index, /mode===\'mixed\'\?availableQuestionModes\(anime,format\)\.length>0/, "Initial mixed-mode selection must accept any anime with at least one valid question type");
+assert.match(index, /const eligible=base\.filter\(anime=>mode===\'mixed\'\s*\?availableQuestionModes\(anime,format\)\.length>0/, "Cached mixed-mode selection must accept any anime with at least one valid question type");
 assert.match(index, /mode===\'mixed\'\?items\.filter\(a=>isUsableAnime\(a\)&&titleUsable\(a\)&&availableQuestionModes\(a,format\)\.length>0\)/, "Background loading in mixed mode must use the same per-anime question-type eligibility");
 assert.ok(index.includes("let modesForFormat=availableQuestionModes(a,$('#answerFormatSelect').value)"), "Question rendering must use the same available-mode calculation");
 
