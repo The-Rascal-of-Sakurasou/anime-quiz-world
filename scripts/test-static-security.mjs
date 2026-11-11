@@ -213,6 +213,15 @@ assert.equal(migrationHelpers.normalizeSharedAnswers({ v: 5, a: [0, 1, 2, 3, 0, 
 assert.equal(migrationHelpers.normalizeSharedAnswers({ v: 5, a: [0, 1, 2, 3, 0, 1, 4, 0, 0, 0, 0, 0, 0] }), null, "Out-of-range shared answers must be rejected");
 assert.equal(migrationHelpers.normalizeSavedAnswers({ v: 2, answers: [0, 1, 2, 3, 4, 1, 2] }), null, "Out-of-range legacy local answers must be rejected");
 assert.doesNotMatch(questionBlock, /NDCG|IDF|重み付け|希少性/, "Technical recommendation terms must not appear in user-facing questions");
+const tagNameMapBodies = [...recommend.matchAll(/const tagNames=\{([^}]*)\};/g)].map(match => match[1]);
+assert.equal(tagNameMapBodies.length, 2, "Recommendation tag-name maps must exist in both scoring and profile rendering");
+for (const body of tagNameMapBodies) {
+  const tagKeys = [...body.matchAll(/(?:^|,)'([^']+)':/g)].map(match => match[1]);
+  assert.equal(new Set(tagKeys).size, tagKeys.length, "Recommendation tag-name maps must not contain duplicate keys");
+}
+const clearDiagnosisSource = recommend.match(/function clearSavedDiagnosis\(\)\{[\s\S]*?\n\}/)?.[0] || "";
+assert.equal((clearDiagnosisSource.match(/safeStorage\.removeItem\(LEGACY_SAVE_KEY\)/g) || []).length, 1, "Legacy local diagnosis data must be cleared exactly once");
+assert.equal((clearDiagnosisSource.match(/safeStorage\.removeItem\(PREVIOUS_SAVE_KEY\)/g) || []).length, 1, "Previous local diagnosis data must be cleared exactly once");
 const seedSimilaritySource = recommend.match(/function calculateSeedSimilarity\(candidate,seeds,rarityWeight,genreRarity\)\{[\s\S]*?\n\}/)?.[0];
 assert.ok(seedSimilaritySource, "Favorite-anime similarity function not found");
 const calculateSeedSimilarity = vm.runInNewContext(`(${seedSimilaritySource})`);
