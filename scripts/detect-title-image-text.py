@@ -8,9 +8,7 @@ import argparse
 import concurrent.futures
 import hashlib
 import json
-import re
 import subprocess
-import sys
 import time
 import unicodedata
 from pathlib import Path
@@ -89,7 +87,7 @@ def run_ocr(image_bytes):
         timeout=25,
         check=False,
     )
-    if result.returncode not in (0, 1):
+    if result.returncode != 0:
         raise RuntimeError(result.stderr.decode("utf-8", "replace")[-500:])
     return normalize(result.stdout.decode("utf-8", "replace"))
 
