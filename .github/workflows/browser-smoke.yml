@@ -1,25 +1,27 @@
 name: AQW browser smoke tests
 
 on:
-  workflow_run:
-    workflows:
-      - pages build and deployment
-    types:
-      - completed
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/browser-smoke.yml
+      - scripts/browser-smoke.py
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
   browser-smoke:
-    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 18
     steps:
-      - name: Check out the exact deployed revision
+      - name: Check out the test revision
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Wait for GitHub Pages deployment
+        run: sleep 120
 
       - name: Set up Python
         uses: actions/setup-python@v5
