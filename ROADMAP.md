@@ -27,7 +27,8 @@ Tracking issue: https://github.com/The-Rascal-of-Sakurasou/anime-quiz-world/issu
 - [x] Consistent simultaneous-answer and timeout handling
 - [x] Persist per-match scores and completion state in room/player records; calculate winner server-side
 - [x] Handle question timeout and opponent departure
-- [ ] Explicit surrender and rematch
+- [x] Explicit surrender with server-assigned opponent victory
+- [ ] Rematch
 - [x] Aggregate win/loss statistics and recent match-history screen
 - [ ] Separate 1v1 leaderboard
 - [ ] Full match test with two or more real accounts
@@ -55,7 +56,7 @@ Tracking issue: https://github.com/The-Rascal-of-Sakurasou/anime-quiz-world/issu
 
 ## Next implementation order
 1. Full 1v1 match testing with two or more real accounts
-2. Match history, aggregate win/loss statistics, surrender, and rematch
+2. Rematch flow
 3. Separate 1v1 leaderboard
 4. Friend invitations and profile integration
 5. Expand to 3–4 players only after 1v1 validation
