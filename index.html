@@ -1233,14 +1233,17 @@ function updateDifficultyUI(){
   const feedback=lang==='ja'?' 全体の回答データが20回以上・5人以上に達した問題は実測正答率も反映します。':' Global accuracy data is used after 20 answers from 5 players.';
   let personal='';
   if(personalDifficultyProfile.attempts>=20&&personalDifficultyProfile.runs>=3&&Number.isFinite(personalDifficultyProfile.correctRate)){
-   const rate=Math.round(personalDifficultyProfile.correctRate*100);
-   personal=lang==='ja'?' あなたの直近'+personalDifficultyProfile.attempts+'問の正答率：'+rate+'%（個人適応対象）':' Your recent accuracy: '+rate+'% across '+personalDifficultyProfile.attempts+' answers (personal adaptation active).';
+   const rate=Math.round(personalDifficultyProfile.correctRate*100),nextTier=calculatePersonalDifficultyOverride();
+   personal=lang==='ja'?' あなたの直近'+personalDifficultyProfile.attempts+'問の正答率：'+rate+'%。':' Your recent accuracy: '+rate+'% across '+personalDifficultyProfile.attempts+' answers.';
+   if(nextTier){const nextLabel=names[nextTier]||nextTier;personal+=lang==='ja'?' 次回は「'+nextLabel+'」に自動調整します。':' Next quiz adjusts to '+nextLabel+'.'}
+   else{personal+=lang==='ja'?' 次回は現在の設定を維持します。':' Your selected level will be maintained next quiz.'}
   }else{
    personal=lang==='ja'?' 個人適応には20問以上・3回以上のプレイ記録が必要です。':' Personal adaptation requires at least 20 answers across 3 runs.';
   }
   help.textContent=base+count+feedback+personal;
  }
 }
+$('#difficultySelect')?.addEventListener('change',updateDifficultyUI);
 function synopsisText(a){const s=descriptionOf(a);return s.length>260?s.slice(0,257).trimEnd()+'…':s}
 function hasUsableSynopsis(a){const s=descriptionOf(a);if(s.length<45)return false;if(/^(no synopsis|no description|not available|tba|unknown|未定|あらすじなし|情報なし)\.?$/i.test(s.trim()))return false;if(lang==='ja'){const jp=(s.match(/[ぁ-んァ-ヶ一-龯]/g)||[]).length,latin=(s.match(/[A-Za-z]/g)||[]).length;return (jp>=10&&jp/s.length>=0.16)||latin>=30}if(lang==='ko'){const ko=(s.match(/[가-힣]/g)||[]).length;return ko>=10&&ko/s.length>=0.12}if(lang==='zh'){const zh=(s.match(/[\u3400-\u9fff]/g)||[]).length;return zh>=10&&zh/s.length>=0.16}if(lang==='en'){const latin=(s.match(/[A-Za-z]/g)||[]).length;const jp=(s.match(/[ぁ-んァ-ヶ]/g)||[]).length;return latin>=30&&jp/s.length<0.08}return s.length>=45}
 function characterDisplayName(character){const name=character?.name||{};const preferred=lang==='ja'?name.native:(name.full||name.native);return String(preferred||name.full||name.native||'').trim()}function characterNames(a){return [...new Set((a.characters?.nodes||[]).map(characterDisplayName).filter(Boolean))]}function isSingleAnimeCharacter(record,summary=questionChoiceSummary()){const key=normalizeAnswer(record?.name);return !!key&&summary.uniqueCharacterNameKeys.has(key)&&summary.characterNameAnimeCounts.get(key)===1}
