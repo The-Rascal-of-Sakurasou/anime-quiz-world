@@ -251,7 +251,7 @@ assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", rela
 assert.equal(isQuizOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL" }), false, "Non-Japanese animation must be excluded from the quiz");
 assert.match(index, /async function fetchSharedAnimeCatalog\(\)/, "The quiz must load the shared catalogue");
 
-assert.match(index, /function characterRecordsWithFourChoicesForAnime\(anime,summary=questionChoiceSummary\(\)\)\{return uniqueCharacterRecordsForAnime\(anime,summary\)\.filter\(record=>\{const ownKey=normalizeAnswer\(record\.name\),distractorKeys=new Set\(characterDistractors\(record\.animeId\)\.map\(item=>normalizeAnswer\(item\.name\)\)\.filter\(key=>key&&key!==ownKey\)\);return distractorKeys\.size>=3\}\)\}/, "Character-image modes must only use characters with three distinct eligible distractors");
+// The exact shared character-choice builder is asserted below.
 assert.match(index, /if\(mode===\'characterImage\'\|\|mode===\'characterNameImage\'\)return characterRecordsWithFourChoicesForAnime\(a,summary\)\.length>0/, "Character-image question eligibility must validate the actual distractor pool");
 assert.equal((index.match(/shuffle\(characterRecordsWithFourChoicesForAnime\(a\)\)/g)||[]).length, 2, "Both character-image question modes must choose from characters with four complete choices");
 assert.match(index, /if\(\[\'image\',\'character\',\'characterImage\',\'titleCharacter\'\]\.includes\(currentQuestionMode\)\)skipBrokenImageQuestion\(brokenUrl\)/, "A failed character portrait must skip title-to-character questions instead of leaving an unanswerable prompt");
