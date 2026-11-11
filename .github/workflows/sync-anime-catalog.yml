@@ -9,7 +9,7 @@ on:
       - "scripts/detect-title-image-text.py"
       - ".github/workflows/sync-anime-catalog.yml"
   schedule:
-    - cron: '30 19 * * *'
+    - cron: '0 */6 * * *'
   workflow_dispatch:
 
 permissions:
@@ -22,6 +22,8 @@ concurrency:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    outputs:
+      catalog_changed: ${{ steps.change.outputs.changed }}
     timeout-minutes: 50
     steps:
       - name: Checkout repository
@@ -38,6 +40,14 @@ jobs:
         run: node scripts/sync-anime-catalog.mjs
       - name: Validate generated catalogue
         run: node scripts/validate-anime-catalog.mjs
+      - name: Detect catalogue changes
+        id: change
+        run: |
+          if git diff --quiet -- data/anime-catalog.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: Commit catalogue when changed
         run: |
           git config user.name "github-actions[bot]"
@@ -53,6 +63,7 @@ jobs:
 
   title-image-audit:
     needs: sync
+    if: needs.sync.outputs.catalog_changed == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
@@ -94,6 +105,7 @@ jobs:
 
   image-url-audit:
     needs: sync
+    if: needs.sync.outputs.catalog_changed == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
