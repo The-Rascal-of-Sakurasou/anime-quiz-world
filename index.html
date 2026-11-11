@@ -925,7 +925,7 @@ async function fetchAnime(vars={}){
    if(pool.length){
     pool=deduplicateQuestionPool(mergeAnimeCollection([...pool,...items]));
     sharedCatalogActive=true;
-    extendQuestionsFromPool(items);
+    extendQuestionsFromPool(items).catch(error=>console.warn('Late question extension deferred:',error));
    }else lateSharedCatalogItems=items;
   }).catch(error=>console.warn('Late shared catalogue load failed:',error));
  }
@@ -1400,9 +1400,12 @@ function availableQuestionModes(a,format=$('#answerFormatSelect')?.value||'choic
  return modes.filter(mode=>questionModeHasFourChoices(a,mode));
 }
 function usablePool(mode,answerFormat=$('#answerFormatSelect')?.value||'choices',validateChoices=true){if(answerFormat==='typed'&&mode==='characterImage')return [];return pool.filter(a=>{if(!isUsableAnime(a))return false;if(mode==='image'&&!titleImageIsSafe(a))return false;if(answerFormat==='typed'&&!typedTitleEligible(a))return false;if(['image','studio','year','synonym','titleYear','titleStudio','synopsis','character','characterImage'].includes(mode)&&!titleUsable(a))return false;if(mode==='studio')return false;if(mode==='titleStudio'&&!a.studios?.nodes?.[0]?.name)return false;if(mode==='character'||mode==='characterImage'){if(!characterRecords([a]).length)return false}if(mode==='synonym'&&!uniqueAliasCandidates(a).length)return false;if(mode==='year')return false;if(mode==='titleYear'&&(!Number.isInteger(animeYear(a))||animeYear(a)<=1900))return false;if(mode==='year')return false;if(mode==='titleYear'&&answerFormat!=='typed'&&yearChoiceRecordsForAnime(a).length<4)return false;if(mode==='synopsis'&&!hasUsableSynopsis(a))return false;return answerFormat==='typed'||!validateChoices||questionModeHasFourChoices(a,mode)})}
-function extendQuestionsFromPool(items){
+async function extendQuestionsFromPool(items){
  if(!items||!questions.length||$('#quizArea').classList.contains('hidden'))return;
- prepareDifficultyTiers(pool);
+ const sourcePool=pool;
+ await ensureQuestionChoiceSummaryAsync();
+ if(pool!==sourcePool)return;
+ prepareDifficultyTiers(sourcePool);
  if(playMode!=='endless'&&!(playMode==='normal'&&questions.length<requestedQuestionCount))return;
  const mode=$('#modeSelect').value,format=$('#answerFormatSelect').value,eligible=uniqueAnimeById(mode==='mixed'?items.filter(a=>isUsableAnime(a)&&titleUsable(a)&&availableQuestionModes(a,format).length>0):usablePool(mode,format)).filter(a=>matchesDifficulty(a,format,mode)).filter(a=>format!=='typed'||typedTitleEligible(a)),seen=new Set(questions.map(a=>Number(a.id)));
  const additions=shuffle(eligible.filter(a=>!seen.has(Number(a.id))));
