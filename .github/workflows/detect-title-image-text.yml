@@ -1,6 +1,11 @@
 name: Detect anime title text in cover images
 
 on:
+  pull_request:
+    paths:
+      - "index.html"
+      - "scripts/detect-title-image-text.py"
+      - ".github/workflows/detect-title-image-text.yml"
   workflow_run:
     workflows: ["Sync shared anime catalogue"]
     types: [completed]
@@ -17,8 +22,19 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  validate:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout pull request
+        uses: actions/checkout@v4
+      - name: Validate OCR script without network access
+        run: |
+          python3 -m py_compile scripts/detect-title-image-text.py
+          python3 scripts/detect-title-image-text.py --self-test
+
   audit:
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    if: github.event_name != 'pull_request' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
