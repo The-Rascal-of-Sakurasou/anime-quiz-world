@@ -1128,7 +1128,7 @@ window.addEventListener('aqw:question-difficulty-stats',event=>{
  const next=new Map();
  for(const record of records){
   const animeId=Number(record?.animeId),mode=String(record?.questionMode||''),attempts=Number(record?.attempts),correctRate=Number(record?.correctRate);
-  if(Number.isSafeInteger(animeId)&&animeId>0&&attempts>=20&&correctRate>=0&&correctRate<=1&&Number.isFinite(correctRate))next.set(animeId+'|'+mode,{attempts,correctRate});
+  if(Number.isSafeInteger(animeId)&&animeId>0&&attempts>=50&&correctRate>=0&&correctRate<=1&&Number.isFinite(correctRate))next.set(animeId+'|'+mode,{attempts,correctRate});
  }
  empiricalDifficultyStats=next;
  if(pool.length)prepareDifficultyTiers(pool);
@@ -1193,11 +1193,11 @@ function questionModeDifficultyScore(a,mode){
 function difficultyScoreForMode(a,mode,workRarity){
  const heuristic=questionModeDifficultyScore(a,mode);
  const stats=empiricalDifficultyStats.get(Number(a?.id)+'|'+mode);
- if(stats&&stats.attempts>=20&&Number.isFinite(stats.correctRate)){
+ if(stats&&stats.attempts>=50&&Number.isFinite(stats.correctRate)){
   const empirical=clampDifficultyScore((1-stats.correctRate)*100);
-  return clampDifficultyScore(workRarity*.4+heuristic*.4+empirical*.2);
+  return clampDifficultyScore(workRarity*.35+heuristic*.25+empirical*.40);
  }
- return clampDifficultyScore(workRarity*.5+heuristic*.5);
+ return clampDifficultyScore(workRarity*.7+heuristic*.3);
 }
 function popularityTier(a,requestedMode){
  const id=Number(a?.id),workRarity=difficultyRarityById.has(id)?difficultyRarityById.get(id):50;
@@ -1231,7 +1231,7 @@ function updateDifficultyUI(){
  if(help){
   const base=names.desc[select.value]||names.desc.normal;
   const count=difficultyThresholds.total?(' '+(lang==='ja'?'評価対象：':'Evaluated anime: ')+difficultyThresholds.total.toLocaleString()):'';
-  const feedback=lang==='ja'?' 全体の回答データが20回以上・5人以上に達した問題は実測正答率も反映します。':' Global accuracy data is used after 20 answers from 5 players.';
+  const feedback=lang==='ja'?' 全体の回答データが50回以上・10人以上に達した問題は実測正答率も反映します。':' Global accuracy data is used after 50 answers from 10 players.';
   let personal='';
   if(personalDifficultyProfile.attempts>=20&&personalDifficultyProfile.runs>=3&&Number.isFinite(personalDifficultyProfile.correctRate)){
    const rate=Math.round(personalDifficultyProfile.correctRate*100),nextTier=calculatePersonalDifficultyOverride();
