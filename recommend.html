@@ -449,7 +449,7 @@ function buildDiscoveryPool(scored,selectedIds){
 function calculateSelectionAdjustment(candidate,selected,discovery=false,maxPopularity=2){
  const genres=new Set(candidate.genres||[]);
  const tags=new Set((candidate.tags||[]).filter(t=>!t.isMediaSpoiler&&t.rank>=40).map(t=>t.name));
- let maxSimilarity=0,genreConcentration=0;
+ let maxSimilarity=0,genreConcentration=0,tagConcentration=0;
  for(const chosen of selected||[]){
   const chosenGenres=new Set(chosen.genres||[]);
   const chosenTags=new Set((chosen.tags||[]).filter(t=>!t.isMediaSpoiler&&t.rank>=40).map(t=>t.name));
@@ -465,12 +465,18 @@ function calculateSelectionAdjustment(candidate,selected,discovery=false,maxPopu
   const occurrences=(selected||[]).filter(chosen=>(chosen.genres||[]).includes(genre)).length;
   genreConcentration=Math.max(genreConcentration,occurrences);
  }
+ for(const tag of tags){
+  const occurrences=(selected||[]).filter(chosen=>(chosen.tags||[]).some(t=>!t.isMediaSpoiler&&t.rank>=40&&t.name===tag)).length;
+  tagConcentration=Math.max(tagConcentration,occurrences);
+ }
  const popularity=Number(candidate._popularity)||0;
  const novelty=discovery?Math.max(0,1-Math.log(popularity+1)/Math.log(Math.max(2,maxPopularity))):0;
- const similarityPenalty=maxSimilarity*7.5;
- const genreConcentrationPenalty=genreConcentration*1.0;
- const noveltyBonus=novelty*0.8;
- return {similarityPenalty,genreConcentrationPenalty,noveltyBonus,total:-similarityPenalty-genreConcentrationPenalty+noveltyBonus};
+ // Stronger penalties prevent a high raw score from filling every slot with near-identical titles.
+ const similarityPenalty=maxSimilarity*18;
+ const genreConcentrationPenalty=genreConcentration*4.5;
+ const tagConcentrationPenalty=tagConcentration*2.5;
+ const noveltyBonus=novelty*1.2;
+ return {similarityPenalty,genreConcentrationPenalty,tagConcentrationPenalty,noveltyBonus,total:-similarityPenalty-genreConcentrationPenalty-tagConcentrationPenalty+noveltyBonus};
 }
 
 function buildExcludedSeedIds(favorites,dislikes){
