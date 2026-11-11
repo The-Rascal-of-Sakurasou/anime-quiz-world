@@ -224,7 +224,6 @@ def test_live_seasonal_anilist():
     if next_month == 13:
         next_month = 1
         next_year += 1
-    start_bound = NOW_JST.year * 10000 + (SEASON_START_MONTH - 1 or 12) * 100
     start_year = NOW_JST.year if SEASON_START_MONTH > 1 else NOW_JST.year - 1
     start_bound = start_year * 10000 + (12 if SEASON_START_MONTH == 1 else SEASON_START_MONTH - 1) * 100
     end_bound = next_year * 10000 + next_month * 100 + 1
@@ -295,8 +294,8 @@ def test_live_seasonal_anilist():
         item for item in season_items
         if japanese_origin(item)
         and item.get("format") in {"TV", "TV_SHORT", "MOVIE", "OVA", "ONA", "SPECIAL"}
-        and (item.get("coverImage") or {}).get("large")
-        and (item.get("title") or {}).get("native")
+        and ((item.get("coverImage") or {}).get("large") or (item.get("coverImage") or {}).get("medium"))
+        and any((item.get("title") or {}).get(key) for key in ("native", "english", "romaji"))
     ]
     if not eligible:
         raise AssertionError(
