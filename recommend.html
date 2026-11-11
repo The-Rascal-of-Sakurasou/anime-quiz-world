@@ -185,83 +185,83 @@ const safeStorage={
 };
 const API='https://graphql.anilist.co';
 const questions=[
-{dimension:'genre',title:'どんなジャンルの作品を見たい？',help:'物語の題材や大まかなジャンルで、最も惹かれるものを選んでください。',options:[
-{label:'異世界・冒険・ファンタジー',genres:['Fantasy','Adventure']},
-{label:'SF・謎解き・サスペンス',genres:['Sci-Fi','Mystery','Thriller']},
-{label:'バトル・アクション',genres:['Action','Adventure']},
-{label:'ドラマ・コメディ・日常',genres:['Drama','Comedy','Slice of Life']}
+{dimension:'genre',title:'どんな作品を見たい？',help:'今の気分に一番近いものを選んでください。',options:[
+{label:'冒険やファンタジーの世界を楽しみたい',genres:['Fantasy','Adventure']},
+{label:'SFや謎解きなど、先が気になる話が見たい',genres:['Sci-Fi','Mystery','Thriller']},
+{label:'バトルやアクションを楽しみたい',genres:['Action','Adventure']},
+{label:'日常や人間ドラマ、コメディを楽しみたい',genres:['Drama','Comedy','Slice of Life']}
 ]},
-{dimension:'protagonist_challenge',title:'物語の中心となる目標・課題は？',help:'ジャンルや難解さではなく、主人公が取り組む目的の種類を選んでください。',options:[
-{label:'事件や問題の原因を調べ、真相を明らかにする',tags:['Crime','Detective']},
-{label:'厳しい状況を乗り越え、生き抜く',tags:['Survival','Battle Royale']},
-{label:'大きな目標に向かって努力し、挑戦する',tags:['Quest','Training']},
-{label:'自分の価値観や信念と向き合う',tags:['Philosophy','Coming of Age']}
+{dimension:'protagonist_challenge',title:'どんな展開に惹かれる？',help:'物語の中で見てみたい展開を選んでください。',options:[
+{label:'謎や事件の真相を明らかにしていく',tags:['Crime','Detective']},
+{label:'ピンチや困難を乗り越えていく',tags:['Survival','Battle Royale']},
+{label:'大きな目標に向かって挑戦していく',tags:['Quest','Training']},
+{label:'自分の信念や生き方と向き合っていく',tags:['Philosophy','Coming of Age']}
 ]},
-{dimension:'pacing',title:'物語のテンポはどれが好き？',help:'1話ごとの進む速さや、展開の緩急について選んでください。',options:[
-{label:'最初からどんどん話が進む',tags:['Fast-Paced']},
-{label:'一定のテンポで安定して進む'},
-{label:'ゆっくり丁寧に進む',tags:['Slow Burn']},
-{label:'静かな場面と盛り上がる場面がある',tags:['Slow Burn','Fast-Paced']}
+{dimension:'pacing',title:'物語のテンポはどれが好き？',help:'展開が進む速さについて、好みに近いものを選んでください。',options:[
+{label:'序盤から次々と展開が進む',tags:['Fast-Paced']},
+{label:'落ち着いた一定のペースで進む'},
+{label:'時間をかけてじっくり進む',tags:['Slow Burn']},
+{label:'静かな場面と盛り上がる場面の差がある',tags:['Slow Burn','Fast-Paced']}
 ]},
-{dimension:'emotional_intensity',title:'視聴中にどんな感情を味わいたい？',help:'見ている最中に感じたい緊張感や気分を選んでください。',options:[
-{label:'ハラハラ・ドキドキしたい',tags:['Psychological']},
-{label:'感動したり、心を動かされたりしたい',tags:['Tragedy','Coming of Age']},
+{dimension:'emotional_intensity',title:'見ている間、どんな気分を味わいたい？',help:'視聴中に感じたい気分を選んでください。',options:[
+{label:'緊張感があって、ハラハラしたい',tags:['Psychological']},
+{label:'感動して、心を動かされたい',tags:['Tragedy','Coming of Age']},
 {label:'気楽に笑って楽しみたい',tags:['Gag Humor','Parody']},
-{label:'落ち着いた気分で楽しみたい',tags:['Iyashikei']}
+{label:'穏やかな気分で、ゆったり楽しみたい',tags:['Iyashikei']}
 ]},
-{dimension:'setting',title:'どんな舞台・世界が好み？',help:'ジャンルではなく、物語の舞台となる場所・時代・環境を選んでください。',options:[
-{label:'異世界・魔法・未知の大陸',tags:['Magic','Isekai','World Building']},
-{label:'現代社会・学校・日常',tags:['School','Urban','Coming of Age']},
-{label:'未来・宇宙・科学技術',tags:['Space','Cyberpunk','Mecha']},
-{label:'歴史・神話・和風の世界',tags:['Historical','Mythology','Samurai']}
+{dimension:'setting',title:'どんな世界・舞台が好み？',help:'物語の舞台として、気になるものを選んでください。',options:[
+{label:'魔法や異世界、未知の場所',tags:['Magic','Isekai','World Building']},
+{label:'現代の街や学校、身近な日常',tags:['School','Urban','Coming of Age']},
+{label:'未来や宇宙、科学技術の世界',tags:['Space','Cyberpunk','Mecha']},
+{label:'歴史や神話、和風の世界',tags:['Historical','Mythology','Samurai']}
 ]},
-{dimension:'duration',title:'作品の長さはどれが理想？',help:'話数や視聴にかかる長さについて、普段の視聴スタイルに近いものを選んでください。',options:[
-{label:'短め（映画・1クールくらい）',length:'short'},
-{label:'中くらい（2〜3クールくらい）',length:'medium'},
-{label:'長め（複数シーズン・長編）',length:'long'},
-{label:'長さは気にしない',length:'any'}
+{dimension:'duration',title:'どのくらいの長さの作品が見たい？',help:'今の視聴時間や気分に近いものを選んでください。',options:[
+{label:'短めがいい（映画・1クール程度）',length:'short'},
+{label:'ほどよい長さがいい（2〜3クール程度）',length:'medium'},
+{label:'長くじっくり楽しみたい',length:'long'},
+{label:'作品の長さは気にしない',length:'any'}
 ]},
-{dimension:'character_appeal',title:'どんな人物に惹かれる？',help:'人物個人の性格・能力・成長の魅力を選んでください。人物同士の関係性とは別の観点です。',options:[
-{label:'物語の中で成長していく人物',tags:['Character Development','Coming of Age']},
-{label:'個性的で印象に残る人物',tags:['Unusual Characters','Ensemble Cast']},
-{label:'知性や複雑な心理を持つ人物',tags:['Genius','Strategic','Psychological','Philosophy']},
-{label:'強い信念を持ち、自分の意志で行動する人物',tags:['Leadership','Revenge']}
+{dimension:'character_appeal',title:'どんなキャラクターが好き？',help:'キャラクターの性格や魅力について選んでください。',options:[
+{label:'物語の中で成長していくキャラクター',tags:['Character Development','Coming of Age']},
+{label:'個性的で、印象に残るキャラクター',tags:['Unusual Characters','Ensemble Cast']},
+{label:'頭が切れたり、心理描写が深かったりするキャラクター',tags:['Genius','Strategic','Psychological','Philosophy']},
+{label:'強い信念を持ち、自分で道を切り開くキャラクター',tags:['Leadership','Revenge']}
 ]},
-{dimension:'narrative_complexity',title:'物語の複雑さはどれが好み？',help:'伏線・情報量・設定の理解に、どのくらい考察が必要な作品を好むか選んでください。',options:[
-{label:'シンプルで分かりやすい',avoidTags:['Conspiracy','Politics','World Building','Ensemble Cast']},
-{label:'伏線や意外な展開を楽しみたい',tags:['Conspiracy']},
-{label:'複数の人物や出来事を読み解きたい',tags:['Politics','Ensemble Cast']},
-{label:'独自の設定や世界観を考察したい',tags:['World Building','Politics']}
+{dimension:'narrative_complexity',title:'物語の分かりやすさはどれが好み？',help:'伏線や設定をどのくらい考えながら見たいか選んでください。',options:[
+{label:'シンプルで、気軽に理解できる話',avoidTags:['Conspiracy','Politics','World Building','Ensemble Cast']},
+{label:'伏線や意外な展開を考えるのが楽しい話',tags:['Conspiracy']},
+{label:'複数の人物や出来事が絡み合う話',tags:['Politics','Ensemble Cast']},
+{label:'独自の設定や世界観を深く楽しめる話',tags:['World Building','Politics']}
 ]},
-{dimension:'aftertaste',title:'見終わったあとに残ってほしい余韻は？',help:'視聴中の感情ではなく、結末を見届けた後に残る印象を選んでください。',options:[
-{label:'見終わっても驚きや衝撃が残る',tags:['Surprise Ending']},
-{label:'切なさや感動が長く心に残る',tags:['Bittersweet Ending']},
-{label:'問題が解決し、爽快感や達成感が残る',tags:['Satisfying Ending']},
-{label:'笑いや安心感、前向きな気分が残る',tags:['Happy Ending']}
+{dimension:'aftertaste',title:'見終わったあと、どんな気持ちになりたい？',help:'視聴中ではなく、見終わった後に残ってほしい気持ちを選んでください。',options:[
+{label:'驚きや衝撃が残ってほしい',tags:['Surprise Ending']},
+{label:'切なさや感動が心に残ってほしい',tags:['Bittersweet Ending']},
+{label:'すっきりした達成感がほしい',tags:['Satisfying Ending']},
+{label:'笑顔になれる、明るい余韻がほしい',tags:['Happy Ending']}
 ]},
-{dimension:'relationships',title:'人物同士の関係で重視するものは？',help:'恋愛の量ではなく、恋愛以外も含めた人物同士のつながり方を選んでください。',options:[
-{label:'仲間と協力し、信頼を深めていく',tags:['Friendship','Found Family']},
-{label:'ライバル同士が競い合い、互いを高める',tags:['Rivalry']},
-{label:'家族や身近な人とのつながりを描く',tags:['Family','Family Life']},
-{label:'師弟・先輩後輩など、立場の違う人物が支え合う',tags:['Mentor','Teacher-Student Relationship']}
+{dimension:'relationships',title:'キャラクター同士の関係で好きなのは？',help:'人物同士のつながり方について選んでください。',options:[
+{label:'仲間と協力し、絆を深めていく',tags:['Friendship','Found Family']},
+{label:'ライバル同士が競い合う',tags:['Rivalry']},
+{label:'家族や身近な人との関係を描く',tags:['Family','Family Life']},
+{label:'師匠や先輩など、立場の違う人が支え合う',tags:['Mentor','Teacher-Student Relationship']}
 ]},
-{dimension:'romance_amount',title:'恋愛要素はどのくらい欲しい？',help:'恋愛が物語の中で占める割合を選んでください。',options:[
-{label:'恋愛が物語の中心にあってほしい',genreWeights:{Romance:2.5}},
-{label:'少しだけ入っていてほしい',genreWeights:{Romance:1.1}},
-{label:'恋愛は少なめがいい',avoidGenres:['Romance'],avoidGenreWeights:{Romance:0.8}},
-{label:'恋愛はほとんどなくていい',avoidGenres:['Romance'],avoidGenreWeights:{Romance:1.8}}
+{dimension:'romance_amount',title:'恋愛要素はどのくらい欲しい？',help:'恋愛が物語にどのくらい含まれていてほしいか選んでください。',options:[
+{label:'恋愛が物語の中心にある作品が見たい',genreWeights:{Romance:2.5}},
+{label:'恋愛要素が少し入っているとうれしい',genreWeights:{Romance:1.1}},
+{label:'恋愛要素は控えめがいい',avoidGenres:['Romance'],avoidGenreWeights:{Romance:0.8}},
+{label:'恋愛要素はほとんどなくていい',avoidGenres:['Romance'],avoidGenreWeights:{Romance:1.8}}
 ]},
-{dimension:'tone_balance',title:'作品全体の笑いとシリアスの配分は？',help:'コメディとシリアスの割合を選んでください。視聴中に感じる緊張感とは別の観点です。',options:[
-{label:'コメディ中心で、笑える場面が多い',genreWeights:{Comedy:2.5}},
-{label:'シリアス中心で、笑いは控えめ',genreWeights:{Drama:1.4},avoidGenreWeights:{Comedy:0.5}},
-{label:'笑いとシリアスが同じくらい',genreWeights:{Drama:1.2,Comedy:1.2}},
-{label:'基本はシリアスで、要所に笑いがある',genreWeights:{Drama:1.8},avoidGenres:['Comedy'],avoidGenreWeights:{Comedy:1.2}}
+{dimension:'tone_balance',title:'笑いとシリアス、どちらが好み？',help:'作品全体の雰囲気として、近いものを選んでください。',options:[
+{label:'笑える場面が多い、コメディ寄り',genreWeights:{Comedy:2.5}},
+{label:'笑いは少なめで、シリアス寄り',genreWeights:{Drama:1.4},avoidGenreWeights:{Comedy:0.5}},
+{label:'笑いとシリアスが半分ずつくらい',genreWeights:{Drama:1.2,Comedy:1.2}},
+{label:'基本はシリアスで、ときどき笑える',genreWeights:{Drama:1.8},avoidGenres:['Comedy'],avoidGenreWeights:{Comedy:1.2}}
 ]},
-{dimension:'story_structure',title:'物語の構成形式はどれが好み？',help:'各話の進む速さではなく、全体を通した連続した物語か、各話完結かを選んでください。',options:[
-{label:'全話を通して続く大きな物語',avoidTags:['Episodic'],avoidTagWeights:{Episodic:1.2}},
-{label:'各話ごとに区切りがある物語',tagWeights:{Episodic:2.2}},
-{label:'大きな物語と各話の面白さ、両方ほしい',tagWeights:{Episodic:0.7}},
-{label:'構成形式は気にしない'}
+{dimension:'story_structure',title:'物語の進み方はどれが好み？',help:'各話の区切り方や、物語全体のつながり方について選んでください。',options:[
+{label:'最初から最後まで、ひと続きの物語',avoidTags:['Episodic'],avoidTagWeights:{Episodic:1.2}},
+{label:'1話ごとに区切りよく楽しめる物語',tagWeights:{Episodic:2.2}},
+{label:'大きな物語も、各話ごとの面白さも欲しい',tagWeights:{Episodic:0.7}},
+{label:'物語の進み方にはこだわらない'}
 ]}
 ];
 const allQuestionTitles=questions.map(q=>q.title.trim());
@@ -850,6 +850,7 @@ async function getRecommendations(profile){
  // 候補作品側のタグ評価も使い、弱いタグ一致を過大評価しない。
  const seedScore=(candidate,seeds)=>calculateSeedSimilarity(candidate,seeds,rarityWeight,genreRarity);
  const favoriteIds=new Set(favoriteSeeds.map(x=>x.id)),dislikedIds=new Set(dislikedSeeds.map(x=>x.id));
+ // 診断回答は候補の除外条件に使わず、全対象作品の順位を調整するスコアとしてのみ反映する。
  const scored=items.filter(a=>isJapaneseOriginAnime(a)&&a.coverImage?.large&&a.title&&(a.format==='TV'||a.format==='TV_SHORT'||a.format==='MOVIE'||a.format==='ONA'||a.format==='OVA'||a.format==='SPECIAL')).map(a=>{
   let score=0;const scoreBreakdown=[];const reasons=[];
   const animeGenres=a.genres||[];
