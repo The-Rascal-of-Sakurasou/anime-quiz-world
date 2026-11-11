@@ -131,6 +131,10 @@ def self_test():
     text = normalize("青春ブタ野郎はバニーガール先輩の夢を見ない")
     assert title_matches(text, candidates)
     assert not title_matches("random text only", candidates)
+    short_sample = {"title": {"native": "蟲師"}}
+    short_candidates = title_candidates(short_sample)
+    assert ("蟲師", normalize("蟲師")) in short_candidates
+    assert title_matches("蟲師", short_candidates)
     print("Title-image OCR self-tests passed.")
 
 
