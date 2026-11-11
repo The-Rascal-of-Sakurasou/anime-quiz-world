@@ -8,6 +8,7 @@ import argparse
 import concurrent.futures
 import hashlib
 import json
+import re
 import subprocess
 import time
 import unicodedata
@@ -54,9 +55,18 @@ def fingerprint(candidates):
     return hashlib.sha256(joined.encode("utf-8")).hexdigest()
 
 
+def usable_image_url(value):
+    url = str(value or "").strip()
+    return bool(
+        url.startswith(("https://", "http://"))
+        and not re.search(r"(?:no[-_ ]?image|placeholder|default[-_ ]?image)", url, re.IGNORECASE)
+    )
+
+
 def cover_url(anime):
     cover = anime.get("coverImage") or {}
-    return str(cover.get("large") or cover.get("medium") or cover.get("extraLarge") or "").strip()
+    url = str(cover.get("large") or cover.get("medium") or cover.get("extraLarge") or "").strip()
+    return url if usable_image_url(url) else ""
 
 
 def download_image(url):
@@ -66,7 +76,7 @@ def download_image(url):
     for attempt in range(2):
         try:
             request = Request(url, headers={"User-Agent": USER_AGENT, "Accept": "image/*"})
-            with urlopen(request, timeout=20) as response:
+            with urlopen(request, timeout=8) as response:
                 data = response.read(MAX_IMAGE_BYTES + 1)
                 if len(data) > MAX_IMAGE_BYTES:
                     raise ValueError("Image exceeds size limit")
@@ -86,7 +96,7 @@ def run_ocr(image_bytes, page_segmentation_mode=11):
         input=image_bytes,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        timeout=25,
+        timeout=12,
         check=False,
     )
     if result.returncode != 0:
@@ -129,6 +139,12 @@ def detect_one(anime):
 
 
 def self_test():
+    assert not usable_image_url("NO IMAGE")
+    assert not usable_image_url("https://example.test/NO IMAGE.jpg")
+    assert not usable_image_url("https://example.test/no-image.jpg")
+    assert not usable_image_url("https://example.test/placeholder.png")
+    assert not usable_image_url("https://example.test/default-image.png")
+    assert usable_image_url("https://example.test/cover.jpg")
     assert normalize(" ＳＴＥＩＮＳ；ＧＡＴＥ ") == "steinsgate"
     assert normalize("青春ブタ野郎") == "青春ブタ野郎"
     assert normalize("Kono Subarashii Sekai ni Shukufuku wo!") == "konosubarashiisekainishukufukuwo"
