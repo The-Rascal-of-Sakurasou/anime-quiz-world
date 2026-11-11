@@ -163,14 +163,17 @@ for (const format of FORMATS) {
   }
 }
 
-const items = [...records.values()].sort((a, b) =>
+const items = [...records.values()].map((anime) => {
+  const { source, relations, ...compact } = anime;
+  return { ...compact, originVerified: true };
+}).sort((a, b) =>
   (Number(b.popularity) || 0) - (Number(a.popularity) || 0) || Number(a.id) - Number(b.id)
 );
 let previousOutput = null;
 try { previousOutput = JSON.parse(await readFile(OUTPUT, 'utf8')); } catch {}
-const unchanged = previousOutput?.schemaVersion === 1 && JSON.stringify(previousOutput.items) === JSON.stringify(items);
+const unchanged = previousOutput?.schemaVersion === 2 && JSON.stringify(previousOutput.items) === JSON.stringify(items);
 const output = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   generatedAt: unchanged ? previousOutput.generatedAt : new Date().toISOString(),
   source: 'AniList GraphQL API',
   originRule: 'Japanese-origin verification matching the AQW client filter',
