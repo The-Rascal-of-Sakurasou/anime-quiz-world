@@ -94,17 +94,21 @@ async function fetchBatch(pages, sort, format, yearStart, yearEnd) {
   throw lastError || new Error('AniList request failed.');
 }
 
-const records = new Map();
+let previousOutput = null;
+try { previousOutput = JSON.parse(await readFile(OUTPUT, 'utf8')); } catch {}
+const incremental = process.env.AQW_FULL_CATALOG !== 'true' && previousOutput?.schemaVersion === 2 && Array.isArray(previousOutput.items);
+const records = new Map(incremental ? previousOutput.items.filter((item) => Number.isInteger(Number(item?.id))).map((item) => [Number(item.id), item]) : []);
 let requests = 0;
 let accepted = 0;
 let filtered = 0;
 
-async function scanScope(format, sort, yearStart, yearEnd) {
+async function scanScope(format, sort, yearStart, yearEnd, appendOnly = false) {
   for (let page = 1; page <= 100; page += 3) {
     const pages = [page, page + 1, page + 2].filter((value) => value <= 100);
     await sleep(1200);
     const results = await fetchBatch(pages, sort, format, yearStart, yearEnd);
     requests++;
+    let addedThisBatch = 0;
     for (const result of results) {
       for (const anime of result.items) {
         if (!isUsableAnime(anime)) {
@@ -113,11 +117,20 @@ async function scanScope(format, sort, yearStart, yearEnd) {
         }
         const id = Number(anime.id);
         const previous = records.get(id);
-        records.set(id, previous ? mergeRecord(previous, anime) : anime);
-        accepted++;
+        if (!previous) {
+          records.set(id, anime);
+          accepted++;
+          addedThisBatch++;
+        } else if (!appendOnly) {
+          records.set(id, mergeRecord(previous, anime));
+          accepted++;
+        }
       }
     }
     const hasMore = results.at(-1)?.hasNextPage === true;
+    // ID_DESC places newly indexed AniList records first. Once a complete batch
+    // contains no unseen IDs, older pages cannot add newer catalogue entries.
+    if (appendOnly && addedThisBatch === 0) return false;
     if (!hasMore) return false;
     if (pages.at(-1) === 100) return true;
     if (requests % 10 === 0) {
@@ -182,6 +195,10 @@ async function scanDateRanges(format, sort) {
 }
 
 for (const format of FORMATS) {
+  if (incremental) {
+    await scanScope(format, 'ID_DESC', undefined, undefined, true);
+    continue;
+  }
   let overflow = false;
   for (const sort of BASE_SORTS) {
     const reachedLimit = await scanScope(format, sort);
@@ -203,8 +220,6 @@ const items = [...records.values()].map((anime) => {
 }).sort((a, b) =>
   (Number(b.popularity) || 0) - (Number(a.popularity) || 0) || Number(a.id) - Number(b.id)
 );
-let previousOutput = null;
-try { previousOutput = JSON.parse(await readFile(OUTPUT, 'utf8')); } catch {}
 const unchanged = previousOutput?.schemaVersion === 2 && JSON.stringify(previousOutput.items) === JSON.stringify(items);
 const output = {
   schemaVersion: 2,
@@ -217,6 +232,8 @@ const output = {
 await mkdir(dirname(OUTPUT), { recursive: true });
 const serialized = JSON.stringify(output);
 await writeFile(OUTPUT, serialized + '\n');
+console.log('Catalogue mode: ' + (incremental ? 'append-only incremental' : 'full initial/rebuild') + '.');
+console.log('Newly added records: ' + accepted + '.');
 console.log('Catalogue complete: ' + items.length + ' unique usable anime.');
 console.log('AniList requests: ' + requests + '; accepted records: ' + accepted + '; filtered records: ' + filtered + '.');
 console.log('Output bytes: ' + Buffer.byteLength(serialized));
