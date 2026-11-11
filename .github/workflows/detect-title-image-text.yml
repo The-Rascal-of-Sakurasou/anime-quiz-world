@@ -22,7 +22,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: aqw-title-image-ocr-v2
+  group: aqw-title-image-ocr-v3
   cancel-in-progress: true
 
 jobs:
