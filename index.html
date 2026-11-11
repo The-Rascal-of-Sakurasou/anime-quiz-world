@@ -2250,13 +2250,19 @@ async function loadFeaturedRail(){
  const seasonQuery='query { Page(page:1,perPage:50) { media(type:ANIME,countryOfOrigin:JP,format_in:[TV,ONA],startDate_greater:'+startBound+',startDate_lesser:'+endBound+',isAdult:false,sort:POPULARITY_DESC) { '+fields+' } } }';
  const ongoingQuery='query { Page(page:1,perPage:50) { media(type:ANIME,status:RELEASING,countryOfOrigin:JP,format_in:[TV,ONA],isAdult:false,sort:POPULARITY_DESC) { '+fields+' } } }';
  try{
-  // 2つの取得を並列化し、ページ送りによる待ち時間をなくす。
-  const results=await Promise.allSettled([request(seasonQuery),request(ongoingQuery)]);
-  const items=[...(results[0].status==='fulfilled'?results[0].value:[]),...(results[1].status==='fulfilled'?results[1].value:[])];
-  if(items.length){
-   renderItems(items);
-   try{localStorage.setItem(cacheKey,JSON.stringify({savedAt:Date.now(),items}));}catch(error){console.warn('Featured anime cache save failed:',error)}
-  }else if(!cached){
+  // 先に返ってきた取得結果を即時表示し、遅いAPIの完了を待たない。
+  const fetched=[];
+  const consume=async queryText=>{
+   const items=await request(queryText);
+   if(items.length){
+    fetched.push(...items);
+    renderItems(fetched);
+    try{localStorage.setItem(cacheKey,JSON.stringify({savedAt:Date.now(),items:fetched}));}catch(error){console.warn('Featured anime cache save failed:',error)}
+   }
+   return items;
+  };
+  const results=await Promise.allSettled([consume(seasonQuery),consume(ongoingQuery)]);
+  if(!fetched.length&&!cached){
    root.innerHTML='<p class="featured-empty">今シーズンの日本アニメを読み込めませんでした。通信状態を確認して再読み込みしてください。</p>';
   }
   if(results.some(r=>r.status==='rejected'))console.warn('Some seasonal anime sources failed:',results.filter(r=>r.status==='rejected').map(r=>r.reason));
