@@ -192,6 +192,35 @@ def test_quiz_start_answer_finish(browser):
 
 
 
+
+def test_mobile_quiz_layout(browser):
+    """Check that the quiz controls and four choices fit a narrow mobile viewport."""
+    context = browser.new_context(viewport={"width": 390, "height": 844}, device_scale_factor=2, is_mobile=True, has_touch=True, locale="ja-JP")
+    page = context.new_page()
+    install_routes(page)
+    page.goto(f"{BASE_URL}/index.html", wait_until="domcontentloaded")
+    page.wait_for_function(
+        "() => { const button = document.querySelector('#start'); return button && !button.classList.contains('hidden') && !button.disabled; }",
+        timeout=60000,
+    )
+    page.locator("#modeSelect").select_option("image")
+    page.locator("#answerFormatSelect").select_option("choices")
+    page.locator("#difficultySelect").select_option("easy")
+    page.locator("#questionCount").fill("1")
+    page.locator("#start").click()
+    answers = page.locator("#answers button.answer")
+    answers.first.wait_for(state="visible", timeout=20000)
+    assert answers.count() == 4, "Mobile quiz must show four answer choices"
+    for index in range(answers.count()):
+        bounds = answers.nth(index).bounding_box()
+        assert bounds and bounds["x"] >= 0 and bounds["x"] + bounds["width"] <= 391, (
+            f"Mobile answer choice {index + 1} extends beyond the viewport: {bounds}"
+        )
+    answers.first.tap()
+    page.locator("#result:not(.hidden)").wait_for(state="visible", timeout=20000)
+    context.close()
+
+
 def test_auth_form_reads_filled_inputs(browser):
     """Ensure filled fields are not misreported as empty when Supabase is unavailable."""
     context = browser.new_context(viewport={"width": 1280, "height": 900}, locale="ja-JP")
@@ -391,6 +420,8 @@ def main():
             print("PASS: featured seasonal rail -> visible cards and loaded images")
             test_quiz_start_answer_finish(browser)
             print("PASS: quiz start -> answer -> finish")
+            test_mobile_quiz_layout(browser)
+            print("PASS: mobile quiz layout and touch answer")
             test_auth_form_reads_filled_inputs(browser)
             print("PASS: auth form reads filled inputs")
             test_recommendation_diagnosis(browser)
