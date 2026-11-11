@@ -267,7 +267,7 @@ assert.match(index, /function hasFourDistinctStudioChoices\(a\)\{return studioCh
 assert.match(index, /function makeStudioOptions\(a\)/, "Studio question generation must use the shared studio candidate builder");
 assert.match(index, /function yearChoiceRecordsForAnime\(a\)/, "Year question eligibility and generation must share the same year candidate builder");
 assert.match(index, /if\(mode===\'titleYear\'\)return yearChoiceRecordsForAnime\(a\)\.length>=4/, "Year question eligibility must validate the exact generated year options");
-assert.match(index, /function makeYearOptions\(a\)\{return shuffle\(yearChoiceRecordsForAnime\(a\)\)\.slice\(0,4\)\}/, "Year question generation must use the validated year candidate set");
+assert.match(index, /function makeYearOptions\(a\)\{const records=yearChoiceRecordsForAnime\(a\),correct=String\(animeYear\(a\)\);return records\.some\(record=>record\.value===correct\)\?\[\{label:correct,value:correct\},\.\.\.shuffle\(records\.filter\(record=>record\.value!==correct\)\)\.slice\(0,3\)\]:\[\]\}/, "Year question generation must always include the correct year alongside three distinct distractors");
 assert.match(index, /if\(actualMode===\'titleStudio\'\)\{prompt=titleOf\(a\)\+qText\(\'titleStudio\'\);opts=makeStudioOptions\(a\)/, "Title-to-studio generation must use the shared validated studio options");
 assert.match(index, /function titleChoiceRecordsForAnime\(a\)/, "Title-based question eligibility and generation must share the same alias-safe option builder");
 assert.match(index, /function hasFourDistinctTitleChoices\(anime,summary=questionChoiceSummary\(\)\)\{return titleChoiceRecordsForAnime\(anime\)\.length>=4\}/, "Title-based question eligibility must count the exact generated title options");
