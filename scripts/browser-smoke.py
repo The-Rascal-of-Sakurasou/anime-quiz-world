@@ -191,6 +191,31 @@ def test_quiz_start_answer_finish(browser):
     context.close()
 
 
+
+def test_auth_form_reads_filled_inputs(browser):
+    """Ensure filled fields are not misreported as empty when Supabase is unavailable."""
+    context = browser.new_context(viewport={"width": 1280, "height": 900}, locale="ja-JP")
+    page = context.new_page()
+    page.route("**/supabase-js@2*", lambda route: route.abort())
+    page.goto(f"{BASE_URL}/index.html", wait_until="domcontentloaded")
+    page.locator("#aqwAuthForm").wait_for(state="visible", timeout=20000)
+    page.locator("#aqwEmail").fill("smoke-test@example.invalid")
+    page.locator("#aqwPassword").fill("SmokeTestPassword123!")
+    page.locator("#aqwSignIn").click()
+    page.wait_for_function(
+        "() => document.querySelector('#aqwAuthMessage')?.textContent.trim().length > 0",
+        timeout=10000,
+    )
+    actual = page.locator("#aqwAuthMessage").inner_text().strip()
+    assert "メールアドレスとパスワードの両方を入力してください。" not in actual, (
+        "Filled email and password were incorrectly read as empty"
+    )
+    assert "ログイン機能を読み込めませんでした" in actual, (
+        "With Supabase intentionally blocked, the form should report service unavailability"
+    )
+    context.close()
+
+
 def test_recommendation_diagnosis(browser):
     context = browser.new_context(viewport={"width": 1280, "height": 900}, locale="ja-JP")
     page = context.new_page()
@@ -363,6 +388,8 @@ def main():
             print("PASS: featured seasonal rail -> visible cards and loaded images")
             test_quiz_start_answer_finish(browser)
             print("PASS: quiz start -> answer -> finish")
+            test_auth_form_reads_filled_inputs(browser)
+            print("PASS: auth form reads filled inputs")
             test_recommendation_diagnosis(browser)
             print("PASS: recommendation diagnosis -> results")
         finally:
