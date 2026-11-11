@@ -6,6 +6,7 @@ on:
     paths:
       - "docs/ONLINE_MULTIPLAYER_SCHEMA_DRAFT.sql"
       - "supabase/functions/match/**"
+      - "supabase/functions/aqw-match-prepare/**"
       - "scripts/test-multiplayer-sql.sql"
       - "scripts/build-question-bank-seed.mjs"
       - "scripts/test-question-bank-import.mjs"
@@ -60,7 +61,9 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      - name: Check Edge Function types
+      - name: Check active question-preparation Edge Function types
+        run: deno check supabase/functions/aqw-match-prepare/index.ts
+      - name: Check draft multiplayer gateway types
         run: deno check supabase/functions/match/index.ts
       - name: Test question bank import generator
         run: |
