@@ -1201,8 +1201,8 @@ function dateKey(d=new Date()){return d.getFullYear()+'-'+String(d.getMonth()+1)
 function dailyOrder(list){const day=dateKey();const hash=s=>{let h=2166136261;for(const ch of s){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return h>>>0};return [...list].sort((a,b)=>hash(day+':'+a.id)-hash(day+':'+b.id))}
 function uniqueAnimeById(items){const seen=new Set();return (items||[]).filter(item=>{const id=Number(item?.id);if(!Number.isFinite(id)||id<=0||seen.has(id))return false;seen.add(id);return true})}
 let startRetryInProgress=false,quizStartInProgress=false;
-async function collectEligibleAnime(mode,format,target){
- const base=uniqueAnimeById(mode==='mixed'?pool.filter(a=>isUsableAnime(a)&&titleUsable(a)):usablePool(mode,format,false)).filter(a=>matchesDifficulty(a,format)).filter(a=>format!=='typed'||typedTitleEligible(a));
+async function collectEligibleAnime(mode,format,target,ignoreDifficulty=false){
+ const base=uniqueAnimeById(mode==='mixed'?pool.filter(a=>isUsableAnime(a)&&titleUsable(a)):usablePool(mode,format,false)).filter(a=>ignoreDifficulty||matchesDifficulty(a,format)).filter(a=>format!=='typed'||typedTitleEligible(a));
  const candidates=shuffle(base),eligible=[];
  for(let i=0;i<candidates.length;i+=40){
   for(const anime of candidates.slice(i,i+40)){const canAsk=mode==='mixed'?availableQuestionModes(anime,format).length>0:(format==='typed'||questionModeHasFourChoices(anime,mode));if(canAsk)eligible.push(anime);if(eligible.length>=target)return eligible}
@@ -1227,6 +1227,18 @@ async function begin(){
   const target=playMode==='endless'?Infinity:requestedQuestionCount;
   let activeMode=mode,activeFormat=format,eligible=await collectEligibleAnime(mode,format,target),usedSafeFallback=false;
   if(!eligible.length&&mode!=='mixed'){activeMode='mixed';activeFormat='choices';eligible=await collectEligibleAnime('mixed','choices',target);usedSafeFallback=eligible.length>0;if(usedSafeFallback){$('#modeSelect').value='mixed';$('#answerFormatSelect').value='choices'}}
+  // Last-resort recovery: a sparse or partially populated popularity field must not
+  // make every difficulty tier unplayable. Keep all content and four-choice checks,
+  // but temporarily ignore the popularity-tier filter for this round.
+  if(!eligible.length){
+   activeMode='mixed';activeFormat='choices';
+   eligible=await collectEligibleAnime('mixed','choices',target,true);
+   usedSafeFallback=eligible.length>0;
+   if(usedSafeFallback){
+    $('#modeSelect').value='mixed';$('#answerFormatSelect').value='choices';
+    $('#quizStatus').textContent=lang==='ja'?'選択した難易度の対象作品が不足しているため、出題可能な作品から出題します。':'Not enough anime in the selected difficulty; using all eligible anime.';
+   }
+  }
   if(!eligible.length){document.body.classList.remove('quiz-active','quiz-preparing');clearInterval(questionTimer);clearInterval(clockTimer);locked=true;questions=[];index=0;isPaused=false;pausedAt=0;totalPausedMs=0;pausedQuestionSeconds=0;$('#quizArea').inert=false;$('#quizArea').classList.add('hidden');$('#pauseButton').classList.add('hidden');$('#quitQuizButton').classList.add('hidden');$('#pauseNotice').classList.add('hidden');$('#setupControls').classList.remove('hidden');$('#start').classList.remove('hidden');$('#start').disabled=false;$('#start').textContent=tr('start');$('#quizStatus').textContent=lang==='ja'?'この形式で出題できる作品がありません。出題形式や難易度を変更してください。':'No anime are available for this format. Change the question type or difficulty.';return}
   const ordered=playMode==='daily'?dailyOrder(eligible):shuffle(eligible),count=(playMode==='daily'||playMode==='rush')?Math.min(10,ordered.length):playMode==='endless'?ordered.length:Math.min(requestedQuestionCount,ordered.length);
   questions=ordered.slice(0,count);index=0;points=0;combo=0;bestCombo=0;choiceHintUsed=false;typedHintUsed=false;elapsedSeconds=0;startedAt=Date.now();
@@ -1234,7 +1246,7 @@ async function begin(){
   $('#score').textContent=tr('score')+' 0';$('#quizArea').classList.remove('hidden');$('#start').classList.add('hidden');
   clockTimer=setInterval(()=>{elapsedSeconds=Math.floor((Date.now()-startedAt-totalPausedMs)/1000);$('#elapsedLabel').textContent=({ja:'経過時間：',en:'Elapsed: ',ko:'경과 시간: ',zh:'已用时间：',es:'Tiempo transcurrido: ',fr:'Temps écoulé : ',pt:'Tempo decorrido: ',de:'Verstrichene Zeit: '}[lang]||'Elapsed: ')+elapsedSeconds+({ja:'秒',en:'s',ko:'초',zh:'秒',es:' s',fr:' s',pt:' s',de:' s'}[lang]||'s')},250);
   showQuestion();
- }catch(error){console.error('AQW quiz start failed.',error);document.body.classList.remove('quiz-active','quiz-preparing');clearInterval(questionTimer);clearInterval(clockTimer);clearTimeout(autoNextTimer);autoNextTimer=null;locked=true;isPaused=false;pausedAt=0;totalPausedMs=0;pausedQuestionSeconds=0;$('#quizArea').inert=false;$('#pauseButton').classList.add('hidden');$('#quitQuizButton').classList.add('hidden');$('#pauseNotice').classList.add('hidden');$('#quizArea').classList.add('hidden');$('#setupControls').classList.remove('hidden');$('#start').classList.remove('hidden');$('#start').textContent=tr('start');$('#quizStatus').textContent=lang==='ja'?'問題の準備中にエラーが発生しました。出題形式を変更して再試行してください。':'Could not prepare questions. Change the question type and try again.'}
+ }catch(error){console.error('AQW quiz start failed.',error);document.body.classList.remove('quiz-active','quiz-preparing');clearInterval(questionTimer);clearInterval(clockTimer);clearTimeout(autoNextTimer);autoNextTimer=null;locked=true;isPaused=false;pausedAt=0;totalPausedMs=0;pausedQuestionSeconds=0;$('#quizArea').inert=false;$('#pauseButton').classList.add('hidden');$('#quitQuizButton').classList.add('hidden');$('#pauseNotice').classList.add('hidden');$('#quizArea').classList.add('hidden');$('#setupControls').classList.remove('hidden');$('#start').classList.remove('hidden');$('#start').textContent=tr('start');$('#quizStatus').textContent=lang==='ja'?'問題の準備中にエラーが発生しました：'+String(error?.message||error)+'。ページを再読み込みして再試行してください。':'Could not prepare questions: '+String(error?.message||error)+'. Reload the page and try again.'}
  finally{quizStartInProgress=false;$('#start').disabled=false}
 }
 let currentQuestionMode='image',correctAnswer='',answerInputActive=false,lastCorrectOptionIndex=-1,mixedModeCounts={};
