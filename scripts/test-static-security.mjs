@@ -34,14 +34,16 @@ for (const [file, html] of source) {
 assert.ok(checkedScripts > 0, "No inline JavaScript was checked");
 
 const quizIndex = source.get("index.html");
-const resultMarkup = quizIndex.match(/<div id="result" class="hidden">([\\s\\S]*?)<\\/div><button id="start"/)?.[1];
+const resultStart = quizIndex.indexOf('<div id="result" class="hidden">');
+const resultEnd = quizIndex.indexOf('<button id="start"', resultStart);
+const resultMarkup = resultStart >= 0 && resultEnd > resultStart ? quizIndex.slice(resultStart, resultEnd) : "";
 assert.ok(resultMarkup, "Quiz result screen markup missing");
 for (const id of ["restart", "reviewMissed", "shareResult", "downloadResult", "historySummary"]) {
   assert.ok(resultMarkup.includes('id="' + id + '"'), `Quiz result control #${id} must exist`);
 }
 assert.ok(resultMarkup.includes('id="shareResult" class="primary">結果を共有</button>'), "The result-sharing button must be labelled 結果を共有");
 const finishStart = quizIndex.indexOf("function finishQuiz()");
-const finishEnd = quizIndex.indexOf("\\nfunction makeStatsRunId", finishStart);
+const finishEnd = quizIndex.indexOf("function makeStatsRunId", finishStart);
 assert.ok(finishStart >= 0 && finishEnd > finishStart, "Quiz completion handler missing");
 const finishQuizSource = quizIndex.slice(finishStart, finishEnd);
 for (const required of [
