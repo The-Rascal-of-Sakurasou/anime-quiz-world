@@ -1127,8 +1127,8 @@ window.addEventListener('aqw:question-difficulty-stats',event=>{
  const records=Array.isArray(event.detail)?event.detail:[];
  const next=new Map();
  for(const record of records){
-  const animeId=Number(record?.animeId),mode=String(record?.questionMode||''),attempts=Number(record?.attempts),uniquePlayers=Number(record?.uniquePlayers),correctRate=Number(record?.correctRate);
-  if(Number.isSafeInteger(animeId)&&animeId>0&&attempts>=50&&uniquePlayers>=10&&correctRate>=0&&correctRate<=1&&Number.isFinite(correctRate))next.set(animeId+'|'+mode,{attempts,uniquePlayers,correctRate});
+  const animeId=Number(record?.animeId),mode=String(record?.questionMode||''),attempts=Number(record?.attempts),uniquePlayers=Number(record?.uniquePlayers),effectiveAnswers=Number(record?.effectiveAnswers),correctRate=Number(record?.correctRate);
+  if(Number.isSafeInteger(animeId)&&animeId>0&&attempts>=50&&effectiveAnswers>=30&&uniquePlayers>=30&&correctRate>=0&&correctRate<=1&&Number.isFinite(correctRate)&&Number.isFinite(effectiveAnswers))next.set(animeId+'|'+mode,{attempts,uniquePlayers,effectiveAnswers,correctRate});
  }
  empiricalDifficultyStats=next;
  if(pool.length)prepareDifficultyTiers(pool);
@@ -1190,17 +1190,18 @@ function questionModeDifficultyScore(a,mode){
  }
  return clampDifficultyScore(score);
 }
-function difficultyInitialWeight(attempts){
- const progress=Math.max(0,Math.min(1,(Number(attempts)||0)/300));
+function difficultyInitialWeight(effectiveAnswers){
+ const count=Math.max(0,Number(effectiveAnswers)||0);
+ const progress=Math.max(0,Math.min(1,(count-30)/70));
  return Math.max(0,Math.min(1,(1+Math.cos(Math.PI*progress))/2));
 }
 function difficultyScoreForMode(a,mode,workRarity){
  const heuristic=questionModeDifficultyScore(a,mode);
  const initial=clampDifficultyScore(workRarity*.80+heuristic*.20);
  const stats=empiricalDifficultyStats.get(Number(a?.id)+'|'+mode);
- if(stats&&stats.attempts>=50&&stats.uniquePlayers>=10&&Number.isFinite(stats.correctRate)){
+ if(stats&&stats.attempts>=50&&stats.uniquePlayers>=30&&stats.effectiveAnswers>=30&&Number.isFinite(stats.correctRate)){
   const empirical=clampDifficultyScore((1-stats.correctRate)*100);
-  const initialWeight=difficultyInitialWeight(stats.attempts);
+  const initialWeight=difficultyInitialWeight(stats.effectiveAnswers);
   return clampDifficultyScore(initial*initialWeight+empirical*(1-initialWeight));
  }
  return initial;
