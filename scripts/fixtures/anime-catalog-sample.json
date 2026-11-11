@@ -23,6 +23,32 @@
       ],
       "relations": {
         "edges": []
+      },
+      "synonyms": [
+        "Test Alias",
+        "Another Alias"
+      ],
+      "characters": {
+        "nodes": [
+          {
+            "id": 101,
+            "name": {
+              "full": "Test Character"
+            },
+            "image": {
+              "large": "https://s4.anilist.co/file/character/101.jpg"
+            }
+          },
+          {
+            "id": 102,
+            "name": {
+              "full": "Another Character"
+            },
+            "image": {
+              "large": "https://s4.anilist.co/file/character/102.jpg"
+            }
+          }
+        ]
       }
     },
     {
@@ -49,6 +75,22 @@
               "type": "MANGA",
               "countryOfOrigin": "JP",
               "format": "MANGA"
+            }
+          }
+        ]
+      },
+      "synonyms": [
+        "Manga Alias"
+      ],
+      "characters": {
+        "nodes": [
+          {
+            "id": 201,
+            "name": {
+              "full": "Manga Character"
+            },
+            "image": {
+              "large": "https://s4.anilist.co/file/character/201.jpg"
             }
           }
         ]
