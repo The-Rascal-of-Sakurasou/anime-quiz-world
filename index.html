@@ -1422,7 +1422,8 @@ async function getEligibleCandidatePoolAsync(mode,format,ignoreDifficulty=false)
  const key=eligibleCandidateCacheKey(mode,format,ignoreDifficulty);
  const cached=eligibleCandidateCache.get(key);
  if(cached)return cached;
- if(eligibleCandidateBuilds.has(key))return eligibleCandidateBuilds.get(key);
+ const pending=eligibleCandidateBuilds.get(key);
+ if(pending&&pending.pool===sourcePool&&pending.length===sourceLength&&pending.revision===sourceRevision)return pending.promise;
  const build=(async()=>{
   const eligible=[],seen=new Set(),chunkSize=96;
   for(let offset=0;offset<sourceLength;offset+=chunkSize){
@@ -1456,9 +1457,10 @@ async function getEligibleCandidatePoolAsync(mode,format,ignoreDifficulty=false)
   }
   return eligible;
  })();
- eligibleCandidateBuilds.set(key,build);
+ const buildRecord={pool:sourcePool,length:sourceLength,revision:sourceRevision,promise:build};
+ eligibleCandidateBuilds.set(key,buildRecord);
  try{return await build}
- finally{if(eligibleCandidateBuilds.get(key)===build)eligibleCandidateBuilds.delete(key)}
+ finally{if(eligibleCandidateBuilds.get(key)===buildRecord)eligibleCandidateBuilds.delete(key)}
 }
 let eligibleCandidatePrewarmToken=0;
 function scheduleEligibleCandidatePrewarm(){
