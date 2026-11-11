@@ -1,4 +1,4 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 
 const CATALOG = "data/anime-catalog.json";
 const REPORT = "artifacts/question-mode-coverage/report.json";
@@ -120,6 +120,7 @@ const report = {
     "The client may also merge additional AniList API records into the shared catalogue at runtime.",
   ],
 };
+await mkdir("artifacts/question-mode-coverage", { recursive: true });
 await writeFile(REPORT, JSON.stringify(report,null,2)+"\n");
 console.log("Question-mode coverage audit");
 console.log("Catalogue: "+total+" records (generated "+payload.generatedAt+")");
