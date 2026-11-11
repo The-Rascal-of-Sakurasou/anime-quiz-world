@@ -19,6 +19,8 @@ on:
       - ".github/workflows/image-url-audit.yml"
       - ".github/workflows/sync-anime-catalog.yml"
       - "supabase/migrations/**"
+      - "supabase/config.toml"
+      - "supabase/functions/aqw-match-prepare/**"
       - ".github/workflows/aqw-static-security.yml"
   pull_request:
     paths:
