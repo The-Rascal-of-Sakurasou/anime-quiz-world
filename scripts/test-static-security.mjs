@@ -276,7 +276,9 @@ assert.match(syncScript, /startDate_greater/, "The shared catalogue must split o
 assert.match(syncScript, /countryOfOrigin !== 'JP'/, "Shared catalogue sync must reject non-Japanese animation");
 assert.match(syncScript, /isAdult:false/, "Shared catalogue sync must exclude adult catalogue entries");
 assert.match(syncScript, /const OVERFLOW_SORTS = \['SCORE_DESC', 'FAVOURITES_DESC', 'TRENDING_DESC', 'START_DATE_DESC'\]/, "Shared catalogue sync must cover AniList pagination overflow");
-assert.match(syncWorkflow, /cron: '30 19 \* \* \*'/, "Shared catalogue sync must be scheduled daily");
+assert.match(syncWorkflow, /cron: '0 \\*\\/6 \\* \\* \\*'/, "Shared catalogue sync must run incremental discovery every six hours");
+assert.match(syncScript, /const incremental = process\\.env\\.AQW_FULL_CATALOG !== 'true'/, "Shared catalogue sync must preserve the existing catalogue during incremental runs");
+assert.match(syncScript, /if \\(appendOnly && addedThisBatch === 0\\) return false/, "Incremental discovery must stop after reaching existing catalogue records");
 assert.match(syncWorkflow, /workflow_dispatch:/, "Shared catalogue sync must support manual runs");
 assert.match(syncWorkflow, /contents: write/, "Shared catalogue sync must be able to publish the generated dataset");
 
