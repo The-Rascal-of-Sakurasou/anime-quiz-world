@@ -904,21 +904,15 @@ async function fetchAnime(vars={}){
   }catch(e){}
 
  }catch(e){}
- // Merge the shared GitHub Pages catalogue so every visitor starts with the same expanded dataset.
+ // Merge the shared GitHub Pages catalogue before continuing, with a short wait for returning visitors.
  let sharedCatalogItems=[];
  const sharedCatalogPromise=fetchSharedAnimeCatalog();
  let sharedResult={timedOut:false,items:[]},sharedTimer;
  try{
-  if(initial.length){
-   // A returning visitor can start from the local catalogue immediately.
-   // Download and merge the shared catalogue in the background without delaying quiz startup.
-   sharedResult={timedOut:true,items:[]};
-  }else{
-   sharedResult=await Promise.race([
-    sharedCatalogPromise.then(items=>({timedOut:false,items})),
-    new Promise(resolve=>{sharedTimer=setTimeout(()=>resolve({timedOut:true,items:[]}),2200)})
-   ]);
-  }
+  sharedResult=await Promise.race([
+   sharedCatalogPromise.then(items=>({timedOut:false,items})),
+   new Promise(resolve=>{sharedTimer=setTimeout(()=>resolve({timedOut:true,items:[]}),initial.length?900:2200)})
+  ]);
  }catch(e){}finally{clearTimeout(sharedTimer)}
  sharedCatalogItems=sharedResult.items||[];
  if(sharedCatalogItems.length)initial=mergeAnimeCollection([...initial,...sharedCatalogItems]);
