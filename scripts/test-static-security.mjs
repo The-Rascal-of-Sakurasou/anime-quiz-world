@@ -399,7 +399,8 @@ assert.ok(syncScript.includes("const { source, relations, ...compact } = dedupeA
 assert.ok(syncScript.includes("export function dedupeAnimeMetadata(anime)"), "Catalogue synchronization must deduplicate synonym and character metadata");
 assert.match(syncScript, /originVerified: true/, "The published catalogue must retain the build-time Japanese-origin verification marker");
 assert.match(index, /new URL\('data\/anime-catalog\.json',document\.baseURI\)/, "The shared catalogue must resolve correctly from GitHub Pages subpaths");
-assert.match(index, /sharedCatalogItems=await fetchSharedAnimeCatalog\(\)/, "Shared catalogue entries must be merged with local cached records");
+assert.match(index, /const sharedCatalogPromise=fetchSharedAnimeCatalog\(\)/, "Shared catalogue loading must start independently of the local cache");
+assert.match(index, /sharedCatalogPromise\.then\(items=>\(\{timedOut:false,items\}\)\)/, "The quiz must merge shared catalogue entries when the asynchronous load completes");
 assert.match(index, /if\(sharedCatalogActive\)\{[\s\S]*?return initial;/, "A shared catalogue must prevent every visitor from repeating the full AniList backfill");
 assert.match(index, /sharedCatalogActive\?\(/, "The loading screen must distinguish the shared catalogue from local background backfill");
 assert.match(index, /const cacheKey='aqw-anime-pool-v21-compact-shared-catalog'/, "Verified original-source eligibility must rebuild the browser catalogue");
