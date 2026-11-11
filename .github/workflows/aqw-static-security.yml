@@ -13,6 +13,8 @@ on:
       - "terms.html"
       - "scripts/test-static-security.mjs"
       - "scripts/sync-anime-catalog.mjs"
+      - "scripts/audit-anime-image-urls.mjs"
+      - ".github/workflows/image-url-audit.yml"
       - ".github/workflows/sync-anime-catalog.yml"
       - "supabase/migrations/**"
       - ".github/workflows/aqw-static-security.yml"
@@ -47,4 +49,7 @@ jobs:
         with:
           node-version: 22
       - name: Run security checks
-        run: node scripts/test-static-security.mjs
+        run: |
+          node scripts/test-static-security.mjs
+          node --check scripts/audit-anime-image-urls.mjs
+          node scripts/audit-anime-image-urls.mjs --self-test

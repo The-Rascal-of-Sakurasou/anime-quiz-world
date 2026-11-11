@@ -1,0 +1,46 @@
+name: AQW image URL audit
+
+on:
+  workflow_run:
+    workflows: ["Sync shared anime catalogue"]
+    types: [completed]
+    branches: [main]
+  schedule:
+    - cron: '15 21 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aqw-image-url-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate audit script
+        run: |
+          node --check scripts/audit-anime-image-urls.mjs
+          node scripts/audit-anime-image-urls.mjs --self-test
+      - name: Audit catalogue image URLs
+        run: node scripts/audit-anime-image-urls.mjs
+      - name: Upload detailed report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aqw-image-url-audit
+          path: artifacts/image-url-audit/report.json
+          if-no-files-found: warn
+          retention-days: 30
