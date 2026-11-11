@@ -389,6 +389,27 @@ const fixtureAnime = { id: 1 };
 const aliasResults = uniqueAliasCandidates(fixtureAnime, aliasOwnerFixture, () => ["Shared Alias", "Private Alias"], value => String(value || "").normalize("NFKC").toLowerCase().replaceAll(" ", ""));
 assert.deepEqual(aliasResults, ["Private Alias"], "Only aliases owned by exactly one anime may be used");
 
+
+const questionModes = [
+  "image", "studio", "synonym", "titleYear", "titleStudio",
+  "character", "characterImage", "characterNameImage", "titleCharacter",
+  "synopsis", "titleSynopsis",
+];
+const modeAvailability = index.match(/function availableQuestionModes\\(a,format=[\\s\\S]*?\\n\\}/)?.[0];
+const modeValidation = index.match(/function questionModeHasFourChoices\\(a,mode\\)\\{[\\s\\S]*?\\n\\}/)?.[0];
+const questionRenderer = index.match(/function showQuestionInternal\\(preserveMode=false\\)\\{[\\s\\S]*?function answerModeLabel/)?.[0] || "";
+assert.ok(modeAvailability, "Question-mode availability helper missing");
+assert.ok(modeValidation, "Four-choice question-mode validation helper missing");
+assert.ok(questionRenderer, "Question renderer missing");
+for (const mode of questionModes) {
+  assert.ok(modeAvailability.includes("'" + mode + "'"), `Question mode ${mode} must be considered by availability filtering`);
+  assert.ok(modeValidation.includes("mode===" + "'" + mode + "'"), `Question mode ${mode} must have four-choice eligibility validation`);
+  assert.ok(questionRenderer.includes("actualMode===" + "'" + mode + "'"), `Question mode ${mode} must have a renderer`);
+}
+assert.match(index, /if\\(mode==='image'&&titleImageExcludedIds\\.has\\(Number\\(a\\.id\\)\\)\\)return false/, "Image questions must exclude title images containing the work's title");
+assert.match(questionRenderer, /if\\(!typingOnly&&opts\\.length<4\\)throw new Error\\('Four unique answer choices could not be prepared\\.'\\)/, "Choice questions must fail safely instead of displaying fewer than four choices");
+assert.match(index, /function normalizeAnswer\\(value\\)\\{return String\\(value\\|\\|''\\)\\.normalize\\('NFKC'\\)/, "Answer de-duplication must normalize full-width and compatibility characters");
+
 console.log(`Static security checks passed. Checked ${checkedScripts} inline script(s) across ${frontendFiles.length} pages.`);
 
 // Regression coverage: character image choices require unique portrait URLs.
