@@ -191,7 +191,7 @@ body{background:#f6f7f9;color:#202936;letter-spacing:.005em}
 .featured-caption{margin:4px 0 0;color:var(--muted);font-size:.88rem}
 .featured-refresh{flex:0 0 auto;min-height:38px;padding:7px 12px;font-size:.88rem}
 .featured-rail{display:grid;gap:12px;overflow:hidden}
-.featured-track{display:flex;width:max-content;gap:12px;animation:featured-scroll 100s linear infinite;will-change:transform}
+.featured-track{display:flex;width:max-content;gap:12px;animation:featured-scroll 100s linear infinite}
 .featured-track.reverse{animation-name:featured-scroll-reverse;animation-duration:110s}
 .featured-card{display:block;flex:0 0 146px;width:146px;color:var(--text);text-decoration:none;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff;transition:transform .18s,border-color .18s}
 .featured-card:hover{transform:translateY(-3px);border-color:#9eb3ce}
@@ -1582,8 +1582,8 @@ de:{countLabel:'Anzahl der Fragen',reviewMissed:'Falsch beantwortete Fragen wied
 Object.keys(CORE_TRANSLATIONS).forEach(code=>Object.assign(T[code],CORE_TRANSLATIONS[code]));
 return ((d[lang]||d.en)[key]||(d.en[key]||key))}
 function skipBrokenImageQuestion(brokenUrl=''){if(brokenUrl){failedImageUrls.add(String(brokenUrl));questionChoiceSummaryCache=null;}const current=questions[index];if(current){const image=current.coverImage?.large||current.coverImage?.medium||current.coverImage?.extraLarge||'';if(image&&failedImageUrls.has(image))pool=pool.filter(item=>Number(item.id)!==Number(current.id));}if(locked)return;locked=true;clearTimeout(autoNextTimer);autoNextTimer=null;skippedQuestionCount++;clearInterval(questionTimer);const cover=$('#cover');if(cover){cover.classList.add('hidden');cover.removeAttribute('src')}$('#feedback').textContent=({ja:'画像を読み込めなかったため、この問題をスキップしました。',en:'This question was skipped because its image could not be loaded.',ko:'이미지를 불러오지 못해 이 문제를 건너뛰었습니다.',zh:'由于图片无法加载，已跳过此题。',es:'Se omitió esta pregunta porque no se pudo cargar la imagen.',fr:'Cette question a été ignorée car son image n’a pas pu être chargée.',pt:'Esta pergunta foi ignorada porque não foi possível carregar a imagem.',de:'Diese Frage wurde übersprungen, da das Bild nicht geladen werden konnte.'}[lang]||'This question was skipped because its image could not be loaded.');$('#next').textContent=tr('next');$('#next').classList.remove('hidden');$('#answers').querySelectorAll('button.answer').forEach(button=>button.disabled=true);$('#typedAnswer').disabled=true;$('#submitTypedAnswer').disabled=true;clearTimeout(autoNextTimer);autoNextTimer=setTimeout(()=>$('#next').click(),220)}
-function preloadNextQuestionImage(){const next=questions[index+1];if(!next)return;const url=next?.coverImage?.large||next?.coverImage?.medium||next?.coverImage?.extraLarge||'';if(!url||failedImageUrls.has(url)||questionImagePreloadCache.has(url))return;const image=new Image();image.decoding='async';image.fetchPriority='low';image.src=url;questionImagePreloadCache.set(url,image);if(questionImagePreloadCache.size>12){const oldest=questionImagePreloadCache.keys().next().value;questionImagePreloadCache.delete(oldest)}}
-function showQuestionInternal(preserveMode=false){clearTimeout(autoNextTimer);autoNextTimer=null;clearInterval(questionTimer);locked=false;choiceHintUsed=false;typedHintUsed=false;$('#answerPrompt').style.whiteSpace='normal';$('#answerPrompt').style.padding='0';$('#answerPrompt').style.background='transparent';$('#answerPrompt').style.borderRadius='0';const a=questions[index],mode=$('#modeSelect').value;const quizCover=$('#cover');quizCover.onload=()=>quizCover.classList.remove('image-loading');quizCover.classList.add('image-loading');quizCover.onerror=()=>{quizCover.classList.remove('image-loading');const brokenUrl=quizCover.currentSrc||quizCover.src;[quizCover.currentSrc,quizCover.src].filter(Boolean).forEach(url=>failedImageUrls.add(url));quizCover.classList.add('hidden');if(['image','titleYear','character','characterImage','titleCharacter'].includes(currentQuestionMode))skipBrokenImageQuestion(brokenUrl)};$('#progress').textContent=(index+1)+' / '+questions.length;$('#quizProgressBar').style.width=(index/questions.length*100)+'%';$('#comboBadge').textContent=({ja:'連続正解 ',en:'Combo ',ko:'연속 정답 ',zh:'连续答对 ',es:'Racha ',fr:'Série ',pt:'Sequência ',de:'Serie '}[lang]||'Combo ')+combo;$('#comboBadge').classList.toggle('combo-hot',combo>=3);$('#hintBadge').textContent=({ja:'ヒント 1回',en:'Hint: 1',ko:'힌트 1회',zh:'提示：1次',es:'Pista: 1',fr:'Indice : 1',pt:'Dica: 1',de:'Hinweis: 1'}[lang]||'Hint: 1');$('#hintButton').disabled=false;$('#typedHintButton').disabled=false;const hintLabels={ja:['四択用ヒント','入力用ヒント'],en:['Multiple-choice hint','Typing hint'],ko:['객관식 힌트','입력 힌트'],zh:['四选一提示','输入提示'],es:['Pista para opciones','Pista para escribir'],fr:['Indice pour QCM','Indice de saisie'],pt:['Dica para múltipla escolha','Dica para digitação'],de:['Multiple-Choice-Hinweis','Eingabehinweis']};$('#hintButton').textContent=(hintLabels[lang]||hintLabels.en)[0];$('#typedHintButton').textContent=(hintLabels[lang]||hintLabels.en)[1];const coverUrl=a?.coverImage?.large||a?.coverImage?.medium||a?.coverImage?.extraLarge||'';$('#cover').src=coverUrl;$('#cover').alt=titleOf(a)+tr('titleAlt');$('#cover').classList.toggle('hidden',!coverUrl);$('#feedback').textContent='';$('#next').classList.add('hidden');const typingOnly=playMode!=='daily'&&playMode!=='rush'&&$('#answerFormatSelect').value==='typed';let modesForFormat=availableQuestionModes(a,$('#answerFormatSelect').value);let selectedMode=mode==='mixed'?(preserveMode&&modesForFormat.includes(currentQuestionMode)?currentQuestionMode:(()=>{const minCount=Math.min(...modesForFormat.map(m=>mixedModeCounts[m]||0));const balancedModes=modesForFormat.filter(m=>(mixedModeCounts[m]||0)===minCount);return shuffle(balancedModes)[0]||'image'})()):mode;let actualMode=selectedMode;$('#cover').classList.toggle('hidden',!coverUrl||!['image','titleYear'].includes(actualMode));let prompt='',correct='',opts=[];
+function preloadNextQuestionImage(){const next=questions[index+1];if(!next)return;const url=next?.coverImage?.medium||next?.coverImage?.large||next?.coverImage?.extraLarge||'';if(!url||failedImageUrls.has(url)||questionImagePreloadCache.has(url))return;const image=new Image();image.decoding='async';image.fetchPriority='low';image.src=url;questionImagePreloadCache.set(url,image);if(questionImagePreloadCache.size>12){const oldest=questionImagePreloadCache.keys().next().value;questionImagePreloadCache.delete(oldest)}}
+function showQuestionInternal(preserveMode=false){clearTimeout(autoNextTimer);autoNextTimer=null;clearInterval(questionTimer);locked=false;choiceHintUsed=false;typedHintUsed=false;$('#answerPrompt').style.whiteSpace='normal';$('#answerPrompt').style.padding='0';$('#answerPrompt').style.background='transparent';$('#answerPrompt').style.borderRadius='0';const a=questions[index],mode=$('#modeSelect').value;const quizCover=$('#cover');quizCover.onload=()=>quizCover.classList.remove('image-loading');quizCover.classList.add('image-loading');quizCover.onerror=()=>{quizCover.classList.remove('image-loading');const brokenUrl=quizCover.currentSrc||quizCover.src;[quizCover.currentSrc,quizCover.src].filter(Boolean).forEach(url=>failedImageUrls.add(url));quizCover.classList.add('hidden');if(['image','titleYear','character','characterImage','titleCharacter'].includes(currentQuestionMode))skipBrokenImageQuestion(brokenUrl)};$('#progress').textContent=(index+1)+' / '+questions.length;$('#quizProgressBar').style.width=(index/questions.length*100)+'%';$('#comboBadge').textContent=({ja:'連続正解 ',en:'Combo ',ko:'연속 정답 ',zh:'连续答对 ',es:'Racha ',fr:'Série ',pt:'Sequência ',de:'Serie '}[lang]||'Combo ')+combo;$('#comboBadge').classList.toggle('combo-hot',combo>=3);$('#hintBadge').textContent=({ja:'ヒント 1回',en:'Hint: 1',ko:'힌트 1회',zh:'提示：1次',es:'Pista: 1',fr:'Indice : 1',pt:'Dica: 1',de:'Hinweis: 1'}[lang]||'Hint: 1');$('#hintButton').disabled=false;$('#typedHintButton').disabled=false;const hintLabels={ja:['四択用ヒント','入力用ヒント'],en:['Multiple-choice hint','Typing hint'],ko:['객관식 힌트','입력 힌트'],zh:['四选一提示','输入提示'],es:['Pista para opciones','Pista para escribir'],fr:['Indice pour QCM','Indice de saisie'],pt:['Dica para múltipla escolha','Dica para digitação'],de:['Multiple-Choice-Hinweis','Eingabehinweis']};$('#hintButton').textContent=(hintLabels[lang]||hintLabels.en)[0];$('#typedHintButton').textContent=(hintLabels[lang]||hintLabels.en)[1];const coverUrl=a?.coverImage?.medium||a?.coverImage?.large||a?.coverImage?.extraLarge||'';$('#cover').src=coverUrl;$('#cover').alt=titleOf(a)+tr('titleAlt');$('#cover').classList.toggle('hidden',!coverUrl);$('#feedback').textContent='';$('#next').classList.add('hidden');const typingOnly=playMode!=='daily'&&playMode!=='rush'&&$('#answerFormatSelect').value==='typed';let modesForFormat=availableQuestionModes(a,$('#answerFormatSelect').value);let selectedMode=mode==='mixed'?(preserveMode&&modesForFormat.includes(currentQuestionMode)?currentQuestionMode:(()=>{const minCount=Math.min(...modesForFormat.map(m=>mixedModeCounts[m]||0));const balancedModes=modesForFormat.filter(m=>(mixedModeCounts[m]||0)===minCount);return shuffle(balancedModes)[0]||'image'})()):mode;let actualMode=selectedMode;$('#cover').classList.toggle('hidden',!coverUrl||!['image','titleYear'].includes(actualMode));let prompt='',correct='',opts=[];
 if(actualMode==='image'){if(!titleImageIsSafe(a))throw new Error(lang==='ja'?'利用可能な作品画像がありません。':'No usable artwork is available.');prompt=qText('image');correct=titleOf(a);opts=makeTitleOptions(a)}
 
 
@@ -2565,7 +2565,12 @@ async function sendFriendMessage(e){
 }
 
 const supabaseReady=initSupabase();
-if(supabaseReady)loadQuestionDifficultyStats();
+// Load optional global difficulty feedback after the first render, not during startup.
+if(supabaseReady){
+ const loadDifficultyFeedback=()=>{if(!document.hidden)loadQuestionDifficultyStats()};
+ if('requestIdleCallback' in window)requestIdleCallback(loadDifficultyFeedback,{timeout:1500});
+ else setTimeout(loadDifficultyFeedback,1200);
+}
 const authForm=$s('aqwAuthForm');
 const authEmailInput=$s('aqwEmail'),authPasswordInput=$s('aqwPassword');
 authForm.noValidate=true;
@@ -2646,7 +2651,7 @@ function officialAnimeLink(anime){
 }
 function renderFeaturedRail(source){
  const root=document.getElementById('featuredRail');if(!root)return;
- const candidates=shuffle(uniqueAnimeById(source).filter(a=>isUsableAnime(a))).slice(0,24);
+ const candidates=shuffle(uniqueAnimeById(source).filter(a=>isUsableAnime(a))).slice(0,12);
  if(!candidates.length){root.innerHTML='<p class="featured-empty">今シーズンの日本アニメ画像を取得できませんでした。</p>';return}
  const makeTrack=(items,reverse=false)=>{
   const track=document.createElement('div');track.className='featured-track'+(reverse?' reverse':'');
@@ -2665,6 +2670,19 @@ function renderFeaturedRail(source){
  const offset=candidates.length>1?1+Math.floor(Math.random()*(candidates.length-1)):0;
  const staggered=[...candidates.slice(offset),...candidates.slice(0,offset)];
  root.replaceChildren(makeTrack(candidates),makeTrack(staggered,true));
+ // Keep the off-screen marquee paused to reduce mobile CPU and GPU work.
+ if(root._aqwVisibilityObserver)root._aqwVisibilityObserver.disconnect();
+ const railTracks=()=>root.querySelectorAll('.featured-track');
+ if('IntersectionObserver' in window){
+  railTracks().forEach(track=>track.style.animationPlayState='paused');
+  root._aqwVisibilityObserver=new IntersectionObserver(entries=>{
+   const visible=entries.some(entry=>entry.isIntersecting);
+   railTracks().forEach(track=>track.style.animationPlayState=visible&&!document.hidden?'running':'paused');
+  },{threshold:0.05});
+  root._aqwVisibilityObserver.observe(root);
+ }else{
+  railTracks().forEach(track=>track.style.animationPlayState=document.hidden?'paused':'running');
+ }
  // ホバー・キーボード操作時は一時停止し、一定時間後に自動再開する
  let resumeTimer=null;
  const tracks=()=>root.querySelectorAll('.featured-track');
