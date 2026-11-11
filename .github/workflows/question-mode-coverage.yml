@@ -1,0 +1,35 @@
+name: Question mode coverage audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "data/anime-catalog.json"
+      - "index.html"
+      - "scripts/audit-question-mode-coverage.mjs"
+      - ".github/workflows/question-mode-coverage.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Audit all catalogue records
+        run: node scripts/audit-question-mode-coverage.mjs
+      - name: Upload detailed coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: aqw-question-mode-coverage
+          path: artifacts/question-mode-coverage/report.json
+          if-no-files-found: error
+          retention-days: 30
