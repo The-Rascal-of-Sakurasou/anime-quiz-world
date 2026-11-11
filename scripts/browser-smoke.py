@@ -198,6 +198,9 @@ def test_auth_form_reads_filled_inputs(browser):
     page = context.new_page()
     page.route("**/supabase-js@2*", lambda route: route.abort())
     page.goto(f"{BASE_URL}/index.html", wait_until="domcontentloaded")
+    # The account form lives in the Community section, which is intentionally
+    # hidden until selected in the normal navigation. Reveal only for this test.
+    page.locator("#social").evaluate("(el) => el.classList.remove('hidden')")
     page.locator("#aqwAuthForm").wait_for(state="visible", timeout=20000)
     page.locator("#aqwEmail").fill("smoke-test@example.invalid")
     page.locator("#aqwPassword").fill("SmokeTestPassword123!")
