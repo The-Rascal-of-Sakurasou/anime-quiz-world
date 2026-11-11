@@ -820,7 +820,7 @@ async function getRecommendations(profile){
  for(let i=0;i<sortModes.length;i++){
   const result=firstResults[i];
   if(result.status==='fulfilled'){
-   pages.push(result.value.media);
+   pages.push({sort:sortModes[i],media:result.value.media});
    const available=result.value.totalPages;
    const target=Math.min(available,maxPagesPerSort);
    totalPages+=target;
@@ -839,7 +839,7 @@ async function getRecommendations(profile){
    const batchPages=Array.from({length:Math.min(5,plan.target-start+1)},(_,index)=>start+index);
    const batch=await Promise.allSettled(batchPages.map(page=>fetchPage(page,plan.sort)));
    for(const result of batch){
-    if(result.status==='fulfilled')pages.push(result.value.media);
+    if(result.status==='fulfilled')pages.push({sort:plan.sort,media:result.value.media});
     else{failedPages++;console.warn('Recommendation page failed:',plan.sort,result.reason);}
    }
    const completed=Math.min(plan.target,start+batchPages.length-1);
@@ -848,19 +848,21 @@ async function getRecommendations(profile){
  }
  if(!pages.length)throw new Error('作品データを取得できませんでした。通信状態を確認して、もう一度お試しください。');
  const byId=new Map();
- for(const anime of pages.flat()){
+ for(const anime of pages.flatMap(page=>page.media)){
   if(anime?.id==null)continue;
   const previous=byId.get(anime.id);
   if(!previous||(Number(anime.averageScore)||0)>(Number(previous.averageScore)||0))byId.set(anime.id,anime);
  }
  const items=[...byId.values()];
+ const sortCoverage=Object.fromEntries(sortModes.map(sort=>[sort,new Set(pages.filter(page=>page.sort===sort).flatMap(page=>page.media.map(anime=>anime.id))).size]));
+ const rawRecordCount=pages.reduce((sum,page)=>sum+page.media.length,0);
  if(!items.length)throw new Error('取得できた作品データがありませんでした。時間をおいて再診断してください。');
  const [favoriteNames,dislikedNames]=[parseTitleInput('favoriteTitles'),parseTitleInput('dislikedTitles')];
  const recommendationFeedback=readRecommendationFeedback();
  // 評価履歴からジャンル・タグごとの傾向を集計し、少数評価を抑制した補正値を算出する。
  const learnedPreferences=buildLearnedPreferences(recommendationFeedback);
  const favoriteSeeds=[],dislikedSeeds=[];
- const seedReport={unresolvedFavorites:[],unresolvedDislikes:[],conflicts:[],resolvedFavorites:[],resolvedDislikes:[],lookupErrors:[],dataWarnings:buildRecommendationDataWarnings(failedPages,totalPages,cappedSorts)};
+ const seedReport={unresolvedFavorites:[],unresolvedDislikes:[],conflicts:[],resolvedFavorites:[],resolvedDislikes:[],lookupErrors:[],dataWarnings:buildRecommendationDataWarnings(failedPages,totalPages,cappedSorts),retrievalStats:{rawRecordCount,uniqueIdCount:items.length,sortCoverage}};
  for(const name of favoriteNames){
   try{const found=await findSeedAnime(name);if(found){favoriteSeeds.push({...found,_requestedTitle:name});seedReport.resolvedFavorites.push({requested:name,resolved:found.title?.native||found.title?.english||found.title?.romaji||'タイトル不明'})}else seedReport.unresolvedFavorites.push(name)}
   catch(error){seedReport.lookupErrors.push({type:'好きな作品',title:name,message:error.message||'検索に失敗しました'})}
@@ -961,7 +963,10 @@ async function getRecommendations(profile){
   return {...a,_score:score,_scoreBreakdown:scoreBreakdown,_reasonDetails:details,_evaluationMetrics:evaluationMetrics,_quality:Number(a.averageScore)||0,_popularity:Number(a.popularity)||0};
  }).filter(a=>!excludedSeedIds.has(a.id)).sort((a,b)=>b._score-a._score||b._quality-a._quality||b._popularity-a._popularity);
   // 前後編・シーズン・別バージョンの関係を連結成分としてまとめ、最高順位の1作品だけ残す。
+  const scoredBeforeSeriesDedup=scored.length;
   scored.splice(0,scored.length,...deduplicateAnimeSeries(scored));
+ seedReport.retrievalStats.seriesDeduplicatedCount=scoredBeforeSeriesDedup-scored.length;
+ seedReport.retrievalStats.eligibleAfterSeriesDedup=scored.length;
  // 一致度を保ちながら、同じジャンル・タグに偏りすぎないよう逐次選択する。
  const selectDiverse=(candidates,count,discovery=false)=>{
   const pool=[...candidates],selected=[];
@@ -1412,6 +1417,13 @@ function renderCards(result){
  const report=result.seedReport||{};
  const notices=[];
  if(report.dataWarnings?.length)notices.push(...report.dataWarnings);
+  if(report.retrievalStats){
+   const stats=report.retrievalStats;
+   const sortNames={POPULARITY_DESC:'人気順',SCORE_DESC:'評価順',TRENDING_DESC:'トレンド順',START_DATE_DESC:'放送開始日順'};
+   const coverage=Object.entries(stats.sortCoverage||{}).map(([sort,count])=>(sortNames[sort]||sort)+' '+count+'作品').join('・');
+   notices.push('取得データの内訳：重複を含む'+stats.rawRecordCount+'件 → ID統合後'+stats.uniqueIdCount+'作品 → シリーズ重複整理後'+stats.eligibleAfterSeriesDedup+'作品（シリーズ重複 '+stats.seriesDeduplicatedCount+'件を統合）。');
+   notices.push('並び順別のユニーク作品数：'+coverage+'。同じ作品が複数の並び順に含まれるため、各数値は合計できません。');
+  }
  if(report.resolvedFavorites?.length)notices.push('好きな作品の照合結果：'+report.resolvedFavorites.map(x=>x.requested+' → '+x.resolved).join('、'));
  if(report.resolvedDislikes?.length)notices.push('苦手な作品の照合結果：'+report.resolvedDislikes.map(x=>x.requested+' → '+x.resolved).join('、'));
  if(report.unresolvedFavorites?.length)notices.push('完全一致で確認できなかった「好きな作品」：'+report.unresolvedFavorites.join('、'));
