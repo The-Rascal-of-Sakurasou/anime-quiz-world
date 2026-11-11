@@ -321,6 +321,32 @@ assert.match(index, /if\(actualMode===\'titleStudio\'\)\{prompt=titleOf\(a\)\+qT
 assert.match(index, /function titleChoiceRecordsForAnime\(a\)/, "Title-based question eligibility and generation must share the same alias-safe option builder");
 assert.match(index, /function hasFourDistinctTitleChoices\(anime,summary=questionChoiceSummary\(\)\)\{return titleChoiceRecordsForAnime\(anime\)\.length>=4\}/, "Title-based question eligibility must count the exact generated title options");
 assert.match(index, /function makeTitleOptions\(a\)\{const records=titleChoiceRecordsForAnime\(a\);if\(!records\.length\)return \[\];const correctKey=normalizeAnswer\(titleOf\(a\)\);const correct=records\.find\(record=>normalizeAnswer\(record\.value\)===correctKey\);const distractors=shuffle\(records\.filter\(record=>normalizeAnswer\(record\.value\)!==correctKey\)\);return correct\?\[correct,\.\.\.distractors\.slice\(0,3\)\]:shuffle\(records\)\.slice\(0,4\)\}/, "Title-based question generation must retain the correct answer and randomize distractors");
+const randomIntSource = index.match(/function randomInt\\(maxExclusive\\)\\{[^\\n]*\\}/)?.[0];
+const shuffleSource = index.match(/function shuffle\\(a\\)\\{[^\\n]*\\}/)?.[0];
+assert.ok(randomIntSource && shuffleSource, "Quiz randomization helpers must exist");
+let randomSeed = 0x12345678;
+const deterministicMath = Object.create(Math);
+deterministicMath.random = () => {
+  randomSeed = (1664525 * randomSeed + 1013904223) >>> 0;
+  return randomSeed / 0x100000000;
+};
+const { shuffle: testedShuffle } = vm.runInNewContext(
+  ` ${randomIntSource}; ${shuffleSource}; ({ shuffle }) `,
+  { Math: deterministicMath }
+);
+const answerPositions = [0, 0, 0, 0];
+const permutationCounts = new Map();
+for (let sample = 0; sample < 20000; sample++) {
+  const shuffled = testedShuffle(["correct", "A", "B", "C"]);
+  assert.equal(new Set(shuffled).size, 4, "Randomized answer choices must not contain duplicates");
+  assert.deepEqual([...shuffled].sort(), ["A", "B", "C", "correct"], "Randomized answer choices must preserve all options");
+  answerPositions[shuffled.indexOf("correct")]++;
+  const key = shuffled.join("|");
+  permutationCounts.set(key, (permutationCounts.get(key) || 0) + 1);
+}
+assert.ok(answerPositions.every(count => count >= 4500 && count <= 5500), `Correct answer position distribution is unexpectedly biased: ${answerPositions.join(", ")}`);
+assert.equal(permutationCounts.size, 24, "All 24 answer-choice permutations must be reachable");
+
 assert.match(index, /function characterChoiceRecordsForAnime\(anime,correctRecord,imageAnswers=false\)/, "Character image question eligibility and generation must share the exact four-choice builder");
 assert.match(index, /function characterRecordsWithFourChoicesForAnime\(anime,summary=questionChoiceSummary\(\),imageAnswers=false\)\{return uniqueCharacterRecordsForAnime\(anime,summary\)\.filter\(record=>characterChoiceRecordsForAnime\(anime,record,imageAnswers\)\.length===4\)\}/, "Character image questions must only use records that produce exactly four unique name or image choices");
 assert.match(index, /seenImages=new Set\(imageAnswers\?\[String\(correctRecord\?\.image\|\|''\)\]:\[\]\)/, 'Character image answers must reject duplicate image URLs');
