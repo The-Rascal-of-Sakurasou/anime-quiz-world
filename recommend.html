@@ -518,7 +518,7 @@ function buildRecommendationDataWarnings(failedPages,totalPages,cappedSorts){
  const capped=Number.isInteger(cappedSorts)?Math.max(0,cappedSorts):0;
  const warnings=[];
  if(failed&&total)warnings.push('作品データの一部を取得できませんでした（'+failed+'/'+total+'ページ）。推薦候補が偏る可能性があります。時間をおいて再診断してください。');
- if(capped)warnings.push('一部の並び順で取得上限（1グループ最大100ページ）に達しました。全作品を網羅できていない可能性があります。');
+ if(capped)warnings.push('一部の並び順で取得上限（1グループ最大20ページ）に達しました。全作品を網羅できていない可能性があります。');
  return warnings;
 }
 
