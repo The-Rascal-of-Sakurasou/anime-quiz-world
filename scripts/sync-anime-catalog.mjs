@@ -127,6 +127,39 @@ async function scanScope(format, sort, yearStart, yearEnd) {
   return false;
 }
 
+function metadataKey(value) {
+  return String(value || '').normalize('NFKC').toLocaleLowerCase().replace(/\s+/g, '');
+}
+
+export function dedupeAnimeMetadata(anime) {
+  const synonyms = [];
+  const synonymKeys = new Set();
+  for (const raw of Array.isArray(anime?.synonyms) ? anime.synonyms : []) {
+    if (typeof raw !== 'string' || !raw.trim()) continue;
+    const key = metadataKey(raw);
+    if (!key || synonymKeys.has(key)) continue;
+    synonymKeys.add(key);
+    synonyms.push(raw.normalize('NFC').trim());
+  }
+  const characters = [];
+  const characterKeys = new Set();
+  for (const character of Array.isArray(anime?.characters?.nodes) ? anime.characters.nodes : []) {
+    if (!character || typeof character !== 'object') continue;
+    const id = Number(character.id);
+    const name = character.name?.full || character.name?.native || '';
+    const key = Number.isSafeInteger(id) && id > 0
+      ? 'id:' + id
+      : 'name:' + metadataKey(name) + '|image:' + String(character.image?.large || '');
+    if (key === 'name:|image:' || characterKeys.has(key)) continue;
+    characterKeys.add(key);
+    characters.push(character);
+  }
+  return {
+    ...anime,
+    ...(Array.isArray(anime?.synonyms) ? { synonyms } : {}),
+    ...(anime?.characters ? { characters: { ...anime.characters, nodes: characters } } : {}),
+  };
+}
 function mergeRecord(existing, incoming) {
   if (!existing) return incoming;
   const merge = (oldValue, newValue) => {
@@ -165,7 +198,7 @@ for (const format of FORMATS) {
 }
 
 const items = [...records.values()].map((anime) => {
-  const { source, relations, ...compact } = anime;
+  const { source, relations, ...compact } = dedupeAnimeMetadata(anime);
   return { ...compact, originVerified: true };
 }).sort((a, b) =>
   (Number(b.popularity) || 0) - (Number(a.popularity) || 0) || Number(a.id) - Number(b.id)
