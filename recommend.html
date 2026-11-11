@@ -753,8 +753,17 @@ function calculateSeedSimilarity(candidate,seeds,rarityWeight,genreRarity){
  const matchedTags=[...matchedTagScores.entries()].sort((a,b)=>b[1]-a[1]).slice(0,15).map(([name])=>name);
  return {score:Math.min(8.5,best*0.7+average*0.3),matchedGenres:[...new Set(matchedGenres)],matchedTags};
 }
+function getOfficialAnimeSiteUrl(anime){
+ const links=Array.isArray(anime?.externalLinks)?anime.externalLinks:[];
+ const officialLinks=links.filter(item=>{
+  if(!item||item.isDisabled||typeof item.url!=='string'||!/(official|公式)/i.test(String(item.site||'')))return false;
+  try{return new URL(item.url).protocol==='https:'}catch(_){return false}
+ });
+ const japaneseLink=officialLinks.find(item=>/(japanese|日本語|^ja(?:\b|[-_]))/i.test(String(item.language||'')));
+ return (japaneseLink||officialLinks[0])?.url||'';
+}
 async function getRecommendations(profile){
- const query='query ($page:Int,$sort:[MediaSort]) { Page(page:$page,perPage:50) { media(type:ANIME,countryOfOrigin:JP,sort:$sort,isAdult:false) { id countryOfOrigin source format title { romaji english native } description(asHtml:false) coverImage { extraLarge large } episodes seasonYear averageScore popularity genres tags { name rank isMediaSpoiler } relations { edges { relationType node { id type countryOfOrigin format } } } siteUrl } } }';
+ const query='query ($page:Int,$sort:[MediaSort]) { Page(page:$page,perPage:50) { media(type:ANIME,countryOfOrigin:JP,sort:$sort,isAdult:false) { id countryOfOrigin source format title { romaji english native } description(asHtml:false) coverImage { extraLarge large } episodes seasonYear averageScore popularity genres tags { name rank isMediaSpoiler } relations { edges { relationType node { id type countryOfOrigin format } } } siteUrl externalLinks { url site language isDisabled } } } }';
  const fetchPage=async (page,sort)=>{
   let lastError=null;
   for(let attempt=0;attempt<3;attempt++){
@@ -983,7 +992,12 @@ function renderCardList(containerId,items){
    });
   }else{const empty=document.createElement('p');empty.className='match-reason';empty.textContent='選択した条件との明確な一致点は少なめです。';reasonList.append(empty)}
   const desc=document.createElement('p');desc.textContent=String(a.description||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').slice(0,220);
-  const link=document.createElement('a');link.href=a.siteUrl||'https://anilist.co/anime/'+a.id;link.target='_blank';link.rel='noopener noreferrer';link.textContent='作品情報を見る ↗';
+  const link=document.createElement('a');
+  const officialSiteUrl=getOfficialAnimeSiteUrl(a);
+  link.href=officialSiteUrl||a.siteUrl||'https://anilist.co/anime/'+a.id;
+  link.target='_blank';link.rel='noopener noreferrer';
+  link.textContent=officialSiteUrl?'作品情報を見る ↗':'公式サイト未登録（AniListで作品情報を見る） ↗';
+  link.setAttribute('aria-label',officialSiteUrl?'公式サイトで作品情報を見る':'公式サイト未登録。AniListで作品情報を見る');
   const feedback=document.createElement('div');feedback.className='recommend-feedback';feedback.style.cssText='display:flex;gap:7px;flex-wrap:wrap;margin-top:10px';
   const feedbackLabel=document.createElement('small');feedbackLabel.textContent='このおすすめは好みに合っていますか？';feedbackLabel.style.cssText='display:block;width:100%;color:var(--muted)';
   const currentSessionId=latestResult?.evaluationSessionId||'';const currentFeedback=readRecommendationEvaluationHistory().filter(item=>item.sessionId===currentSessionId&&item.animeId===String(a.id)).sort((a,b)=>(b.recordedAt||0)-(a.recordedAt||0))[0]?.value||'';
