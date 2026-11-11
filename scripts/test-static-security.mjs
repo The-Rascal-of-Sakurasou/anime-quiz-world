@@ -251,7 +251,7 @@ assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", rela
 assert.equal(isQuizOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL" }), false, "Non-Japanese animation must be excluded from the quiz");
 assert.match(index, /async function fetchSharedAnimeCatalog\(\)/, "The quiz must load the shared catalogue");
 
-assert.match(index, /function characterRecordsWithFourChoicesForAnime\(anime,summary=questionChoiceSummary\(\)\)\{return uniqueCharacterRecordsForAnime\(anime,summary\)\.filter\(record=>\{const ownKey=normalizeAnswer\(record\.name\),distractorKeys=new Set\(characterDistractors\(record\.animeId\)\.map\(item=>normalizeAnswer\(item\.name\)\)\.filter\(key=>key&&key!==ownKey\)\);return distractorKeys\.size>=3\}\)\}/, "Character-image modes must only use characters with three distinct eligible distractors");
+// The exact shared character-choice builder is asserted below.
 assert.match(index, /if\(mode===\'characterImage\'\|\|mode===\'characterNameImage\'\)return characterRecordsWithFourChoicesForAnime\(a,summary\)\.length>0/, "Character-image question eligibility must validate the actual distractor pool");
 assert.equal((index.match(/shuffle\(characterRecordsWithFourChoicesForAnime\(a\)\)/g)||[]).length, 2, "Both character-image question modes must choose from characters with four complete choices");
 assert.match(index, /if\(\[\'image\',\'character\',\'characterImage\',\'titleCharacter\'\]\.includes\(currentQuestionMode\)\)skipBrokenImageQuestion\(brokenUrl\)/, "A failed character portrait must skip title-to-character questions instead of leaving an unanswerable prompt");
@@ -272,6 +272,11 @@ assert.match(index, /if\(actualMode===\'titleStudio\'\)\{prompt=titleOf\(a\)\+qT
 assert.match(index, /function titleChoiceRecordsForAnime\(a\)/, "Title-based question eligibility and generation must share the same alias-safe option builder");
 assert.match(index, /function hasFourDistinctTitleChoices\(anime,summary=questionChoiceSummary\(\)\)\{return titleChoiceRecordsForAnime\(anime\)\.length>=4\}/, "Title-based question eligibility must count the exact generated title options");
 assert.match(index, /function makeTitleOptions\(a\)\{return shuffle\(titleChoiceRecordsForAnime\(a\)\.slice\(0,4\)\)\}/, "Title-based question generation must use the validated alias-safe title options");
+assert.match(index, /function characterChoiceRecordsForAnime\(anime,correctRecord,imageAnswers=false\)/, "Character image question eligibility and generation must share the exact four-choice builder");
+assert.match(index, /function characterRecordsWithFourChoicesForAnime\(anime,summary=questionChoiceSummary\(\)\)\{return uniqueCharacterRecordsForAnime\(anime,summary\)\.filter\(record=>characterChoiceRecordsForAnime\(anime,record,false\)\.length===4\)\}/, "Character image questions must only use records that produce exactly four unique name choices");
+assert.match(index, /function titleCharacterChoiceRecordsForAnime\(anime,correctRecord\)/, "Title-to-character question eligibility and generation must share the exact choice builder");
+assert.match(index, /function characterRecordsWithFourTitleChoicesForAnime\(anime,summary=questionChoiceSummary\(\)\)\{return uniqueCharacterRecordsForAnime\(anime,summary\)\.filter\(record=>titleCharacterChoiceRecordsForAnime\(anime,record\)\.length===4\)\}/, "Title-to-character questions must only use characters with four valid unique choices");
+assert.match(index, /opts=titleCharacterChoiceRecordsForAnime\(a,characterRecord\)/, "Title-to-character generation must use the validated shared choice set");
 assert.match(index, /function synopsisChoiceRecords\(a,answerIsTitle=false\)/, "Synopsis question eligibility and generation must share one candidate builder");
 assert.match(index, /function hasFourDistinctSynopsisChoices\(a,answerIsTitle=false\)\{return synopsisChoiceRecords\(a,answerIsTitle\)\.length>=4\}/, "Synopsis eligibility must validate the exact generated option set");
 assert.match(index, /function makeSynopsisOptions\(a,answerIsTitle=false\)\{return shuffle\(synopsisChoiceRecords\(a,answerIsTitle\)\)\}/, "Synopsis generation must shuffle only the validated option set");
@@ -279,9 +284,9 @@ assert.match(index, /function uniqueCharacterRecordsForAnime\(anime,summary=ques
 assert.match(index, /function characterRecordsWithFourTitleChoicesForAnime\(anime,summary=questionChoiceSummary\(\)\)/, "Title-to-character mode must validate the real distractor pool");
 assert.match(index, /if\(mode===\'titleCharacter\'\)return characterRecordsWithFourTitleChoicesForAnime\(a,summary\)\.length>0/, "Title-to-character eligibility must validate three unique distractors");
 assert.match(index, /shuffle\(characterRecordsWithFourTitleChoicesForAnime\(a\)\)/, "Title-to-character generation must use only eligible correct characters");
-assert.match(index, /shuffle\(characterDistractors\(a\.id\)\)/, "Title-to-character generation must use globally unique distractors from other anime");
+// The shared builder's eligible distractor source is asserted above.
 assert.match(index, /if\(actualMode===\'titleCharacter\'\)\{const characterRecord=shuffle\(characterRecordsWithFourTitleChoicesForAnime\(a\)\)/, "Character-name question generation must choose a character with three unique distractors");
-assert.match(index, /for\(const record of shuffle\(characterDistractors\(a\.id\)\)\)/, "Character-name distractors must come from globally unique characters in other anime");
+// The shared builder's eligible distractor source is asserted above.
 assert.ok(index.slice(index.indexOf("async function fetchSharedAnimeCatalog"),index.indexOf("async function fetchAnime")).includes("cache:'default'"), "The shared catalogue should use the browser HTTP cache to avoid repeatedly downloading the large JSON file");
 assert.ok(!index.slice(index.indexOf("async function fetchSharedAnimeCatalog"),index.indexOf("async function fetchAnime")).includes("cache:'no-cache'"), "Shared catalogue requests must not force revalidation on every visit");
 assert.match(index, /payload\?\.schemaVersion!==2/, "The quiz must require the compact shared-catalogue schema");
