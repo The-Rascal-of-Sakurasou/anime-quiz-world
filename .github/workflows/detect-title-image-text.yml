@@ -1,12 +1,6 @@
 name: Detect anime title text in cover images
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "scripts/detect-title-image-text.py"
-      - "data/anime-catalog.json"
-      - ".github/workflows/detect-title-image-text.yml"
   pull_request:
     paths:
       - "index.html"
