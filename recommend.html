@@ -495,6 +495,10 @@ function runRecommendationSelfTests(){
  const allCandidates=[{id:1,_score:100,_popularity:100},{id:2,_score:-80,_popularity:5},{id:3,_score:0,_popularity:20}];
  const openPool=buildDiscoveryPool(allCandidates,new Set([1]));
  check('相性スコアが低い作品も意外なおすすめ候補に残る',openPool.some(a=>a.id===2));
+ const repeated={genres:['Fantasy'],tags:[{name:'Magic',rank:80,isMediaSpoiler:false}]};
+ const similar=calculateSelectionAdjustment({genres:['Fantasy'],tags:[{name:'Magic',rank:80,isMediaSpoiler:false}],_popularity:20},[repeated]);
+ const varied=calculateSelectionAdjustment({genres:['Drama'],tags:[{name:'Family',rank:80,isMediaSpoiler:false}],_popularity:20},[repeated]);
+ check('ジャンル・物語タグが異なる候補を優先する',varied.total>similar.total);
  check('上位4作品以外も全候補から意外なおすすめ候補に残る',openPool.length===2&&openPool.some(a=>a.id===3));
  const dedup=deduplicateRecommendationGroups(
   [{id:1,title:{native:'作品A',english:'Title A',romaji:'Title A'}}],
@@ -917,6 +921,7 @@ async function getRecommendations(profile){
    chosen._selectionBreakdown=[
     {label:'既出作品との類似度による調整',points:-chosen._selectionAdjustment.similarityPenalty},
     {label:'ジャンルの偏りによる調整',points:-chosen._selectionAdjustment.genreConcentrationPenalty},
+    {label:'物語タグの偏りによる調整',points:-chosen._selectionAdjustment.tagConcentrationPenalty},
     {label:'意外性（AniList上の人気度）',points:chosen._selectionAdjustment.noveltyBonus}
    ].filter(item=>Math.abs(item.points)>0.001);
    selected.push(chosen);
