@@ -405,20 +405,24 @@ const questionModes = [
   "character", "characterImage", "characterNameImage", "titleCharacter",
   "synopsis", "titleSynopsis",
 ];
-const modeAvailability = index.match(/function availableQuestionModes\\(a,format=[\\s\\S]*?\\n\\}/)?.[0];
-const modeValidation = index.match(/function questionModeHasFourChoices\\(a,mode\\)\\{[\\s\\S]*?\\n\\}/)?.[0];
-const questionRenderer = index.match(/function showQuestionInternal\\(preserveMode=false\\)\\{[\\s\\S]*?function answerModeLabel/)?.[0] || "";
-assert.ok(modeAvailability, "Question-mode availability helper missing");
-assert.ok(modeValidation, "Four-choice question-mode validation helper missing");
-assert.ok(questionRenderer, "Question renderer missing");
+const availabilityStart = index.indexOf("function availableQuestionModes(a,format=");
+const validationStart = index.indexOf("function questionModeHasFourChoices(a,mode)");
+const rendererStart = index.indexOf("function showQuestionInternal(preserveMode=false)");
+const rendererEnd = index.indexOf("function answerModeLabel", rendererStart);
+assert.ok(availabilityStart >= 0, "Question-mode availability helper missing");
+assert.ok(validationStart >= 0, "Four-choice question-mode validation helper missing");
+assert.ok(rendererStart >= 0 && rendererEnd > rendererStart, "Question renderer missing");
+const modeAvailability = index.slice(availabilityStart, index.indexOf("\n}", availabilityStart) + 2);
+const modeValidation = index.slice(validationStart, index.indexOf("\n}", validationStart) + 2);
+const questionRenderer = index.slice(rendererStart, rendererEnd);
 for (const mode of questionModes) {
   assert.ok(modeAvailability.includes("'" + mode + "'"), `Question mode ${mode} must be considered by availability filtering`);
-  assert.ok(modeValidation.includes("mode===" + "'" + mode + "'"), `Question mode ${mode} must have four-choice eligibility validation`);
-  assert.ok(questionRenderer.includes("actualMode===" + "'" + mode + "'"), `Question mode ${mode} must have a renderer`);
+  assert.ok(modeValidation.includes("mode==='" + mode + "'"), `Question mode ${mode} must have four-choice eligibility validation`);
+  assert.ok(questionRenderer.includes("actualMode==='" + mode + "'"), `Question mode ${mode} must have a renderer`);
 }
-assert.match(index, /if\\(mode==='image'&&titleImageExcludedIds\\.has\\(Number\\(a\\.id\\)\\)\\)return false/, "Image questions must exclude title images containing the work's title");
-assert.match(questionRenderer, /if\\(!typingOnly&&opts\\.length<4\\)throw new Error\\('Four unique answer choices could not be prepared\\.'\\)/, "Choice questions must fail safely instead of displaying fewer than four choices");
-assert.match(index, /function normalizeAnswer\\(value\\)\\{return String\\(value\\|\\|''\\)\\.normalize\\('NFKC'\\)/, "Answer de-duplication must normalize full-width and compatibility characters");
+assert.ok(index.includes("if(mode==='image'&&titleImageExcludedIds.has(Number(a.id)))return false"), "Image questions must exclude title images containing the work's title");
+assert.ok(questionRenderer.includes("if(!typingOnly&&opts.length<4)throw new Error('Four unique answer choices could not be prepared.')"), "Choice questions must fail safely instead of displaying fewer than four choices");
+assert.ok(index.includes("function normalizeAnswer(value){return String(value||'').normalize('NFKC')"), "Answer de-duplication must normalize full-width and compatibility characters");
 
 console.log(`Static security checks passed. Checked ${checkedScripts} inline script(s) across ${frontendFiles.length} pages.`);
 
