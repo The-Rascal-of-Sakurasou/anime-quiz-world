@@ -474,7 +474,7 @@ assert.deepEqual(aliasResults, ["Private Alias"], "Only aliases owned by exactly
 
 
 const questionModes = [
-  "image", "studio", "synonym", "titleYear", "titleStudio",
+  "image", "studio", "year", "synonym",
   "character", "characterImage", "characterNameImage", "titleCharacter",
   "synopsis",
 ];
