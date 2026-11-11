@@ -47,9 +47,35 @@ jobs:
         with:
           ref: main
       - name: Install Japanese and English OCR engine
+        env:
+          DEBIAN_FRONTEND: noninteractive
         run: |
-          sudo apt-get update
-          sudo apt-get install -y tesseract-ocr tesseract-ocr-jpn tesseract-ocr-eng
+          set -euo pipefail
+
+          # Reuse runner-provided Tesseract when it already has both languages.
+          if command -v tesseract >/dev/null 2>&1 \
+            && tesseract --list-langs 2>/dev/null | grep -qx 'jpn' \
+            && tesseract --list-langs 2>/dev/null | grep -qx 'eng'; then
+            echo "Tesseract with Japanese and English language data is already available."
+            exit 0
+          fi
+
+          # GitHub-hosted runner package mirrors can temporarily fail DNS resolution.
+          # Retry both index refresh and installation rather than failing immediately.
+          for attempt in 1 2 3 4 5; do
+            echo "Tesseract installation attempt ${attempt}/5"
+            if sudo apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update \
+              && sudo apt-get -o Acquire::Retries=5 install -y tesseract-ocr tesseract-ocr-jpn tesseract-ocr-eng; then
+              break
+            fi
+            if [ "${attempt}" -eq 5 ]; then
+              echo "Could not install Tesseract after five attempts." >&2
+              exit 1
+            fi
+            sleep $((attempt * 15))
+          done
+
+          tesseract --list-langs
       - name: Verify OCR script
         run: |
           tesseract --list-langs
