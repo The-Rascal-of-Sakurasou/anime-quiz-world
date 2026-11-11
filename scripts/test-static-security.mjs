@@ -250,6 +250,8 @@ assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", rela
 assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "KR", format: "MANGA" } }] } }), false, "Non-Japanese source adaptations must be excluded from the quiz");
 assert.equal(isQuizOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL" }), false, "Non-Japanese animation must be excluded from the quiz");
 assert.match(index, /async function fetchSharedAnimeCatalog\(\)/, "The quiz must load the shared catalogue");
+assert.ok(index.slice(index.indexOf("async function fetchSharedAnimeCatalog"),index.indexOf("async function fetchAnime")).includes("cache:'default'"), "The shared catalogue should use the browser HTTP cache to avoid repeatedly downloading the large JSON file");
+assert.ok(!index.slice(index.indexOf("async function fetchSharedAnimeCatalog"),index.indexOf("async function fetchAnime")).includes("cache:'no-cache'"), "Shared catalogue requests must not force revalidation on every visit");
 assert.match(index, /payload\?\.schemaVersion!==2/, "The quiz must require the compact shared-catalogue schema");
 assert.match(syncScript, /const \{ source, relations, \.\.\.compact \} = anime/, "The published catalogue must omit bulky source-relation details after verification");
 assert.match(syncScript, /originVerified: true/, "The published catalogue must retain the build-time Japanese-origin verification marker");

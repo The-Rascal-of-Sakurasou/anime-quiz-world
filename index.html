@@ -750,8 +750,8 @@ const $=s=>document.querySelector(s);let pool=[],questions=[],index=0,points=0,s
 async function fetchSharedAnimeCatalog(){
  try{
   const [response,exclusionResponse]=await Promise.all([
-   fetch(new URL('data/anime-catalog.json',document.baseURI),{cache:'no-cache',headers:{'Accept':'application/json'}}),
-   fetch(new URL('data/title-image-exclusions.json',document.baseURI),{cache:'no-cache',headers:{'Accept':'application/json'}}).catch(()=>null)
+   fetch(new URL('data/anime-catalog.json',document.baseURI),{cache:'default',headers:{'Accept':'application/json'}}),
+   fetch(new URL('data/title-image-exclusions.json',document.baseURI),{cache:'default',headers:{'Accept':'application/json'}}).catch(()=>null)
   ]);
   if(exclusionResponse?.ok){
    try{
