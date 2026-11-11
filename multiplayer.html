@@ -112,6 +112,13 @@ input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{ou
 .match-history-detail{font-size:.88rem;color:var(--muted);margin-top:3px}
 .match-history-result{font-weight:900;white-space:nowrap}
 .match-history-result.win{color:#167343}.match-history-result.loss{color:#a12d38}.match-history-result.draw{color:#536273}
+.onevone-leaderboard{padding-left:0;list-style:none;display:grid;gap:8px}
+.onevone-leaderboard li{display:grid;grid-template-columns:42px minmax(0,1fr) auto;align-items:center;gap:10px;padding:11px;border:1px solid var(--line);border-radius:9px;background:#fff}
+.onevone-rank{font-weight:900;text-align:center;font-variant-numeric:tabular-nums}
+.onevone-name{font-weight:800;overflow-wrap:anywhere}
+.onevone-meta{font-size:.86rem;color:var(--muted)}
+.onevone-rate{font-weight:850;white-space:nowrap}
+@media(max-width:520px){.onevone-leaderboard li{grid-template-columns:34px minmax(0,1fr)}.onevone-rate{grid-column:2;justify-self:start}}
 @media(max-width:520px){.match-history-item{align-items:flex-start;flex-direction:column}.match-history-result{align-self:flex-end}}
 </style>
 </head>
@@ -223,6 +230,12 @@ input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{ou
  <h3>最近の対戦</h3>
  <p id="matchHistoryStatus" class="status" role="status" aria-live="polite">戦績を読み込んでいます…</p>
  <ol id="matchHistoryList" class="match-history-list"></ol>
+</section>
+<section class="card" id="oneVsOneLeaderboardPanel">
+ <div class="row"><h2>1対1ランキング</h2><button type="button" id="refreshOneVsOneLeaderboard">更新</button></div>
+ <p class="muted">ランキング表示を許可しているユーザーのみ掲載。勝利数を優先し、同数の場合は勝率・対戦数で順位を決定します。</p>
+ <p id="oneVsOneLeaderboardStatus" class="status" role="status" aria-live="polite">ランキングを読み込んでいます…</p>
+ <ol id="oneVsOneLeaderboard" class="onevone-leaderboard"></ol>
 </section>
 <div class="note">
 <strong>開発状況：</strong>1対1のルーム作成・参加・ランダムマッチに加え、5〜20問の同期クイズ、各問20秒の制限時間、サーバー側の正誤判定・得点・勝敗表示に対応しています。累計戦績・直近20件の対戦履歴・双方の承認が必要な同一相手との再戦に対応しています。専用ランキング・3〜4人対戦は開発中です。複数アカウントによる実戦確認は未完了です。
@@ -686,6 +699,27 @@ async function loadMatchHistory(){
  }
 }
 
+async function loadOneVsOneLeaderboard(){
+ const list=$('oneVsOneLeaderboard');list.replaceChildren();
+ status($('oneVsOneLeaderboardStatus'),'ランキングを読み込んでいます…');
+ try{
+  const data=await invoke('aqw_match_one_vs_one_leaderboard',{p_limit:50});
+  const entries=Array.isArray(data?.entries)?data.entries:[];
+  if(!entries.length){status($('oneVsOneLeaderboardStatus'),'完了した1対1対戦はまだありません。');return}
+  for(const entry of entries){
+   const item=document.createElement('li');
+   const rank=document.createElement('span');rank.className='onevone-rank';rank.textContent=String(entry.rank);
+   const meta=document.createElement('div');
+   const name=document.createElement('div');name.className='onevone-name';name.textContent=entry.display_name||entry.username||'AQW User';
+   const detail=document.createElement('div');detail.className='onevone-meta';
+   detail.textContent='@'+(entry.username||'user')+' ・ '+entry.wins+'勝 '+entry.losses+'敗 '+entry.draws+'分 ・ '+entry.matches+'戦';
+   meta.append(name,detail);
+   const rate=document.createElement('span');rate.className='onevone-rate';rate.textContent='勝率 '+Number(entry.win_rate||0).toFixed(1)+'%';
+   item.append(rank,meta,rate);list.append(item);
+  }
+  status($('oneVsOneLeaderboardStatus'),'上位'+entries.length+'人を表示しています。','good');
+ }catch(e){status($('oneVsOneLeaderboardStatus'),errorText(e),'error')}
+}
 async function init(){
  if(!window.supabase?.createClient){status($('pageStatus'),'認証ライブラリを読み込めませんでした。','error');return}
  sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,storage:window.sessionStorage,autoRefreshToken:true,detectSessionInUrl:true}});
@@ -694,6 +728,7 @@ async function init(){
  if(!session?.user){$('authGate').classList.remove('hidden');return}
  user=session.user;$('mainArea').classList.remove('hidden');
  await loadMatchHistory();
+ await loadOneVsOneLeaderboard();
  $('createRoom').addEventListener('click',createRoom);
  $('joinRoom').addEventListener('click',joinRoom);
  $('findMatch').addEventListener('click',findRandomMatch);
@@ -705,6 +740,7 @@ async function init(){
  $('leaveRoom').addEventListener('click',leaveRoom);
  $('copyInvite').addEventListener('click',copyInvite);
  $('refreshMatchHistory').addEventListener('click',loadMatchHistory);
+ $('refreshOneVsOneLeaderboard').addEventListener('click',loadOneVsOneLeaderboard);
  $('refreshRoom').addEventListener('click',()=>refreshRoom(false).catch(e=>status($('roomActionStatus'),errorText(e),'error')));
  $('roomCodeInput').addEventListener('input',()=>{$('roomCodeInput').value=$('roomCodeInput').value.toUpperCase().replace(/[^0-9A-F]/g,'').slice(0,10)});
  const params=new URLSearchParams(location.search),code=params.get('room');
