@@ -1516,7 +1516,7 @@ function getSearchAnimeOfficialUrl(anime){
   if(!link||link.isDisabled||typeof link.url!=='string'||!/^https?:\/\//i.test(link.url))return false;
   const site=String(link.site||'').toLowerCase();
   const type=String(link.type||'').toUpperCase();
-  return /official|公式/i.test(site)&&!/(twitter|x\\.com|facebook|instagram|youtube|tiktok|discord|reddit)/i.test(site)&&(!type||type==='INFO');
+  return /official|公式/i.test(site)&&!/(twitter|x\.com|facebook|instagram|youtube|tiktok|discord|reddit)/i.test(site)&&(!type||type==='INFO');
  });
  return official?.url||'https://www.google.com/search?q='+encodeURIComponent(titleOf(anime)+' アニメ 公式サイト');
 }
