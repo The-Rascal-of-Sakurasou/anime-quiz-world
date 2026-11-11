@@ -30,5 +30,7 @@ jobs:
           node-version: 22
       - name: Check validator syntax
         run: node --check scripts/validate-anime-catalog.mjs
-      - name: Validate known-good Japanese-origin fixtures
+      - name: Run catalogue validator regression tests
+        run: node scripts/test-anime-catalog-validator.mjs
+      - name: Validate known-good Japanese-origin fixture
         run: node scripts/validate-anime-catalog.mjs scripts/fixtures/anime-catalog-sample.json
