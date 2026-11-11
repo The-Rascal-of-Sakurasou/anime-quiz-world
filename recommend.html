@@ -497,6 +497,14 @@ function runRecommendationSelfTests(){
  check('HTTP形式の公式サイトも取得できる',getOfficialAnimeSiteUrl({externalLinks:[{url:'http://example.jp/',site:'Official Site',language:'Japanese'}]})==='http://example.jp/');
  check('公式以外の外部リンクは公式サイトとして扱わない',getOfficialAnimeSiteUrl({externalLinks:[{url:'https://example.jp/',site:'Twitter',language:'Japanese'}]})==='');
  check('無効化された公式リンクは除外する',getOfficialAnimeSiteUrl({externalLinks:[{url:'https://example.jp/',site:'Official Site',isDisabled:true}]})==='');
+ const candidateBase={countryOfOrigin:'JP',source:'ORIGINAL',coverImage:{large:'https://example.jp/cover.jpg'},title:{native:'作品A'}};
+ const allowedFormats=['TV','TV_SHORT','MOVIE','ONA','OVA','SPECIAL'];
+ check('対象形式6種類は推薦候補として扱う',allowedFormats.every(format=>isRecommendationCandidate({...candidateBase,format})));
+ check('対象形式外は推薦候補に含めない',!isRecommendationCandidate({...candidateBase,format:'MUSIC'}));
+ check('日本原作・日本発以外は推薦候補に含めない',!isRecommendationCandidate({...candidateBase,countryOfOrigin:'US',format:'TV'}));
+ check('タイトル画像がない作品は推薦候補に含めない',!isRecommendationCandidate({...candidateBase,coverImage:{},format:'TV'}));
+ // isRecommendationCandidateは回答profileを受け取らないため、回答による候補足切りは発生しない。
+ check('候補の適格判定は診断回答profileに依存しない',isRecommendationCandidate.length===1);
  const allCandidates=[{id:1,_score:100,_popularity:100},{id:2,_score:-80,_popularity:5},{id:3,_score:0,_popularity:20}];
  const openPool=buildDiscoveryPool(allCandidates,new Set([1]));
  check('相性スコアが低い作品も意外なおすすめ候補に残る',openPool.some(a=>a.id===2));
@@ -770,7 +778,12 @@ function getOfficialAnimeSiteUrl(anime){
  const japaneseLink=officialLinks.find(item=>/(japanese|日本語|^ja(?:\b|[-_]))/i.test(String(item.language||'')));
  return (japaneseLink||officialLinks[0])?.url||'';
 }
-async function getRecommendations(profile){
+async // 回答内容とは独立した推薦候補の適格条件。質問への回答は候補除外に使わず、順位調整だけに使う。
+function isRecommendationCandidate(anime){
+ const allowedFormats=new Set(['TV','TV_SHORT','MOVIE','ONA','OVA','SPECIAL']);
+ return Boolean(anime&&isJapaneseOriginAnime(anime)&&anime.coverImage?.large&&anime.title&&allowedFormats.has(anime.format));
+}
+function getRecommendations(profile){
  const query='query ($page:Int,$sort:[MediaSort]) { Page(page:$page,perPage:50) { media(type:ANIME,countryOfOrigin:JP,sort:$sort,isAdult:false) { id countryOfOrigin source format title { romaji english native } description(asHtml:false) coverImage { extraLarge large } episodes seasonYear averageScore popularity genres tags { name rank isMediaSpoiler } relations { edges { relationType node { id type countryOfOrigin format } } } siteUrl externalLinks { url site language isDisabled } } } }';
  const fetchPage=async (page,sort)=>{
   let lastError=null;
@@ -852,7 +865,7 @@ async function getRecommendations(profile){
  const seedScore=(candidate,seeds)=>calculateSeedSimilarity(candidate,seeds,rarityWeight,genreRarity);
  const favoriteIds=new Set(favoriteSeeds.map(x=>x.id)),dislikedIds=new Set(dislikedSeeds.map(x=>x.id));
  // 診断回答は候補の除外条件に使わず、全対象作品の順位を調整するスコアとしてのみ反映する。
- const scored=items.filter(a=>isJapaneseOriginAnime(a)&&a.coverImage?.large&&a.title&&(a.format==='TV'||a.format==='TV_SHORT'||a.format==='MOVIE'||a.format==='ONA'||a.format==='OVA'||a.format==='SPECIAL')).map(a=>{
+ const scored=items.filter(isRecommendationCandidate).map(a=>{
   let score=0;const scoreBreakdown=[];const reasons=[];
   const animeGenres=a.genres||[];
   const animeTags=a.tags||[];
