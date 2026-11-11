@@ -1240,7 +1240,7 @@ function updateDifficultyUI(){
  if(help){
   const base=names.desc[select.value]||names.desc.normal;
   const count=difficultyThresholds.total?(' '+(lang==='ja'?'評価対象：':'Evaluated anime: ')+difficultyThresholds.total.toLocaleString()):'';
-  const feedback=lang==='ja'?' 全体の回答データが50回以上・10人以上に達した問題は実測正答率も反映します。':' Global accuracy data is used after 50 answers from 10 players.';
+  const feedback=lang==='ja'?' 全体の回答データは、回答50回以上・30人以上・有効回答数30以上の問題で実測正答率を反映します。':' Observed accuracy is used when a question has at least 50 answers, 30 players, and 30 effective answers.';
   let personal='';
   if(personalDifficultyProfile.attempts>=20&&personalDifficultyProfile.runs>=3&&Number.isFinite(personalDifficultyProfile.correctRate)){
    const rate=Math.round(personalDifficultyProfile.correctRate*100),nextTier=calculatePersonalDifficultyOverride();
