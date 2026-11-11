@@ -787,7 +787,7 @@ async function fetchSharedAnimeCatalog(){
     if(exclusions?.schemaVersion===1&&Array.isArray(exclusions.excludedIds)&&Array.isArray(exclusions.records)){
      titleImageExcludedIds=new Set(exclusions.excludedIds.map(Number).filter(id=>Number.isSafeInteger(id)&&id>0));
      // Only OCR-checked images with no detected title text are allowed in artwork questions.
-     titleImageAuditedIds=new Set(exclusions.records.filter(row=>Number.isSafeInteger(Number(row?.id))&&row?.hasTitleText===false).map(row=>Number(row.id)));
+     titleImageAuditedIds=new Set(exclusions.records.filter(row=>Number.isSafeInteger(Number(row?.id))&&row?.hasText===false&&row?.hasTitleText===false).map(row=>Number(row.id)));
     }
    }catch(error){console.warn('Title-image exclusion data is invalid:',error)}
   }
