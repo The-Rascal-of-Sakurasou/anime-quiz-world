@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { pathToFileURL } from "node:url";
 
 const FILE = process.argv[2] || "data/anime-catalog.json";
 const FORMATS = new Set(["TV", "TV_SHORT", "MOVIE", "OVA", "ONA", "SPECIAL"]);
@@ -26,7 +27,7 @@ function isJapaneseOriginAnime(anime) {
   );
 }
 
-function validateCatalog(catalog) {
+export function validateCatalog(catalog) {
   if (!catalog || typeof catalog !== "object" || Array.isArray(catalog)) {
     throw new Error("Catalogue root must be a JSON object.");
   }
@@ -85,14 +86,23 @@ function validateCatalog(catalog) {
   return { count: catalog.items.length, generatedAt: catalog.generatedAt };
 }
 
-const raw = await readFile(FILE, "utf8");
-let catalog;
-try {
-  catalog = JSON.parse(raw);
-} catch (error) {
-  throw new Error("Catalogue JSON is invalid: " + error.message);
+async function main() {
+  const raw = await readFile(FILE, "utf8");
+  let catalog;
+  try {
+    catalog = JSON.parse(raw);
+  } catch (error) {
+    throw new Error("Catalogue JSON is invalid: " + error.message);
+  }
+
+  const result = validateCatalog(catalog);
+  console.log("Catalogue validation passed: " + result.count + " unique Japanese-origin anime.");
+  console.log("Generated at: " + result.generatedAt);
 }
 
-const result = validateCatalog(catalog);
-console.log("Catalogue validation passed: " + result.count + " unique Japanese-origin anime.");
-console.log("Generated at: " + result.generatedAt);
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((error) => {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exitCode = 1;
+  });
+}
