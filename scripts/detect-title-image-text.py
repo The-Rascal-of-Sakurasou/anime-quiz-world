@@ -106,17 +106,18 @@ def detect_one(anime):
     if not anime_id.isdigit() or not url or not candidates:
         return None, "missing-data"
     image = download_image(url)
-    # Try multiple segmentation modes because Japanese cover titles may be
-    # vertical, stacked, centered, or embedded in a poster-style layout.
-    ocr_texts = [run_ocr(image, mode) for mode in (11, 6, 3)]
-    matches = []
-    for ocr_text in ocr_texts:
-        matches.extend(title_matches(ocr_text, candidates))
-    matches = list(dict.fromkeys(matches))
     # Conservative policy: any recognized text makes the image unsafe.
-    # Exact title matches are recorded separately, but OCR can miss stylized
-    # lettering, so a non-empty OCR result must never be marked clean.
-    has_any_text = any(bool(text) for text in ocr_texts)
+    # Stop as soon as one segmentation mode detects text. Additional modes
+    # are only needed when the current mode returns no text at all.
+    # This preserves fail-closed behavior while avoiding redundant OCR work
+    # for the many covers that already contain visible lettering.
+    ocr_text = ""
+    for mode in (11, 6, 3):
+        ocr_text = run_ocr(image, mode)
+        if ocr_text:
+            break
+    matches = title_matches(ocr_text, candidates)
+    has_any_text = bool(ocr_text)
     return {
         "id": int(anime_id),
         "imageUrl": url,
