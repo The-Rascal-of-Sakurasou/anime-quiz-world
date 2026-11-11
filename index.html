@@ -1549,7 +1549,7 @@ function scheduleEligibleCandidatePrewarm(){
   getEligibleCandidatePoolAsync(mode,format).catch(error=>console.warn('Candidate prewarm deferred:',error));
  };
  if('requestIdleCallback' in window)requestIdleCallback(run,{timeout:8000});
- else setTimeout(run,1500);
+ else setTimeout(run,5000);
 }
 async function collectEligibleAnime(mode,format,target,ignoreDifficulty=false){
  const startedAt=performance.now();
