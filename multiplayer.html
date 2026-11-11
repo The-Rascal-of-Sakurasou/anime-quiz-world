@@ -554,6 +554,7 @@ async function refreshRematchState(){
  try{
   const data=await invoke('aqw_match_rematch_state',{});
   const requests=Array.isArray(data?.requests)?data.requests:[];
+  $('requestRematch').disabled=requests.some(r=>r.status==='pending'&&(r.requester_id===user.id||r.recipient_id===user.id));
   const inbox=$('rematchInbox');inbox.replaceChildren();
   for(const req of requests){
    if(req.status==='accepted'&&req.new_room_code&&req.requester_id===user.id&&room&&room.room_code===rematchRoomCode){
@@ -577,7 +578,7 @@ async function refreshRematchState(){
    }
    inbox.append(item);
   }
-  if(!requests.some(r=>r.status==='pending')&&$('requestRematch'))status($('rematchStatus'),'再戦申請があれば、ここに表示されます。');
+  if(!requests.some(r=>r.status==='pending')&&$('requestRematch')&&!$('rematchStatus').textContent)status($('rematchStatus'),'再戦申請があれば、ここに表示されます。');
  }catch(e){status($('rematchStatus'),errorText(e),'error')}
  finally{rematchPollBusy=false}
 }
