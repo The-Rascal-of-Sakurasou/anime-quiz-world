@@ -20,5 +20,8 @@ rejects("placeholder cover image", (sample) => { sample.items[0].coverImage.larg
 rejects("adult content", (sample) => { sample.items[0].isAdult = true; });
 rejects("Hentai genre", (sample) => { sample.items[0].genres.push("Hentai"); });
 rejects("missing title", (sample) => { sample.items[0].title = {}; });
+rejects("duplicate normalized synonyms", (sample) => { sample.items[0].synonyms = ["Test Alias", "test alias"]; });
+rejects("duplicate character IDs within one anime", (sample) => { sample.items[0].characters.nodes[1].id = sample.items[0].characters.nodes[0].id; });
+rejects("duplicate character fallback records", (sample) => { sample.items[0].characters.nodes[1] = { name: { full: "Fallback Character" }, image: { large: "https://example.com/character.jpg" } }; sample.items[0].characters.nodes[0] = { name: { full: "Fallback Character" }, image: { large: "https://example.com/character.jpg" } }; });
 
-console.log("Anime catalogue validator tests passed: 1 valid compact-schema fixture and 9 rejected invalid cases.");
+console.log("Anime catalogue validator tests passed: 1 valid compact-schema fixture and 12 rejected invalid cases.");
