@@ -302,7 +302,7 @@ assert.match(index, /async function fetchSharedAnimeCatalog\(\)/, "The quiz must
 // The exact shared character-choice builder is asserted below.
 assert.match(index, /if\(mode===\'characterImage\'\|\|mode===\'characterNameImage\'\)return characterRecordsWithFourChoicesForAnime\(a,summary,mode===\'characterNameImage\'\)\.length>0/, "Character-image question eligibility must validate the actual name or image distractor pool");
 assert.match(index, /shuffle\(characterRecordsWithFourChoicesForAnime\(a,questionChoiceSummary\(\),true\)\)/, "Character-name-to-image questions must choose from records with four distinct portraits");
-assert.match(index, /if\(\[\'image\',\'character\',\'characterImage\',\'titleCharacter\'\]\.includes\(currentQuestionMode\)\)skipBrokenImageQuestion\(brokenUrl\)/, "A failed character portrait must skip title-to-character questions instead of leaving an unanswerable prompt");
+assert.match(index, /if\(\[\'image\',\'titleYear\',\'character\',\'characterImage\',\'titleCharacter\'\]\.includes\(currentQuestionMode\)\)skipBrokenImageQuestion\(brokenUrl\)/, "A failed question cover must skip image-dependent questions instead of leaving an unanswerable prompt");
 
 assert.match(index, /function availableQuestionModes\(a,format=/, "Mixed mode must derive the available question types for each anime");
 assert.match(index, /titleImageExcludedIds\.has\(Number\(a\?\.id\)\)\?\[\]:\['image'\]/, "Title-bearing cover images must be excluded from image questions without excluding other question types");
