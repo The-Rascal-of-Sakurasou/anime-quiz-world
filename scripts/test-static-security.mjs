@@ -336,3 +336,5 @@ assert.match(beginBlock, /\$\([\x27"]#quitQuizButton[\x27"]\)\.classList\.add\([
 console.log(`Static security checks passed. Checked ${checkedScripts} inline script(s) across ${frontendFiles.length} pages.`);
 
 // Regression coverage: character image choices require unique portrait URLs.
+
+// Ensure this suite tracks the final image-aware validation implementation.
