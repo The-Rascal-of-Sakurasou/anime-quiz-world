@@ -574,7 +574,7 @@ function runRecommendationSelfTests(){
  check('推薦データの取得上限は4並び順×最大100ページ',4*MAX_RECOMMENDATION_PAGES_PER_SORT*50===20000);
  check('全ページ取得成功時はデータ不足警告を表示しない',buildRecommendationDataWarnings(0,20).length===0);
  check('一部ページ失敗時は候補の偏りを警告する',buildRecommendationDataWarnings(3,20)[0]?.includes('3/20ページ'));
- check('全ページ失敗は別のエラー処理に任せ、部分取得警告を誤用しない',buildRecommendationDataWarnings(20,20).length===1);
+ check('全ページ失敗時も取得失敗を警告する',buildRecommendationDataWarnings(1,1)[0]?.includes('1/1ページ'));
    const questionByDimension=new Map(questions.map(q=>[q.dimension,q]));
   const tagsFor=dimension=>new Set((questionByDimension.get(dimension)?.options||[]).flatMap(option=>option.tags||[]));
   check('診断は13問を維持',questions.length===13);
@@ -875,6 +875,8 @@ async function getRecommendations(profile){
    sortPlans.push({sort:sortModes[i],available,target,failed:false});
   }else{
    failedPages++;
+   // 1ページ目の失敗も試行ページ数に含め、失敗率の分母から漏らさない。
+   totalPages++;
    console.warn('Recommendation first page failed:',sortModes[i],result.reason);
    sortPlans.push({sort:sortModes[i],available:1,target:1,failed:true});
   }
