@@ -28,6 +28,7 @@
     {
       "id": 2,
       "countryOfOrigin": "JP",
+      "originVerified": true,
       "source": "MANGA",
       "format": "MOVIE",
       "title": {
