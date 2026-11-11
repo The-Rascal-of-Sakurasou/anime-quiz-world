@@ -56,7 +56,6 @@ Tracking issue: https://github.com/The-Rascal-of-Sakurasou/anime-quiz-world/issu
 
 ## Next implementation order
 1. Full 1v1 match testing with two or more real accounts
-2. Separate 1v1 leaderboard
-4. Friend invitations and profile integration
-5. Expand to 3–4 players only after 1v1 validation
-6. Cross-device progress synchronization
+2. Friend invitations and profile integration
+3. Expand to 3–4 players only after 1v1 validation
+4. Cross-device progress synchronization
