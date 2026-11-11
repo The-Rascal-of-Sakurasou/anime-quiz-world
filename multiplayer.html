@@ -200,6 +200,13 @@ input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{ou
  <div id="gameResult" class="hidden">
   <h2 id="gameResultTitle">対戦終了</h2>
   <p id="gameResultText"></p>
+  <div id="rematchControls" class="card">
+   <h3>同じ相手と再戦</h3>
+   <p class="muted">相手が承認した場合のみ、新しい1対1ルームを作成します。両者は改めて準備完了にする必要があります。</p>
+   <div class="form-actions"><button type="button" class="primary" id="requestRematch">同じ相手に再戦を申し込む</button></div>
+   <p id="rematchStatus" class="status" role="status" aria-live="polite"></p>
+   <div id="rematchInbox"></div>
+  </div>
  </div>
  <p id="gameStatus" class="status" role="status" aria-live="polite">対戦状態を確認しています…</p>
  <div class="form-actions"><button type="button" class="danger" id="surrenderMatch">降参する</button></div>
@@ -233,7 +240,7 @@ const $=id=>document.getElementById(id);
 const status=(el,text,kind='')=>{el.textContent=text||'';el.className='status'+(kind?' '+kind:'')};
 let sb=null,user=null,room=null,channel=null,presenceUsers=new Set(),busy=false;
 let matchmakingTimer=null,matchmakingBusy=false,matchmakingPrefs=null,matchmakingPollPromise=null;
-let gamePollTimer=null,gamePollBusy=false,gameState=null,gameRenderedQuestion=0;
+let gamePollTimer=null,gamePollBusy=false,gameState=null,gameRenderedQuestion=0,rematchPollTimer=null,rematchPollBusy=false,rematchRoomCode=null;
 const errorText=e=>e?.message||'処理に失敗しました。';
 function setBusy(value){
  busy=value;
@@ -249,6 +256,7 @@ async function invoke(name,args){
  if(error)throw error;
  return data;
 }
+function stopRematchPolling(){if(rematchPollTimer){clearInterval(rematchPollTimer);rematchPollTimer=null}}
 async function removeChannel(){
  if(channel){try{await sb.removeChannel(channel)}catch(_){}channel=null}
  presenceUsers=new Set();
@@ -320,7 +328,7 @@ async function refreshRoom(reconnect=true){
  if(room.status==='playing')startGamePolling();
 }
 async function enterRoom(data){
- room=data;
+ stopRematchPolling();room=data;
  $('roomCodeInput').value=room.room_code;
  await refreshRoom(true);
  if(room.status==='playing')startGamePolling();
@@ -473,6 +481,7 @@ function renderGameState(data){
   $('gameResultText').textContent=data.status==='cancelled'?'対戦相手が退出したため、対戦を終了しました。':data.end_reason==='surrender'?(winner===user.id?'相手が降参しました。あなたの勝利です。':'あなたが降参しました。')+' 最終スコア：あなた '+(me?.score||0)+'点 / 相手 '+(opponent?.score||0)+'点':'最終スコア：あなた '+(me?.score||0)+'点 / 相手 '+(opponent?.score||0)+'点';
   status($('gameStatus'),data.status==='cancelled'?'対戦が中断されました。':'対戦が終了しました。','good');
   stopGamePolling();
+  if(data.status==='completed'){startRematchPolling();}else{stopRematchPolling();}
   loadMatchHistory();return;
  }
  if(data.status!=='playing'||!data.question){
@@ -516,6 +525,67 @@ function renderGameState(data){
   status($('gameStatus'),'制限時間内に回答してください。');
  }
 }
+async function requestRematch(){
+ if(!room||!gameState||gameState.status!=='completed'||busy)return;
+ const button=$('requestRematch');button.disabled=true;
+ try{
+  const data=await invoke('aqw_match_rematch_request',{p_room_code:room.room_code});
+  status($('rematchStatus'),data.status==='pending'?'再戦を申し込みました。相手の承認を待っています。':'再戦申請を確認しました。','good');
+  await refreshRematchState();
+ }catch(e){status($('rematchStatus'),errorText(e),'error');button.disabled=false}
+}
+async function respondRematch(requestId,accept){
+ try{
+  const data=await invoke('aqw_match_rematch_respond',{p_request_id:requestId,p_accept:accept});
+  if(data.status==='accepted'&&data.room_code){
+   const roomData=await invoke('aqw_match_get_room',{p_room_code:data.room_code});
+   await enterRoom(roomData);
+   return;
+  }
+  status($('rematchStatus'),data.status==='declined'?'再戦申請を辞退しました。':'再戦申請の有効期限が切れています。');
+  await refreshRematchState();
+ }catch(e){status($('rematchStatus'),errorText(e),'error')}
+}
+async function refreshRematchState(){
+ if(!user||rematchPollBusy)return;
+ rematchPollBusy=true;
+ try{
+  const data=await invoke('aqw_match_rematch_state',{});
+  const requests=Array.isArray(data?.requests)?data.requests:[];
+  const inbox=$('rematchInbox');inbox.replaceChildren();
+  for(const req of requests){
+   if(req.status==='accepted'&&req.new_room_code&&req.requester_id===user.id&&room&&room.room_code===rematchRoomCode){
+    const nextRoom=await invoke('aqw_match_get_room',{p_room_code:req.new_room_code});
+    await enterRoom(nextRoom);return;
+   }
+   if(req.status!=='pending')continue;
+   const item=document.createElement('div');item.className='note';
+   const message=document.createElement('p');
+   if(req.recipient_id===user.id){
+    message.textContent=(req.requester_name||'対戦相手')+' から再戦の申し込みがあります。';
+    const actions=document.createElement('div');actions.className='form-actions';
+    const accept=document.createElement('button');accept.type='button';accept.className='primary';accept.textContent='承認して再戦';
+    accept.addEventListener('click',()=>respondRematch(req.request_id,true));
+    const decline=document.createElement('button');decline.type='button';decline.className='danger';decline.textContent='辞退する';
+    decline.addEventListener('click',()=>respondRematch(req.request_id,false));
+    actions.append(accept,decline);item.append(message,actions);
+   }else{
+    message.textContent='再戦申請を送信済みです。相手の承認を待っています。';
+    item.append(message);
+   }
+   inbox.append(item);
+  }
+  if(!requests.some(r=>r.status==='pending')&&$('requestRematch'))status($('rematchStatus'),'再戦申請があれば、ここに表示されます。');
+ }catch(e){status($('rematchStatus'),errorText(e),'error')}
+ finally{rematchPollBusy=false}
+}
+function startRematchPolling(){
+ if(!room)return;
+ rematchRoomCode=room.room_code;
+ $('requestRematch').disabled=false;
+ refreshRematchState();
+ if(!rematchPollTimer)rematchPollTimer=setInterval(refreshRematchState,4000);
+}
 async function surrenderGame(){
  if(!room||!gameState||gameState.status!=='playing'||busy)return;
  if(!window.confirm('この対戦を降参して終了しますか？'))return;
@@ -558,7 +628,7 @@ async function submitGameAnswer(index){
 }
 
 async function leaveRoom(){
- if(!room||busy)return;stopMatchmakingPolling();stopGamePolling();gameState=null;gameRenderedQuestion=0;matchmakingPrefs=null;setBusy(true);
+ if(!room||busy)return;stopMatchmakingPolling();stopGamePolling();stopRematchPolling();gameState=null;gameRenderedQuestion=0;matchmakingPrefs=null;setBusy(true);
  try{await invoke('aqw_match_leave_room',{p_room_code:room.room_code});await removeChannel();room=null;$('roomPanel').classList.add('hidden');$('gamePanel').classList.add('hidden');$('createPanel').classList.remove('hidden');$('joinPanel').classList.remove('hidden');$('randomMatchPanel').classList.remove('hidden');history.replaceState(null,'',location.pathname);status($('pageStatus'),'ルームから退出しました。','good')}
  catch(e){status($('roomActionStatus'),errorText(e),'error')}finally{setBusy(false)}
 }
@@ -628,6 +698,7 @@ async function init(){
  $('toggleReady').addEventListener('click',toggleReady);
  $('startMatch').addEventListener('click',startMatch);
  $('surrenderMatch').addEventListener('click',surrenderGame);
+ $('requestRematch').addEventListener('click',requestRematch);
  $('leaveRoom').addEventListener('click',leaveRoom);
  $('copyInvite').addEventListener('click',copyInvite);
  $('refreshMatchHistory').addEventListener('click',loadMatchHistory);
