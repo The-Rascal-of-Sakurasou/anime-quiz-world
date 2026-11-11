@@ -975,7 +975,8 @@ async function fetchAnime(vars={}){
    const overflowSorts=['SCORE_DESC','FAVOURITES_DESC','TRENDING_DESC','START_DATE_DESC'];
    const existingOverflowScopes=new Set(tasks.filter(task=>task[3]&&overflowSorts.includes(task[0])).map(task=>task[0]+'|'+task[3]));
    const existingDateScopes=new Set(tasks.filter(task=>task[4]!=null&&task[5]!=null).map(task=>task[0]+'|'+task[3]+'|'+task[4]+'|'+task[5]));
-   let completed=taskIndex,failures=Number(savedProgress?.failures)||0,batchesSinceSave=0;
+   let completed=taskIndex,failures=Number(savedProgress?.failures)||0,batchesSinceSave=0,sessionBatches=0;
+   // Limit background catalogue work per visit so it cannot compete with quiz interaction.
    const saveProgress=async(items,nextIndex)=>{
     try{await new Promise(resolve=>{const req=indexedDB.open('aqw-catalogue',1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('catalogues'))req.result.createObjectStore('catalogues')};req.onsuccess=()=>{try{const tx=req.result.transaction('catalogues','readwrite'),store=tx.objectStore('catalogues');store.put({savedAt:Date.now(),items},cacheKey);store.put({tasks,taskIndex:nextIndex,failures,updatedAt:Date.now()},cacheKey+'-progress');tx.oncomplete=()=>resolve();tx.onerror=()=>resolve()}catch(e){resolve()}};req.onerror=()=>resolve()})}catch(e){}
    };
@@ -1018,6 +1019,15 @@ async function fetchAnime(vars={}){
     taskIndex=nextTaskIndex;
     completed=taskIndex;
     batchesSinceSave++;
+    sessionBatches++;
+    if(sessionBatches>=2){
+     const items=[...all.values()];
+     pool=items;
+     extendQuestionsFromPool(pageResults.flatMap(result=>result.items||[]));
+     await saveProgress(items,taskIndex);
+     batchesSinceSave=0;
+     break;
+    }
     if(batchesSinceSave>=12||taskIndex>=tasks.length){
      // IDs are already unique in the Map. Avoid sorting and re-filtering the entire catalogue every few pages.
      const items=[...all.values()];
@@ -1033,13 +1043,13 @@ async function fetchAnime(vars={}){
      status.textContent=lang==='ja'?'作品データを追加中… '+all.size.toLocaleString()+'作品':'Adding anime… '+all.size.toLocaleString()+' anime';
     }
    }
+   const finished=taskIndex>=tasks.length;
    const progress=document.getElementById('animePoolProgress');
-   
-   if(progress)progress.textContent=lang==='ja'?('最終取得数：'+all.size.toLocaleString()+'作品・処理ページ '+completed+' / '+tasks.length+'・失敗試行 '+failures+'件。データはこのブラウザに保存されます。'):('Final catalogue: '+all.size.toLocaleString()+' anime · processed pages '+completed+' / '+tasks.length+' · failed attempts '+failures+'. Saved in this browser.');
+   if(progress)progress.textContent=finished?(lang==='ja'?('最終取得数：'+all.size.toLocaleString()+'作品・処理ページ '+completed+' / '+tasks.length+'・失敗試行 '+failures+'件。データはこのブラウザに保存されます。'):('Final catalogue: '+all.size.toLocaleString()+' anime · processed pages '+completed+' / '+tasks.length+' · failed attempts '+failures+'. Saved in this browser.')):(lang==='ja'?('取得ページ '+completed+' / '+tasks.length+'。負荷を抑えるため今回は一時停止し、次回アクセス時に続行します。'):('Processed '+completed+' / '+tasks.length+' pages. Paused to reduce load; work resumes on a later visit.'));
    const status=document.getElementById('quizStatus');
-   if(status)status.textContent=lang==='ja'?('取得処理が完了しました。現在'+all.size.toLocaleString()+'作品を利用できます。取得済みデータはこのブラウザに保存されています。'):('Catalogue loading has finished. '+all.size.toLocaleString()+' anime are available and saved in this browser.');
-   await saveProgress([...all.values()],tasks.length);
-   return {count:all.size,failures,completed};
+   if(status)status.textContent=finished?(lang==='ja'?('取得処理が完了しました。現在'+all.size.toLocaleString()+'作品を利用できます。取得済みデータはこのブラウザに保存されています。'):('Catalogue loading has finished. '+all.size.toLocaleString()+' anime are available and saved in this browser.')):(lang==='ja'?'作品データの追加取得を一時停止しました。クイズはそのまま利用できます。':'Background catalogue loading is paused. The quiz remains available.');
+   await saveProgress([...all.values()],taskIndex);
+   return {count:all.size,failures,completed,finished};
   })().finally(()=>{backgroundLoadPromise=null});
  }
  return deduplicateQuestionPool(initial);
@@ -2633,7 +2643,7 @@ function officialAnimeLink(anime){
 }
 function renderFeaturedRail(source){
  const root=document.getElementById('featuredRail');if(!root)return;
- const candidates=shuffle(uniqueAnimeById(source).filter(a=>isUsableAnime(a)));
+ const candidates=shuffle(uniqueAnimeById(source).filter(a=>isUsableAnime(a))).slice(0,24);
  if(!candidates.length){root.innerHTML='<p class="featured-empty">今シーズンの日本アニメ画像を取得できませんでした。</p>';return}
  const makeTrack=(items,reverse=false)=>{
   const track=document.createElement('div');track.className='featured-track'+(reverse?' reverse':'');
@@ -2642,7 +2652,7 @@ function renderFeaturedRail(source){
    card.className='featured-card'+(link.kind==='search'?' is-search-link':'');
    card.href=link.url;card.target='_blank';card.rel='noopener noreferrer';
    card.title=link.kind==='official'?'公式サイトを新しいタブで開く':'公式サイトを検索（検索結果から公式ページを選択）';
-   const image=document.createElement('img');image.src=anime.coverImage?.large||anime.coverImage?.medium||'';image.alt=titleOf(anime);image.loading='lazy';image.decoding='async';
+   const image=document.createElement('img');image.src=anime.coverImage?.medium||anime.coverImage?.large||'';image.alt=titleOf(anime);image.loading='lazy';image.decoding='async';
    const label=document.createElement('span');label.textContent=titleOf(anime)+(link.kind==='search'?' · 公式サイトを検索':'');card.append(image,label);
    track.append(card);
   }
@@ -2737,12 +2747,11 @@ async function loadFeaturedRail(){
   if(!cached)root.innerHTML='<p class="featured-empty">今シーズンの日本アニメを読み込めませんでした。通信状態を確認して再読み込みしてください。</p>';
  }
 }
-loadFeaturedRail();
+if('requestIdleCallback' in window)requestIdleCallback(()=>loadFeaturedRail(),{timeout:5000});else setTimeout(loadFeaturedRail,2500);
 applyRushLeaderboardLanguage();
 applyPlayerLeaderboardLanguage();
 applyPeriodLabels();
-loadRushLeaderboard();
-loadPlayerLeaderboard();
+// Leaderboards are fetched only when the ranking tab is opened.
 setStatus(localJa()?'ログインすると投稿・フォローなどのSNS機能を利用できます。':'Sign in to post and follow users.');
 })();
 </script>
