@@ -205,6 +205,7 @@ const syncOriginHelper = syncScript.match(/function isJapaneseOriginAnime\(anime
 assert.ok(syncOriginHelper, "Shared catalogue Japanese-origin helper must be extractable for regression tests");
 const isSyncOriginJapanese = vm.runInNewContext(`(${syncOriginHelper})`);
 assert.equal(isSyncOriginJapanese({ countryOfOrigin: "JP", source: "ORIGINAL" }), true, "Japanese original anime must enter the shared catalogue");
+assert.equal(isSyncOriginJapanese({ countryOfOrigin: "JP", originVerified: true }), true, "The compact shared catalogue may use its build-time verified-origin marker");
 assert.equal(isSyncOriginJapanese({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "ANIME", countryOfOrigin: "JP", format: "TV" } }] } }), true, "Verified Japanese anime-source spin-offs must enter the shared catalogue");
 assert.equal(isSyncOriginJapanese({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "ANIME", countryOfOrigin: "US", format: "TV" } }] } }), false, "Foreign anime-source works must not enter the shared catalogue");
 assert.equal(isSyncOriginJapanese({ countryOfOrigin: "JP", source: "VIDEO_GAME", relations: [] }), false, "Unverified game-source origin must fail closed in the shared catalogue");
@@ -231,6 +232,8 @@ const indexOriginHelper = index.match(/function isJapaneseOriginAnime\(a\)\{[^\n
 assert.ok(indexOriginHelper, "Quiz Japanese-origin verification helper missing");
 const isQuizOriginJapanese = vm.runInNewContext(`(${indexOriginHelper})`);
 assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "ORIGINAL" }), true, "Japanese original anime must remain eligible in the quiz");
+assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", originVerified: true }), true, "Compact shared-catalogue entries must pass the verified-origin marker");
+assert.equal(isQuizOriginJapanese({ countryOfOrigin: "US", originVerified: true }), false, "The verified-origin marker must never override a non-Japanese country");
 assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), true, "Japanese manga adaptations must remain eligible in the quiz");
 assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "SOURCE", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), true, "AniList v2 SOURCE relations must recognize Japanese manga originals in the quiz");
 assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "LIGHT_NOVEL", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "NOVEL" } }] } }), true, "Japanese light-novel adaptations must remain eligible in the quiz");
@@ -247,6 +250,9 @@ assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", rela
 assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "KR", format: "MANGA" } }] } }), false, "Non-Japanese source adaptations must be excluded from the quiz");
 assert.equal(isQuizOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL" }), false, "Non-Japanese animation must be excluded from the quiz");
 assert.match(index, /async function fetchSharedAnimeCatalog\(\)/, "The quiz must load the shared catalogue");
+assert.match(index, /payload\?\.schemaVersion!==2/, "The quiz must require the compact shared-catalogue schema");
+assert.match(syncScript, /const \{ source, relations, \.\.\.compact \} = anime/, "The published catalogue must omit bulky source-relation details after verification");
+assert.match(syncScript, /originVerified: true/, "The published catalogue must retain the build-time Japanese-origin verification marker");
 assert.match(index, /new URL\('data\/anime-catalog\.json',document\.baseURI\)/, "The shared catalogue must resolve correctly from GitHub Pages subpaths");
 assert.match(index, /sharedCatalogItems=await fetchSharedAnimeCatalog\(\)/, "Shared catalogue entries must be merged with local cached records");
 assert.match(index, /if\(sharedCatalogActive\)\{[\s\S]*?return initial;/, "A shared catalogue must prevent every visitor from repeating the full AniList backfill");
