@@ -27,7 +27,8 @@ Tracking issue: https://github.com/The-Rascal-of-Sakurasou/anime-quiz-world/issu
 - [x] Consistent simultaneous-answer and timeout handling
 - [x] Persist per-match scores and completion state in room/player records; calculate winner server-side
 - [x] Handle question timeout and opponent departure
-- [ ] Explicit surrender, aggregate win/loss statistics, match-history screen, and rematch
+- [ ] Explicit surrender and rematch
+- [x] Aggregate win/loss statistics and recent match-history screen
 - [ ] Separate 1v1 leaderboard
 - [ ] Full match test with two or more real accounts
 
