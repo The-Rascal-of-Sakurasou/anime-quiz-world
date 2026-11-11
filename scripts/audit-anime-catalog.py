@@ -37,7 +37,7 @@ SOURCE_RULES = {
 
 def norm(value: str) -> str:
     value = unicodedata.normalize("NFKC", value).casefold()
-    return re.sub(r"[^\\wぁ-んァ-ヶ一-龯]", "", value, flags=re.UNICODE)
+    return re.sub(r"[^\wぁ-んァ-ヶ一-龯]", "", value, flags=re.UNICODE)
 
 
 def japanese_origin(item: dict) -> bool:
@@ -160,7 +160,7 @@ def main() -> int:
     payload["items"] = kept
     payload["generatedAt"] = datetime.now(timezone.utc).isoformat()
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + "\\n", encoding="utf-8")
+    args.output.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
     audit = {
         "schemaVersion": 1,
         "generatedAt": datetime.now(timezone.utc).isoformat(),
