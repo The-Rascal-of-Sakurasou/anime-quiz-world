@@ -1431,8 +1431,9 @@ async function getEligibleCandidatePoolAsync(mode,format,ignoreDifficulty=false)
    for(let i=offset;i<limit;i++){
     const anime=sourcePool[i],id=Number(anime?.id);
     if(!Number.isSafeInteger(id)||id<=0||seen.has(id))continue;
-    seen.add(id);
     if(!isEligibleBaseAnime(anime,mode,format))continue;
+    // Match the previous filter-then-deduplicate order exactly.
+    seen.add(id);
     if(!ignoreDifficulty&&!matchesDifficulty(anime,format,mode))continue;
     if(format==='typed'&&!typedTitleEligible(anime))continue;
     const hasQuestion=mode==='mixed'
