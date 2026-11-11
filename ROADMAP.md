@@ -55,7 +55,7 @@ Tracking issue: https://github.com/The-Rascal-of-Sakurasou/anime-quiz-world/issu
 - Test desktop and mobile layouts, normal and failure paths, RLS, grants, and multi-account matches.
 
 ## Next implementation order
-1. Full 1v1 match testing with two or more real accounts
+1. Full 1v1 match testing with two or more real accounts — use [the live test checklist](docs/ONE_VS_ONE_LIVE_TEST_CHECKLIST.md)
 2. Friend invitations and profile integration
 3. Expand to 3–4 players only after 1v1 validation
 4. Cross-device progress synchronization
