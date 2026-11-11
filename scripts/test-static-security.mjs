@@ -379,7 +379,7 @@ assert.match(index, /function isUsableAnime\(a\)\{[^\n]*a\.isAdult!==true/, "Adu
 assert.match(index, /source\(version:2\) relations \{ edges \{ relationType node \{ id type countryOfOrigin format \} \} \}/, "Featured seasonal queries must include source and related-origin metadata");
 assert.ok(index.includes("season seasonYear startDate { year month day }"), "Featured seasonal queries must include season and start-date metadata");
 assert.ok(index.includes("if(!isJapaneseOriginAnime(anime)||!Number.isFinite(Number(anime.id)))continue"), "New seasonal anime must pass verified Japanese-source filtering");
-assert.match(index, /if\(isJapaneseOriginAnime\(anime\)&&Number\.isFinite\(Number\(anime\.id\)\)\)byId\.set/, "Ongoing seasonal anime must pass verified Japanese-source filtering");
+assert.match(index, /for\(const anime of items\|\|\[\]\)\{\s*if\(!isJapaneseOriginAnime\(anime\)\|\|!Number\.isFinite\(Number\(anime\.id\)\)\)continue;/, "All seasonal anime results must pass verified Japanese-source filtering before rendering");
 
 assert.match(index, /function isJapaneseOriginAnime\(a\)\{[^\n]*a\.countryOfOrigin!==.JP./, "Japanese-origin eligibility must reject non-Japanese animation records before source verification");
 assert.match(index, /const cleanedItems=value\.items\.filter\(isUsableAnime\)/, "Existing IndexedDB catalogues must be purged of non-Japanese-origin anime when loaded");
