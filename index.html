@@ -2226,12 +2226,23 @@ async function sendFriendMessage(e){
 
 const supabaseReady=initSupabase();
 const authForm=$s('aqwAuthForm');
-authForm.addEventListener('submit',e=>{e.preventDefault();authAction(signupMode?'signup':'signin')});
-$s('aqwSignIn').addEventListener('click',e=>{
+const authEmailInput=$s('aqwEmail'),authPasswordInput=$s('aqwPassword');
+authForm.noValidate=true;
+authForm.addEventListener('submit',e=>{
  e.preventDefault();
- if(!authForm.reportValidity()){
-  message(authMsg,localJa()?'メールアドレスとパスワードを入力してください。':'Enter a valid email address and password.');
+ message(authMsg,'');
+ const email=authEmailInput.value.trim(),password=authPasswordInput.value;
+ if(!email||!password){
+  message(authMsg,localJa()?'メールアドレスとパスワードの両方を入力してください。':'Enter both your email address and password.');
   return;
+ }
+ if(!authEmailInput.checkValidity()){
+  message(authMsg,localJa()?'メールアドレスの形式を確認してください。':'Check the email address format.');
+  authEmailInput.focus();return;
+ }
+ if(password.length<(signupMode?12:8)){
+  message(authMsg,signupMode?(localJa()?'パスワードは12文字以上必要です。':'Password must be at least 12 characters.'):(localJa()?'パスワードは8文字以上必要です。':'Password must be at least 8 characters.'));
+  authPasswordInput.focus();return;
  }
  if(!supabaseReady||!sb){
   message(authMsg,localJa()?'ログイン機能を読み込めませんでした。ページを再読み込みしてください。':'The sign-in service could not be loaded. Reload the page and try again.');
