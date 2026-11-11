@@ -2375,7 +2375,7 @@ async function refreshSession(session,{light=false}={}){
  $s('aqwForgotPassword').classList.toggle('hidden',!!currentUser);
  $s('aqwSignIn').classList.toggle('hidden',!!currentUser);
  $s('aqwSignUp').classList.toggle('hidden',!!currentUser);
- if(!currentUser){window.dispatchEvent(new CustomEvent('aqw:personal-difficulty-profile',{detail:null}));await closeFriendConversation();setStatus(localJa()?'ログインするとフォローとフレンドとのチャットを利用できます。':'Sign in to follow users and chat with friends.');await closeFriendConversation();setStatus(localJa()?'ログインするとフォローとフレンドとのチャットを利用できます。':'Sign in to follow users and chat with friends.');return}
+ if(!currentUser){window.dispatchEvent(new CustomEvent('aqw:personal-difficulty-profile',{detail:null}));await closeFriendConversation();setStatus(localJa()?'ログインするとフォローとフレンドとのチャットを利用できます。':'Sign in to follow users and chat with friends.');return}
  try{
   const {data,error}=await sb.from('profiles').select('*').eq('id',currentUser.id).single();if(error)throw error;
   currentProfile=data;
