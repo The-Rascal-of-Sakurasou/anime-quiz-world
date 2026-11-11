@@ -20,7 +20,7 @@ Tracking issue: https://github.com/The-Rascal-of-Sakurasou/anime-quiz-world/issu
 - [x] 1v1 lobby, readiness state, room codes, and invitation links
 - [x] 1v1 random matchmaking with recent-opponent avoidance
 - [x] Host starts only when both players are ready
-- [x] Server-generated shared question set from AniList
+- [x] Server-generated shared question set from AniList (expanded to up to 250 popular Japanese-origin candidates)
 - [x] Deliver the same questions and options to both players in the same order
 - [x] Synchronized 20-second timer and reload-based reconnect/resume
 - [x] Server-side answer validation; answer keys stay private until question resolution
@@ -29,7 +29,7 @@ Tracking issue: https://github.com/The-Rascal-of-Sakurasou/anime-quiz-world/issu
 - [x] Handle question timeout and opponent departure
 - [x] Explicit surrender with server-assigned opponent victory
 - [ ] Rematch
-- [x] Aggregate win/loss statistics and recent match-history screen
+- [x] Aggregate win/loss statistics and recent match-history screen (up to 20 recent matches)
 - [ ] Separate 1v1 leaderboard
 - [ ] Full match test with two or more real accounts
 
