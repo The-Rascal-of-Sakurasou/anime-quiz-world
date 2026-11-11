@@ -205,7 +205,7 @@ def main():
     }
     report_path = Path("artifacts/title-image-audit/report.json")
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+    report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + chr(10), encoding="utf-8")
 
     if todo and len(failures) / len(todo) > 0.15:
         raise RuntimeError(f"OCR incomplete: {len(failures)}/{len(todo)} images failed; refusing to publish partial results.")
