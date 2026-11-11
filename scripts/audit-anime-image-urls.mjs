@@ -8,6 +8,10 @@ const WORKERS = 8;
 const TIMEOUT_MS = 15000;
 const USER_AGENT = 'AnimeQuizWorld-image-audit/1.0';
 
+export function isPlaceholderImageUrl(value) {
+  return /(?:no[-_ ]?image|placeholder|default[-_ ]?image)/i.test(String(value || ''));
+}
+
 export function isHttpImageUrl(value) {
   try {
     const url = new URL(String(value || ''));
@@ -90,6 +94,11 @@ async function mapLimit(items, limit, worker) {
 }
 
 async function selfTest() {
+  assert.equal(isPlaceholderImageUrl('NO IMAGE'), true);
+  assert.equal(isPlaceholderImageUrl('https://example.test/no-image.jpg'), true);
+  assert.equal(isPlaceholderImageUrl('https://example.test/placeholder.png'), true);
+  assert.equal(isPlaceholderImageUrl('https://example.test/default-image.png'), true);
+  assert.equal(isPlaceholderImageUrl('https://example.test/cover.jpg'), false);
   assert.equal(isHttpImageUrl('https://s4.anilist.co/file/anime/1.jpg'), true);
   assert.equal(isHttpImageUrl('javascript:alert(1)'), false);
   assert.equal(isHttpImageUrl('not a url'), false);
@@ -105,11 +114,16 @@ async function main() {
   if (!Array.isArray(catalog.items)) throw new Error('Catalogue items array is missing.');
   const byUrl = new Map();
   const missing = [];
+  const placeholders = [];
   for (const anime of catalog.items) {
     const image = anime?.coverImage || {};
     const url = String(image.large || image.medium || image.extraLarge || '').trim();
     if (!url) {
       missing.push({ id: anime?.id ?? null, title: anime?.title?.native || anime?.title?.romaji || '', reason: 'Missing cover URL' });
+      continue;
+    }
+    if (isPlaceholderImageUrl(url)) {
+      placeholders.push({ id: anime?.id ?? null, title: anime?.title?.native || anime?.title?.romaji || '', url, reason: 'NO IMAGE / placeholder URL' });
       continue;
     }
     if (!byUrl.has(url)) byUrl.set(url, []);
@@ -127,9 +141,11 @@ async function main() {
     uniqueImageUrlCount: urls.length,
     checkedUrlCount: results.length,
     missingCoverCount: missing.length,
+    placeholderCoverCount: placeholders.length,
     brokenUrlCount: broken.length,
     healthyUrlCount: results.length - broken.length,
     missingCovers: missing.slice(0, 500),
+    placeholderCovers: placeholders.slice(0, 1000),
     brokenUrls: broken.slice(0, 1000),
   };
   await mkdir(dirname(REPORT), { recursive: true });
@@ -142,8 +158,9 @@ async function main() {
     '- Working URLs: **' + report.healthyUrlCount + '**',
     '- Failed URLs: **' + report.brokenUrlCount + '**',
     '- Missing cover URLs: **' + report.missingCoverCount + '**',
+    '- NO IMAGE / placeholder URLs excluded: **' + report.placeholderCoverCount + '**',
     '',
-    'Failures are reported for review; they are not automatically removed because transient CDN/network errors can occur.',
+    'NO IMAGE / placeholder URLs are excluded from the usable-image pool. Network failures are reported separately because transient CDN/network errors can occur.',
   ].join('\n');
   if (process.env.GITHUB_STEP_SUMMARY) await writeFile(process.env.GITHUB_STEP_SUMMARY, summary + '\n');
   console.log(summary);
