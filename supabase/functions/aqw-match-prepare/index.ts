@@ -53,28 +53,34 @@ Deno.serve(async (req: Request) => {
     const count = Number(room.question_count);
     if (![5, 10, 15, 20].includes(count)) return json({ error: "問題数が正しくありません。" }, 400);
 
-    const query = `query {
-      Page(page: 1, perPage: 50) {
-        media(type: ANIME, countryOfOrigin: JP, isAdult: false, sort: POPULARITY_DESC) {
-          id
-          countryOfOrigin
-          title { romaji english native }
-          coverImage { extraLarge large medium }
-          format
-          isAdult
+    // Fetch five AniList pages (up to 250 popular Japanese-origin works) in parallel.
+    // This broadens the random pool while staying within AniList's documented page size.
+    const pageNumbers = [1, 2, 3, 4, 5];
+    const pageResults = await Promise.all(pageNumbers.map(async (page) => {
+      const query = `query {
+        Page(page: ${page}, perPage: 50) {
+          media(type: ANIME, countryOfOrigin: JP, isAdult: false, sort: POPULARITY_DESC) {
+            id
+            countryOfOrigin
+            title { romaji english native }
+            coverImage { extraLarge large medium }
+            format
+            isAdult
+          }
         }
-      }
-    }`;
-    const response = await fetch("https://graphql.anilist.co", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Accept": "application/json" },
-      body: JSON.stringify({ query }),
-      signal: AbortSignal.timeout(12000)
-    });
-    if (!response.ok) throw new Error("作品データサービスに接続できませんでした。");
-    const payload = await response.json();
-    if (payload?.errors?.length) throw new Error("作品データを取得できませんでした。");
-    const records = (payload?.data?.Page?.media || []).filter((a: any) =>
+      }`;
+      const response = await fetch("https://graphql.anilist.co", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({ query }),
+        signal: AbortSignal.timeout(12000)
+      });
+      if (!response.ok) throw new Error("作品データサービスに接続できませんでした。");
+      const payload = await response.json();
+      if (payload?.errors?.length) throw new Error("作品データを取得できませんでした。");
+      return payload?.data?.Page?.media || [];
+    }));
+    const records = pageResults.flat().filter((a: any) =>
       a && a.countryOfOrigin === "JP" && a.isAdult !== true &&
       ["TV", "TV_SHORT", "MOVIE", "OVA", "ONA", "SPECIAL"].includes(a.format)
     ).map((a: any) => {
