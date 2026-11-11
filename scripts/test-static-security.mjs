@@ -294,8 +294,8 @@ assert.ok(singleAnimeCharacterStart >= 0 && singleAnimeCharacterEnd > singleAnim
 const isSingleAnimeCharacter = vm.runInNewContext(`(${index.slice(singleAnimeCharacterStart, singleAnimeCharacterEnd).trim()})`, {
   normalizeAnswer: value => String(value || "").normalize("NFKC").toLocaleLowerCase().replace(/[\s　・･:：!！?？.,，。'"“”「」『』()（）‐‑–—_-]/g, "").trim()
 });
-assert.equal(isSingleAnimeCharacter({ name: "Only Character" }, { uniqueCharacterNameKeys: new Set(["onlycharacter"]), characterNamesByAnime: new Map([[1, new Set(["onlycharacter"])]]) }), true, "A character appearing in one anime must remain eligible");
-assert.equal(isSingleAnimeCharacter({ name: "Shared Character" }, { uniqueCharacterNameKeys: new Set(["sharedcharacter"]), characterNamesByAnime: new Map([[1, new Set(["sharedcharacter"])], [2, new Set(["sharedcharacter"])]]) }), false, "A character appearing in multiple anime must be excluded");
+assert.equal(isSingleAnimeCharacter({ name: "Only Character" }, { uniqueCharacterNameKeys: new Set(["onlycharacter"]), characterNameAnimeCounts: new Map([["onlycharacter", 1]]) }), true, "A character appearing in one anime must remain eligible");
+assert.equal(isSingleAnimeCharacter({ name: "Shared Character" }, { uniqueCharacterNameKeys: new Set(["sharedcharacter"]), characterNameAnimeCounts: new Map([["sharedcharacter", 2]]) }), false, "A character appearing in multiple anime must be excluded");
 
 assert.match(index, /function characterRecordsWithFourTitleChoicesForAnime\(anime,summary=questionChoiceSummary\(\)\)/, "Title-to-character mode must validate the real distractor pool");
 assert.match(index, /if\(mode===\'titleCharacter\'\)return characterRecordsWithFourTitleChoicesForAnime\(a,summary\)\.length>0/, "Title-to-character eligibility must validate three unique distractors");
