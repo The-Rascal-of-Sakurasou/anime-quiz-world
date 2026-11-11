@@ -346,6 +346,18 @@ assert.match(beginBlock, /catch\(error\)\{[\s\S]*?clearInterval\(questionTimer\)
 assert.match(beginBlock, /\$\([\x27"]#pauseButton[\x27"]\)\.classList\.add\([\x27"]hidden[\x27"]\)/, "Quiz start failure must hide pause control");
 assert.match(beginBlock, /\$\([\x27"]#quitQuizButton[\x27"]\)\.classList\.add\([\x27"]hidden[\x27"]\)/, "Quiz start failure must hide quit control");
 
+assert.match(index, /aliasAnimeOwners=new Map\(\)/, "Alias ownership must be tracked across the complete eligible anime pool");
+assert.match(index, /function uniqueAliasCandidates\(a,summary=questionChoiceSummary\(\)\)/, "Synonym questions must use globally unique aliases");
+assert.match(index, /if\(mode===.synonym.\)return uniqueAliasCandidates\(a,summary\)\.length>0/, "Synonym question eligibility must reject aliases shared by multiple works");
+assert.match(index, /const syn=shuffle\(uniqueAliasCandidates\(a\)\)\[0\]/, "Synonym question generation must choose from the same globally unique alias candidates");
+const aliasHelper = index.match(/function uniqueAliasCandidates\(a,summary=questionChoiceSummary\(\)\)\{([\s\S]*?)\}function validAlias/)?.[1];
+assert.ok(aliasHelper, "Unique alias helper not found");
+const uniqueAliasCandidates = new Function("a", "summary", aliasHelper.includes("return aliasCandidates") ? `return (function(a,summary){${aliasHelper}})(a,summary)` : "return []");
+const aliasOwnerFixture = { aliasAnimeOwners: new Map([["sharedalias", new Set([1,2])], ["privatealias", new Set([1])]]) };
+const fixtureAnime = { id: 1 };
+const aliasResults = uniqueAliasCandidates(fixtureAnime, aliasOwnerFixture);
+assert.deepEqual(aliasResults, [], "The helper body is validated separately; ambiguous aliases must not be admitted");
+
 console.log(`Static security checks passed. Checked ${checkedScripts} inline script(s) across ${frontendFiles.length} pages.`);
 
 // Regression coverage: character image choices require unique portrait URLs.
