@@ -499,6 +499,16 @@ assert.ok(index.includes("if(mode==='image'&&!titleImageIsSafe(a))return false")
 assert.ok(questionRenderer.includes("if(!typingOnly&&opts.length<4)throw new Error('Four unique answer choices could not be prepared.')"), "Choice questions must fail safely instead of displaying fewer than four choices");
 assert.ok(index.includes("function normalizeAnswer(value){return String(value||'').normalize('NFKC')"), "Answer de-duplication must normalize full-width and compatibility characters");
 
+// Regression coverage: quiz candidate eligibility must be chunked and share in-flight prewarm work.
+assert.match(index, /async function getEligibleCandidatePoolAsync\(mode,format,ignoreDifficulty=false\)/, "Candidate eligibility must be prepared asynchronously");
+assert.match(index, /seen=new Set\(\),chunkSize=96/, "Candidate eligibility must be processed in bounded batches");
+assert.match(index, /await new Promise\(resolve=>setTimeout\(resolve,0\)\)/, "Candidate preparation must yield to the browser between batches");
+assert.match(index, /pending\.pool===sourcePool&&pending\.length===sourceLength&&pending\.revision===sourceRevision/, "In-flight candidate work must not be reused after catalogue or difficulty changes");
+assert.match(index, /function scheduleEligibleCandidatePrewarm\(\)/, "Idle-time candidate prewarming must be available");
+assert.match(index, /requestIdleCallback\(run,\{timeout:2200\}\)/, "Candidate prewarming must use browser idle time when available");
+assert.match(index, /const candidates=\[\.\.\.\(await getEligibleCandidatePoolAsync\(mode,format,ignoreDifficulty\)\)\]/, "Quiz start must await the chunked candidate builder");
+assert.match(index, /\$\('#answerFormatSelect'\)\.addEventListener\('change',refreshCandidatePrewarm\)/, "Changing answer format must refresh candidate prewarming");
+
 console.log(`Static security checks passed. Checked ${checkedScripts} inline script(s) across ${frontendFiles.length} pages.`);
 
 // Regression coverage: character image choices require unique portrait URLs.
