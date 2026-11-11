@@ -867,10 +867,10 @@ async function fetchAnime(vars={}){
       const keysReq=store.getAllKeys();
       keysReq.onsuccess=()=>{
        const keys=keysReq.result||[];
-       const catalogueKeys=keys.filter(key=>typeof key==='string'&&/^aqw-anime-pool-v\\d+$/.test(key));
+       const catalogueKeys=keys.filter(key=>typeof key==='string'&&/^aqw-anime-pool-v\d+$/.test(key));
        // Read only the current cache, or the newest legacy cache as a one-time fallback.
        // Merging every historical snapshot repeatedly makes startup slower as the cache grows.
-       const newestLegacy=catalogueKeys.sort((a,b)=>Number((b.match(/v(\\d+)$/)||[])[1]||0)-Number((a.match(/v(\\d+)$/)||[])[1]||0))[0];
+       const newestLegacy=catalogueKeys.sort((a,b)=>Number((b.match(/v(\d+)$/)||[])[1]||0)-Number((a.match(/v(\d+)$/)||[])[1]||0))[0];
        const readKey=keys.includes(cacheKey)?cacheKey:newestLegacy;
        const results=[];
        let pending=2,progress=null;
@@ -894,8 +894,8 @@ async function fetchAnime(vars={}){
   try{
    // Fall back to one newest legacy localStorage snapshot only when IndexedDB has no catalogue.
    if(!initial.length){
-    const legacyKeys=safeStorage.keys().filter(key=>/^aqw-anime-pool-v\\d+$/.test(key));
-    legacyKeys.sort((a,b)=>Number((b.match(/v(\\d+)$/)||[])[1]||0)-Number((a.match(/v(\\d+)$/)||[])[1]||0));
+    const legacyKeys=safeStorage.keys().filter(key=>/^aqw-anime-pool-v\d+$/.test(key));
+    legacyKeys.sort((a,b)=>Number((b.match(/v(\d+)$/)||[])[1]||0)-Number((a.match(/v(\d+)$/)||[])[1]||0));
     const legacy=legacyKeys.length?JSON.parse(safeStorage.getItem(legacyKeys[0])||'null'):null;
     if(Array.isArray(legacy?.items))initial=legacy.items.filter(isUsableAnime);
     if(Number(legacy?.savedAt)>cacheSavedAt)cacheSavedAt=Number(legacy.savedAt);
