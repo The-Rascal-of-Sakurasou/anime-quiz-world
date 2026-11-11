@@ -425,6 +425,20 @@ assert.match(index, /function hasUsableImageUrl\(value\)\{[^\n]*no\[-_ \]\?image
 assert.match(index, /function isUsableAnime\(a\)\{[^\n]*hasUsableImageUrl\(titleImage\)/, "Anime without a usable cover image must be excluded from image-backed displays and quiz data");
 assert.match(index, /function titleImageIsSafe\(anime\)\{[^\n]*titleImageAuditedIds\.has\(id\)[^\n]*!titleImageExcludedIds\.has\(id\)/, "Artwork restored for display must still require OCR approval before entering title-identification image questions");
 assert.ok(index.includes("const candidates=shuffle(uniqueAnimeById(source).filter(a=>isUsableAnime(a)));"), "Featured artwork must restore every usable image while excluding placeholders");
+const imageUrlHelperSource=index.match(/function hasUsableImageUrl\(value\)\{[^\n]*\}/)?.[0];
+assert.ok(imageUrlHelperSource, "Usable-image URL validator must exist");
+const hasUsableImageUrl=vm.runInNewContext('('+imageUrlHelperSource+')',{failedImageUrls:new Set()});
+assert.equal(hasUsableImageUrl('NO IMAGE'),false,"Literal NO IMAGE placeholder must be rejected");
+assert.equal(hasUsableImageUrl('https://example.test/no-image.jpg'),false,"NO IMAGE URL must be rejected");
+assert.equal(hasUsableImageUrl('https://example.test/placeholder.png'),false,"Placeholder URL must be rejected");
+assert.equal(hasUsableImageUrl('https://example.test/cover.jpg'),true,"Valid artwork URL must remain usable");
+const titleImageSafetySource=index.match(/function titleImageIsSafe\(anime\)\{[^\n]*\}/)?.[0];
+assert.ok(titleImageSafetySource, "Title-identification image safety validator must exist");
+const titleImageIsSafe=vm.runInNewContext('('+titleImageSafetySource+')',{titleImageAuditedIds:new Set([1,2]),titleImageExcludedIds:new Set([2]),hasUsableImageUrl});
+assert.equal(titleImageIsSafe({id:1,coverImage:{large:'https://example.test/cover.jpg'}}),true,"OCR-approved title-free artwork must be allowed");
+assert.equal(titleImageIsSafe({id:2,coverImage:{large:'https://example.test/cover.jpg'}}),false,"OCR-excluded artwork must be blocked");
+assert.equal(titleImageIsSafe({id:3,coverImage:{large:'https://example.test/cover.jpg'}}),false,"Unaudited artwork must not enter title-identification questions");
+
 
 assert.match(index, /source\(version:2\) relations \{ edges \{ relationType node \{ id type countryOfOrigin format \} \} \}/, "Featured seasonal queries must include source and related-origin metadata");
 assert.ok(index.includes("season seasonYear startDate { year month day }"), "Featured seasonal queries must include season and start-date metadata");
