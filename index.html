@@ -2674,6 +2674,7 @@ window.aqwEnsureSupabaseFeatures=()=>{
  if(aqwSupabaseFeaturesPromise)return aqwSupabaseFeaturesPromise;
  aqwSupabaseFeaturesPromise=(async()=>{
 const supabaseReady=await initSupabase();
+if(!supabaseReady){aqwSupabaseFeaturesPromise=null;return}
 // Load optional global difficulty feedback after the first render, not during startup.
 if(supabaseReady){
  const loadDifficultyFeedback=()=>{if(!document.hidden)loadQuestionDifficultyStats()};
@@ -2885,7 +2886,7 @@ applyPlayerLeaderboardLanguage();
 applyPeriodLabels();
 // Leaderboards are fetched only when the ranking tab is opened.
 setStatus(localJa()?'ログインすると投稿・フォローなどのSNS機能を利用できます。':'Sign in to post and follow users.');
- })().catch(error=>{console.error('AQW optional services initialization failed:',error);throw error});
+ })().catch(error=>{aqwSupabaseFeaturesPromise=null;console.error('AQW optional services initialization failed:',error);throw error});
  return aqwSupabaseFeaturesPromise;
 };
 if(/(?:^|[&#])type=recovery(?:&|$)/.test(location.hash))window.aqwEnsureSupabaseFeatures().catch(error=>console.warn('AQW password recovery initialization failed:',error));
