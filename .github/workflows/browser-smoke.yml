@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - .github/workflows/browser-smoke.yml
+      - index.html
       - scripts/browser-smoke.py
   workflow_dispatch:
 
