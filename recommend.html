@@ -184,7 +184,7 @@ const safeStorage={
  keys(){try{return Object.keys(window.localStorage)}catch(_){return []}}
 };
 const API='https://graphql.anilist.co';
-const MAX_RECOMMENDATION_PAGES_PER_SORT=100;
+const MAX_RECOMMENDATION_PAGES_PER_SORT=20;
 const questions=[
 {dimension:'genre',title:'どんなジャンルのアニメが見たい？',help:'今見たいジャンルを1つ選んでください。',options:[
 {label:'冒険やファンタジー',genres:['Fantasy','Adventure']},
@@ -885,7 +885,7 @@ async function getRecommendations(profile){
   throw lastError||new Error('作品データを取得できませんでした。');
  };
  // ジャンルで候補を絞らず、4種類の並び順についてAPIが返す総ページ数を確認して取得する。
- // API負荷と待ち時間を抑えるため、各並び順は5ページずつ取得し、1並び順あたり最大100ページまでとする。
+ // API負荷と待ち時間を抑えるため、各並び順は5ページずつ取得し、1並び順あたり最大20ページまでとする。
  // 上限を超える場合は取得上限到達として警告し、取得済みデータで診断を続行する。
  const sortModes=['POPULARITY_DESC','SCORE_DESC','TRENDING_DESC','START_DATE_DESC'];
  const maxPagesPerSort=MAX_RECOMMENDATION_PAGES_PER_SORT;
@@ -1538,10 +1538,15 @@ function renderCards(result){
   :'';
  $('resultStatus').textContent='相性スコアは推薦処理内の比較用数値で、百分率や客観的な作品評価ではありません。「意外なおすすめ」は候補群内で人気度が比較的低い作品です。人気度は作品データ上の登録・利用状況に基づく目安で、作品の質を示すものではありません。'+diversityNote+(notices.length?' 入力作品の確認：'+notices.join('／'):' 入力された好き・苦手の作品はタイトル完全一致で照合し、推薦傾向に反映しました。');
 }
+let isFinishingDiagnosis=false;
 async function finish(){
+ if(isFinishingDiagnosis)return;
+ isFinishingDiagnosis=true;
+ $('next').disabled=true;
  $('diagnosis').classList.add('hidden');$('error').classList.add('hidden');$('loading').classList.remove('hidden');
  try{const profile=profileFromAnswers();buildProfile(profile);const result=await getRecommendations(profile);renderCards(result);const favCount=parseTitleInput('favoriteTitles').length,disCount=parseTitleInput('dislikedTitles').length;$('resultIntro').textContent=questions.length+'問の回答'+(favCount||disCount?'と、入力された好き・苦手な作品':'')+'をもとに分析しました。各作品の推薦理由も確認できます。';$('loading').classList.add('hidden');$('results').classList.remove('hidden');saveDiagnosis(latestResult||result);window.scrollTo({top:0,behavior:'smooth'})}
  catch(e){$('loading').classList.add('hidden');$('diagnosis').classList.remove('hidden');$('error').textContent=e.message||'予期しないエラーが発生しました。';$('error').classList.remove('hidden')}
+ finally{isFinishingDiagnosis=false;$('next').disabled=false;}
 }
 $('favoriteTitles').addEventListener('input',()=>saveDiagnosis());
 $('dislikedTitles').addEventListener('input',()=>saveDiagnosis());
