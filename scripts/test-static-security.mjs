@@ -257,7 +257,7 @@ assert.match(index, /new URL\('data\/anime-catalog\.json',document\.baseURI\)/, 
 assert.match(index, /sharedCatalogItems=await fetchSharedAnimeCatalog\(\)/, "Shared catalogue entries must be merged with local cached records");
 assert.match(index, /if\(sharedCatalogActive\)\{[\s\S]*?return initial;/, "A shared catalogue must prevent every visitor from repeating the full AniList backfill");
 assert.match(index, /sharedCatalogActive\?\(/, "The loading screen must distinguish the shared catalogue from local background backfill");
-assert.match(index, /const cacheKey='aqw-anime-pool-v20-expanded-format-overflow-sort-coverage'/, "Verified original-source eligibility must rebuild the browser catalogue");
+assert.match(index, /const cacheKey='aqw-anime-pool-v21-compact-shared-catalog'/, "Verified original-source eligibility must rebuild the browser catalogue");
 assert.ok(index.includes("source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } }"), "Quiz queries must request detailed source metadata and adaptation-origin evidence");
 assert.ok(recommend.includes("source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } }"), "Recommendation queries must request detailed source metadata and adaptation-origin evidence");
 
