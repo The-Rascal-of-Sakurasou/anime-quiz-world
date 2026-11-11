@@ -171,7 +171,7 @@ def main() -> int:
         "excludedIds": sorted(set(excluded)),
         "records": records,
     }
-    EXCLUSIONS.write_text(json.dumps(audit, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+    EXCLUSIONS.write_text(json.dumps(audit, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"Japanese-origin catalogue: {len(original)} -> {len(kept)}")
     print(f"Images OCR checked: {len(records)}; title/uncertain images excluded: {len(set(excluded))}")
     print(f"Unverified images (excluded): {len(failures)}")
