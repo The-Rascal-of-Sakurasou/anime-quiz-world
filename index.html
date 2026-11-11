@@ -927,13 +927,12 @@ async function fetchAnime(vars={}){
  initial=deduplicateQuestionPool(initial);
  sharedCatalogActive=sharedCatalogItems.length>0;
  if(sharedCatalogActive){
-  // The centrally maintained catalogue replaces the expensive per-browser AniList backfill.
+  // Use the shared catalogue as an immediate starting set, then keep expanding it from AniList.
   pool=initial;
   const progress=document.getElementById('animePoolProgress');
-  if(progress)progress.textContent=lang==='ja'?('共通カタログ：'+initial.length.toLocaleString()+'作品（毎日更新）'):('Shared catalogue: '+initial.length.toLocaleString()+' anime (updated daily)');
+  if(progress)progress.textContent=lang==='ja'?('共通カタログ：'+initial.length.toLocaleString()+'作品。追加取得を開始します。'):('Shared catalogue: '+initial.length.toLocaleString()+' anime. Fetching additional records.');
   const status=document.getElementById('quizStatus');
-  if(status)status.textContent=lang==='ja'?'共通作品データを読み込みました。クイズを開始できます。':'Shared anime catalogue loaded. Ready to start.';
-  return initial;
+  if(status)status.textContent=lang==='ja'?'共通作品データを読み込みました。追加の作品データを取得しています。':'Shared anime catalogue loaded. Fetching additional anime in the background.';
  }
  
  if(!initial.length){
