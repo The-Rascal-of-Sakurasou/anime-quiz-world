@@ -1190,9 +1190,18 @@ function questionModeDifficultyScore(a,mode){
  }
  return clampDifficultyScore(score);
 }
-function difficultyInitialWeight(effectiveAnswers){
- const count=Math.max(0,Number(effectiveAnswers)||0);
- const progress=Math.max(0,Math.min(1,(count-30)/70));
+function wilsonHalfWidth(correctRate,effectiveAnswers){
+ const n=Math.max(1,Number(effectiveAnswers)||0),p=Math.max(0,Math.min(1,Number(correctRate)||0)),z=1.96,z2=z*z;
+ const denominator=1+z2/n;
+ return z*Math.sqrt((p*(1-p)/n)+(z2/(4*n*n)))/denominator;
+}
+function difficultyInitialWeight(effectiveAnswers,correctRate){
+ const n=Math.max(0,Number(effectiveAnswers)||0);
+ if(n<30)return 1;
+ const startWidth=wilsonHalfWidth(.5,30);
+ const targetWidth=wilsonHalfWidth(.5,100);
+ const currentWidth=wilsonHalfWidth(correctRate,n);
+ const progress=Math.max(0,Math.min(1,(startWidth-currentWidth)/(startWidth-targetWidth)));
  return Math.max(0,Math.min(1,(1+Math.cos(Math.PI*progress))/2));
 }
 function difficultyScoreForMode(a,mode,workRarity){
@@ -1201,7 +1210,7 @@ function difficultyScoreForMode(a,mode,workRarity){
  const stats=empiricalDifficultyStats.get(Number(a?.id)+'|'+mode);
  if(stats&&stats.attempts>=50&&stats.uniquePlayers>=30&&stats.effectiveAnswers>=30&&Number.isFinite(stats.correctRate)){
   const empirical=clampDifficultyScore((1-stats.correctRate)*100);
-  const initialWeight=difficultyInitialWeight(stats.effectiveAnswers);
+  const initialWeight=difficultyInitialWeight(stats.effectiveAnswers,stats.correctRate);
   return clampDifficultyScore(initial*initialWeight+empirical*(1-initialWeight));
  }
  return initial;
