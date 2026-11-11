@@ -12,6 +12,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: aqw-browser-smoke
+  cancel-in-progress: true
+
 jobs:
   browser-smoke:
     runs-on: ubuntu-latest
@@ -20,8 +24,22 @@ jobs:
       - name: Check out the test revision
         uses: actions/checkout@v4
 
-      - name: Wait for GitHub Pages deployment
-        run: sleep 120
+      - name: Check deployed GitHub Pages site
+        env:
+          AQW_BASE_URL: https://the-rascal-of-sakurasou.github.io/anime-quiz-world
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 10); do
+            if curl --fail --silent --show-error "$AQW_BASE_URL/index.html" -o /tmp/aqw-index.html \
+              && grep -q 'aqwAuthForm' /tmp/aqw-index.html; then
+              echo "Published Anime Quiz World page is reachable."
+              exit 0
+            fi
+            echo "Published page not ready (attempt ${attempt}/10)."
+            sleep 6
+          done
+          echo "Published Anime Quiz World page did not become ready." >&2
+          exit 1
 
       - name: Set up Python
         uses: actions/setup-python@v5
