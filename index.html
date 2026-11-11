@@ -867,12 +867,15 @@ async function fetchAnime(vars={}){
       const keysReq=store.getAllKeys();
       keysReq.onsuccess=()=>{
        const keys=keysReq.result||[];
-       const catalogueKeys=keys.filter(key=>typeof key==='string'&&new RegExp('^aqw-anime-pool-v\\d+').test(key));
-       const readKeys=[...new Set([...catalogueKeys,cacheKey])];
+       const catalogueKeys=keys.filter(key=>typeof key==='string'&&/^aqw-anime-pool-v\\d+$/.test(key));
+       // Read only the current cache, or the newest legacy cache as a one-time fallback.
+       // Merging every historical snapshot repeatedly makes startup slower as the cache grows.
+       const newestLegacy=catalogueKeys.sort((a,b)=>Number((b.match(/v(\\d+)$/)||[])[1]||0)-Number((a.match(/v(\\d+)$/)||[])[1]||0))[0];
+       const readKey=keys.includes(cacheKey)?cacheKey:newestLegacy;
        const results=[];
-       let pending=readKeys.length+1,progress=null;
+       let pending=2,progress=null;
        const finish=()=>{if(--pending===0)resolve({cachedItems:results.flatMap(x=>Array.isArray(x?.items)?x.items:[]),progress})};
-       readKeys.forEach(key=>{const get=store.get(key);get.onsuccess=()=>{if(get.result){const value=get.result;if(Array.isArray(value.items)){const cleanedItems=value.items.filter(isUsableAnime);if(cleanedItems.length!==value.items.length)store.put({...value,items:cleanedItems},key);results.push({...value,items:cleanedItems})}else results.push(value)}finish()};get.onerror=finish});
+       if(readKey){const get=store.get(readKey);get.onsuccess=()=>{if(get.result){const value=get.result;if(Array.isArray(value.items)){const cleanedItems=value.items.filter(isUsableAnime);if(cleanedItems.length!==value.items.length)store.put({...value,items:cleanedItems},readKey);results.push({...value,items:cleanedItems})}else results.push(value)}finish()};get.onerror=finish}else finish();
        const progressGet=store.get(cacheKey+'-progress');
        progressGet.onsuccess=()=>{progress=progressGet.result||null;finish()};
        progressGet.onerror=finish;
@@ -889,10 +892,12 @@ async function fetchAnime(vars={}){
    cacheSavedAt=Date.now();
   }
   try{
-   for(const key of safeStorage.keys()){
-    if(!key||!new RegExp('^aqw-anime-pool-v\\d+').test(key))continue;
-    const legacy=JSON.parse(safeStorage.getItem(key)||'null');
-    if(Array.isArray(legacy?.items)){const cleanedItems=legacy.items.filter(isUsableAnime);if(cleanedItems.length!==legacy.items.length)safeStorage.setItem(key,JSON.stringify({...legacy,items:cleanedItems}));initial.push(...cleanedItems);}
+   // Fall back to one newest legacy localStorage snapshot only when IndexedDB has no catalogue.
+   if(!initial.length){
+    const legacyKeys=safeStorage.keys().filter(key=>/^aqw-anime-pool-v\\d+$/.test(key));
+    legacyKeys.sort((a,b)=>Number((b.match(/v(\\d+)$/)||[])[1]||0)-Number((a.match(/v(\\d+)$/)||[])[1]||0));
+    const legacy=legacyKeys.length?JSON.parse(safeStorage.getItem(legacyKeys[0])||'null'):null;
+    if(Array.isArray(legacy?.items))initial=legacy.items.filter(isUsableAnime);
     if(Number(legacy?.savedAt)>cacheSavedAt)cacheSavedAt=Number(legacy.savedAt);
    }
    initial=mergeAnimeCollection(initial);
