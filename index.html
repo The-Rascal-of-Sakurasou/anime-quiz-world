@@ -1156,17 +1156,17 @@ function yearChoiceRecordsForAnime(a){const correct=animeYear(a);if(!Number.isIn
 function questionModeHasFourChoices(a,mode){if($('#answerFormatSelect')?.value==='typed'&&playMode!=='daily'&&playMode!=='rush')return true;const summary=questionChoiceSummary(),titleKey=normalizeAnswer(titleOf(a));if(mode==='image')return !!titleKey&&hasFourDistinctTitleChoices(a,summary);if(mode==='synonym')return !!titleKey&&hasFourDistinctTitleChoices(a,summary)&&uniqueAliasCandidates(a,summary).length>0;if(mode==='character')return characterRecords([a]).some(record=>isSingleAnimeCharacter(record,summary))&&!!titleKey&&hasFourDistinctTitleChoices(a,summary);if(mode==='studio')return !!a.studios?.nodes?.[0]?.name&&!!titleKey&&hasFourDistinctTitleChoices(a,summary);if(mode==='titleYear')return yearChoiceRecordsForAnime(a).length>=4;if(mode==='titleStudio')return !!a.studios?.nodes?.[0]?.name&&hasFourDistinctStudioChoices(a);if(mode==='titleCharacter')return characterRecordsWithFourTitleChoicesForAnime(a,summary).length>0;if(mode==='characterImage'||mode==='characterNameImage')return characterRecordsWithFourChoicesForAnime(a,summary,mode==='characterNameImage').length>0;if(mode==='synopsis'||mode==='titleSynopsis')return hasFourDistinctSynopsisChoices(a,mode==='synopsis');return false}
 
 function availableQuestionModes(a,format=$('#answerFormatSelect')?.value||'choices'){
- let modes=titleImageAuditedIds.has(Number(a?.id))&&!titleImageExcludedIds.has(Number(a?.id))?['image'] : [];
+ let modes=!titleImageExcludedIds.has(Number(a?.id))?['image'] : [];
  if(a?.studios?.nodes?.[0]?.name)modes.push('studio','titleStudio');
  if(characterRecords([a]).length)modes.push('character','titleCharacter','characterImage','characterNameImage');
  if(uniqueAliasCandidates(a).length)modes.push('synonym');
- if(titleImageAuditedIds.has(Number(a?.id))&&!titleImageExcludedIds.has(Number(a?.id))&&Number.isInteger(animeYear(a))&&animeYear(a)>1900)modes.push('titleYear');
+ if(!titleImageExcludedIds.has(Number(a?.id))&&Number.isInteger(animeYear(a))&&animeYear(a)>1900)modes.push('titleYear');
  if(hasUsableSynopsis(a)&&titleUsable(a))modes.push('synopsis','titleSynopsis');
  const typingOnly=playMode!=='daily'&&playMode!=='rush'&&format==='typed';
  if(typingOnly)modes=modes.filter(mode=>!['titleSynopsis','characterImage','characterNameImage'].includes(mode));
  return modes.filter(mode=>questionModeHasFourChoices(a,mode));
 }
-function usablePool(mode,answerFormat=$('#answerFormatSelect')?.value||'choices',validateChoices=true){if(answerFormat==='typed'&&['characterImage','characterNameImage'].includes(mode))return [];return pool.filter(a=>{if(!isUsableAnime(a))return false;if(['image','titleYear'].includes(mode)&&(!titleImageAuditedIds.has(Number(a.id))||titleImageExcludedIds.has(Number(a.id))))return false;if(answerFormat==='typed'&&!typedTitleEligible(a))return false;if(['image','studio','synonym','titleYear','titleStudio','synopsis','titleSynopsis','character','titleCharacter','characterImage','characterNameImage'].includes(mode)&&!titleUsable(a))return false;if(mode==='studio'||mode==='titleStudio'){if(!a.studios?.nodes?.[0]?.name)return false}if(mode==='character'||mode==='titleCharacter'||mode==='characterImage'||mode==='characterNameImage'){if(!characterRecords([a]).length)return false}if(mode==='synonym'&&!uniqueAliasCandidates(a).length)return false;if(mode==='titleYear'&&(!Number.isInteger(animeYear(a))||animeYear(a)<=1900))return false;if((mode==='synopsis'||mode==='titleSynopsis')&&!hasUsableSynopsis(a))return false;return answerFormat==='typed'||!validateChoices||questionModeHasFourChoices(a,mode)})}
+function usablePool(mode,answerFormat=$('#answerFormatSelect')?.value||'choices',validateChoices=true){if(answerFormat==='typed'&&['characterImage','characterNameImage'].includes(mode))return [];return pool.filter(a=>{if(!isUsableAnime(a))return false;if(['image','titleYear'].includes(mode)&&titleImageExcludedIds.has(Number(a.id)))return false;if(answerFormat==='typed'&&!typedTitleEligible(a))return false;if(['image','studio','synonym','titleYear','titleStudio','synopsis','titleSynopsis','character','titleCharacter','characterImage','characterNameImage'].includes(mode)&&!titleUsable(a))return false;if(mode==='studio'||mode==='titleStudio'){if(!a.studios?.nodes?.[0]?.name)return false}if(mode==='character'||mode==='titleCharacter'||mode==='characterImage'||mode==='characterNameImage'){if(!characterRecords([a]).length)return false}if(mode==='synonym'&&!uniqueAliasCandidates(a).length)return false;if(mode==='titleYear'&&(!Number.isInteger(animeYear(a))||animeYear(a)<=1900))return false;if((mode==='synopsis'||mode==='titleSynopsis')&&!hasUsableSynopsis(a))return false;return answerFormat==='typed'||!validateChoices||questionModeHasFourChoices(a,mode)})}
 function extendQuestionsFromPool(items){
  if(!items||!questions.length||$('#quizArea').classList.contains('hidden'))return;
  if(playMode!=='endless'&&!(playMode==='normal'&&questions.length<requestedQuestionCount))return;
@@ -1241,7 +1241,7 @@ async function collectEligibleAnime(mode,format,target,ignoreDifficulty=false){
  return eligible;
 }
 async function begin(){
- if(quizStartInProgress)return;
+ if(quizStartInProgress||startRetryInProgress)return;
  questionAdvanceToken++;
  document.body.classList.add('quiz-active','quiz-preparing');
  $('#quizHeader').classList.remove('hidden');$('#quizStatus').classList.remove('hidden');$('#animePoolProgress').classList.remove('hidden');
@@ -1249,7 +1249,30 @@ async function begin(){
  $('#quizStatus').textContent=lang==='ja'?'クイズ画面を準備しています…':'Preparing quiz screen…';
  $('#quizArea').classList.remove('hidden');$('#cover').classList.add('hidden');$('#answerPrompt').textContent=lang==='ja'?'問題を準備しています…':'Preparing your first question…';$('#answers').replaceChildren();$('#answers').classList.remove('hidden');$('#typedAnswerBox').classList.add('hidden');
  await new Promise(resolve=>requestAnimationFrame(()=>resolve()));
- if(!pool.length){if(startRetryInProgress)return;startRetryInProgress=true;const status=$('#quizStatus');status.textContent=lang==='ja'?'作品データを読み込んでいます。完了したらクイズを自動的に開始します。':'Loading anime data. The quiz will start automatically when loading finishes.';$('#start').disabled=true;$('#start').textContent=tr('loading');try{await prepare();if(pool.length){await begin()}else{document.body.classList.remove('quiz-active','quiz-preparing');$('#setupControls').classList.remove('hidden');$('#quizArea').classList.add('hidden');$('#pauseButton').classList.add('hidden');$('#quitQuizButton').classList.add('hidden');$('#pauseNotice').classList.add('hidden');$('#start').classList.remove('hidden');$('#start').disabled=false;$('#start').textContent=tr('retry')}}catch(error){console.error('AQW automatic quiz data load failed.',error);document.body.classList.remove('quiz-active','quiz-preparing');$('#setupControls').classList.remove('hidden');$('#quizArea').classList.add('hidden');$('#pauseButton').classList.add('hidden');$('#quitQuizButton').classList.add('hidden');$('#pauseNotice').classList.add('hidden');$('#start').classList.remove('hidden');$('#start').disabled=false;$('#start').textContent=tr('retry');$('#quizStatus').textContent=tr('loadError')}finally{startRetryInProgress=false;$('#start').disabled=false}return}
+ if(!pool.length){
+  startRetryInProgress=true;
+  const status=$('#quizStatus');
+  status.textContent=lang==='ja'?'作品データを読み込んでいます。完了したらクイズを開始します。':'Loading anime data. The quiz will start when loading finishes.';
+  $('#start').disabled=true;$('#start').textContent=tr('loading');
+  try{
+   // Reuse the page-start preload if it is already running; do not abandon the
+   // click handler or leave the quiz screen stuck in its preparing state.
+   await prepare();
+  }catch(error){
+   console.error('AQW automatic quiz data load failed.',error);
+   $('#quizStatus').textContent=lang==='ja'?'作品データを読み込めませんでした。再試行してください。':'Could not load anime data. Please retry.';
+  }finally{
+   startRetryInProgress=false;
+   $('#start').disabled=false;
+  }
+  if(!pool.length){
+   document.body.classList.remove('quiz-active','quiz-preparing');
+   $('#setupControls').classList.remove('hidden');$('#quizArea').classList.add('hidden');
+   $('#pauseButton').classList.add('hidden');$('#quitQuizButton').classList.add('hidden');$('#pauseNotice').classList.add('hidden');
+   $('#start').classList.remove('hidden');$('#start').textContent=tr('retry');
+   return;
+  }
+ }
  quizStartInProgress=true;$('#start').disabled=true;quizFinished=false;
  try{
   clearInterval(questionTimer);clearInterval(clockTimer);isPaused=false;pausedAt=0;totalPausedMs=0;pausedQuestionSeconds=0;skippedQuestionCount=0;$('#quizArea').inert=false;$('#pauseButton').classList.remove('hidden');$('#quitQuizButton').classList.remove('hidden');$('#pauseNotice').classList.add('hidden');$('#pauseButton').textContent=pauseButtonLabel(false);$('#setupControls').classList.add('hidden');$('#result').classList.add('hidden');reviewMode=false;missedQuestions=[];roundFailed=false;playMode=$('#playMode').value;mixedModeCounts={};prepareDifficultyTiers(pool);
