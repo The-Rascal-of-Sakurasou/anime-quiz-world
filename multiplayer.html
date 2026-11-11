@@ -104,6 +104,15 @@ input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{ou
 .site-brand-tagline{color:#667789;font-size:.78rem;font-weight:600;letter-spacing:.035em;line-height:1.35}
 @media(max-width:520px){.site-brand{gap:9px}.site-brand-logo{flex-basis:52px;width:52px;height:52px}.site-brand-title{font-size:1.05rem}.site-brand-tagline{font-size:.68rem}}
 
+
+.match-history-list{padding-left:0;list-style:none;display:grid;gap:9px}
+.match-history-item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);border-radius:9px;background:#fff}
+.match-history-meta{min-width:0}
+.match-history-opponent{font-weight:800;overflow-wrap:anywhere}
+.match-history-detail{font-size:.88rem;color:var(--muted);margin-top:3px}
+.match-history-result{font-weight:900;white-space:nowrap}
+.match-history-result.win{color:#167343}.match-history-result.loss{color:#a12d38}.match-history-result.draw{color:#536273}
+@media(max-width:520px){.match-history-item{align-items:flex-start;flex-direction:column}.match-history-result{align-self:flex-end}}
 </style>
 </head>
 <body>
@@ -193,6 +202,19 @@ input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{ou
   <p id="gameResultText"></p>
  </div>
  <p id="gameStatus" class="status" role="status" aria-live="polite">対戦状態を確認しています…</p>
+</section>
+
+<section class="card" id="matchHistoryPanel">
+ <div class="row"><h2>1対1の戦績</h2><button type="button" id="refreshMatchHistory">更新</button></div>
+ <div class="game-scoreboard" id="matchHistoryStats">
+  <div class="game-score">対戦数<strong>—</strong></div>
+  <div class="game-score">勝利<strong>—</strong></div>
+  <div class="game-score">敗北<strong>—</strong></div>
+  <div class="game-score">引き分け<strong>—</strong></div>
+ </div>
+ <h3>最近の対戦</h3>
+ <p id="matchHistoryStatus" class="status" role="status" aria-live="polite">戦績を読み込んでいます…</p>
+ <ol id="matchHistoryList" class="match-history-list"></ol>
 </section>
 <div class="note">
 <strong>開発状況：</strong>1対1のルーム作成・参加・ランダムマッチに加え、5〜20問の同期クイズ、各問20秒の制限時間、サーバー側の正誤判定・得点・勝敗表示に対応しています。累計戦績、対戦履歴画面、再戦、専用ランキング、3〜4人対戦は開発中です。複数アカウントによる実戦確認は未完了です。
@@ -448,7 +470,8 @@ function renderGameState(data){
   $('gameResultTitle').textContent=data.status==='cancelled'?'対戦が中断されました':winner===null?'引き分け':winner===user.id?'あなたの勝ち':'あなたの負け';
   $('gameResultText').textContent=data.status==='cancelled'?'対戦相手が退出したため、対戦を終了しました。':'最終スコア：あなた '+(me?.score||0)+'点 / 相手 '+(opponent?.score||0)+'点';
   status($('gameStatus'),data.status==='cancelled'?'対戦が中断されました。':'対戦が終了しました。','good');
-  stopGamePolling();return;
+  stopGamePolling();
+  loadMatchHistory();return;
  }
  if(data.status!=='playing'||!data.question){
   status($('gameStatus'),'対戦データを準備しています…');return;
@@ -529,6 +552,51 @@ async function copyInvite(){
  try{await navigator.clipboard.writeText(url);status($('roomActionStatus'),'招待リンクをコピーしました。','good')}
  catch(_){status($('roomActionStatus'),'コピーできませんでした。ルームコードを共有してください。','error')}
 }
+async function loadMatchHistory(){
+ const list=$('matchHistoryList');
+ const stats=$('matchHistoryStats');
+ status($('matchHistoryStatus'),'戦績を読み込んでいます…');
+ try{
+  const data=await invoke('aqw_match_history',{p_limit:20});
+  const s=data?.stats||{};
+  const values=[
+   ['対戦数',Number(s.matches)||0],
+   ['勝利',Number(s.wins)||0],
+   ['敗北',Number(s.losses)||0],
+   ['引き分け',Number(s.draws)||0]
+  ];
+  stats.replaceChildren();
+  values.forEach(([label,value])=>{
+   const card=document.createElement('div');card.className='game-score';
+   const name=document.createElement('span');name.textContent=label;
+   const number=document.createElement('strong');number.textContent=String(value);
+   card.append(name,number);stats.append(card);
+  });
+  list.replaceChildren();
+  const matches=Array.isArray(data?.matches)?data.matches:[];
+  if(!matches.length){
+   status($('matchHistoryStatus'),'完了した対戦はまだありません。');
+   return;
+  }
+  for(const match of matches){
+   const item=document.createElement('li');item.className='match-history-item';
+   const meta=document.createElement('div');meta.className='match-history-meta';
+   const opponent=document.createElement('div');opponent.className='match-history-opponent';
+   opponent.textContent='対戦相手：'+(match.opponent_name||'AQW User');
+   const detail=document.createElement('div');detail.className='match-history-detail';
+   const date=match.finished_at?new Date(match.finished_at).toLocaleString('ja-JP'):'日時不明';
+   detail.textContent=date+' ・ '+match.question_count+'問 ・ '+match.my_score+' - '+match.opponent_score;
+   meta.append(opponent,detail);
+   const result=document.createElement('span');result.className='match-history-result '+match.result;
+   result.textContent=match.result==='win'?'勝利':match.result==='loss'?'敗北':'引き分け';
+   item.append(meta,result);list.append(item);
+  }
+  status($('matchHistoryStatus'),'直近'+matches.length+'件を表示しています。','good');
+ }catch(e){
+  status($('matchHistoryStatus'),errorText(e),'error');
+ }
+}
+
 async function init(){
  if(!window.supabase?.createClient){status($('pageStatus'),'認証ライブラリを読み込めませんでした。','error');return}
  sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,storage:window.sessionStorage,autoRefreshToken:true,detectSessionInUrl:true}});
@@ -536,6 +604,7 @@ async function init(){
  if(error){status($('pageStatus'),errorText(error),'error');return}
  if(!session?.user){$('authGate').classList.remove('hidden');return}
  user=session.user;$('mainArea').classList.remove('hidden');
+ await loadMatchHistory();
  $('createRoom').addEventListener('click',createRoom);
  $('joinRoom').addEventListener('click',joinRoom);
  $('findMatch').addEventListener('click',findRandomMatch);
@@ -544,6 +613,7 @@ async function init(){
  $('startMatch').addEventListener('click',startMatch);
  $('leaveRoom').addEventListener('click',leaveRoom);
  $('copyInvite').addEventListener('click',copyInvite);
+ $('refreshMatchHistory').addEventListener('click',loadMatchHistory);
  $('refreshRoom').addEventListener('click',()=>refreshRoom(false).catch(e=>status($('roomActionStatus'),errorText(e),'error')));
  $('roomCodeInput').addEventListener('input',()=>{$('roomCodeInput').value=$('roomCodeInput').value.toUpperCase().replace(/[^0-9A-F]/g,'').slice(0,10)});
  const params=new URLSearchParams(location.search),code=params.get('room');
