@@ -100,7 +100,7 @@ def install_routes(page):
             return
         payload = route.request.post_data_json or {}
         query = payload.get("query", "")
-        aliases = re.findall(r"([A-Za-z][A-Za-z0-9_]*)\\s*:\\s*Page\\s*\\(", query)
+        aliases = re.findall(r"([A-Za-z][A-Za-z0-9_]*)\s*:\s*Page\s*\(", query)
         if aliases:
             data = {
                 alias: {"pageInfo": {"hasNextPage": False}, "media": []}
@@ -137,8 +137,8 @@ def install_routes(page):
             }),
         ),
     )
-    page.route(re.compile(r"^https://graphql\\.anilist\\.co/?$"), graphql)
-    page.route(re.compile(r"^https://example\\.test/.*"), image)
+    page.route(re.compile(r"^https://graphql\.anilist\.co/?$"), graphql)
+    page.route(re.compile(r"^https://example\.test/.*"), image)
 
 
 def test_quiz_start_answer_finish(browser):
@@ -180,7 +180,7 @@ def test_recommendation_diagnosis(browser):
     page.goto(f"{BASE_URL}/recommend.html", wait_until="domcontentloaded")
     page.locator("#stepLabel").wait_for(state="visible", timeout=20000)
     step_text = page.locator("#stepLabel").inner_text()
-    match = re.search(r"/\\s*(\\d+)", step_text)
+    match = re.search(r"/\s*(\d+)", step_text)
     assert match, f"Could not read diagnosis question count: {step_text}"
     question_count = int(match.group(1))
     assert 1 <= question_count <= 20, f"Diagnosis exceeds its 20-question cap: {question_count}"
