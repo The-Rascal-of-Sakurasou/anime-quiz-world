@@ -2596,7 +2596,7 @@ async function loadFeaturedRail(){
  const nextMonth=seasonEndMonth===12?1:seasonEndMonth+1;
  const nextYear=seasonEndMonth===12?current.year+1:current.year;
  const endBound=nextYear*10000+nextMonth*100+1;
- const cacheKey='aqw-featured-season-v3-'+current.year+'-'+current.season;
+ const cacheKey='aqw-featured-season-v4-'+current.year+'-'+current.season;
  const cacheMaxAge=6*60*60*1000;
  const renderItems=items=>{
   const unique=new Map();
@@ -2625,7 +2625,7 @@ async function loadFeaturedRail(){
    return normalizeUnicode(json.data?.Page)?.media||[];
   }finally{clearTimeout(timeout)}
  };
- const fields='id countryOfOrigin source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } season seasonYear startDate { year month day } title { romaji english native } coverImage { large medium } externalLinks { url site type isDisabled }';
+ const fields='id countryOfOrigin source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } format season seasonYear startDate { year month day } title { romaji english native } coverImage { large medium } externalLinks { url site type isDisabled }';
  const seasonQuery='query { Page(page:1,perPage:50) { media(type:ANIME,countryOfOrigin:JP,format_in:[TV,ONA],startDate_greater:'+startBound+',startDate_lesser:'+endBound+',isAdult:false,sort:POPULARITY_DESC) { '+fields+' } } }';
  const ongoingQuery='query { Page(page:1,perPage:50) { media(type:ANIME,status:RELEASING,countryOfOrigin:JP,format_in:[TV,ONA],isAdult:false,sort:POPULARITY_DESC) { '+fields+' } } }';
  try{
