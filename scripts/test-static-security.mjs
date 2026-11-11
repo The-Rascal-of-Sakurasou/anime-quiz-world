@@ -254,9 +254,9 @@ assert.deepEqual([...strongMatch.matchedTags], ["World Building"], "Strong share
 assert.equal(calculateSeedSimilarity(strongCandidate, [], rarityWeight, genreRarity).score, 0, "No favorite seeds must produce zero similarity");
 const spoilerOnly = { genres: [], tags: [{ name: "World Building", rank: 100, isMediaSpoiler: true }] };
 assert.equal(calculateSeedSimilarity(spoilerOnly, [seed], rarityWeight, genreRarity).score, 0, "Spoiler tags must not affect similarity");
-assert.match(recommend, /function buildRecommendationDataWarnings\(failedPages,totalPages\)/, "Partial recommendation data warning helper missing");
+assert.match(recommend, /function buildRecommendationDataWarnings\(failedPages,totalPages,cappedSorts\)/, "Partial recommendation data warning helper missing");
 assert.match(recommend, /report\.dataWarnings\?\.length/, "Partial recommendation data warning must be shown to users");
-assert.match(recommend, /buildRecommendationDataWarnings\(failedPages,sortModes\.length\*5\)/, "Recommendation fetch failures must be reflected in the result report");
+assert.match(recommend, /buildRecommendationDataWarnings\(failedPages,totalPages,cappedSorts\)/, "Recommendation fetch failures and page caps must be reflected in the result report");
 const relationAllowlist = recommend.match(/const relatedTypes=new Set\(\[([^\]]+)\]\)/)?.[1] || "";
 assert.match(relationAllowlist, /PREQUEL.*SEQUEL.*SUMMARY.*ALTERNATIVE.*COMPILATION/, "Recommendation deduplication must cover series and alternate/summary relations");
 assert.doesNotMatch(relationAllowlist, /PARENT/, "A side story parent relation must not hide a distinct side story");
