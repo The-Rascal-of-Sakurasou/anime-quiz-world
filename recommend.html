@@ -127,7 +127,7 @@ body{background:#f6f7f9;color:#202936;letter-spacing:.005em}
 <main class="panel" id="mainContent" tabindex="-1">
 <div id="diagnosis">
 <div class="progress" aria-label="診断の進行状況"><div id="progressBar"></div></div>
-<div class="question"><div class="eyebrow" id="stepLabel">QUESTION 1 / 13</div><h2 id="questionTitle">どんなジャンルの物語に惹かれますか？</h2><p id="questionHelp">最も見たいものを1つ選んでください。</p></div>
+<div class="question"><div class="eyebrow" id="stepLabel">QUESTION 1 / 13</div><h2 id="questionTitle">どんなジャンルの作品を見たい？</h2><p id="questionHelp">最も見たいものを1つ選んでください。</p></div>
 <div class="choices" id="choices"><button class="choice" type="button" disabled><span class="n">A</span><span>異世界・冒険・ファンタジー</span></button><button class="choice" type="button" disabled><span class="n">B</span><span>SF・ミステリー・サスペンス</span></button><button class="choice" type="button" disabled><span class="n">C</span><span>バトル・アクション</span></button><button class="choice" type="button" disabled><span class="n">D</span><span>ドラマ・コメディ・人間関係</span></button></div>
 <div class="preference-inputs" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:22px">
 <label style="display:block;font-weight:700;font-size:.92rem">好きなアニメ（任意）
@@ -185,47 +185,83 @@ const safeStorage={
 };
 const API='https://graphql.anilist.co';
 const questions=[
-{dimension:'genre',title:'どんなジャンルが好き？',help:'見たい作品のジャンルを1つ選んでください。',options:[
+{dimension:'genre',title:'どんなジャンルの作品を見たい？',help:'物語の題材や大まかなジャンルで、最も惹かれるものを選んでください。',options:[
 {label:'異世界・冒険・ファンタジー',genres:['Fantasy','Adventure']},
 {label:'SF・謎解き・サスペンス',genres:['Sci-Fi','Mystery','Thriller']},
 {label:'バトル・アクション',genres:['Action','Adventure']},
 {label:'ドラマ・コメディ・日常',genres:['Drama','Comedy','Slice of Life']}
 ]},
-{dimension:'pacing',title:'物語のテンポはどれが好き？',help:'見ていて心地よい進み方を選んでください。',options:[
-{label:'最初からどんどん話が進む',tags:['Fast-Paced']},
-{label:'ほどよい速さで進む',genres:['Adventure']},
-{label:'ゆっくり丁寧に進む',genres:['Drama','Slice of Life']},
-{label:'静かな場面と盛り上がる場面がある',genres:['Thriller','Drama']}
+{dimension:'protagonist_challenge',title:'物語の中心となる目標・課題は？',help:'ジャンルや難解さではなく、主人公が取り組む目的の種類を選んでください。',options:[
+{label:'未知の場所を探索し、発見を重ねる',tags:['Quest','Travel']},
+{label:'厳しい環境からの脱出を目指す',tags:['Escape','Battle Royale']},
+{label:'競技・試験・任務で目標を達成する',tags:['Sports','Training']},
+{label:'事件や犯罪の原因を調べ、解決する',tags:['Crime','Detective']}
 ]},
-{dimension:'emotional_intensity',title:'どんな気分でアニメを楽しみたい？',help:'見ている間に感じたい雰囲気を選んでください。',options:[
+{dimension:'pacing',title:'物語のテンポはどれが好き？',help:'1話ごとの進む速さや、展開の緩急について選んでください。',options:[
+{label:'最初からどんどん話が進む',tags:['Fast-Paced']},
+{label:'一定のテンポで安定して進む'},
+{label:'ゆっくり丁寧に進む',tags:['Slow Burn']},
+{label:'静かな場面と盛り上がる場面がある',tags:['Slow Burn','Fast-Paced']}
+]},
+{dimension:'emotional_intensity',title:'視聴中にどんな感情を味わいたい？',help:'見ている最中に感じたい緊張感や気分を選んでください。',options:[
 {label:'ハラハラ・ドキドキしたい',tags:['Survival','Psychological']},
 {label:'感動したり、心を動かされたりしたい',tags:['Tragedy','Coming of Age']},
 {label:'気楽に笑って楽しみたい',tags:['Gag Humor','Parody']},
 {label:'落ち着いた気分で楽しみたい',tags:['Iyashikei']}
 ]},
-{dimension:'duration',title:'どのくらいの長さの作品が見やすい？',help:'普段の視聴スタイルに近いものを選んでください。',options:[
+{dimension:'setting',title:'どんな舞台・世界が好み？',help:'ジャンルではなく、物語の舞台となる場所・時代・環境を選んでください。',options:[
+{label:'異世界・魔法・未知の大陸',tags:['Magic','Isekai','World Building']},
+{label:'現代社会・学校・日常',tags:['School','Urban','Coming of Age']},
+{label:'未来・宇宙・科学技術',tags:['Space','Cyberpunk','Mecha']},
+{label:'歴史・神話・和風の世界',tags:['Historical','Mythology','Samurai']}
+]},
+{dimension:'duration',title:'作品の長さはどれが理想？',help:'話数や視聴にかかる長さについて、普段の視聴スタイルに近いものを選んでください。',options:[
 {label:'短め（映画・1クールくらい）',length:'short'},
 {label:'中くらい（2〜3クールくらい）',length:'medium'},
 {label:'長め（複数シーズン・長編）',length:'long'},
 {label:'長さは気にしない',length:'any'}
 ]},
-{dimension:'character_appeal',title:'どんなキャラに惹かれる？',help:'登場人物に求める魅力を1つ選んでください。',options:[
-{label:'個性的で印象に残る',tags:['Unusual Characters','Ensemble Cast']},
-{label:'頭脳派で、考える力がある',tags:['Genius','Strategic']},
-{label:'信念を持って行動する',tags:['Leadership','Revenge']},
-{label:'物語の中で成長していく',tags:['Character Development','Coming of Age']}
+{dimension:'character_appeal',title:'どんな人物に惹かれる？',help:'人物個人の性格・能力・成長の魅力を選んでください。人物同士の関係性とは別の観点です。',options:[
+{label:'物語の中で成長していく人物',tags:['Character Development','Coming of Age']},
+{label:'個性的で印象に残る人物',tags:['Unusual Characters','Ensemble Cast']},
+{label:'知性や複雑な心理を持つ人物',tags:['Genius','Strategic','Psychological','Philosophy']},
+{label:'強い信念を持ち、自分の意志で行動する人物',tags:['Leadership','Revenge']}
 ]},
-{dimension:'narrative_complexity',title:'物語の分かりやすさはどれが好み？',help:'どのくらい考えながら見る作品が好きか選んでください。',options:[
+{dimension:'narrative_complexity',title:'物語の複雑さはどれが好み？',help:'伏線・情報量・設定の理解に、どのくらい考察が必要な作品を好むか選んでください。',options:[
 {label:'シンプルで分かりやすい',avoidTags:['Conspiracy','Politics','World Building','Ensemble Cast']},
 {label:'伏線や意外な展開を楽しみたい',tags:['Conspiracy']},
 {label:'複数の人物や出来事を読み解きたい',tags:['Politics','Ensemble Cast']},
 {label:'独自の設定や世界観を考察したい',tags:['World Building','Politics']}
 ]},
-{dimension:'romance_amount',title:'恋愛要素はどのくらい欲しい？',help:'恋愛が物語にどのくらい入っていてほしいか選んでください。',options:[
+{dimension:'aftertaste',title:'見終わったあとに残ってほしい余韻は？',help:'視聴中の感情ではなく、結末を見届けた後に残る印象を選んでください。',options:[
+{label:'明るく希望を感じる結末',tags:['Happy Ending']},
+{label:'切なさやほろ苦さが残る結末',tags:['Bittersweet Ending']},
+{label:'解釈の余地があり、考え続けたくなる結末',tags:['Open Ending']},
+{label:'悲しさや重い余韻が強く残る結末',tags:['Sad Ending']}
+]},
+{dimension:'relationships',title:'人物同士の関係で重視するものは？',help:'恋愛の量ではなく、恋愛以外も含めた人物同士のつながり方を選んでください。',options:[
+{label:'仲間と協力し、信頼を深めていく',tags:['Friendship','Found Family']},
+{label:'ライバル同士が競い合い、互いを高める',tags:['Rivalry']},
+{label:'家族や身近な人とのつながりを描く',tags:['Family','Family Life']},
+{label:'師弟・先輩後輩など、立場の違う人物が支え合う',tags:['Mentor','Teacher-Student Relationship']}
+]},
+{dimension:'romance_amount',title:'恋愛要素はどのくらい欲しい？',help:'恋愛が物語の中で占める割合を選んでください。',options:[
 {label:'恋愛が物語の中心にあってほしい',genreWeights:{Romance:2.5}},
 {label:'少しだけ入っていてほしい',genreWeights:{Romance:1.1}},
 {label:'恋愛は少なめがいい',avoidGenres:['Romance'],avoidGenreWeights:{Romance:0.8}},
 {label:'恋愛はほとんどなくていい',avoidGenres:['Romance'],avoidGenreWeights:{Romance:1.8}}
+]},
+{dimension:'tone_balance',title:'作品全体の笑いとシリアスの配分は？',help:'コメディとシリアスの割合を選んでください。視聴中に感じる緊張感とは別の観点です。',options:[
+{label:'コメディ中心で、笑える場面が多い',genreWeights:{Comedy:2.5}},
+{label:'シリアス中心で、笑いは控えめ',genreWeights:{Drama:1.4},avoidGenreWeights:{Comedy:0.5}},
+{label:'笑いとシリアスが同じくらい',genreWeights:{Drama:1.2,Comedy:1.2}},
+{label:'基本はシリアスで、要所に笑いがある',genreWeights:{Drama:1.8},avoidGenres:['Comedy'],avoidGenreWeights:{Comedy:1.2}}
+]},
+{dimension:'story_structure',title:'物語の構成形式はどれが好み？',help:'各話の進む速さではなく、全体を通した連続した物語か、各話完結かを選んでください。',options:[
+{label:'全話を通して続く大きな物語',avoidTags:['Episodic'],avoidTagWeights:{Episodic:1.2}},
+{label:'各話ごとに区切りがある物語',tagWeights:{Episodic:2.2}},
+{label:'大きな物語と各話の面白さ、両方ほしい',tagWeights:{Episodic:0.7}},
+{label:'構成形式は気にしない'}
 ]}
 ];
 const allQuestionTitles=questions.map(q=>q.title.trim());
@@ -238,8 +274,10 @@ const duplicateChoiceLabels=questions.some(q=>new Set(q.options.map(o=>o.label.t
 if(new Set(questionTitles).size!==questionTitles.length||new Set(questionDimensions).size!==questionDimensions.length||questionDimensions.some(d=>typeof d!=='string'||!d)||questions.some(q=>new Set(q.options.map(o=>o.label.trim())).size!==q.options.length)){
  throw new Error('診断の質問または選択肢に重複があります。');
 }
+if(questions.length!==13)throw new Error('診断は13問構成である必要があります。');
 let step=0;const answers=Array(questions.length).fill(null);
-const SAVE_KEY='aqw-recommendation-v2';
+const SAVE_KEY='aqw-recommendation-v4';
+const LEGACY_SAVE_KEY='aqw-recommendation-v2';
 const FEEDBACK_KEY='aqw-recommendation-feedback-v1';
 const EVALUATION_HISTORY_KEY='aqw-recommendation-evaluation-history-v1';
 function readRecommendationFeedback(){
@@ -462,10 +500,19 @@ function runRecommendationSelfTests(){
  check('全ページ取得成功時はデータ不足警告を表示しない',buildRecommendationDataWarnings(0,20).length===0);
  check('一部ページ失敗時は候補の偏りを警告する',buildRecommendationDataWarnings(3,20)[0]?.includes('3/20ページ'));
  check('全ページ失敗は別のエラー処理に任せ、部分取得警告を誤用しない',buildRecommendationDataWarnings(20,20).length===1);
- check('13問すべてに異なる分類が設定されている',new Set(questions.map(q=>q.dimension)).size===13);
+   const questionByDimension=new Map(questions.map(q=>[q.dimension,q]));
+  const tagsFor=dimension=>new Set((questionByDimension.get(dimension)?.options||[]).flatMap(option=>option.tags||[]));
+  check('診断は13問を維持',questions.length===13);
+  check('13問すべてに異なる分類が設定されている',new Set(questions.map(q=>q.dimension)).size===13);
   check('全13問の選択肢ラベルが重複していない',!duplicateChoiceLabels&&questions.every(q=>q.options.length===4));
-  check('ジャンル質問と舞台質問が同じジャンル加点に依存しない',questions.find(q=>q.dimension==='setting').options.every(o=>!o.genres?.length));
-  check('物語の複雑さの「シンプル」回答に明確な減点条件がある',questions.find(q=>q.dimension==='narrative_complexity').options[0].avoidGenres?.includes('Mystery')&&questions.find(q=>q.dimension==='narrative_complexity').options[0].avoidTags?.includes('World Building'));
+  check('舞台質問はジャンル加点と分離',questionByDimension.get('setting').options.every(o=>!o.genres?.length));
+  check('物語の複雑さはジャンル加点と分離',questionByDimension.get('narrative_complexity').options.every(o=>!o.genres?.length&&!o.avoidGenres?.length));
+  check('シンプル回答は考察要素を抑える',questionByDimension.get('narrative_complexity').options[0].avoidTags?.includes('Conspiracy')&&questionByDimension.get('narrative_complexity').options[0].avoidTags?.includes('World Building'));
+  check('主人公の目標は複雑さの質問と異なる題材を扱う',questionByDimension.get('protagonist_challenge').options.every(o=>!['Mystery','Conspiracy','World Building','Ensemble Cast'].some(tag=>o.tags?.includes(tag))));
+  check('視聴中の感情と結末の余韻は別のタグで扱う',[...tagsFor('aftertaste')].every(tag=>!tagsFor('emotional_intensity').has(tag)));
+  check('人物関係の質問は恋愛量と重複しない',questionByDimension.get('relationships').options.every(o=>!o.genres?.includes('Romance')&&!o.tags?.includes('Love Triangle')));
+  check('テンポと物語構成を別の信号で扱う',questionByDimension.get('pacing').options.every(o=>!o.genres?.length)&&questionByDimension.get('story_structure').options.some(o=>o.tagWeights?.Episodic>0));
+  check('笑いとシリアスの配分を独立して反映する',questionByDimension.get('tone_balance').options.some(o=>o.genreWeights?.Comedy>0)&&questionByDimension.get('tone_balance').options.some(o=>o.genreWeights?.Drama>0));
   check('推薦2枠で同じ作品IDを重複表示しない',deduplicateRecommendationGroups([{id:7,title:{native:'A'}}],[{id:7,title:{native:'B'}}]).discoveries.length===0);
  check('好きな作品の日本語タイトルを完全一致で照合',matchesSeedTitle({title:{native:'葬送のフリーレン'}},'葬送のフリーレン'));
  check('好きな作品の英語タイトルを完全一致で照合',matchesSeedTitle({title:{english:'Frieren: Beyond Journey’s End'}},'Frieren: Beyond Journey’s End'));
@@ -570,25 +617,42 @@ function runRecommendationSelfTests(){
 }
 
 function saveDiagnosis(result=null){
- try{const data={v:2,savedAt:new Date().toISOString(),answers:[...answers],favorite:$('favoriteTitles').value.slice(0,180),disliked:$('dislikedTitles').value.slice(0,180),result};safeStorage.setItem(SAVE_KEY,JSON.stringify(data));}
+ try{const data={v:4,savedAt:new Date().toISOString(),answers:[...answers],favorite:$('favoriteTitles').value.slice(0,180),disliked:$('dislikedTitles').value.slice(0,180),result};safeStorage.setItem(SAVE_KEY,JSON.stringify(data));}
  catch(e){$('shareStatus').textContent='保存できませんでした。ブラウザの保存容量や設定を確認してください。';}
 }
 function restoreSavedDiagnosis(){
  try{
-  const raw=safeStorage.getItem(SAVE_KEY);if(!raw)return false;
-  const data=JSON.parse(raw);
-  if(![1,2].includes(data?.v)||!Array.isArray(data.answers)||![6,10,13].includes(data.answers.length)||data.answers.length>questions.length||!data.answers.every((n,i)=>n===null||(Number.isInteger(n)&&n>=0&&n<questions[i].options.length))||typeof data.favorite!=='string'||typeof data.disliked!=='string')return false;
-  const restoredAnswers=[...data.answers,...Array(questions.length-data.answers.length).fill(null)];
-  answers.splice(0,answers.length,...restoredAnswers);$('favoriteTitles').value=data.favorite;$('dislikedTitles').value=data.disliked;
-  step=Math.max(0,answers.findIndex(n=>n===null));if(!answers.includes(null))step=questions.length-1;
-  if(data.result&&Array.isArray(data.result.closeMatches)&&Array.isArray(data.result.discoveries)&&!answers.includes(null)){
+  const candidates=[
+   {raw:safeStorage.getItem(SAVE_KEY),legacy:false},
+   {raw:safeStorage.getItem(LEGACY_SAVE_KEY),legacy:true}
+  ];
+  let restored=null;
+  for(const candidate of candidates){
+   if(!candidate.raw)continue;
+   let data;
+   try{data=JSON.parse(candidate.raw)}catch(_){continue}
+   const normalized=normalizeSavedAnswers(data);
+   if(!normalized||typeof data.favorite!=='string'||typeof data.disliked!=='string')continue;
+   restored={data,answers:normalized,legacy:candidate.legacy||data.v!==4};
+   break;
+  }
+  if(!restored)return false;
+  const {data,answers:restoredAnswers,legacy}=restored;
+  answers.splice(0,answers.length,...restoredAnswers);
+  $('favoriteTitles').value=data.favorite.slice(0,180);
+  $('dislikedTitles').value=data.disliked.slice(0,180);
+  step=Math.max(0,answers.findIndex(n=>n===null));
+  if(!answers.includes(null))step=questions.length-1;
+  if(!legacy&&data.result&&Array.isArray(data.result.closeMatches)&&Array.isArray(data.result.discoveries)&&!answers.includes(null)){
    const profile=profileFromAnswers();buildProfile(profile);renderCards(data.result);saveDiagnosis(latestResult);$('resultIntro').textContent='保存された前回の診断結果です。';$('diagnosis').classList.add('hidden');$('results').classList.remove('hidden');return true;
   }
-  render();return true;
+  render();
+  if(legacy)saveDiagnosis();
+  return true;
  }catch(_){return false}
 }
 function clearSavedDiagnosis(){
- try{safeStorage.removeItem(SAVE_KEY);answers.fill(null);step=0;$('favoriteTitles').value='';$('dislikedTitles').value='';$('results').classList.add('hidden');$('diagnosis').classList.remove('hidden');$('error').classList.add('hidden');$('progressBar').style.width='0%';history.replaceState(null,'',location.pathname+location.search);render();$('shareStatus').textContent='このブラウザに保存された診断データを削除しました。';}
+ try{safeStorage.removeItem(SAVE_KEY);safeStorage.removeItem(LEGACY_SAVE_KEY);answers.fill(null);step=0;$('favoriteTitles').value='';$('dislikedTitles').value='';$('results').classList.add('hidden');$('diagnosis').classList.remove('hidden');$('error').classList.add('hidden');$('progressBar').style.width='0%';history.replaceState(null,'',location.pathname+location.search);render();$('shareStatus').textContent='このブラウザに保存された診断データを削除しました。';}
  catch(_){$('shareStatus').textContent='保存データを削除できませんでした。';}
 }
 const $=id=>document.getElementById(id);
@@ -759,7 +823,7 @@ async function getRecommendations(profile){
   const animeGenres=a.genres||[];
   const animeTags=a.tags||[];
   const genreNames={Fantasy:'ファンタジー',Adventure:'冒険',Action:'アクション','Sci-Fi':'SF',Mystery:'ミステリー',Thriller:'サスペンス',Drama:'ドラマ',Comedy:'コメディ',Romance:'恋愛','Slice of Life':'日常',Psychological:'心理',Historical:'歴史',Mecha:'メカ'};
-  const tagNames={'Conspiracy':'陰謀・謎','Survival':'サバイバル','Psychological':'心理描写','Mystery':'謎解き','Tragedy':'悲劇','Coming of Age':'成長','Super Power':'特殊能力','Martial Arts':'格闘','Revenge':'復讐','Parody':'パロディ','Gag Humor':'ギャグ','Fast-Paced':'テンポの速い展開','Time Manipulation':'時間操作','World Building':'世界観の構築','Character Development':'人物の成長','Episodic':'各話完結','Magic':'魔法','Isekai':'異世界','Space':'宇宙','Cyberpunk':'サイバーパンク','Mythology':'神話','Samurai':'侍','Ensemble Cast':'群像劇','Found Family':'疑似家族・仲間','Philosophy':'哲学','Leadership':'リーダーシップ','Battle Royale':'バトルロイヤル','Quest':'冒険の目的・探求','Politics':'政治','Crime':'犯罪','Travel':'旅・移動'};
+  const tagNames={'Conspiracy':'陰謀・謎','Survival':'サバイバル','Psychological':'心理描写','Mystery':'謎解き','Tragedy':'悲劇','Coming of Age':'成長','Super Power':'特殊能力','Martial Arts':'格闘','Revenge':'復讐','Parody':'パロディ','Gag Humor':'ギャグ','Fast-Paced':'テンポの速い展開','Time Manipulation':'時間操作','World Building':'世界観の構築','Character Development':'人物の成長','Episodic':'各話完結','Magic':'魔法','Isekai':'異世界','Space':'宇宙','Cyberpunk':'サイバーパンク','Mythology':'神話','Samurai':'侍','Ensemble Cast':'群像劇','Found Family':'疑似家族・仲間','Philosophy':'哲学','Leadership':'リーダーシップ','Battle Royale':'バトルロイヤル','Quest':'冒険の目的・探求','Politics':'政治','Crime':'犯罪','Travel':'旅・移動','Slow Burn':'じっくり進む展開','Escape':'脱出・逃走','Sports':'スポーツ','Training':'訓練・修行','Detective':'探偵・捜査','Mentor':'師弟関係','Teacher-Student Relationship':'師弟・指導関係','Happy Ending':'幸福な結末','Bittersweet Ending':'ほろ苦い結末','Open Ending':'解釈の余地がある結末','Sad Ending':'悲しい結末','School':'学校','Urban':'都市・現代社会'};
   const matchedGenreKeys=genreEntries.filter(([g])=>animeGenres.includes(g)).map(([g])=>g);
   const matchedGenres=matchedGenreKeys.map(g=>genreNames[g]||g);
   const genrePoints=genreEntries.filter(([g])=>animeGenres.includes(g)).reduce((n,[,w])=>n+w*5.5,0);score+=genrePoints;if(genrePoints)scoreBreakdown.push({label:'選択ジャンル',points:genrePoints});
@@ -858,7 +922,7 @@ function buildProfile(profile){
  const top=Object.entries(profile.genres).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]);
  const names={Fantasy:'ファンタジー',Adventure:'冒険',Action:'アクション','Sci-Fi':'SF',Mystery:'ミステリー',Thriller:'サスペンス',Drama:'ドラマ',Comedy:'コメディ',Romance:'恋愛', 'Slice of Life':'日常',Psychological:'心理',Historical:'歴史',Mecha:'メカ'};
  $('profileTitle').textContent=top.length?top.map(g=>names[g]||g).join(' × ')+'タイプ':'幅広く楽しむタイプ';
- const tagNames={'Conspiracy':'陰謀・謎','Survival':'サバイバル','Psychological':'心理描写','Mystery':'謎解き','Tragedy':'悲劇','Coming of Age':'成長','Super Power':'特殊能力','Martial Arts':'格闘','Revenge':'復讐','Parody':'パロディ','Gag Humor':'ギャグ','Fast-Paced':'テンポの速い展開','Time Manipulation':'時間操作','World Building':'世界観の構築','Character Development':'人物の成長','Episodic':'各話完結','Magic':'魔法','Isekai':'異世界','Space':'宇宙','Cyberpunk':'サイバーパンク','Mythology':'神話','Samurai':'侍','Ensemble Cast':'群像劇','Found Family':'疑似家族・仲間','Philosophy':'哲学','Leadership':'リーダーシップ','Battle Royale':'バトルロイヤル','Quest':'冒険の目的・探求','Politics':'政治','Crime':'犯罪','Travel':'旅・移動'};
+ const tagNames={'Conspiracy':'陰謀・謎','Survival':'サバイバル','Psychological':'心理描写','Mystery':'謎解き','Tragedy':'悲劇','Coming of Age':'成長','Super Power':'特殊能力','Martial Arts':'格闘','Revenge':'復讐','Parody':'パロディ','Gag Humor':'ギャグ','Fast-Paced':'テンポの速い展開','Time Manipulation':'時間操作','World Building':'世界観の構築','Character Development':'人物の成長','Episodic':'各話完結','Magic':'魔法','Isekai':'異世界','Space':'宇宙','Cyberpunk':'サイバーパンク','Mythology':'神話','Samurai':'侍','Ensemble Cast':'群像劇','Found Family':'疑似家族・仲間','Philosophy':'哲学','Leadership':'リーダーシップ','Battle Royale':'バトルロイヤル','Quest':'冒険の目的・探求','Politics':'政治','Crime':'犯罪','Travel':'旅・移動','Slow Burn':'じっくり進む展開','Escape':'脱出・逃走','Sports':'スポーツ','Training':'訓練・修行','Detective':'探偵・捜査','Mentor':'師弟関係','Teacher-Student Relationship':'師弟・指導関係','Happy Ending':'幸福な結末','Bittersweet Ending':'ほろ苦い結末','Open Ending':'解釈の余地がある結末','Sad Ending':'悲しい結末','School':'学校','Urban':'都市・現代社会'};
  const traits=Object.entries(profile.tags).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([tag])=>tagNames[tag]||tag);
  $('profileDescription').textContent='ジャンルの傾向に加え、物語の展開や雰囲気の好みを反映しています。';
  $('profileChips').replaceChildren();
@@ -916,7 +980,7 @@ function renderCardList(containerId,items){
 }
 let latestResult=null;
 function encodeShareState(){
- const state={v:3,a:answers,f:$('favoriteTitles').value.slice(0,180),d:$('dislikedTitles').value.slice(0,180)};
+ const state={v:4,a:answers,f:$('favoriteTitles').value.slice(0,180),d:$('dislikedTitles').value.slice(0,180)};
  const bytes=new TextEncoder().encode(JSON.stringify(state));
  let binary='';bytes.forEach(byte=>binary+=String.fromCharCode(byte));
  return btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
@@ -924,19 +988,50 @@ function encodeShareState(){
 function getShareUrl(){
  const url=new URL(location.href);url.hash='result='+encodeShareState();return url.toString();
 }
+function areValidLegacyAnswers(values){
+ return Array.isArray(values)&&values.every(value=>value===null||(Number.isInteger(value)&&value>=0&&value<4));
+}
+function mapLegacySevenAnswersToThirteen(values){
+ if(!Array.isArray(values)||values.length!==7||!areValidLegacyAnswers(values))return null;
+ const mapped=Array(questions.length).fill(null);
+ const targetIndexes=[0,2,3,5,6,7,10];
+ const currentCharacterAnswerMap=[1,2,3,0];
+ targetIndexes.forEach((target,index)=>{
+  const answer=values[index];
+  mapped[target]=target===6&&Number.isInteger(answer)?(currentCharacterAnswerMap[answer]??null):answer;
+ });
+ return mapped;
+}
 function normalizeSharedAnswers(state){
  if(!Array.isArray(state?.a))return null;
  let values;
- if(state.v===3){
+ if(state.v===4){
   if(state.a.length!==questions.length)return null;
   values=state.a;
+ }else if(state.v===3){
+  if(state.a.length!==7)return null;
+  values=mapLegacySevenAnswersToThirteen(state.a);
  }else if(state.v===2){
-  if(![6,10,13].includes(state.a.length))return null;
-  // v2は旧13問構成。現行7問に対応する旧設問の位置だけを引き継ぐ。
-  const legacyIndexes=[0,2,3,5,6,7,10];
-  values=legacyIndexes.map(index=>index<state.a.length?state.a[index]:null);
+  if(![6,10,13].includes(state.a.length)||!areValidLegacyAnswers(state.a))return null;
+  values=[...state.a,...Array(questions.length-state.a.length).fill(null)];
  }else return null;
- if(!values.every((value,index)=>value===null||(Number.isInteger(value)&&value>=0&&value<questions[index].options.length)))return null;
+ if(!Array.isArray(values)||values.length!==questions.length||!values.every((value,index)=>value===null||(Number.isInteger(value)&&value>=0&&value<questions[index].options.length)))return null;
+ return values;
+}
+function normalizeSavedAnswers(data){
+ if(!Array.isArray(data?.answers))return null;
+ let values;
+ if(data.v===4){
+  if(data.answers.length!==questions.length)return null;
+  values=data.answers;
+ }else if([1,2].includes(data.v)){
+  if(data.answers.length===7){
+   values=mapLegacySevenAnswersToThirteen(data.answers);
+  }else if([6,10,13].includes(data.answers.length)&&areValidLegacyAnswers(data.answers)){
+   values=[...data.answers,...Array(questions.length-data.answers.length).fill(null)];
+  }else return null;
+ }else return null;
+ if(!Array.isArray(values)||values.length!==questions.length||!values.every((value,index)=>value===null||(Number.isInteger(value)&&value>=0&&value<questions[index].options.length)))return null;
  return values;
 }
 function restoreShareState(){
