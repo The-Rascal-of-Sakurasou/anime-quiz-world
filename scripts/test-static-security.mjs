@@ -292,7 +292,7 @@ const singleAnimeCharacterStart = index.indexOf("function isSingleAnimeCharacter
 const singleAnimeCharacterEnd = index.indexOf("function characterRecords(", singleAnimeCharacterStart);
 assert.ok(singleAnimeCharacterStart >= 0 && singleAnimeCharacterEnd > singleAnimeCharacterStart, "Single-anime character helper must exist");
 const isSingleAnimeCharacter = vm.runInNewContext(`(${index.slice(singleAnimeCharacterStart, singleAnimeCharacterEnd).trim()})`, {
-  normalizeAnswer: value => String(value || "").normalize("NFKC").toLocaleLowerCase().replace(/[\\s　・･:：!！?？.,，。'"“”「」『』()（）‐‑–—_-]/g, "").trim()
+  normalizeAnswer: value => String(value || "").normalize("NFKC").toLocaleLowerCase().replace(/[\s　・･:：!！?？.,，。'"“”「」『』()（）‐‑–—_-]/g, "").trim()
 });
 assert.equal(isSingleAnimeCharacter({ name: "Only Character" }, { uniqueCharacterNameKeys: new Set(["onlycharacter"]), characterNamesByAnime: new Map([[1, new Set(["onlycharacter"])]]) }), true, "A character appearing in one anime must remain eligible");
 assert.equal(isSingleAnimeCharacter({ name: "Shared Character" }, { uniqueCharacterNameKeys: new Set(["sharedcharacter"]), characterNamesByAnime: new Map([[1, new Set(["sharedcharacter"])], [2, new Set(["sharedcharacter"])]]) }), false, "A character appearing in multiple anime must be excluded");
