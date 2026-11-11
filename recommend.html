@@ -857,7 +857,7 @@ function getOfficialAnimeSiteUrl(anime){
  const japaneseLink=officialLinks.find(item=>/(japanese|日本語|^ja(?:\b|[-_]))/i.test(String(item.language||'')));
  return (japaneseLink||officialLinks[0])?.url||'';
 }
-async // 回答内容とは独立した推薦候補の適格条件。質問への回答は候補除外に使わず、順位調整だけに使う。
+// 回答内容とは独立した推薦候補の適格条件。質問への回答は候補除外に使わず、順位調整だけに使う。
 function isRecommendationCandidate(anime){
  const allowedFormats=new Set(['TV','TV_SHORT','MOVIE','ONA','OVA','SPECIAL']);
  return Boolean(anime&&isJapaneseOriginAnime(anime)&&anime.coverImage?.large&&anime.title&&allowedFormats.has(anime.format));
