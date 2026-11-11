@@ -535,8 +535,25 @@ function runRecommendationSelfTests(){
  check('対象形式外は推薦候補に含めない',!isRecommendationCandidate({...candidateBase,format:'MUSIC'}));
  check('日本原作・日本発以外は推薦候補に含めない',!isRecommendationCandidate({...candidateBase,countryOfOrigin:'US',format:'TV'}));
  check('タイトル画像がない作品は推薦候補に含めない',!isRecommendationCandidate({...candidateBase,coverImage:{},format:'TV'}));
- // isRecommendationCandidateは回答profileを受け取らないため、回答による候補足切りは発生しない。
- check('候補の適格判定は診断回答profileに依存しない',isRecommendationCandidate.length===1);
+ // 52選択肢それぞれを単独で選んだprofileでも、候補の適格判定結果が変わらないことを確認する。
+ const eligibilitySamples=[
+  {...candidateBase,id:101,format:'TV'},
+  {...candidateBase,id:102,format:'MOVIE'},
+  {...candidateBase,id:103,format:'OVA'},
+  {...candidateBase,id:104,format:'MUSIC'},
+  {...candidateBase,id:105,countryOfOrigin:'US',format:'TV'}
+ ];
+ const eligibilityBaseline=eligibilitySamples.filter(anime=>isRecommendationCandidate(anime)).map(anime=>anime.id).join(',');
+ const profileVariants=[Array(questions.length).fill(null)];
+ questions.forEach((question,questionIndex)=>question.options.forEach((option,optionIndex)=>{
+  const probe=Array(questions.length).fill(null);probe[questionIndex]=optionIndex;
+  profileVariants.push(probe);
+ }));
+ const profileIndependentEligibility=profileVariants.every(answerSet=>{
+  const profile=profileFromAnswers(answerSet);
+  return eligibilitySamples.filter(anime=>isRecommendationCandidate(anime,profile)).map(anime=>anime.id).join(',')===eligibilityBaseline;
+ });
+ check('52選択肢のどれを選んでも候補作品の適格判定は変わらない',profileIndependentEligibility);
  const allCandidates=[{id:1,_score:100,_popularity:100},{id:2,_score:-80,_popularity:5},{id:3,_score:0,_popularity:20}];
  const openPool=buildDiscoveryPool(allCandidates,new Set([1]));
  check('相性スコアが低い作品も意外なおすすめ候補に残る',openPool.some(a=>a.id===2));
