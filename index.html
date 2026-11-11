@@ -904,7 +904,8 @@ async function fetchAnime(vars={}){
  try{
   sharedResult=await Promise.race([
    sharedCatalogPromise.then(items=>({timedOut:false,items})),
-   new Promise(resolve=>{sharedTimer=setTimeout(()=>resolve({timedOut:true,items:[]}),7000)})
+   // A usable local cache should never wait several seconds for the shared catalogue.
+   new Promise(resolve=>{sharedTimer=setTimeout(()=>resolve({timedOut:true,items:[]}),initial.length?900:2200)})
   ]);
  }catch(e){}finally{clearTimeout(sharedTimer)}
  sharedCatalogItems=sharedResult.items||[];
@@ -1256,8 +1257,11 @@ function randomInt(maxExclusive){if(!Number.isSafeInteger(maxExclusive)||maxExcl
 function shuffle(a){const out=[...a];for(let i=out.length-1;i>0;i--){const j=randomInt(i+1);[out[i],out[j]]=[out[j],out[i]]}return out}
 const questionImagePreloadCache=new Map();
 let animeLoadPromise=null;async function prepare(){if(animeLoadPromise)return animeLoadPromise;animeLoadPromise=(async()=>{ $('#quizStatus').textContent=tr('loading');$('#start').classList.remove('hidden');$('#start').disabled=false;$('#start').textContent=tr('start')+(lang==='ja'?'（作品データ読み込み中）':' (loading anime data)');try{pool=await fetchAnime();if(lateSharedCatalogItems.length){pool=deduplicateQuestionPool(mergeAnimeCollection([...pool,...lateSharedCatalogItems]));lateSharedCatalogItems=[];sharedCatalogActive=true;}if(!pool.length)throw new Error('作品データが0件でした。');
- // Warm expensive quiz indexes while the catalogue is loading, not after the user presses Start.
- prepareDifficultyTiers(pool);questionChoiceSummary();
+ // Build the expensive choice index during browser idle time. Do not block the
+ // ready state or the Start button on this work; the first quiz request can
+ // build it on demand if the user starts immediately.
+ const warmIndexes=()=>{if(!pool.length)return;try{prepareDifficultyTiers(pool);questionChoiceSummary()}catch(error){console.warn('Quiz index warm-up deferred:',error)}};
+ if('requestIdleCallback' in window)requestIdleCallback(warmIndexes,{timeout:1800});else setTimeout(warmIndexes,250);
  const poolProgress=$('#animePoolProgress');if(poolProgress)poolProgress.textContent=sharedCatalogActive?(lang==='ja'?('共通カタログ：'+pool.length.toLocaleString()+'作品（毎日更新）'):('Shared catalogue: '+pool.length.toLocaleString()+' anime (updated daily)')):(lang==='ja'?('現在利用可能：'+pool.length.toLocaleString()+'作品。取得可能な作品をバックグラウンドで追加します。'):('Currently available: '+pool.length.toLocaleString()+' anime. More available entries are loading in the background.'));$('#quizStatus').textContent=sharedCatalogActive?(lang==='ja'?pool.length+'作品の共通カタログを読み込みました。クイズを開始できます。':pool.length+' shared anime loaded. Ready to start.'):(lang==='ja'?pool.length+'作品を読み込みました。クイズを開始できます。残りはバックグラウンドで追加します。':pool.length+' anime loaded. Ready to start; more are loading in the background.');$('#start').classList.remove('hidden');$('#start').textContent=tr('start');if(typeof renderFeaturedRail==='function')renderFeaturedRail();return pool}catch(e){console.error('Anime data loading failed:',e);$('#quizStatus').textContent=lang==='ja'?('読み込み失敗：'+e.message+' 「再読み込みして開始」を押して再試行してください。'):('Load failed: '+e.message+' Press retry to try again.');$('#start').classList.remove('hidden');$('#start').textContent=tr('retry');return []}finally{animeLoadPromise=null}})();return animeLoadPromise}
 function dateKey(d=new Date()){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function dailyOrder(list){const day=dateKey();const hash=s=>{let h=2166136261;for(const ch of s){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return h>>>0};return [...list].sort((a,b)=>hash(day+':'+a.id)-hash(day+':'+b.id))}
