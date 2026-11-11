@@ -13,6 +13,9 @@ on:
       - "scripts/detect-title-image-text.py"
       - ".github/workflows/detect-title-image-text.yml"
   workflow_dispatch:
+  schedule:
+    # Weekly re-audit; catalogue changes also trigger an immediate audit.
+    - cron: '20 18 * * 0'
 
 permissions:
   contents: write
@@ -53,6 +56,13 @@ jobs:
           python3 scripts/detect-title-image-text.py --self-test
       - name: Detect titles in cover images
         run: python3 scripts/detect-title-image-text.py
+      - name: Upload OCR audit report
+        if: always() && hashFiles('artifacts/title-image-audit/report.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: title-image-audit-report
+          path: artifacts/title-image-audit/report.json
+          retention-days: 14
       - name: Commit exclusion list when changed
         run: |
           git config user.name "github-actions[bot]"
