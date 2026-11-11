@@ -321,8 +321,8 @@ assert.match(index, /if\(actualMode===\'titleStudio\'\)\{prompt=titleOf\(a\)\+qT
 assert.match(index, /function titleChoiceRecordsForAnime\(a\)/, "Title-based question eligibility and generation must share the same alias-safe option builder");
 assert.match(index, /function hasFourDistinctTitleChoices\(anime,summary=questionChoiceSummary\(\)\)\{return titleChoiceRecordsForAnime\(anime\)\.length>=4\}/, "Title-based question eligibility must count the exact generated title options");
 assert.match(index, /function makeTitleOptions\(a\)\{const records=titleChoiceRecordsForAnime\(a\);if\(!records\.length\)return \[\];const correctKey=normalizeAnswer\(titleOf\(a\)\);const correct=records\.find\(record=>normalizeAnswer\(record\.value\)===correctKey\);const distractors=shuffle\(records\.filter\(record=>normalizeAnswer\(record\.value\)!==correctKey\)\);return correct\?\[correct,\.\.\.distractors\.slice\(0,3\)\]:shuffle\(records\)\.slice\(0,4\)\}/, "Title-based question generation must retain the correct answer and randomize distractors");
-const randomIntSource = index.match(/function randomInt\\(maxExclusive\\)\\{[^\\n]*\\}/)?.[0];
-const shuffleSource = index.match(/function shuffle\\(a\\)\\{[^\\n]*\\}/)?.[0];
+const randomIntSource = index.match(/function randomInt\(maxExclusive\)\{[^\n]*\}/)?.[0];
+const shuffleSource = index.match(/function shuffle\(a\)\{[^\n]*\}/)?.[0];
 assert.ok(randomIntSource && shuffleSource, "Quiz randomization helpers must exist");
 let randomSeed = 0x12345678;
 const deterministicMath = Object.create(Math);
