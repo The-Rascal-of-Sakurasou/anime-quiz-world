@@ -513,19 +513,21 @@ def main():
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch()
         try:
+            # Run the core quiz journey first so network-heavy checks cannot
+            # delay detection of a broken start -> answer -> finish flow.
+            test_quiz_start_answer_finish(browser)
+            print("PASS: quiz start -> answer -> finish")
+            test_recommendation_diagnosis(browser)
+            print("PASS: recommendation diagnosis -> results")
+            test_mobile_quiz_layout(browser)
+            print("PASS: mobile quiz layout and touch answer")
             test_live_seasonal_anilist()
             test_featured_season_rail(browser)
             print("PASS: featured seasonal rail -> visible cards and loaded images")
-            test_quiz_start_answer_finish(browser)
-            print("PASS: quiz start -> answer -> finish")
             test_live_quiz_preparation_performance(browser)
             print("PASS: live-catalog quiz preparation performance (3 rounds)")
-            test_mobile_quiz_layout(browser)
-            print("PASS: mobile quiz layout and touch answer")
             test_auth_form_reads_filled_inputs(browser)
             print("PASS: auth form reads filled inputs")
-            test_recommendation_diagnosis(browser)
-            print("PASS: recommendation diagnosis -> results")
         finally:
             browser.close()
 
