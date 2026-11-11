@@ -746,10 +746,21 @@ const ph=document.getElementById('query');if(ph)ph.placeholder=lang==='ja'?'ä¾‹ï
 const query=`query ($page:Int,$perPage:Int,$search:String,$id_in:[Int],$format_in:[MediaFormat],$startDate_greater:FuzzyDateInt,$startDate_lesser:FuzzyDateInt) { Page(page:$page,perPage:$perPage) { pageInfo { hasNextPage } media(id_in:$id_in,format_in:$format_in,startDate_greater:$startDate_greater,startDate_lesser:$startDate_lesser,type:ANIME,countryOfOrigin:JP,sort:POPULARITY_DESC,search:$search,isAdult:false) { id countryOfOrigin source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } format popularity title { romaji english native } description(asHtml:false) synonyms coverImage { large medium extraLarge } episodes seasonYear averageScore genres studios { nodes { name } } startDate { year } characters(sort:ROLE,perPage:5) { nodes { id name { full native } image { large } } } externalLinks { url site type isDisabled } } } }`;
 function normalizeUnicode(value){if(typeof value==='string')return value.normalize('NFC');if(Array.isArray(value))return value.map(normalizeUnicode);if(value&&typeof value==='object'){const out={};for(const [key,item] of Object.entries(value))out[key]=normalizeUnicode(item);return out}return value}
 function isJapaneseOriginAnime(a){if(!a||a.countryOfOrigin!=='JP')return false;if(a.source==='ORIGINAL')return true;const sourceRules={MANGA:{type:'MANGA',formats:['MANGA','ONE_SHOT']},LIGHT_NOVEL:{type:'MANGA',formats:['NOVEL']},NOVEL:{type:'MANGA',formats:['NOVEL']},DOUJINSHI:{type:'MANGA',formats:['MANGA','ONE_SHOT','NOVEL']},ANIME:{type:'ANIME',formats:['TV','TV_SHORT','MOVIE','OVA','ONA','SPECIAL']}};const rule=sourceRules[a.source];if(!rule||!Array.isArray(a.relations?.edges))return false;return a.relations.edges.some(edge=>(edge?.relationType==='SOURCE'||edge?.relationType==='ADAPTATION')&&edge.node?.type===rule.type&&edge.node?.countryOfOrigin==='JP'&&rule.formats.includes(edge.node?.format))}
-const $=s=>document.querySelector(s);let pool=[],questions=[],index=0,points=0,skippedQuestionCount=0,locked=false,questionTimer=null,clockTimer=null,secondsLeft=15,questionDeadline=0,pausedQuestionSeconds=0,isPaused=false,pausedAt=0,totalPausedMs=0,startedAt=0,elapsedSeconds=0,missedQuestions=[],reviewMode=false,playMode='normal',roundFailed=false,lastResultData=null,combo=0,bestCombo=0,choiceHintUsed=false,typedHintUsed=false,backgroundLoadPromise=null,sharedCatalogActive=false,requestedQuestionCount=10,rateLimitedUntil=0,failedImageUrls=new Set(),autoNextTimer=null;
+const $=s=>document.querySelector(s);let pool=[],questions=[],index=0,points=0,skippedQuestionCount=0,locked=false,questionTimer=null,clockTimer=null,secondsLeft=15,questionDeadline=0,pausedQuestionSeconds=0,isPaused=false,pausedAt=0,totalPausedMs=0,startedAt=0,elapsedSeconds=0,missedQuestions=[],reviewMode=false,playMode='normal',roundFailed=false,lastResultData=null,combo=0,bestCombo=0,choiceHintUsed=false,typedHintUsed=false,backgroundLoadPromise=null,sharedCatalogActive=false,requestedQuestionCount=10,rateLimitedUntil=0,failedImageUrls=new Set(),titleImageExcludedIds=new Set(),autoNextTimer=null;
 async function fetchSharedAnimeCatalog(){
  try{
-  const response=await fetch(new URL('data/anime-catalog.json',document.baseURI),{cache:'no-cache',headers:{'Accept':'application/json'}});
+  const [response,exclusionResponse]=await Promise.all([
+   fetch(new URL('data/anime-catalog.json',document.baseURI),{cache:'no-cache',headers:{'Accept':'application/json'}}),
+   fetch(new URL('data/title-image-exclusions.json',document.baseURI),{cache:'no-cache',headers:{'Accept':'application/json'}}).catch(()=>null)
+  ]);
+  if(exclusionResponse?.ok){
+   try{
+    const exclusions=await exclusionResponse.json();
+    if(exclusions?.schemaVersion===1&&Array.isArray(exclusions.excludedIds)){
+     titleImageExcludedIds=new Set(exclusions.excludedIds.map(Number).filter(id=>Number.isSafeInteger(id)&&id>0));
+    }
+   }catch(error){console.warn('Title-image exclusion data is invalid:',error)}
+  }
   if(!response.ok)return [];
   const payload=await response.json();
   if(payload?.schemaVersion!==1||!Array.isArray(payload.items))return [];
@@ -984,7 +995,7 @@ async function fetchAnime(vars={}){
  return deduplicateQuestionPool(initial);
 }
 function hasUsableImageUrl(value){const url=String(value||'').trim();return /^https?:\/\//i.test(url)&&!/(?:no[-_ ]?image|placeholder|default[-_ ]?image)/i.test(url)&&!failedImageUrls.has(url)}
-function isUsableAnime(a){const titleImage=a?.coverImage?.large||a?.coverImage?.medium||a?.coverImage?.extraLarge||'';return !!(a&&a.id&&a.isAdult!==true&&isJapaneseOriginAnime(a)&&hasUsableImageUrl(titleImage)&&titleOf(a)&&['TV','TV_SHORT','MOVIE','OVA','ONA','SPECIAL'].includes(a.format)&&!((a.genres||[]).includes('Hentai')))}
+function isUsableAnime(a){const titleImage=a?.coverImage?.large||a?.coverImage?.medium||a?.coverImage?.extraLarge||'';return !!(a&&a.id&&!titleImageExcludedIds.has(Number(a.id))&&a.isAdult!==true&&isJapaneseOriginAnime(a)&&hasUsableImageUrl(titleImage)&&titleOf(a)&&['TV','TV_SHORT','MOVIE','OVA','ONA','SPECIAL'].includes(a.format)&&!((a.genres||[]).includes('Hentai')))}
 function deduplicateSearchResults(items){
  // AniList search can return multiple media entries with the same displayed title.
  // Keep the most popular representative and suppress exact title duplicates across locales.
