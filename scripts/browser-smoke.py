@@ -167,7 +167,10 @@ def test_quiz_start_answer_finish(browser):
         }""",
         timeout=60000,
     )
-    page.locator("#modeSelect").select_option("titleYear")
+    # Use image-to-title mode: the compact fixture catalogue intentionally has
+    # no four distinct release years, so title-to-year mode has no valid options.
+    page.locator("#modeSelect").select_option("image")
+    page.locator("#answerFormatSelect").select_option("choices")
     page.locator("#difficultySelect").select_option("easy")
     page.locator("#questionCount").fill("1")
     page.locator("#start").click()
