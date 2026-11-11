@@ -1127,8 +1127,8 @@ window.addEventListener('aqw:question-difficulty-stats',event=>{
  const records=Array.isArray(event.detail)?event.detail:[];
  const next=new Map();
  for(const record of records){
-  const animeId=Number(record?.animeId),mode=String(record?.questionMode||''),attempts=Number(record?.attempts),correctRate=Number(record?.correctRate);
-  if(Number.isSafeInteger(animeId)&&animeId>0&&attempts>=50&&correctRate>=0&&correctRate<=1&&Number.isFinite(correctRate))next.set(animeId+'|'+mode,{attempts,correctRate});
+  const animeId=Number(record?.animeId),mode=String(record?.questionMode||''),attempts=Number(record?.attempts),uniquePlayers=Number(record?.uniquePlayers),correctRate=Number(record?.correctRate);
+  if(Number.isSafeInteger(animeId)&&animeId>0&&attempts>=50&&uniquePlayers>=10&&correctRate>=0&&correctRate<=1&&Number.isFinite(correctRate))next.set(animeId+'|'+mode,{attempts,uniquePlayers,correctRate});
  }
  empiricalDifficultyStats=next;
  if(pool.length)prepareDifficultyTiers(pool);
@@ -1190,14 +1190,20 @@ function questionModeDifficultyScore(a,mode){
  }
  return clampDifficultyScore(score);
 }
+function difficultyInitialWeight(attempts){
+ const progress=Math.max(0,Math.min(1,(Number(attempts)||0)/300));
+ return Math.max(0,Math.min(1,(1+Math.cos(Math.PI*progress))/2));
+}
 function difficultyScoreForMode(a,mode,workRarity){
  const heuristic=questionModeDifficultyScore(a,mode);
+ const initial=clampDifficultyScore(workRarity*.80+heuristic*.20);
  const stats=empiricalDifficultyStats.get(Number(a?.id)+'|'+mode);
- if(stats&&stats.attempts>=50&&Number.isFinite(stats.correctRate)){
+ if(stats&&stats.attempts>=50&&stats.uniquePlayers>=10&&Number.isFinite(stats.correctRate)){
   const empirical=clampDifficultyScore((1-stats.correctRate)*100);
-  return clampDifficultyScore(workRarity*.30+heuristic*.20+empirical*.50);
+  const initialWeight=difficultyInitialWeight(stats.attempts);
+  return clampDifficultyScore(initial*initialWeight+empirical*(1-initialWeight));
  }
- return clampDifficultyScore(workRarity*.80+heuristic*.20);
+ return initial;
 }
 function popularityTier(a,requestedMode){
  const id=Number(a?.id),workRarity=difficultyRarityById.has(id)?difficultyRarityById.get(id):50;
