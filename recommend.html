@@ -350,12 +350,18 @@ function calculateLearnedAdjustment(names,countsMap,cap){
  }
  return signals.length?signals.reduce((sum,value)=>sum+value,0)/signals.length:0;
 }
+// 評価総数に応じて個人学習の影響度を滑らかに上げる。少数評価では初期診断を優先する。
+function calculateLearningStrength(feedback){
+ const total=Object.values(feedback||{}).filter(item=>item&&['like','dislike'].includes(item.value)).length;
+ return {total,strength:Math.min(0.85,total/(total+20))};
+}
 function calculateLearnedTotalAdjustment(genres,tags,preferences,weights={}){
  const genreWeight=Number.isFinite(weights.genre)?weights.genre:2.4;
  const tagWeight=Number.isFinite(weights.tag)?weights.tag:2;
  const cap=Number.isFinite(weights.cap)?Math.max(0,weights.cap):4;
  const total=calculateLearnedAdjustment(genres,preferences.genres,genreWeight)+calculateLearnedAdjustment(tags,preferences.tags,tagWeight);
- return Math.max(-cap,Math.min(cap,total));
+ const strength=Number.isFinite(weights.strength)?Math.max(0,Math.min(0.85,weights.strength)):1;
+ return Math.max(-cap,Math.min(cap,total))*strength;
 }
 // 1件ずつ評価対象を学習データから外す簡易ホールドアウト検証。
 // 評価対象以外の履歴だけで学習し、ジャンル・タグ傾向の方向性を比較する参考指標。
@@ -532,6 +538,10 @@ function runRecommendationSelfTests(){
  ],[{id:1,_popularity:100},{id:2,_popularity:10},{id:3,_popularity:1}]);
  check('推薦品質指標はジャンル・タグの多様性を集計する',qualitySample.uniqueGenres===3&&qualitySample.uniqueTags===2);
  check('人気度指標は候補群内の相対順位から算出する',qualitySample.averagePopularityPercentile!==null&&qualitySample.averagePopularityPercentile>=0&&qualitySample.averagePopularityPercentile<=100);
+ check('評価0件では学習反映率0%',calculateLearningStrength({}).strength===0);
+ check('評価が増えると学習反映率が上がる',calculateLearningStrength({a:{value:'like'}}).strength<calculateLearningStrength({a:{value:'like'},b:{value:'dislike'},c:{value:'like'},d:{value:'dislike'}}).strength);
+ check('学習反映率は85%を超えない',calculateLearningStrength(Object.fromEntries(Array.from({length:500},(_,i)=>[String(i),{value:i%2?'like':'dislike'}]))).strength===0.85);
+
  check('上位4作品以外も全候補から意外なおすすめ候補に残る',openPool.length===2&&openPool.some(a=>a.id===3));
  const dedup=deduplicateRecommendationGroups(
   [{id:1,title:{native:'作品A',english:'Title A',romaji:'Title A'}}],
@@ -878,6 +888,7 @@ async function getRecommendations(profile){
  const recommendationFeedback=readRecommendationFeedback();
  // 評価履歴からジャンル・タグごとの傾向を集計し、少数評価を抑制した補正値を算出する。
  const learnedPreferences=buildLearnedPreferences(recommendationFeedback);
+ const learningReliability=calculateLearningStrength(recommendationFeedback);
  const favoriteSeeds=[],dislikedSeeds=[];
  const seedReport={unresolvedFavorites:[],unresolvedDislikes:[],conflicts:[],resolvedFavorites:[],resolvedDislikes:[],lookupErrors:[],dataWarnings:buildRecommendationDataWarnings(failedPages,totalPages,cappedSorts),retrievalStats:{rawRecordCount,uniqueIdCount:items.length,sortCoverage}};
  for(const name of favoriteNames){
@@ -944,10 +955,10 @@ async function getRecommendations(profile){
   const favoritePoints=fav.score;score+=favoritePoints;if(favoritePoints)scoreBreakdown.push({label:'好きな作品との類似度',points:favoritePoints});
   const dislikedPenalty=dis.score*0.75;score-=dislikedPenalty;if(dislikedPenalty)scoreBreakdown.push({label:'苦手な作品との類似度',points:-dislikedPenalty});
   if(lengthPoints){score+=0;scoreBreakdown.push({label:'希望する作品の長さ',points:lengthPoints});}
-  const learnedTotalAdjustment=calculateLearnedTotalAdjustment(animeGenres,animeTags.filter(t=>!t.isMediaSpoiler&&t.rank>=40).map(t=>t.name),learnedPreferences);
+  const learnedTotalAdjustment=calculateLearnedTotalAdjustment(animeGenres,animeTags.filter(t=>!t.isMediaSpoiler&&t.rank>=40).map(t=>t.name),learnedPreferences,{strength:learningReliability.strength});
   score+=learnedTotalAdjustment;if(learnedTotalAdjustment)scoreBreakdown.push({label:'過去の評価傾向',points:learnedTotalAdjustment});
   const priorFeedback=recommendationFeedback[String(a.id)];
-  const feedbackPoints=priorFeedback?.value==='like'?4:priorFeedback?.value==='dislike'?-8:0;score+=feedbackPoints;if(feedbackPoints)scoreBreakdown.push({label:'この作品への過去評価',points:feedbackPoints});
+  const feedbackPoints=(priorFeedback?.value==='like'?4:priorFeedback?.value==='dislike'?-8:0)*learningReliability.strength;score+=feedbackPoints;if(feedbackPoints)scoreBreakdown.push({label:'この作品への過去評価',points:feedbackPoints});
 
   const details=[];
    if(priorFeedback?.value==='like')details.push({label:'過去の推薦評価',items:['以前「合っている」と評価'],kind:'positive'});
@@ -1332,7 +1343,8 @@ function renderFeedbackAnalytics(){
  const learnableGenres=Object.values(genreCounts).filter(count=>count.like+count.dislike>=2).length;
  const learnableTags=Object.values(tagCounts).filter(count=>count.like+count.dislike>=2).length;
  const learning=document.createElement('p');learning.className='status';
- learning.textContent='推薦への学習反映：ジャンル '+learnableGenres+' 種類、タグ '+learnableTags+' 種類（各2件以上の評価がある特徴）。評価が1件以下の特徴は、少数データによる偏りを避けるため、まだ順位調整に使いません。';
+ const reliability=calculateLearningStrength(readRecommendationFeedback());
+ learning.textContent='推薦への学習反映：評価 '+reliability.total+' 件・全体の学習反映率 '+Math.round(reliability.strength*100)+'%。ジャンル '+learnableGenres+' 種類、タグ '+learnableTags+' 種類（各2件以上の評価がある特徴）。評価が少ない間は初期診断を優先し、評価が増えるにつれて個人の好みを強く反映します。反映率の上限は85%です。';
  root.append(learning);
  // 新しい評価に保存された診断時の類似度を、評価結果と照合する。
  const metricRecords=rated.filter(item=>item.evaluationMetrics&&Number.isFinite(Number(item.evaluationMetrics.favoriteSimilarity)));
