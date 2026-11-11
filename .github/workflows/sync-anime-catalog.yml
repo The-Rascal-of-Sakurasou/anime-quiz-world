@@ -6,6 +6,7 @@ on:
     paths:
       - "scripts/sync-anime-catalog.mjs"
       - "scripts/validate-anime-catalog.mjs"
+      - "scripts/detect-title-image-text.py"
       - ".github/workflows/sync-anime-catalog.yml"
   schedule:
     - cron: '30 19 * * *'
