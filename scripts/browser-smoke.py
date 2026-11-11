@@ -39,7 +39,10 @@ TAGS = [
 
 def make_anime(index):
     anime_id = 10000 + index
-    title = f"検証作品{index + 1}"
+    # Keep every alias distinct: numbered titles such as "Anime 1" and
+    # "Anime 10" overlap and are correctly rejected as ambiguous distractors.
+    suffix = chr(65 + index)
+    title = f"検証作品{suffix}"
     cover = f"https://example.test/cover-{index + 1}.svg"
     return {
         "id": anime_id,
@@ -49,8 +52,8 @@ def make_anime(index):
         "format": "TV",
         "title": {
             "native": title,
-            "english": f"Verification Anime {index + 1}",
-            "romaji": f"Verification Anime {index + 1}",
+            "english": f"Verification Anime {suffix}",
+            "romaji": f"Verification Anime {suffix}",
         },
         "description": "これはブラウザ自動検査用の架空作品データです。物語と登場人物の情報を含みます。",
         "coverImage": {"large": cover, "medium": cover, "extraLarge": cover},
