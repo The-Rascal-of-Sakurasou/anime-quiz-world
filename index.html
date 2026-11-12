@@ -2588,7 +2588,8 @@ const OFFICIAL_SITE_OVERRIDES=new Map([
  [1195,'https://zero-tsukaima.com/'],
  [6,'https://madhouse.co.jp/english/works/'],
  [392,'https://pierrot.jp/archive/1990/']
-]);
+,
+ [21366,'https://www.aniplex.co.jp/lineup/3lion/']]);
 function getSearchAnimeOfficialUrl(anime){
  const override=OFFICIAL_SITE_OVERRIDES.get(Number(anime?.id));
  if(override)return override;
