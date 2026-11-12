@@ -465,6 +465,11 @@ def test_live_quiz_preparation_performance(browser):
           profileLoadSamples: (window.__aqwProfileLoadSamples || []).slice(),
           candidateCount: (window.__aqwLastCandidateSelectionMs == null) ? null :
             (window.__aqwLastCandidateCount ?? null),
+          questionMode: typeof currentQuestionMode === 'undefined' ? null : currentQuestionMode,
+          poolCount: typeof pool === 'undefined' ? null : pool.length,
+          failedImageCount: typeof failedImageUrls === 'undefined' ? null : failedImageUrls.size,
+          questionSummaryCached: typeof questionChoiceSummaryCache === 'undefined' ? null :
+            !!(questionChoiceSummaryCache && questionChoiceSummaryCache.pool === pool),
           catalogueResources: performance.getEntriesByType('resource')
             .filter(entry => /anime-catalog|title-image-exclusions/.test(entry.name))
             .map(entry => ({name: entry.name.split('/').pop(), durationMs: Math.round(entry.duration * 10) / 10,
