@@ -529,7 +529,7 @@ assert.match(index, /function scheduleEligibleCandidatePrewarm\(\)/, "Idle-time 
 assert.match(index, /requestIdleCallback\(run,\{timeout:\d+\}\)/, "Candidate prewarming must use browser idle time with a bounded timeout when available");
 const candidatePrewarmTimeout = Number(index.match(/requestIdleCallback\(run,\{timeout:(\d+)\}\)/)?.[1]);
 assert.ok(Number.isFinite(candidatePrewarmTimeout) && candidatePrewarmTimeout <= 2000, "Candidate prewarming must begin within two seconds when the browser is busy");
-assert.match(index, /else setTimeout\(run,100\)/, "Browsers without requestIdleCallback must still prewarm candidates promptly");
+assert.match(index, /else setTimeout\(run,0\)/, "Browsers without requestIdleCallback must still prewarm candidates promptly");
 assert.match(index, /function hasAnyQuestionMode\(a,format=/, "Mixed mode must short-circuit once an eligible question type is found");
 assert.match(index, /const candidates=\[\.\.\.\(cached\|\|sourcePool\)\]/, "Quiz start must sample from the ready cache or source catalogue without waiting for a full filtered catalogue");
 assert.match(index, /for\(let i=0;i<candidates\.length&&eligible\.length<target;i\+\+\)/, "Initial quiz selection must stop as soon as the requested question count is reached");
