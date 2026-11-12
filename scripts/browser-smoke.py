@@ -392,6 +392,43 @@ def test_live_quiz_preparation_performance(browser):
         service_workers="block",
     )
     page = context.new_page()
+    page.add_init_script("""(() => {
+      window.__aqwLongTasks = [];
+      window.__aqwIndexedDBPutSamples = [];
+      if (typeof IDBObjectStore !== 'undefined') {
+        const originalPut = IDBObjectStore.prototype.put;
+        IDBObjectStore.prototype.put = function(...args) {
+          const started = performance.now();
+          try { return originalPut.apply(this, args); }
+          finally {
+            const duration = performance.now() - started;
+            window.__aqwIndexedDBPutSamples.push({
+              store: this.name,
+              key: args.length > 1 ? String(args[1]) : 'inline',
+              durationMs: Math.round(duration * 10) / 10
+            });
+          }
+        };
+      }
+      if ('PerformanceObserver' in window) {
+        try {
+          new PerformanceObserver(list => {
+            for (const entry of list.getEntries()) {
+              window.__aqwLongTasks.push({
+                startTime: Math.round(entry.startTime * 10) / 10,
+                duration: Math.round(entry.duration * 10) / 10,
+                name: entry.name,
+                attribution: (entry.attribution || []).map(item => ({
+                  name: item.name,
+                  containerType: item.containerType,
+                  containerName: item.containerName
+                }))
+              });
+            }
+          }).observe({entryTypes: ['longtask']});
+        } catch {}
+      }
+    })();""")
     page_errors = []
     performance_logs = []
     page.on("pageerror", lambda error: page_errors.append(str(error)))
@@ -413,6 +450,23 @@ def test_live_quiz_preparation_performance(browser):
         timeout=120000,
     )
     ready_ms = round((__import__("time").perf_counter() - navigation_started) * 1000, 1)
+
+    # Measure synchronous question rendering separately from candidate preparation.
+    page.evaluate("""() => {
+      window.__aqwQuestionRenderMetrics = {};
+      for (const name of ['showQuestion', 'showQuestionInternal']) {
+        const original = window[name];
+        if (typeof original === 'function' && !original.__aqwPerfWrapped) {
+          const wrapped = function(...args) {
+            const started = performance.now();
+            try { return original.apply(this, args); }
+            finally { window.__aqwQuestionRenderMetrics[name] = Math.round(performance.now() - started); }
+          };
+          wrapped.__aqwPerfWrapped = true;
+          window[name] = wrapped;
+        }
+      }
+    }""")
 
     # Capture the profile-fetch duration without changing the returned profile.
     page.evaluate("""() => {
@@ -466,6 +520,8 @@ def test_live_quiz_preparation_performance(browser):
           candidateCount: (window.__aqwLastCandidateSelectionMs == null) ? null :
             (window.__aqwLastCandidateCount ?? null),
           questionMode: typeof currentQuestionMode === 'undefined' ? null : currentQuestionMode,
+          questionRenderMs: window.__aqwQuestionRenderMetrics?.showQuestion ?? null,
+          questionRenderInternalMs: window.__aqwQuestionRenderMetrics?.showQuestionInternal ?? null,
           poolCount: typeof pool === 'undefined' ? null : pool.length,
           failedImageCount: typeof failedImageUrls === 'undefined' ? null : failedImageUrls.size,
           questionSummaryCached: typeof questionChoiceSummaryCache === 'undefined' ? null :
@@ -473,7 +529,9 @@ def test_live_quiz_preparation_performance(browser):
           catalogueResources: performance.getEntriesByType('resource')
             .filter(entry => /anime-catalog|title-image-exclusions/.test(entry.name))
             .map(entry => ({name: entry.name.split('/').pop(), durationMs: Math.round(entry.duration * 10) / 10,
-              transferSize: entry.transferSize || null}))
+              transferSize: entry.transferSize || null})),
+          longTasks: (window.__aqwLongTasks || []).slice(-20),
+          indexedDBPutSamples: (window.__aqwIndexedDBPutSamples || []).slice(-30)
         })""")
         profile_samples = metrics["profileLoadSamples"][profile_start:]
         log_text = performance_logs[log_start:]
@@ -482,6 +540,10 @@ def test_live_quiz_preparation_performance(browser):
             "clickToFirstQuestionMs": first_question_ms,
             "candidateSelectionMs": metrics["candidateSelectionMs"],
             "quizPreparationMs": metrics["quizPreparationMs"],
+            "questionRenderMs": metrics["questionRenderMs"],
+            "questionRenderInternalMs": metrics["questionRenderInternalMs"],
+            "longTasks": metrics["longTasks"],
+            "indexedDBPutSamples": metrics["indexedDBPutSamples"],
             "preparationStages": metrics["preparationStages"],
             "profileLoadMs": profile_samples[-1] if profile_samples else None,
             "performanceLog": log_text[-1] if log_text else None,
@@ -492,12 +554,28 @@ def test_live_quiz_preparation_performance(browser):
         page.locator("#result:not(.hidden)").wait_for(state="visible", timeout=30000)
         if round_index < 2:
             page.locator("#restart").wait_for(state="visible", timeout=30000)
-            page.wait_for_function(
-                """() => typeof questionChoiceSummaryCache !== 'undefined'
-                  && questionChoiceSummaryCache
-                  && questionChoiceSummaryCache.pool === pool""",
-                timeout=15000,
-            )
+            try:
+                page.wait_for_function(
+                    """() => typeof questionChoiceSummaryCache !== 'undefined'
+                      && questionChoiceSummaryCache
+                      && questionChoiceSummaryCache.pool === pool""",
+                    timeout=15000,
+                )
+            except Exception as error:
+                cache_state = page.evaluate("""() => ({
+                  quizFinished: typeof quizFinished === 'undefined' ? null : quizFinished,
+                  poolCount: typeof pool === 'undefined' ? null : pool.length,
+                  cacheExists: typeof questionChoiceSummaryCache !== 'undefined' && !!questionChoiceSummaryCache,
+                  cachePoolCount: typeof questionChoiceSummaryCache === 'undefined' ? null : questionChoiceSummaryCache?.pool?.length ?? null,
+                  buildExists: typeof questionChoiceSummaryBuild !== 'undefined' && !!questionChoiceSummaryBuild,
+                  buildPoolCount: typeof questionChoiceSummaryBuild === 'undefined' ? null : questionChoiceSummaryBuild?.pool?.length ?? null,
+                  quizActive: document.body.classList.contains('quiz-active'),
+                  resultVisible: !document.querySelector('#result')?.classList.contains('hidden')
+                })""")
+                raise AssertionError(
+                    "Restart question index did not become ready: "
+                    + json.dumps(cache_state, ensure_ascii=False)
+                ) from error
 
     assert not page_errors, "Live quiz raised JavaScript errors: " + " | ".join(page_errors)
     print("PERFORMANCE: " + json.dumps({
