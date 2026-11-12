@@ -27,7 +27,8 @@ const requiredPopularTitles = [
 "こねこのチー", "Chi's Sweet Home",
   "ご注文はうさぎですか", "Is the Order a Rabbit", "五等分の花嫁", "The Quintessential Quintuplets",
   "エロマンガ先生", "Eromanga Sensei", "やがて君になる", "Bloom Into You",
-  "灰と幻想のグリムガル", "Grimgar of Fantasy and Ash", "銀魂", "Gintama"
+  "灰と幻想のグリムガル", "Grimgar of Fantasy and Ash", "銀魂", "Gintama",
+  "SHIROBAKO", "オッドタクシー", "Odd Taxi"
 ];
 const missingPopularTitles = requiredPopularTitles.filter((required) => {
   const query = normalizeTitle(required);
