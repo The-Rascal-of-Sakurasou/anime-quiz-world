@@ -526,7 +526,7 @@ assert.ok(index.includes("function normalizeAnswer(value){return String(value||'
 
 // Regression coverage: quiz candidate eligibility must be chunked and share in-flight prewarm work.
 assert.match(index, /async function getEligibleCandidatePoolAsync\(mode,format,ignoreDifficulty=false\)/, "Candidate eligibility must be prepared asynchronously");
-assert.match(index, /seen=new Set\(\),chunkSize=96/, "Candidate eligibility must be processed in bounded batches");
+assert.match(index, /seen=new Set\(\),chunkSize=24/, "Candidate eligibility must be processed in smaller bounded batches");
 assert.match(index, /await new Promise\(resolve=>setTimeout\(resolve,0\)\)/, "Candidate preparation must yield to the browser between batches");
 assert.match(index, /pending\.pool===sourcePool&&pending\.length===sourceLength&&pending\.revision===sourceRevision/, "In-flight candidate work must not be reused after catalogue or difficulty changes");
 assert.match(index, /function scheduleEligibleCandidatePrewarm\(\)/, "Idle-time candidate prewarming must be available");
