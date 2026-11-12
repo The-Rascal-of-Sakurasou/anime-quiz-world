@@ -1569,7 +1569,8 @@ async function getEligibleCandidatePoolAsync(mode,format,ignoreDifficulty=false)
  const build=(async()=>{
   if(!['image','titleStudio'].includes(mode))await ensureQuestionChoiceSummaryAsync();
   if(pool!==sourcePool||pool.length!==sourceLength)return [];
-  const eligible=[],seen=new Set(),chunkSize=96;
+  // Keep each background eligibility batch short so the Start button and other controls stay responsive.
+  const eligible=[],seen=new Set(),chunkSize=24;
   for(let offset=0;offset<sourceLength;offset+=chunkSize){
    if(document.body.classList.contains('quiz-active'))return [];
    const limit=Math.min(sourceLength,offset+chunkSize);
@@ -1651,7 +1652,7 @@ async function collectEligibleAnime(mode,format,target,ignoreDifficulty=false){
    if(!hasQuestion)continue;
   }
   eligible.push(anime);
-  if((i+1)%96===0&&i+1<candidates.length&&eligible.length<target){
+  if((i+1)%24===0&&i+1<candidates.length&&eligible.length<target){
    const status=$('#quizStatus');
    if(status)status.textContent=lang==='ja'?'出題候補を確認中… '+(i+1).toLocaleString()+' / '+candidates.length.toLocaleString()+'作品':'Checking candidates… '+(i+1)+' / '+candidates.length;
    await new Promise(resolve=>setTimeout(resolve,0));
