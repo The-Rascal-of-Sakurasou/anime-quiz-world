@@ -102,6 +102,10 @@ assert.ok(
   "Featured rail must delegate to the shared official-site resolver"
 );
 
+assert.ok(html.includes("imageLink.target='_self';"), "Search-result cover links must navigate in the current page on mobile browsers");
+assert.ok(html.includes("titleLink.target='_self';"), "Search-result title links must navigate in the current page on mobile browsers");
+assert.ok(html.includes("card.href=link.url;card.target='_self';"), "Featured anime links must navigate in the current page on mobile browsers");
+
 const catalogIds = new Set(catalog.items.map((anime) => Number(anime.id)));
 for (const id of overrides.keys()) {
   assert.ok(catalogIds.has(id), "Official-site override must reference an existing catalogue record: " + id);
