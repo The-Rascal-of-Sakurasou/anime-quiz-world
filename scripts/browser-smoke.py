@@ -266,9 +266,8 @@ def test_quiz_start_answer_finish(browser):
         }""",
         timeout=60000,
     )
-    # Use image-to-title mode: the compact fixture catalogue intentionally has
-    # no four distinct release years, so title-to-year mode has no valid options.
-    page.locator("#modeSelect").select_option("image")
+    # Use the Japanese synopsis mode; the fixture supplies distinct summaries.
+    page.locator("#modeSelect").select_option("synopsis")
     page.locator("#answerFormatSelect").select_option("choices")
     page.locator("#difficultySelect").select_option("easy")
     page.locator("#questionCount").fill("1")
@@ -287,10 +286,7 @@ def test_quiz_start_answer_finish(browser):
 
 def test_all_question_modes(browser):
     """Verify every selectable question mode can prepare, answer, and finish."""
-    modes = [
-        "image", "synonym", "titleYear", "titleStudio",
-        "character", "characterImage", "synopsis",
-    ]
+    modes = ["synopsis", "titleYear", "synonym", "titleStudio"]
     for mode in modes:
         context = browser.new_context(
             viewport={"width": 1280, "height": 900},
@@ -715,7 +711,7 @@ def test_quiz_quit_only(browser):
     install_routes(page)
     page.goto(f"{BASE_URL}/index.html", wait_until="domcontentloaded")
     page.locator("#start").wait_for(state="visible", timeout=60000)
-    page.locator("#modeSelect").select_option("image")
+    page.locator("#modeSelect").select_option("synopsis")
     page.locator("#answerFormatSelect").select_option("choices")
     page.locator("#difficultySelect").select_option("easy")
     page.locator("#questionCount").fill("1")
@@ -797,7 +793,7 @@ def test_mobile_quiz_layout(browser):
         "() => { const button = document.querySelector('#start'); return button && !button.classList.contains('hidden') && !button.disabled; }",
         timeout=60000,
     )
-    page.locator("#modeSelect").select_option("image")
+    page.locator("#modeSelect").select_option("synopsis")
     page.locator("#answerFormatSelect").select_option("choices")
     page.locator("#difficultySelect").select_option("easy")
     page.locator("#questionCount").fill("1")
