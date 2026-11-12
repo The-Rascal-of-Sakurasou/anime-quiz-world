@@ -18,6 +18,30 @@ function normalize(value) {
     .replace(/[\s　・･:：!！?？.,，。'"“”「」『』()（）‐‑–—_-]/g, '').trim();
 }
 
+function titleVariants(item) {
+  const values = [item?.title?.native, item?.title?.romaji, item?.title?.english, ...(item?.synonyms || [])].filter(Boolean);
+  const variants = new Set(values.map(normalize).filter(Boolean));
+  const seasonPatterns = [
+    /\s*[-:：–—|｜]?\s*(?:第\s*\d+\s*(?:期|シーズン|season)|season\s*\d+|\d+(?:st|nd|rd|th)?\s*season|s\s*\d+)\s*$/i,
+    /\s*[-:：–—|｜]?\s*(?:final\s+season|the\s+final\s+season|second\s+season|third\s+season|fourth\s+season|fifth\s+season|first\s+season)\s*$/i,
+    /\s*[-:：–—|｜]?\s*(?:第\s*\d+\s*クール|\d+\s*クール)\s*$/i
+  ];
+  const moviePatterns = [
+    /^\s*(?:劇場版|the\s+movie|movie\s+version|anime\s+film|film\s+version)\s*[:：\-–—]?\s*/i,
+    /\s*[-:：–—|｜]?\s*(?:劇場版|the\s+movie|movie\s+version|anime\s+film|film\s+version|movie|film)\s*$/i
+  ];
+  for (const value of values) {
+    let base = String(value).normalize('NFKC').trim();
+    for (let pass = 0; pass < 3; pass++) {
+      const before = base;
+      for (const pattern of [...seasonPatterns, ...moviePatterns]) base = base.replace(pattern, '').trim();
+      if (base === before) break;
+    }
+    if (base && normalize(base) !== normalize(value)) variants.add(normalize(base));
+  }
+  return variants;
+}
+
 async function fetchAniListPage(page) {
   const query = `query {
     Page(page: ${page}, perPage: 50) {
@@ -42,10 +66,10 @@ async function fetchAniListPage(page) {
 }
 
 const media = [...await fetchAniListPage(1), ...await fetchAniListPage(2)];
+const supportedFormats = new Set(['TV', 'TV_SHORT', 'MOVIE', 'OVA', 'ONA', 'SPECIAL']);
 const missing = media.filter(item => {
-  const aliases = [item.title?.native, item.title?.romaji, item.title?.english, ...(item.synonyms || [])]
-    .map(normalize).filter(Boolean);
-  return !aliases.some(alias => covered.has(alias));
+  if (!supportedFormats.has(item.format)) return false;
+  return ![...titleVariants(item)].some(alias => covered.has(alias));
 }).sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
 
 const title = 'Japanese synopsis coverage audit';
@@ -64,8 +88,8 @@ const body = missing.length
       `検出数: **${missing.length}**（表示は最大40件）`,
       '',
       'このIssueはGitHub Actionsが週1回更新します。自動生成・機械翻訳のあらすじを本番データへ直接追加することはありません。'
-    ].join('\\n')
-  : `## 監査結果（${date}）\\n\\nAniListの日本制作アニメ人気順上位100作品について、未登録候補は検出されませんでした。\\n\\n次回の週次監査までこのIssueを閉じます。`;
+    ].join('\n')
+  : `## 監査結果（${date}）\n\nAniListの日本制作アニメ人気順上位100作品について、未登録候補は検出されませんでした。\n\n次回の週次監査までこのIssueを閉じます。`;
 
 const headers = {
   authorization: `Bearer ${token}`,
