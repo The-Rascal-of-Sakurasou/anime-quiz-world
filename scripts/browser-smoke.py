@@ -394,7 +394,7 @@ def test_quiz_start_answer_finish(browser):
         window.__aqwPageErrors.push(event.reason?.stack || String(event.reason));
       });
     }""")
-    page.on("pageerror", lambda error: errors.append(str(error)))
+    page.on("pageerror", lambda error: errors.append(getattr(error, "stack", None) or str(error)))
     install_routes(page)
 
     page.goto(f"{BASE_URL}/index.html", wait_until="domcontentloaded")
