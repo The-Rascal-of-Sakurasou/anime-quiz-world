@@ -15,7 +15,7 @@ const covered = new Set(
 
 function normalize(value) {
   return String(value || '').normalize('NFKC').toLocaleLowerCase()
-    .replace(/[\s　・･:：!！?？.,，。'"“”「」『』()（）‐‑–—_-]/g, '').trim();
+    .replace(/[\s　・･:：!！?？.,，。'"“”「」『』()（）‐‑–—―−_-]/g, '').trim();
 }
 
 function titleVariants(item) {
