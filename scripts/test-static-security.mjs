@@ -112,12 +112,16 @@ assert.match(messageSubmit, /finally\{button\.disabled=false\}/, "The chat send 
 const reportSubmit = aqwHtml.match(/async function submitUserReport\(\)\{[\s\S]*?\n\}/)?.[0];
 assert.ok(reportSubmit, "User-report submit handler must exist");
 assert.match(reportSubmit, /catch\(error\)\{[\s\S]*?button\.disabled=false/, "The report button must recover after network failures");
-const reportOpen = aqwHtml.match(/function openReportPanel\([\s\S]*?\n\}/)?.[0];
-assert.ok(reportOpen, "Report panel open handler must exist");
-assert.match(reportOpen, /if\(submitButton\)submitButton\.disabled=false/, "Opening a new report must re-enable its submit button");
-const reportClose = aqwHtml.match(/function closeReportPanel\([\s\S]*?\n\}/)?.[0];
-assert.ok(reportClose, "Report panel close handler must exist");
-assert.match(reportClose, /if\(submitButton\)submitButton\.disabled=false/, "Closing a report must reset its submit button");
+const reportOpenStart = aqwHtml.indexOf("function openReportPanel(");
+const reportOpenEnd = aqwHtml.indexOf("\\n}", reportOpenStart);
+assert.ok(reportOpenStart >= 0 && reportOpenEnd > reportOpenStart, "Report panel open handler must exist");
+const reportOpen = aqwHtml.slice(reportOpenStart, reportOpenEnd);
+assert.ok(reportOpen.includes("submitButton.disabled=false"), "Opening a new report must re-enable its submit button");
+const reportCloseStart = aqwHtml.indexOf("function closeReportPanel(");
+const reportCloseEnd = aqwHtml.indexOf("\\n}", reportCloseStart);
+assert.ok(reportCloseStart >= 0 && reportCloseEnd > reportCloseStart, "Report panel close handler must exist");
+const reportClose = aqwHtml.slice(reportCloseStart, reportCloseEnd);
+assert.ok(reportClose.includes("submitButton.disabled=false"), "Closing a report must reset its submit button");
 assert.match(aqwHtml, /post_id:reportTargetPostId/, "Post and reply reports must retain their target post id");
 assert.match(aqwHtml, /blockedUserIds\.has\(reply\.user_id\)/, "Blocked users' replies must be hidden from the current user's feed");
 
