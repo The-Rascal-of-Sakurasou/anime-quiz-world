@@ -78,7 +78,7 @@ INSERT INTO public.aqw_match_players (room_id,user_id,score,left_at) VALUES
  ('20000000-0000-4000-8000-000000000006','10000000-0000-4000-8000-000000000002',1,NULL),
  ('20000000-0000-4000-8000-000000000007','10000000-0000-4000-8000-000000000001',1,now());
 
-\ir ../supabase/migrations/20261112160000_retain_completed_aqw_match_history_after_exit.sql
+\ir ../supabase/migrations/20261112073700_retain_completed_aqw_match_history_after_exit.sql
 
 DO $test$
 DECLARE
