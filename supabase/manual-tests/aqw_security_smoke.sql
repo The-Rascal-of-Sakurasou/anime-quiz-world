@@ -52,6 +52,14 @@ reset role;
 -- Users may submit reports, but cannot set moderation-owned columns.
 do $column_checks$
 begin
+  if has_function_privilege('anon', 'private.is_user_blocked_between(uuid,uuid)', 'EXECUTE')
+     or not has_function_privilege('authenticated', 'private.is_user_blocked_between(uuid,uuid)', 'EXECUTE')
+     or position(
+       'auth.uid()' in pg_get_functiondef('private.is_user_blocked_between(uuid,uuid)'::regprocedure)
+     ) = 0 then
+    raise exception 'FAIL: block lookup is not restricted to a caller-related pair';
+  end if;
+
   if has_table_privilege('authenticated', 'public.user_reports', 'INSERT')
      or has_column_privilege('authenticated', 'public.user_reports', 'status', 'INSERT')
      or has_column_privilege('authenticated', 'public.user_reports', 'reviewed_at', 'INSERT')
