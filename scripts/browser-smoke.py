@@ -414,6 +414,23 @@ def test_live_quiz_preparation_performance(browser):
     )
     ready_ms = round((__import__("time").perf_counter() - navigation_started) * 1000, 1)
 
+    # Measure synchronous question rendering separately from candidate preparation.
+    page.evaluate("""() => {
+      window.__aqwQuestionRenderMetrics = {};
+      for (const name of ['showQuestion', 'showQuestionInternal']) {
+        const original = window[name];
+        if (typeof original === 'function' && !original.__aqwPerfWrapped) {
+          const wrapped = function(...args) {
+            const started = performance.now();
+            try { return original.apply(this, args); }
+            finally { window.__aqwQuestionRenderMetrics[name] = Math.round(performance.now() - started); }
+          };
+          wrapped.__aqwPerfWrapped = true;
+          window[name] = wrapped;
+        }
+      }
+    }""")
+
     # Capture the profile-fetch duration without changing the returned profile.
     page.evaluate("""() => {
       window.__aqwProfileLoadSamples = [];
@@ -466,6 +483,8 @@ def test_live_quiz_preparation_performance(browser):
           candidateCount: (window.__aqwLastCandidateSelectionMs == null) ? null :
             (window.__aqwLastCandidateCount ?? null),
           questionMode: typeof currentQuestionMode === 'undefined' ? null : currentQuestionMode,
+          questionRenderMs: window.__aqwQuestionRenderMetrics?.showQuestion ?? null,
+          questionRenderInternalMs: window.__aqwQuestionRenderMetrics?.showQuestionInternal ?? null,
           poolCount: typeof pool === 'undefined' ? null : pool.length,
           failedImageCount: typeof failedImageUrls === 'undefined' ? null : failedImageUrls.size,
           questionSummaryCached: typeof questionChoiceSummaryCache === 'undefined' ? null :
