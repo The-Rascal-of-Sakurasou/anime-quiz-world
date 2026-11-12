@@ -474,7 +474,7 @@ assert.doesNotMatch(index, /innerHTML\s*=\s*[^;]*(?:post\.body|profile\.(?:usern
 const beginBlock = index.match(/async function begin\(\)\{([\s\S]*?)\n\}/)?.[1];
 assert.ok(beginBlock, "Quiz begin function not found");
 assert.match(beginBlock, /catch\(error\)\{[\s\S]*?clearInterval\(questionTimer\);clearInterval\(clockTimer\);clearTimeout\(autoNextTimer\)/, "Quiz start failure must stop timers");
-assert.match(beginBlock, /\$\([\x27"]#pauseButton[\x27"]\)\.classList\.add\([\x27"]hidden[\x27"]\)/, "Quiz start failure must hide pause control");
+assert.doesNotMatch(index, /pauseButton|pauseNotice|pause-controls|pausedQuestionSeconds|isPaused|pausedAt|totalPausedMs|toggleQuizPause|pauseButtonLabel/, "Removed quiz pause controls and state must not return");
 assert.match(beginBlock, /\$\([\x27"]#quitQuizButton[\x27"]\)\.classList\.add\([\x27"]hidden[\x27"]\)/, "Quiz start failure must hide quit control");
 assert.doesNotMatch(beginBlock, /await window\.aqwEnsureSupabaseFeatures|await aqwMeasurePreparationStage\('個人別難易度データ読み込み'/, "Optional Supabase and profile requests must not block the first quiz question");
 assert.match(beginBlock, /Promise\.resolve\(\)\.then\(\(\)=>window\.aqwEnsureSupabaseFeatures\(\)\)/, "Optional Supabase initialization must continue in the background");
