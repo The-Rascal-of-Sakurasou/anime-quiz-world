@@ -72,7 +72,14 @@ def make_anime(index):
                 "雪山の観測所に赴任した研究員は、毎晩同じ時刻に届く信号を記録する。厳しい自然の中で仲間と調査を続け、信号が示す場所へ向かう決意を固める。"
             ][index % 12] + "（検証用作品番号：" + str(index + 1) + "）"
         ),
-        "synonyms": [f"検証の略称{suffix}"],
+        # Several unique aliases ensure the synonym mode also has easy-difficulty fixtures.
+        "synonyms": [
+            f"検証の略称{suffix}",
+            f"検証別名{suffix}",
+            f"検証愛称{suffix}",
+            f"略称検証{suffix}",
+            f"検証作品短縮名{suffix}",
+        ],
         "coverImage": {"large": cover, "medium": cover, "extraLarge": cover},
         "episodes": 12,
         "season": CURRENT_SEASON,
