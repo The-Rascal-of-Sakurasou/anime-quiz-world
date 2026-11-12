@@ -1,0 +1,34 @@
+name: Speed Rush server timing contract
+
+on:
+  push:
+    branches: [main, 'feat/server-timed-speed-rush-*']
+    paths:
+      - "index.html"
+      - "scripts/test-speed-rush-server-timing.mjs"
+      - "supabase/migrations/**"
+      - ".github/workflows/speed-rush-server-timing.yml"
+  pull_request:
+    paths:
+      - "index.html"
+      - "scripts/test-speed-rush-server-timing.mjs"
+      - "supabase/migrations/**"
+      - ".github/workflows/speed-rush-server-timing.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Speed Rush server-timing contract
+        run: node scripts/test-speed-rush-server-timing.mjs
