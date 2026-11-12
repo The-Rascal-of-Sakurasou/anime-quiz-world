@@ -238,6 +238,9 @@ async function scanDateRanges(format, sort) {
 for (const format of FORMATS) {
   if (incremental) {
     await scanScope(format, 'ID_DESC', undefined, undefined, true);
+    // Refresh the most popular Japanese-origin works on every sync, not only newly indexed IDs.
+    // This backfills famous catalogue gaps while keeping the extra API work bounded.
+    await scanScope(format, 'POPULARITY_DESC', undefined, undefined, false, false, 10);
     // Add a bounded supplement of famous foreign works with Japanese titles.
     await scanScope(format, 'POPULARITY_DESC', undefined, undefined, false, true, 20);
     continue;
