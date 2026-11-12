@@ -4,6 +4,7 @@ import { gzipSync } from 'node:zlib';
 import { isUsableCoverImage } from './catalog-image-url.mjs';
 
 const API = 'https://graphql.anilist.co';
+const API_REQUEST_INTERVAL_MS = 2100; // Stay below AniList's currently documented 30 requests/minute limit.
 const OUTPUT = 'data/anime-catalog.json';
 const OUTPUT_GZIP = 'data/anime-catalog.json.gz';
 const FORMATS = ['TV', 'TV_SHORT', 'MOVIE', 'OVA', 'ONA', 'SPECIAL'];
@@ -123,7 +124,7 @@ let filtered = 0;
 async function scanScope(format, sort, yearStart, yearEnd, appendOnly = false, includeForeign = false, pageLimit = 100) {
   for (let page = 1; page <= pageLimit; page += 3) {
     const pages = [page, page + 1, page + 2].filter((value) => value <= pageLimit);
-    await sleep(1200);
+    await sleep(API_REQUEST_INTERVAL_MS);
     const results = await fetchBatch(pages, sort, format, yearStart, yearEnd, includeForeign);
     requests++;
     let addedThisBatch = 0;
@@ -242,7 +243,7 @@ async function scanDateRanges(format, sort) {
 if (CURATED_ANIME_IDS.length) {
   const ids = CURATED_ANIME_IDS.join(',');
   const query = 'query { Page(page:1,perPage:10) { media(id_in:[' + ids + '], type:ANIME, isAdult:false) { ' + FIELDS + ' } } }';
-  await sleep(1200);
+  await sleep(API_REQUEST_INTERVAL_MS);
   const response = await fetch(API, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
