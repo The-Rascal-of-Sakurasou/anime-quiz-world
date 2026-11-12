@@ -55,6 +55,19 @@ $test$;
 -- Inspect table contents as the database owner; authenticated users should
 -- not gain direct table access merely to make this test pass.
 RESET ROLE;
+
+-- The private submit RPC must be callable by authenticated users only.
+DO $function_acl$
+BEGIN
+  IF NOT has_function_privilege('authenticated', 'private.submit_aqw_speed_rush(integer,integer,uuid)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'authenticated role cannot execute the private submit function';
+  END IF;
+  IF has_function_privilege('anon', 'private.submit_aqw_speed_rush(integer,integer,uuid)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'anon role unexpectedly has execute permission on the private submit function';
+  END IF;
+END
+$function_acl$;
+
 DO $score_check$
 DECLARE
   v_elapsed_ms integer := current_setting('aqw_test.elapsed_ms')::integer;
