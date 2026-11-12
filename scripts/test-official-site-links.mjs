@@ -42,6 +42,17 @@ assert.equal(
 );
 
 assert.equal(
+  getSearchAnimeOfficialUrl({ id: 6880, title: { native: "デッドマン・ワンダーランド" } }),
+  "https://web.archive.org/web/*/http://dwl.jp/",
+  "Deadman Wonderland must use its archived historical official site, not the current unrelated domain"
+);
+assert.equal(
+  getSearchAnimeOfficialUrl({ id: 790, title: { native: "Ergo Proxy" } }),
+  "https://web.archive.org/web/20150815194937/http://www.ergoproxy.com/",
+  "Ergo Proxy must use its archived official website"
+);
+
+assert.equal(
   getSearchAnimeOfficialUrl({ id: 199, title: { native: "千と千尋の神隠し" } }),
   "https://www.ghibli.jp/works/chihiro/",
   "Curated overrides must be used before external links"
