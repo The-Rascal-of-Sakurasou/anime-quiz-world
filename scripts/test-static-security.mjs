@@ -106,6 +106,12 @@ assert.match(aqwHtml, /id="aqwReportFriend"/, "The chat must expose a user-repor
 assert.match(aqwHtml, /id="aqwBlockedUsers"/, "Users must be able to review and undo their own blocks");
 assert.match(aqwHtml, /function blockUser\(/, "Blocking must be shared by chat and community-post controls");
 assert.match(aqwHtml, /function submitUserReport\(/, "The client must submit moderation reports");
+const messageSubmit = aqwHtml.match(/async function sendFriendMessage\(e\)\{[\s\S]*?\n\}/)?.[0];
+assert.ok(messageSubmit, "Friend-message submit handler must exist");
+assert.match(messageSubmit, /finally\{button\.disabled=false\}/, "The chat send button must recover after network failures");
+const reportSubmit = aqwHtml.match(/async function submitUserReport\(\)\{[\s\S]*?\n\}/)?.[0];
+assert.ok(reportSubmit, "User-report submit handler must exist");
+assert.match(reportSubmit, /catch\(error\)\{[\s\S]*?button\.disabled=false/, "The report button must recover after network failures");
 assert.match(aqwHtml, /post_id:reportTargetPostId/, "Post and reply reports must retain their target post id");
 assert.match(aqwHtml, /blockedUserIds\.has\(reply\.user_id\)/, "Blocked users' replies must be hidden from the current user's feed");
 
