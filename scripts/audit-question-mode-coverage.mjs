@@ -141,6 +141,8 @@ function synopsisText(a) { const s = desc(a); return s.length > 260 ? s.slice(0,
 const payload = JSON.parse(await readFile(CATALOG, "utf8"));
 const declaredCount = payload.count ?? payload.itemCount;
 if (payload.schemaVersion !== 2 || !Array.isArray(payload.items) || payload.items.length !== declaredCount) throw new Error("Catalogue schema/count validation failed.");
+const embeddedCharacterRecords = payload.items.filter(item => Object.prototype.hasOwnProperty.call(item || {}, "characters")).length;
+if (embeddedCharacterRecords > 0) throw new Error("Unused character records must not be embedded in the shared catalogue: " + embeddedCharacterRecords);
 const hasJapaneseTitle = (a) => [a?.title?.native,a?.title?.english,a?.title?.romaji,...(Array.isArray(a?.synonyms)?a.synonyms:[])].some(value => typeof value === "string" && /[ぁ-んァ-ヶ]/.test(value));
 const eligibleOrigin = (a) => a?.countryOfOrigin === "JP" || (typeof a?.countryOfOrigin === "string" && a.countryOfOrigin.length > 0 && Number(a?.popularity) >= 10000 && hasJapaneseTitle(a));
 const items = payload.items.filter(a => a && a.id && a.isAdult !== true && eligibleOrigin(a) && !((a.genres || []).includes("Hentai")) && ["TV","TV_SHORT","MOVIE","OVA","ONA","SPECIAL"].includes(a.format) && title(a));
@@ -190,6 +192,7 @@ const report = {
   famousForeignCount,
   catalogueBytes,
   catalogueGzipBytes,
+  embeddedCharacterRecords,
   averageBytesPerRecord: total ? Math.round(catalogueBytes / total) : 0,
   largestFields,
   auditedUsableCount: total,
@@ -215,6 +218,7 @@ console.log("Question-mode coverage audit");
 console.log("Catalogue: "+total+" records (generated "+payload.generatedAt+")");
 console.log("Japanese-origin: "+japaneseOriginCount+"; famous foreign with Japanese titles: "+famousForeignCount);
 console.log("JSON size: "+catalogueBytes+" bytes; average "+report.averageBytesPerRecord+" bytes per record");
+console.log("Embedded character-data records: "+embeddedCharacterRecords);
 console.log("Largest fields: "+largestFields.map(row=>row.field+" "+row.bytes+" bytes ("+row.percent+"%)").join("; "));
 for (const row of report.modes) console.log(row.label+": "+row.eligible+"/"+row.total+" ("+row.coveragePercent+"%); missing "+row.missing);
 console.log("Unique years: "+yearSet.size+"; studios: "+studioSet.size+"; synopsis texts: "+synopsisCandidateCount);
