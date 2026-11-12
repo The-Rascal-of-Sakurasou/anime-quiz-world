@@ -112,6 +112,12 @@ assert.match(messageSubmit, /finally\{button\.disabled=false\}/, "The chat send 
 const reportSubmit = aqwHtml.match(/async function submitUserReport\(\)\{[\s\S]*?\n\}/)?.[0];
 assert.ok(reportSubmit, "User-report submit handler must exist");
 assert.match(reportSubmit, /catch\(error\)\{[\s\S]*?button\.disabled=false/, "The report button must recover after network failures");
+const reportOpen = aqwHtml.match(/function openReportPanel\\([\\s\\S]*?\\n\\}/)?.[0];
+assert.ok(reportOpen, "Report panel open handler must exist");
+assert.match(reportOpen, /submitButton\\)submitButton\\.disabled=false/, "Opening a new report must re-enable its submit button");
+const reportClose = aqwHtml.match(/function closeReportPanel\\([\\s\\S]*?\\n\\}/)?.[0];
+assert.ok(reportClose, "Report panel close handler must exist");
+assert.match(reportClose, /submitButton\\)submitButton\\.disabled=false/, "Closing a report must reset its submit button");
 assert.match(aqwHtml, /post_id:reportTargetPostId/, "Post and reply reports must retain their target post id");
 assert.match(aqwHtml, /blockedUserIds\.has\(reply\.user_id\)/, "Blocked users' replies must be hidden from the current user's feed");
 
