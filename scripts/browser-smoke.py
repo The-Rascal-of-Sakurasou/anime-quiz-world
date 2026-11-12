@@ -501,6 +501,8 @@ def test_live_quiz_preparation_performance(browser):
             "clickToFirstQuestionMs": first_question_ms,
             "candidateSelectionMs": metrics["candidateSelectionMs"],
             "quizPreparationMs": metrics["quizPreparationMs"],
+            "questionRenderMs": metrics["questionRenderMs"],
+            "questionRenderInternalMs": metrics["questionRenderInternalMs"],
             "preparationStages": metrics["preparationStages"],
             "profileLoadMs": profile_samples[-1] if profile_samples else None,
             "performanceLog": log_text[-1] if log_text else None,
