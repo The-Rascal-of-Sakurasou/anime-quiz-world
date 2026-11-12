@@ -65,7 +65,14 @@ async function fetchAniListPage(page) {
   return data.data.Page.media;
 }
 
-const media = (await Promise.all([1, 2, 3, 4].map(fetchAniListPage))).flat();
+const media = [];
+for (let firstPage = 1; firstPage <= 20; firstPage += 4) {
+  const batch = await Promise.all(
+    [0, 1, 2, 3].map(offset => fetchAniListPage(firstPage + offset))
+  );
+  media.push(...batch.flat());
+  if (firstPage < 20) await new Promise(resolve => setTimeout(resolve, 750));
+}
 const supportedFormats = new Set(['TV', 'TV_SHORT', 'MOVIE', 'OVA', 'ONA', 'SPECIAL']);
 const missing = media.filter(item => {
   if (!supportedFormats.has(item.format)) return false;
@@ -79,7 +86,7 @@ const body = missing.length
   ? [
       `## 未登録の人気作品候補（${date}）`,
       '',
-      'AniListの人気上位100作品（日本制作作品と、日本語タイトルがあり人気条件を満たす海外作品）を確認し、日本語あらすじの登録キーと照合しました。',
+      'AniListの人気上位500作品（日本制作作品と、日本語タイトルがあり人気条件を満たす海外作品）を確認し、日本語あらすじの登録キーと照合しました。',
       '以下は**追加候補の検出結果**です。登録前に公式サイト等の日本語一次情報を確認し、作品・シーズンの取り違えがないことを人手で確認してください。',
       '',
       '| 作品名（日本語原題） | 形式 | 年 | Popularity |',
@@ -133,5 +140,5 @@ if (missing.length) {
   }
   console.log(`Closed synopsis audit issue #${existing.number}; no missing candidates.`);
 } else {
-  console.log('Synopsis coverage audit passed; no missing candidates in the top 100.');
+  console.log('Synopsis coverage audit passed; no missing candidates in the top 500.');
 }
