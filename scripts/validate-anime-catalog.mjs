@@ -99,9 +99,9 @@ export function validateCatalog(catalog) {
       const site = String(link?.site || '').toLowerCase();
       const type = String(link?.type || '').toUpperCase();
       const validOfficialLink = !!link && !link.isDisabled &&
-        typeof link.url === 'string' && /^https?:\\/\\//i.test(link.url) &&
+        typeof link.url === 'string' && /^https?:\/\//i.test(link.url) &&
         /official|公式/i.test(site) &&
-        !/(twitter|x\\.com|facebook|instagram|youtube|tiktok|discord|reddit)/i.test(site) &&
+        !/(twitter|x\.com|facebook|instagram|youtube|tiktok|discord|reddit)/i.test(site) &&
         (!type || type === 'INFO');
       if (!validOfficialLink) failures.push(label + ': non-official or unusable external link is stored in the shared catalogue');
     }
