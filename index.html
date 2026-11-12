@@ -3166,15 +3166,14 @@ async function submitRushResult(result){
  if(!result||result.questionCount!==10||!Number.isInteger(result.correctCount)||result.correctCount<0||result.correctCount>10||!Number.isFinite(result.elapsedMs)){message($s('aqwRushBoardStatus'),aqwRushT('needTen'));return}
  result={...result};
  if(!currentUser){message($s('aqwRushBoardStatus'),aqwRushT('needLogin'));return}
- if(result.serverTimed!==true||! /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(result.runId||''))){message($s('aqwRushBoardStatus'),aqwRushT('submitError')+'No valid server-issued session. Start a new Speed Rush while online.');return}
+ if(result.serverTimed!==true||! /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(result.runId||''))){if(result.runId)removePendingRun(pendingRushResults,result.runId);message($s('aqwRushBoardStatus'),aqwRushT('submitError')+'No valid server-issued session. Start a new Speed Rush while online.');return}
  try{
   const {data,error}=await sb.rpc('submit_aqw_speed_rush',{p_correct_count:result.correctCount,p_elapsed_ms:result.elapsedMs,p_run_id:result.runId});
-  if(error){queuePendingRun(pendingRushResults,result);message($s('aqwRushBoardStatus'),aqwRushT('submitError')+errText(error));return}
+  if(error){message($s('aqwRushBoardStatus'),aqwRushT('submitError')+errText(error));return}
   removePendingRun(pendingRushResults,result.runId);
   message($s('aqwRushBoardStatus'),data?.updated?aqwRushT('saved'):aqwRushT('notBetter'));
   await loadRushLeaderboard(true);
  }catch(error){
-  queuePendingRun(pendingRushResults,result);
   message($s('aqwRushBoardStatus'),aqwRushT('submitError')+errText(error));
  }
 }
