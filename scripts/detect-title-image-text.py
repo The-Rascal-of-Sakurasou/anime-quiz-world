@@ -59,7 +59,7 @@ def usable_image_url(value):
     url = str(value or "").strip()
     return bool(
         url.startswith(("https://", "http://"))
-        and not re.search(r"(?:no[-_ ]?image|placeholder|default[-_ ]?image)", url, re.IGNORECASE)
+        and not re.search(r"(?:no[-_ ]?image|placeholder|default[-_ ]?image|(?:^|/)default(?:\\.[a-z0-9]+)?(?:[?#]|$))", url, re.IGNORECASE)
     )
 
 
@@ -144,6 +144,7 @@ def self_test():
     assert not usable_image_url("https://example.test/no-image.jpg")
     assert not usable_image_url("https://example.test/placeholder.png")
     assert not usable_image_url("https://example.test/default-image.png")
+    assert not usable_image_url("https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/default.jpg")
     assert usable_image_url("https://example.test/cover.jpg")
     assert normalize(" ＳＴＥＩＮＳ；ＧＡＴＥ ") == "steinsgate"
     assert normalize("青春ブタ野郎") == "青春ブタ野郎"
