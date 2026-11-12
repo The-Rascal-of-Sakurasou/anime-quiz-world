@@ -49,7 +49,7 @@ const synopsisMapStart = synopsisHtml.indexOf("const JAPANESE_SYNOPSIS_OVERRIDES
 const synopsisMapEnd = synopsisHtml.indexOf("}).map(([title,summary])", synopsisMapStart);
 assert.ok(synopsisMapStart >= 0 && synopsisMapEnd > synopsisMapStart, "Japanese synopsis override map must be present");
 const synopsisMapLines = synopsisHtml.slice(synopsisMapStart, synopsisMapEnd).split("\n").filter(line => /^\s*'/.test(line));
-const normalizeSynopsisTitle = value => String(value || "").normalize("NFKC").toLocaleLowerCase().replace(/[\\s　・･:：!！?？.,，。'"“”「」『』()（）‐‑–—―−_-]/g, "").trim();
+const normalizeSynopsisTitle = value => String(value || "").normalize("NFKC").toLocaleLowerCase().replace(/[\s　・･:：!！?？.,，。'"“”「」『』()（）‐‑–—―−_-]/g, "").trim();
 const synopsisByNormalizedTitle = new Map();
 for (const line of synopsisMapLines) {
   const separator = line.indexOf("':'");
