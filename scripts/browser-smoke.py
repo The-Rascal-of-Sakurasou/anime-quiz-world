@@ -236,7 +236,7 @@ def test_public_catalogue_all_modes(browser):
     page = context.new_page()
     errors = []
     catalogue_requests = []
-    page.on("pageerror", lambda error: errors.append(str(error)))
+    page.on("pageerror", lambda error: errors.append(str(error) + "\\n" + (getattr(error, "stack", "") or "")))
     page.on(
         "request",
         lambda request: catalogue_requests.append(request.url)
