@@ -93,13 +93,6 @@ def make_anime(index):
             for tag in TAGS[index % len(TAGS)]
         ],
         "studios": {"nodes": [{"name": f"検証スタジオ{index % 5 + 1}"}]},
-        "characters": {
-            "nodes": [{
-                "id": 20000 + index,
-                "name": {"native": f"検証キャラクター{suffix}", "full": f"Verification Character {suffix}"},
-                "image": {"large": f"https://example.test/character-{index + 1}.svg"},
-            }]
-        },
         "relations": {"edges": []},
         "siteUrl": f"https://anilist.co/anime/{anime_id}",
         "externalLinks": [
@@ -287,6 +280,17 @@ def test_quiz_start_answer_finish(browser):
 def test_all_question_modes(browser):
     """Verify every selectable question mode can prepare, answer, and finish."""
     modes = ["synopsis", "titleYear", "synonym", "titleStudio"]
+    context = browser.new_context(locale="ja-JP")
+    page = context.new_page()
+    install_routes(page)
+    page.goto(f"{BASE_URL}/index.html", wait_until="domcontentloaded")
+    page.wait_for_function("document.querySelector('#modeSelect option') !== null", timeout=20000)
+    mode_values = page.locator("#modeSelect option").evaluate_all("(options) => options.map(option => option.value)")
+    assert mode_values == ["mixed", "synopsis", "titleYear", "synonym", "titleStudio"], (
+        "The selectable quiz modes must remain limited to the four requested formats plus mixed mode: "
+        + repr(mode_values)
+    )
+    context.close()
     for mode in modes:
         context = browser.new_context(
             viewport={"width": 1280, "height": 900},
