@@ -44,6 +44,32 @@ assert.match(source.get("index.html"), /for\(;taskIndex<tasks\.length;\)\{\s*\/\
 
 assert.match(source.get("index.html"), /\.featured-track\{display:flex;width:max-content;gap:12px;animation:featured-scroll 64s linear infinite\}/, "Featured anime rail must use the faster scroll speed");
 assert.match(source.get("index.html"), /\.featured-track\.reverse\{animation-name:featured-scroll-reverse;animation-duration:70s\}/, "Reverse featured anime rail must use the faster scroll speed");
+const synopsisHtml = source.get("index.html");
+const synopsisMapStart = synopsisHtml.indexOf("const JAPANESE_SYNOPSIS_OVERRIDES=new Map(Object.entries({");
+const synopsisMapEnd = synopsisHtml.indexOf("}).map(([title,summary])", synopsisMapStart);
+assert.ok(synopsisMapStart >= 0 && synopsisMapEnd > synopsisMapStart, "Japanese synopsis override map must be present");
+const synopsisMapLines = synopsisHtml.slice(synopsisMapStart, synopsisMapEnd).split("\n").filter(line => /^\s*'/.test(line));
+const normalizeSynopsisTitle = value => String(value || "").normalize("NFKC").toLocaleLowerCase().replace(/[\s　・･:：!！?？.,，。'"“”「」『』()（）‐‑–—―−_-]/g, "").trim();
+const synopsisByNormalizedTitle = new Map();
+for (const line of synopsisMapLines) {
+  const separator = line.indexOf("':'");
+  const valueEnd = line.lastIndexOf("',");
+  assert.ok(separator > 0 && valueEnd > separator, "Every synopsis override must have a parseable title and summary");
+  const title = line.slice(line.indexOf("'") + 1, separator);
+  const summary = line.slice(separator + 3, valueEnd);
+  assert.ok(summary.length >= 45 && summary.length <= 260, "Synopsis length must be between 45 and 260 characters: " + title);
+  assert.match(summary, /[ぁ-んァ-ヶ]/, "Every synopsis override must contain Japanese text: " + title);
+  const key = normalizeSynopsisTitle(title);
+  const previous = synopsisByNormalizedTitle.get(key);
+  assert.ok(!previous || previous === summary, "Normalized title aliases must not map to conflicting synopses: " + title);
+  synopsisByNormalizedTitle.set(key, summary);
+}
+assert.equal(
+  synopsisMapLines.filter(line => /^\s*'けいおん[！!]':/.test(line)).length,
+  1,
+  "K-On punctuation variants must resolve through one canonical synopsis entry"
+);
+
 const aqwHtml = source.get("index.html");
 assert.match(aqwHtml, /id="aqwBlockFriend"/, "The chat must expose a block action");
 assert.match(aqwHtml, /id="aqwReportFriend"/, "The chat must expose a user-report action");
