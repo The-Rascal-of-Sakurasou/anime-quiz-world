@@ -1099,7 +1099,7 @@ async function fetchAnime(vars={}){
  }
  return initial;
 }
-function hasUsableImageUrl(value){const url=String(value||'').trim();return /^https?:\/\//i.test(url)&&!/(?:no[-_ ]?image|placeholder|default[-_ ]?image|(?:^|\\/)default(?:\\.[a-z0-9]+)?(?:[?#]|$))/i.test(url)&&!failedImageUrls.has(url)}
+function hasUsableImageUrl(value){const url=String(value||'').trim();return /^https?:\/\//i.test(url)&&!/(?:no[-_ ]?image|placeholder|default[-_ ]?image|(?:^|\/)default(?:\.[a-z0-9]+)?(?:[?#]|$))/i.test(url)&&!failedImageUrls.has(url)}
 function isUsableAnime(a){const titleImage=a?.coverImage?.large||a?.coverImage?.medium||a?.coverImage?.extraLarge||'';return !!(a&&a.id&&a.isAdult!==true&&isJapaneseOriginAnime(a)&&hasUsableImageUrl(titleImage)&&titleOf(a)&&['TV','TV_SHORT','MOVIE','OVA','ONA','SPECIAL'].includes(a.format)&&!((a.genres||[]).includes('Hentai')))}
 function deduplicateSearchResults(items){
  // Prefer the most popular record. Deduplicate identical title/year/format records,
