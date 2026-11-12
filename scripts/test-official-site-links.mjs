@@ -7,7 +7,7 @@ assert.ok(Array.isArray(catalog.items) && catalog.items.length >= 100, "Shared a
 const normalizeTitle = (value) => String(value || "")
   .normalize("NFKC")
   .toLocaleLowerCase()
-  .replace(/[\\s　・:：!！?？.,，。'"“”「」『』()（）‐‑–—―−_-]/g, "");
+  .replace(/[\s　・:：!！?？.,，。'"“”「」『』()（）‐‑–—―−_-]/g, "");
 const requiredPopularTitles = [
   "進撃の巨人", "シュタインズ・ゲート", "青春ブタ野郎", "無職転生", "Re:ゼロ",
   "この素晴らしい世界に祝福を", "ノーゲーム・ノーライフ", "Angel Beats!", "Charlotte",
