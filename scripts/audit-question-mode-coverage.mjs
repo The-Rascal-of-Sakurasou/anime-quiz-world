@@ -175,6 +175,7 @@ const characterStats = (() => {
   };
 })();
 const catalogueBytes = Buffer.byteLength(JSON.stringify(payload), "utf8");
+const catalogueGzipBytes = await readFile(CATALOG + ".gz").then(buffer => buffer.byteLength).catch(() => null);
 const fieldBytes = {};
 for (const anime of payload.items) {
   for (const [key, value] of Object.entries(anime || {})) {
@@ -194,6 +195,7 @@ const report = {
   japaneseOriginCount,
   famousForeignCount,
   catalogueBytes,
+  catalogueGzipBytes,
   averageBytesPerRecord: total ? Math.round(catalogueBytes / total) : 0,
   largestFields,
   auditedUsableCount: total,

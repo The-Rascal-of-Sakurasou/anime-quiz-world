@@ -4,6 +4,8 @@ import { gunzipSync } from "node:zlib";
 
 const FILE = process.argv[2] || "data/anime-catalog.json";
 const FORMATS = new Set(["TV", "TV_SHORT", "MOVIE", "OVA", "ONA", "SPECIAL"]);
+const MAX_JSON_BYTES = 20 * 1024 * 1024;
+const MAX_GZIP_BYTES = 5 * 1024 * 1024;
 
 function hasJapaneseTitle(anime) {
   const names = [anime?.title?.native, anime?.title?.english, anime?.title?.romaji,
@@ -149,7 +151,14 @@ export function validateCatalog(catalog) {
 async function main() {
   const raw = await readFile(FILE, "utf8");
   if (FILE === "data/anime-catalog.json") {
+    const rawBytes = Buffer.byteLength(raw, "utf8");
+    if (rawBytes > MAX_JSON_BYTES) {
+      throw new Error("Catalogue JSON exceeds the 20 MiB performance budget: " + rawBytes + " bytes.");
+    }
     const compressed = await readFile(FILE + ".gz");
+    if (compressed.byteLength > MAX_GZIP_BYTES) {
+      throw new Error("Compressed catalogue exceeds the 5 MiB performance budget: " + compressed.byteLength + " bytes.");
+    }
     const decompressed = gunzipSync(compressed).toString("utf8");
     if (decompressed !== raw) {
       throw new Error("Compressed catalogue does not match the JSON source file.");
