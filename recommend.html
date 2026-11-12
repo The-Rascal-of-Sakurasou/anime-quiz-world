@@ -824,7 +824,7 @@ function matchesSeedTitle(media,title){
  return aliases.some(alias=>normalizeSeedTitle(alias)===wanted);
 }
 async function findSeedAnime(title){
- const query='query ($search:String) { Page(perPage:25) { media(search:$search,type:ANIME,,isAdult:false,sort:SEARCH_MATCH) { id countryOfOrigin source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } title { romaji english native } synonyms genres tags { name rank isMediaSpoiler } } } }';
+ const query='query ($search:String) { Page(perPage:25) { media(search:$search,type:ANIME,,isAdult:false,sort:SEARCH_MATCH) { id countryOfOrigin popularity source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } title { romaji english native } synonyms genres tags { name rank isMediaSpoiler } } } }';
  let lastError=null;
  for(let attempt=0;attempt<3;attempt++){
   try{
