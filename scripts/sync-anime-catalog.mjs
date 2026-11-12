@@ -114,6 +114,7 @@ let previousOutput = null;
 try { previousOutput = JSON.parse(await readFile(OUTPUT, 'utf8')); } catch {}
 const incremental = process.env.AQW_FULL_CATALOG !== 'true' && previousOutput?.schemaVersion === 2 && Array.isArray(previousOutput.items);
 const records = new Map(incremental ? previousOutput.items.filter((item) => Number.isInteger(Number(item?.id))).map((item) => [Number(item.id), item]) : []);
+const initialRecordCount = records.size;
 let requests = 0;
 let accepted = 0;
 let filtered = 0;
@@ -292,8 +293,8 @@ await writeFile(OUTPUT, serialized + '\n');
 const compressed = gzipSync(Buffer.from(serialized + '\n', 'utf8'), { level: 9, mtime: 0 });
 await writeFile(OUTPUT_GZIP, compressed);
 console.log('Catalogue mode: ' + (incremental ? 'append-only incremental' : 'full initial/rebuild') + '.');
-console.log('Newly added records: ' + accepted + '.');
+console.log('New unique records: ' + Math.max(0, items.length - initialRecordCount) + '.');
 console.log('Catalogue complete: ' + items.length + ' unique usable anime.');
-console.log('AniList requests: ' + requests + '; accepted records: ' + accepted + '; filtered records: ' + filtered + '.');
+console.log('AniList requests: ' + requests + '; accepted/refreshed records: ' + accepted + '; filtered records: ' + filtered + '.');
 console.log('Output bytes: ' + Buffer.byteLength(serialized));
 console.log('Gzip output bytes: ' + compressed.byteLength + ' (' + (100 * compressed.byteLength / Buffer.byteLength(serialized)).toFixed(1) + '% of JSON).');
