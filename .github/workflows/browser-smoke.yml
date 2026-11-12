@@ -18,6 +18,7 @@ on:
       - index.html
       - recommend.html
       - scripts/browser-smoke.py
+      - scripts/test-official-site-links.mjs
       - data/anime-catalog.json
       - data/anime-catalog.json.gz
   workflow_dispatch:
