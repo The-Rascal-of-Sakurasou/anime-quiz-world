@@ -2921,14 +2921,22 @@ async function uploadImage(file){
 async function loadFeed(){
  if(!sb)return;
  const feed=$s('aqwFeed');feed.replaceChildren();
+ let blockedIds=new Set();
+ if(currentUser){
+  const {data:blockedRows,error:blockError}=await sb.from('user_blocks').select('blocked_id').eq('blocker_id',currentUser.id);
+  if(blockError){feed.textContent=rt('feedError')+errText(blockError);return}
+  blockedIds=new Set((blockedRows||[]).map(row=>row.blocked_id));
+ }
  const {data:posts,error}=await sb.from('posts').select('id,user_id,body,image_path,parent_post_id,quiz_result,created_at,profiles(username,display_name,avatar_path)').is('parent_post_id',null).order('created_at',{ascending:false}).limit(50);
  if(error){feed.textContent=rt('feedError')+errText(error);return}
- if(!posts?.length){feed.innerHTML='<div class="aqw-empty">'+rt('feedEmpty')+'</div>';return}
- const postIds=posts.map(post=>post.id);
+ const visiblePosts=(posts||[]).filter(post=>!blockedIds.has(post.user_id));
+ if(!visiblePosts.length){feed.innerHTML='<div class="aqw-empty">'+rt('feedEmpty')+'</div>';return}
+ const postIds=visiblePosts.map(post=>post.id);
  const {data:likeRows,error:likesError}=await sb.from('post_likes').select('post_id').in('post_id',postIds);
  const likeCounts=new Map();
  if(!likesError){for(const row of likeRows||[])likeCounts.set(row.post_id,(likeCounts.get(row.post_id)||0)+1)}
- const rendered=[];for(let i=0;i<posts.length;i+=8){const batch=await Promise.all(posts.slice(i,i+8).map(post=>renderPost(post,likesError?undefined:(likeCounts.get(post.id)||0))));rendered.push(...batch)}const fragment=document.createDocumentFragment();rendered.forEach(node=>fragment.append(node));feed.append(fragment)
+ const rendered=[];for(let i=0;i<visiblePosts.length;i+=8){const batch=await Promise.all(visiblePosts.slice(i,i+8).map(post=>renderPost(post,likesError?undefined:(likeCounts.get(post.id)||0))));rendered.push(...batch)}
+ const fragment=document.createDocumentFragment();rendered.forEach(node=>fragment.append(node));feed.append(fragment)
 }
 async function renderPost(post,initialLikeCount){
  const article=document.createElement('article');article.className='aqw-post';
@@ -2947,12 +2955,46 @@ async function renderPost(post,initialLikeCount){
  const count=document.createElement('small');count.textContent=' '+(likeCount||0);
  const replyBtn=document.createElement('button');replyBtn.type='button';replyBtn.textContent=localJa()?'返信を見る / 返信する':'View / write replies';
  const deleteBtn=document.createElement('button');deleteBtn.type='button';deleteBtn.textContent=localJa()?'自分の投稿を削除':'Delete your post';deleteBtn.className='danger-button';deleteBtn.classList.toggle('hidden',post.user_id!==currentUser?.id);
- actions.append(like,count,replyBtn,deleteBtn);article.append(actions);
+ actions.append(like,count,replyBtn,deleteBtn);
+ if(currentUser&&post.user_id!==currentUser.id){
+  const reportBtn=document.createElement('button');reportBtn.type='button';reportBtn.textContent=localJa()?'通報':'Report';
+  reportBtn.onclick=()=>openReportPanel(post.user_id,null,post.id);
+  const blockBtn=document.createElement('button');blockBtn.type='button';blockBtn.className='danger-button';blockBtn.textContent=localJa()?'ブロック':'Block';
+  blockBtn.onclick=()=>blockUser(post.user_id,who.textContent);
+  actions.append(reportBtn,blockBtn);
+ }
+ article.append(actions);
  like.disabled=!currentUser;
  like.onclick=async()=>{try{const {data:existing,error}=await sb.from('post_likes').select('post_id').eq('post_id',post.id).eq('user_id',currentUser.id).maybeSingle();if(error)throw error;if(existing){const r=await sb.from('post_likes').delete().eq('post_id',post.id).eq('user_id',currentUser.id);if(r.error)throw r.error}else{const r=await sb.from('post_likes').insert({post_id:post.id,user_id:currentUser.id});if(r.error)throw r.error}const {count:n}=await sb.from('post_likes').select('*',{count:'exact',head:true}).eq('post_id',post.id);count.textContent=' '+(n||0)}catch(e){message(postMsg,errText(e))}};
  deleteBtn.onclick=async()=>{if(!confirm(rt('deleteConfirm')))return;const {error}=await sb.from('posts').delete().eq('id',post.id);if(error)message(postMsg,errText(error));else await loadFeed()};
- const replies=document.createElement('div');replies.className='aqw-replies hidden';replyBtn.onclick=async()=>{replies.classList.toggle('hidden');if(!replies.dataset.loaded&&!replies.classList.contains('hidden')){replies.dataset.loaded='1';const {data,error}=await sb.from('posts').select('id,user_id,body,created_at,profiles(username,display_name,avatar_path)').eq('parent_post_id',post.id).order('created_at');if(error){replies.textContent=errText(error)}else if(!data.length){replies.textContent=localJa()?'返信はまだありません。':'No replies yet.'}else data.forEach(r=>{const p=document.createElement('p');p.textContent=(r.profiles?.display_name||r.profiles?.username||rt('genericUser'))+rt('replyColon')+r.body+' ('+stamp(r.created_at)+')';replies.append(p)})}}
- if(currentUser){const form=document.createElement('form');form.className='aqw-reply-form';const input=document.createElement('input');input.maxLength=2000;input.required=true;input.placeholder=rt('replyPlaceholder');const submit=document.createElement('button');submit.type='submit';submit.textContent=localJa()?'返信':'Reply';form.append(input,submit);form.onsubmit=async e=>{e.preventDefault();const {error}=await sb.from('posts').insert({user_id:currentUser.id,parent_post_id:post.id,body:input.value.trim()});if(error)message(postMsg,errText(error));else{input.value='';await loadFeed()}};replies.append(form)}
+ const replies=document.createElement('div');replies.className='aqw-replies hidden';
+ replyBtn.onclick=async()=>{
+  replies.classList.toggle('hidden');
+  if(!replies.dataset.loaded&&!replies.classList.contains('hidden')){
+   replies.dataset.loaded='1';
+   const {data,error}=await sb.from('posts').select('id,user_id,body,created_at,profiles(username,display_name,avatar_path)').eq('parent_post_id',post.id).order('created_at');
+   if(error){replies.textContent=errText(error)}
+   else if(!data.length){replies.textContent=localJa()?'返信はまだありません。':'No replies yet.'}
+   else data.forEach(r=>{
+    const row=document.createElement('div');row.className='aqw-reply-row';
+    const p=document.createElement('p');p.textContent=(r.profiles?.display_name||r.profiles?.username||rt('genericUser'))+rt('replyColon')+r.body+' ('+stamp(r.created_at)+')';row.append(p);
+    if(currentUser&&r.user_id!==currentUser.id){
+     const replyActions=document.createElement('div');replyActions.className='aqw-message-actions';
+     const reportReply=document.createElement('button');reportReply.type='button';reportReply.textContent=localJa()?'通報':'Report';reportReply.onclick=()=>openReportPanel(r.user_id,null,r.id);
+     const blockReply=document.createElement('button');blockReply.type='button';blockReply.className='danger-button';blockReply.textContent=localJa()?'ブロック':'Block';blockReply.onclick=()=>blockUser(r.user_id,(r.profiles?.display_name||r.profiles?.username||''));
+     replyActions.append(reportReply,blockReply);row.append(replyActions);
+    }
+    replies.append(row);
+   });
+  }
+ };
+ if(currentUser){
+  const form=document.createElement('form');form.className='aqw-reply-form';
+  const input=document.createElement('input');input.maxLength=2000;input.required=true;input.placeholder=rt('replyPlaceholder');
+  const submit=document.createElement('button');submit.type='submit';submit.textContent=localJa()?'返信':'Reply';form.append(input,submit);
+  form.onsubmit=async e=>{e.preventDefault();const {error}=await sb.from('posts').insert({user_id:currentUser.id,parent_post_id:post.id,body:input.value.trim()});if(error)message(postMsg,errText(error));else{input.value='';await loadFeed()}};
+  replies.append(form);
+ }
  article.append(replies);return article;
 }
 async function doPost(bodyOverride){
@@ -3068,7 +3110,7 @@ async function enableBrowserNotifications(){
   message(authMsg,permission==='granted'?(localJa()?'ブラウザ通知を有効にしました。':'Browser notifications enabled.'):(localJa()?'通知は許可されませんでした。':'Notification permission was not granted.'))}catch(e){message(authMsg,errText(e))}
 }
 let selectedFriendId=null,selectedFriendName='',friendMessageChannel=null;
-let reportTargetUserId=null,reportTargetMessageId=null;
+let reportTargetUserId=null,reportTargetMessageId=null,reportTargetPostId=null;
 let followRealtimeChannel=null,followRealtimeUserId=null,notificationRealtimeChannel=null,notificationRealtimeUserId=null;
 async function syncFollowRealtime(){
  const uid=currentUser?.id||null;
@@ -3138,17 +3180,24 @@ async function loadBlockedUsers(){
   item.append(label,button);box.append(item);
  });
 }
-async function blockSelectedFriend(){
- if(!currentUser||!selectedFriendId)return;
- const friendId=selectedFriendId;
- const confirmed=window.confirm(localJa()?'このユーザーをブロックしますか？相互フォローのチャットは停止します。':'Block this user? Mutual-follow chat will be disabled.');
+async function blockUser(userId,userName=''){
+ if(!currentUser||!userId||userId===currentUser.id)return;
+ const label=userName||userId;
+ const confirmed=window.confirm(localJa()?label+' をブロックしますか？相互フォローのチャットは停止します。':'Block '+label+'? Mutual-follow chat will be disabled.');
  if(!confirmed)return;
- const {error}=await sb.from('user_blocks').insert({blocker_id:currentUser.id,blocked_id:friendId});
- if(error&&error.code!=='23505'){message($s('aqwMessageStatus'),errText(error));return}
- await sb.from('follows').delete().eq('follower_id',currentUser.id).eq('following_id',friendId);
- await closeFriendConversation();
+ const {error}=await sb.from('user_blocks').insert({blocker_id:currentUser.id,blocked_id:userId});
+ if(error&&error.code!=='23505'){message($s('aqwMessageStatus')||postMsg,errText(error));return}
+ const {error:followError}=await sb.from('follows').delete().eq('follower_id',currentUser.id).eq('following_id',userId);
+ if(followError){message($s('aqwMessageStatus')||postMsg,localJa()?'ブロックしましたが、フォロー状態の更新に失敗しました。':'Blocked, but could not update the follow state.')}
+ if(selectedFriendId===userId)await closeFriendConversation();
+ await loadBlockedUsers();
  await loadFriends();
- message($s('aqwMessageStatus'),localJa()?'ユーザーをブロックしました。':'User blocked.');
+ await loadFeed();
+ message($s('aqwMessageStatus')||postMsg,localJa()?'ユーザーをブロックしました。':'User blocked.');
+}
+async function blockSelectedFriend(){
+ if(!selectedFriendId)return;
+ await blockUser(selectedFriendId,selectedFriendName);
 }
 async function unblockUser(blockedId){
  if(!currentUser||!blockedId)return;
@@ -3156,14 +3205,15 @@ async function unblockUser(blockedId){
  if(error){message($s('aqwMessageStatus'),errText(error));return}
  await loadBlockedUsers();
  await loadFriends();
+ await loadFeed();
  message($s('aqwMessageStatus'),localJa()?'ブロックを解除しました。':'Block removed.');
 }
-function openReportPanel(userId,messageId=null){
+function openReportPanel(userId,messageId=null,postId=null){
  if(!currentUser||!userId)return;
- reportTargetUserId=userId;reportTargetMessageId=messageId;
+ reportTargetUserId=userId;reportTargetMessageId=messageId;reportTargetPostId=postId;
  const panel=$s('aqwReportPanel');if(!panel)return;
  panel.classList.remove('hidden');
- $s('aqwReportTitle').textContent=localJa()?(messageId?'メッセージを通報':'ユーザーを通報'):(messageId?'Report message':'Report user');
+ $s('aqwReportTitle').textContent=localJa()?(postId?'投稿を通報':messageId?'メッセージを通報':'ユーザーを通報'):(postId?'Report post':messageId?'Report message':'Report user');
  $s('aqwReportReasonLabel').textContent=localJa()?'理由':'Reason';
  $s('aqwReportDetailsLabel').textContent=localJa()?'補足（任意・500文字以内）':'Additional details (optional, up to 500 characters)';
  $s('aqwCancelReport').textContent=localJa()?'キャンセル':'Cancel';
@@ -3173,10 +3223,11 @@ function openReportPanel(userId,messageId=null){
  [...options].forEach((option,index)=>{option.textContent=labels[index]||option.textContent});
  $s('aqwReportReason').value='other';$s('aqwReportDetails').value='';
  message($s('aqwReportStatus'),'');
+ panel.scrollIntoView({behavior:'smooth',block:'center'});
 }
 function closeReportPanel(){
  const panel=$s('aqwReportPanel');if(panel)panel.classList.add('hidden');
- reportTargetUserId=null;reportTargetMessageId=null;
+ reportTargetUserId=null;reportTargetMessageId=null;reportTargetPostId=null;
  const status=$s('aqwReportStatus');if(status)status.textContent='';
 }
 async function submitUserReport(){
@@ -3188,6 +3239,7 @@ async function submitUserReport(){
   reporter_id:currentUser.id,
   reported_user_id:reportTargetUserId,
   message_id:reportTargetMessageId,
+  post_id:reportTargetPostId,
   reason,
   details
  });
