@@ -855,7 +855,11 @@ def test_main_navigation_and_search(browser):
         isAdult: false, format: "TV", popularity: 100,
         title: { native: "共有カタログ専用検索作品", english: "Local Catalogue Search Fixture", romaji: "Local Catalogue Search Fixture" },
         synonyms: ["共有カタログ略称"],
-        coverImage: { large: "https://example.test/cover.jpg" }, genres: []
+        coverImage: { large: "https://example.test/cover.jpg" }, genres: [],
+        externalLinks: [{
+          url: "https://example.test/official-1", site: "Official Site",
+          type: "INFO", language: "Japanese", isDisabled: false
+        }]
       }];
     }""")
     dedupe_ids = page.evaluate("""() => {
@@ -911,6 +915,23 @@ def test_main_navigation_and_search(browser):
     assert page.locator("#results .anime strong").first.inner_text() == "共有カタログ専用検索作品", (
         "Search must find a title that exists only in the shared catalogue when AniList returns no matches"
     )
+    page.route(
+        "https://example.test/official-1",
+        lambda route: route.fulfill(
+            status=200,
+            content_type="text/html",
+            body="<!doctype html><title>Official destination</title><p>official destination</p>",
+        ),
+    )
+    official_link = page.locator("#results .anime a").first
+    assert official_link.get_attribute("target") == "_self", (
+        "Official-site links must navigate in the current page on mobile browsers"
+    )
+    assert official_link.get_attribute("href") == "https://example.test/official-1"
+    with page.expect_navigation(url="https://example.test/official-1", wait_until="domcontentloaded"):
+        official_link.click()
+    assert "official destination" in page.locator("body").inner_text().lower()
+    page.go_back(wait_until="domcontentloaded")
 
     page.locator("#progressTab").click()
     assert page.locator("#progressPanel").is_visible(), "Progress tab must open the achievements panel"
