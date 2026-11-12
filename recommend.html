@@ -537,6 +537,7 @@ function runRecommendationSelfTests(){
  check('日本語以外と明示された原作は除外する',!isRecommendationCandidate({...candidateBase,originLanguage:'en',format:'TV'}));
  check('日本語タイトルを持つ有名な海外作品は採用する',isRecommendationCandidate({...candidateBase,countryOfOrigin:'US',popularity:10000,synonyms:['海外作品の日本語題'],format:'TV'}));
  check('日本語タイトルがない海外作品は除外する',!isRecommendationCandidate({...candidateBase,countryOfOrigin:'US',popularity:50000,synonyms:['Foreign title'],format:'TV'}));
+ check('漢字だけの外国語タイトルを日本語タイトルと誤認しない',!isRecommendationCandidate({...candidateBase,countryOfOrigin:'US',popularity:50000,synonyms:['三国演义'],format:'TV'}));
  check('知名度の基準に届かない海外作品は除外する',!isRecommendationCandidate({...candidateBase,countryOfOrigin:'US',popularity:9999,synonyms:['海外作品の日本語題'],format:'TV'}));
  check('日本語と明示された原作は適格性判定を通過する',isRecommendationCandidate({...candidateBase,originLanguage:'ja',format:'TV'}));
  check('原作情報が不明な翻案作品は除外する',!isRecommendationCandidate({...candidateBase,source:'MANGA',relations:{edges:[]},format:'TV'}));
@@ -798,7 +799,7 @@ function normalizeSeedTitle(value){
 }
 function hasFamousJapaneseTitle(media){
  const names=[media?.title?.native,media?.title?.english,media?.title?.romaji,...(Array.isArray(media?.synonyms)?media.synonyms:[])];
- return names.some(name=>typeof name==='string'&&/[ぁ-んァ-ヶ一-龯]/.test(name));
+ return names.some(name=>typeof name==='string'&&/[ぁ-んァ-ヶ]/.test(name));
 }
 function isJapaneseOriginAnime(media){
  if(!media)return false;
