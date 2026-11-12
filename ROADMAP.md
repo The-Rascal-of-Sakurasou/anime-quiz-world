@@ -54,6 +54,11 @@ Tracking issue: https://github.com/The-Rascal-of-Sakurasou/anime-quiz-world/issu
 - [ ] Restore progress on another device
 - [ ] Merge existing local progress without duplicates
 
+## P0 — AniList API usage compliance
+- [ ] Confirm whether the current 10k-record stored catalogue is permitted under AniList's current API terms, or obtain written permission with guardian review.
+- [ ] Replace bulk catalogue storage/sync with a compliant on-demand data strategy or a separately licensed source if permission is not available.
+- [x] Pause automatic scheduled/push-triggered bulk sync; retain manual workflow only pending review.
+
 ## Security and quality requirements
 - Reuse existing profiles, follows, messages, notifications, and leaderboard infrastructure.
 - Keep solo and multiplayer rankings separate.
