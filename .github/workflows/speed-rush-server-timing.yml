@@ -1,0 +1,27 @@
+name: Speed Rush server timing contract
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'supabase/migrations/**'
+      - 'scripts/test-speed-rush-server-timing.mjs'
+      - '.github/workflows/speed-rush-server-timing.yml'
+  push:
+    branches:
+      - 'fix/speed-rush-server-timing-*'
+    paths:
+      - 'index.html'
+      - 'supabase/migrations/**'
+      - 'scripts/test-speed-rush-server-timing.mjs'
+      - '.github/workflows/speed-rush-server-timing.yml'
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/test-speed-rush-server-timing.mjs
