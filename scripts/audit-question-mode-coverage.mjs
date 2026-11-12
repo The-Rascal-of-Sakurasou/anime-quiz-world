@@ -125,6 +125,38 @@ const eligible = {
   titleStudio: items.filter(a => (a.studios?.nodes || []).some(n => String(n?.name || "").trim()) && studioSet.size >= 4),
 };
 const total = items.length;
+const characterStats = (() => {
+  const ids = new Set();
+  const namesByAnime = new Map();
+  let totalRecords = 0;
+  let animeWithAny = 0;
+  let animeWithAtLeast4 = 0;
+  let animeWithAtLeast8 = 0;
+  for (const anime of items) {
+    const nodes = Array.isArray(anime?.characters?.nodes) ? anime.characters.nodes : [];
+    if (nodes.length) animeWithAny++;
+    if (nodes.length >= 4) animeWithAtLeast4++;
+    if (nodes.length >= 8) animeWithAtLeast8++;
+    for (const character of nodes) {
+      totalRecords++;
+      const id = Number(character?.id);
+      if (Number.isSafeInteger(id) && id > 0) ids.add(id);
+      const key = norm(character?.name?.native || character?.name?.full || "");
+      if (!key) continue;
+      if (!namesByAnime.has(key)) namesByAnime.set(key, new Set());
+      namesByAnime.get(key).add(Number(anime.id));
+    }
+  }
+  return {
+    totalRecords,
+    uniqueCharacterIds: ids.size,
+    uniqueCharacterNames: namesByAnime.size,
+    namesUniqueToOneAnime: [...namesByAnime.values()].filter(ownerIds => ownerIds.size === 1).length,
+    animeWithAnyCharacter: animeWithAny,
+    animeWithAtLeast4Characters: animeWithAtLeast4,
+    animeWithAtLeast8Characters: animeWithAtLeast8,
+  };
+})();
 const catalogueBytes = Buffer.byteLength(JSON.stringify(payload), "utf8");
 const fieldBytes = {};
 for (const anime of payload.items) {
@@ -149,6 +181,7 @@ const report = {
   uniqueBroadcastYears: yearSet.size,
   uniqueProductionStudios: studioSet.size,
   uniqueSynopsisTexts: synopsisCandidateCount,
+  characterStats,
   modes: [
     summarize("synopsis","あらすじ → 作品名",eligible.synopsis),
     summarize("titleYear","作品名 → 放送年",eligible.titleYear),
@@ -170,4 +203,5 @@ console.log("JSON size: "+catalogueBytes+" bytes; average "+report.averageBytesP
 console.log("Largest fields: "+largestFields.map(row=>row.field+" "+row.bytes+" bytes ("+row.percent+"%)").join("; "));
 for (const row of report.modes) console.log(row.label+": "+row.eligible+"/"+row.total+" ("+row.coveragePercent+"%); missing "+row.missing);
 console.log("Unique years: "+yearSet.size+"; studios: "+studioSet.size+"; synopsis texts: "+synopsisCandidateCount);
+console.log("Characters: "+JSON.stringify(characterStats));
 console.log("Detailed report: "+REPORT);
