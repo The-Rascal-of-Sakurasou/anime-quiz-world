@@ -59,6 +59,14 @@ Tracking issue: https://github.com/The-Rascal-of-Sakurasou/anime-quiz-world/issu
 - [ ] Replace bulk catalogue storage/sync with a compliant on-demand data strategy or a separately licensed source if permission is not available.
 - [x] Pause automatic scheduled/push-triggered bulk sync; retain manual workflow only pending review.
 
+### Supabase security audit (2026-11-12)
+- [x] RLS enabled on all 19 public/private application tables.
+- [x] Client writes limited through column-level privileges and ownership policies.
+- [x] Administrative actions require owner authorization and MFA (AAL2).
+- [x] User reports and block lists are private to the relevant user/admin roles.
+- [ ] Enable Supabase Auth leaked-password protection in the project dashboard; the connected tools cannot change this Auth setting.
+- [ ] Rework solo and Speed Rush leaderboard submissions to use server-verified sessions before treating scores as tamper-resistant.
+
 ## Security and quality requirements
 - Reuse existing profiles, follows, messages, notifications, and leaderboard infrastructure.
 - Keep solo and multiplayer rankings separate.
