@@ -1,6 +1,18 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { validateCatalog } from "./validate-anime-catalog.mjs";
+import { isUsableCoverImage } from "./catalog-image-url.mjs";
+
+assert.equal(isUsableCoverImage("https://cdn.example.com/cover.jpg"), true, "Valid HTTPS cover URL should pass");
+assert.equal(isUsableCoverImage("http://cdn.example.com/cover.jpg"), true, "Valid HTTP cover URL should pass");
+for (const invalid of [
+  "https://cdn.example.com/no-image.png",
+  "https://cdn.example.com/placeholder.jpg",
+  "https://cdn.example.com/default.jpg",
+  "https://user:pass@cdn.example.com/cover.jpg",
+  "https://",
+  "javascript:alert(1)"
+]) assert.equal(isUsableCoverImage(invalid), false, "Invalid cover URL should be rejected: " + invalid);
 
 const fixture = JSON.parse(await readFile("scripts/fixtures/anime-catalog-sample.json", "utf8"));
 assert.equal(validateCatalog(fixture).count, 2, "Known-good catalogue fixture should pass");
