@@ -45,7 +45,7 @@ if (!overrideMatch) throw new Error("Could not extract Japanese synopsis overrid
 const overrideObject = runInNewContext("(" + overrideMatch[1] + ")");
 const synopsisOverrides = new Map(Object.entries(overrideObject).map(([key, value]) => [norm(key), String(value)]));
 const desc = (a) => {
-  const titles = [a?.title?.native, a?.title?.english, a?.title?.romaji, ...(Array.isArray(a?.synonyms) ? a.synonyms : [])];
+  const titles = [a?.title?.native, a?.title?.english, a?.title?.romaji, ...(Array.isArray(a?.synonyms) ? a.synonyms : []), ...titleVariants(a)];
   for (const candidate of titles) {
     const override = synopsisOverrides.get(norm(candidate));
     if (override) return override;
@@ -66,6 +66,17 @@ const titleVariants = (a) => {
   for (const value of [a?.title?.english, a?.title?.romaji, ...(a?.synonyms || [])].filter(Boolean)) {
     const words = String(value).normalize("NFKC").match(/[A-Za-z0-9]+/g) || [];
     if (words.length >= 2) { const initials = words.map(x => x[0]).join(""); if (initials.length >= 2 && initials.length <= 8) out.add(norm(initials)); }
+  }
+  const seasonPatterns = [/\s*[-:：–—|｜]?\s*(?:第\s*\d+\s*(?:期|シーズン|season)|season\s*\d+|\d+(?:st|nd|rd|th)?\s*season|s\s*\d+)\s*$/i, /\s*[-:：–—|｜]?\s*(?:final\s+season|the\s+final\s+season|second\s+season|third\s+season|fourth\s+season|fifth\s+season|first\s+season)\s*$/i, /\s*[-:：–—|｜]?\s*(?:第\s*\d+\s*クール|\d+\s*クール)\s*$/i];
+  const moviePatterns = [/^\s*(?:劇場版|the\s+movie|movie\s+version|anime\s+film|film\s+version)\s*[:：\-–—]?\s*/i, /\s*[-:：–—|｜]?\s*(?:劇場版|the\s+movie|movie\s+version|anime\s+film|film\s+version|movie|film)\s*$/i];
+  for (const value of values) {
+    let base = String(value).normalize("NFKC").trim();
+    for (let pass = 0; pass < 3; pass++) {
+      const before = base;
+      for (const pattern of [...seasonPatterns, ...moviePatterns]) base = base.replace(pattern, "").trim();
+      if (base === before) break;
+    }
+    if (base && norm(base) !== norm(value)) out.add(norm(base));
   }
   return out;
 };
