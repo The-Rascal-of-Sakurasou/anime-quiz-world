@@ -236,8 +236,15 @@ def test_all_question_modes(browser):
             status = page.locator("#quizStatus").inner_text() if page.locator("#quizStatus").count() else ""
             raise AssertionError(f"Question mode {mode} did not produce a question: {status}") from error
         assert answers.count() == 4, f"Question mode {mode} must provide exactly four choices"
+        labels = [re.sub(r"\\s+", " ", value).strip().casefold() for value in answers.all_inner_texts()]
+        assert len(set(labels)) == 4, f"Question mode {mode} must provide four distinct answer labels: {labels}"
         prompt = page.locator("#answerPrompt").inner_text().strip()
         assert prompt, f"Question mode {mode} must display a prompt"
+        if mode == "image":
+            page.wait_for_function(
+                "() => { const image = document.querySelector('#cover'); return image && !image.classList.contains('hidden') && image.complete && image.naturalWidth > 0; }",
+                timeout=15000,
+            )
         answers.first.click()
         page.locator("#result:not(.hidden)").wait_for(state="visible", timeout=20000)
         assert not errors, f"Question mode {mode} raised JavaScript errors: " + " | ".join(errors)
