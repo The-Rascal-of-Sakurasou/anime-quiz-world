@@ -30,7 +30,7 @@ begin
 
   if has_function_privilege(current_user, 'public.get_aqw_player_my_rank(text,text)', 'EXECUTE')
      or has_function_privilege(current_user, 'public.get_aqw_speed_rush_my_rank(text)', 'EXECUTE')
-     or has_function_privilege(current_user, 'public.submit_aqw_player_run(uuid,integer,integer,integer)', 'EXECUTE')
+     or has_function_privilege(current_user, 'public.submit_aqw_player_run(uuid,integer,integer,integer,jsonb)', 'EXECUTE')
      or has_function_privilege(current_user, 'public.submit_aqw_speed_rush(integer,integer,uuid)', 'EXECUTE')
      or has_function_privilege(current_user, 'public.reset_aqw_player_records()', 'EXECUTE')
      or has_function_privilege(current_user, 'public.set_aqw_leaderboard_enabled(boolean)', 'EXECUTE') then
