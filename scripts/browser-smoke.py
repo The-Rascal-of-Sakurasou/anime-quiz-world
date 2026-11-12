@@ -204,7 +204,7 @@ def install_live_catalogue_routes(page):
             return
         payload = route.request.post_data_json or {}
         query = payload.get("query", "")
-        aliases = re.findall(r"([A-Za-z][A-Za-z0-9_]*)\\s*:\\s*Page\\s*\\(", query)
+        aliases = re.findall(r"([A-Za-z][A-Za-z0-9_]*)\s*:\s*Page\s*\(", query)
         if aliases:
             data = {
                 alias: {"pageInfo": {"hasNextPage": False}, "media": []}
@@ -223,7 +223,7 @@ def install_live_catalogue_routes(page):
             body=json.dumps({"data": data}, ensure_ascii=False),
         )
 
-    page.route(re.compile(r"^https://graphql\\.anilist\\.co/?$"), graphql)
+    page.route(re.compile(r"^https://graphql\.anilist\.co/?$"), graphql)
 
 
 def test_public_catalogue_all_modes(browser):
@@ -290,7 +290,7 @@ def test_public_catalogue_all_modes(browser):
         answers = page.locator("#answers button.answer")
         answers.first.wait_for(state="visible", timeout=45000)
         elapsed_ms = round((__import__("time").perf_counter() - started) * 1000, 1)
-        labels = [re.sub(r"\\s+", " ", value).strip().casefold() for value in answers.all_inner_texts()]
+        labels = [re.sub(r"\s+", " ", value).strip().casefold() for value in answers.all_inner_texts()]
         assert answers.count() == 4 and len(set(labels)) == 4, (
             f"Public {mode} mode did not produce four distinct choices: {labels}"
         )
