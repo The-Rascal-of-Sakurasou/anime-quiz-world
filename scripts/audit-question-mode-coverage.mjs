@@ -47,7 +47,7 @@ const CURATED = [
   [["ハイキュー!! セカンドシーズン","Haikyuu!! Second Season"],"ハイキュー2期"],
   [["SPY×FAMILY","SPY x FAMILY"],"スパファミ"],
 ];
-const norm = (v) => String(v || "").normalize("NFKC").toLocaleLowerCase().replace(/[\s　・･:：!！?？.,，。'"“”「」『』()（）‐‑–—_-]/g, "").trim();
+const norm = (v) => String(v || "").normalize("NFKC").toLocaleLowerCase().replace(/[\s　・･:：!！?？.,，。'"“”「」『』()（）‐‑–—―−_-]/g, "").trim();
 const title = (a) => String(a?.title?.native || a?.title?.english || a?.title?.romaji || "").trim();
 const year = (a) => Number.isInteger(a?.seasonYear) ? a.seasonYear : Number.isInteger(a?.startDate?.year) ? a.startDate.year : null;
 const indexHtml = await readFile("index.html", "utf8");
