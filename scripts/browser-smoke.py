@@ -269,6 +269,21 @@ def test_public_catalogue_all_modes(browser):
     assert stats["embeddedCharacterRecords"] == 0, (
         "Unused character records returned in the shared catalogue: " + json.dumps(stats, ensure_ascii=False)
     )
+    local_japanese_search = page.evaluate("""async () => {
+      const results = await fetchAnime({search: "葬送のフリーレン"});
+      return results.map(titleOf);
+    }""")
+    assert any("葬送のフリーレン" in title for title in local_japanese_search), (
+        "Local search failed to find Frieren in the real shared catalogue when AniList returned no matches: "
+        + repr(local_japanese_search)
+    )
+    local_english_search = page.evaluate("""async () => {
+      const results = await fetchAnime({search: "Frieren"});
+      return results.map(titleOf);
+    }""")
+    assert any("葬送のフリーレン" in title for title in local_english_search), (
+        "Local search failed to find a Japanese title from its English name: " + repr(local_english_search)
+    )
     assert any(url.endswith("anime-catalog.json.gz") for url in catalogue_requests), (
         "The public page did not request the compressed catalogue: " + repr(catalogue_requests)
     )
