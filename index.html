@@ -2697,7 +2697,7 @@ function officialAnimeLink(anime){
 }
 function renderFeaturedRail(source){
  const root=document.getElementById('featuredRail');if(!root)return;
- const candidates=shuffle(uniqueAnimeById(source).filter(a=>isUsableAnime(a))).slice(0,12);
+ const candidates=shuffle(uniqueAnimeById(source).filter(a=>isUsableAnime(a))).slice(0,8);
  if(!candidates.length){root.innerHTML='<p class="featured-empty">今シーズンの日本アニメ画像を取得できませんでした。</p>';return}
  const makeTrack=(items,reverse=false)=>{
   const track=document.createElement('div');track.className='featured-track'+(reverse?' reverse':'');
@@ -2706,7 +2706,7 @@ function renderFeaturedRail(source){
    card.className='featured-card'+(link.kind==='search'?' is-search-link':'');
    card.href=link.url;card.target='_blank';card.rel='noopener noreferrer';
    card.title=link.kind==='official'?'公式サイトを新しいタブで開く':'公式サイトを検索（検索結果から公式ページを選択）';
-   const image=document.createElement('img');image.src=anime.coverImage?.extraLarge||anime.coverImage?.large||anime.coverImage?.medium||'';image.alt=titleOf(anime);image.loading='lazy';image.decoding='async';
+   const image=document.createElement('img');image.src=anime.coverImage?.large||anime.coverImage?.medium||'';image.alt=titleOf(anime);image.loading='lazy';image.decoding='async';
    const label=document.createElement('span');label.textContent=titleOf(anime)+(link.kind==='search'?' · 公式サイトを検索':'');card.append(image,label);
    track.append(card);
   }
@@ -2754,7 +2754,7 @@ function getCurrentAnimeSeason(date=new Date()){
 async function loadFeaturedRail(){
  const root=document.getElementById('featuredRail');if(!root)return;
  const current=getCurrentAnimeSeason();
- const cacheKey='aqw-featured-season-v7-'+current.year+'-'+current.season;
+ const cacheKey='aqw-featured-season-v8-'+current.year+'-'+current.season;
  const cacheMaxAge=24*60*60*1000;
  const renderItems=items=>{
   const unique=new Map();
@@ -2781,7 +2781,7 @@ async function loadFeaturedRail(){
  try{
   // 今シーズンの作品だけを取得し、関連作品情報など表示に不要なデータは要求しない。
   const fields='id countryOfOrigin popularity source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } format season seasonYear startDate { year month day } title { romaji english native } synonyms coverImage { extraLarge large medium } externalLinks { url site type isDisabled }';
-  const queryText='query { Page(page:1,perPage:50) { media(type:ANIME,season:'+current.season+',seasonYear:'+current.year+',format_in:[TV,ONA],isAdult:false,sort:POPULARITY_DESC) { '+fields+' } } }';
+  const queryText='query { Page(page:1,perPage:24) { media(type:ANIME,season:'+current.season+',seasonYear:'+current.year+',format_in:[TV,ONA],isAdult:false,sort:POPULARITY_DESC) { '+fields+' } } }';
   const response=await fetch(API,{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query:queryText}),signal:controller.signal});
   if(!response.ok)throw new Error('HTTP '+response.status);
   const json=await response.json();
@@ -2799,8 +2799,14 @@ async function loadFeaturedRail(){
  }finally{clearTimeout(timeout)}
 }
 
-// Load the seasonal anime rail immediately; it must not wait for optional Supabase setup.
-loadFeaturedRail();
+// Defer the seasonal rail until after the initial page load and an idle period.
+function scheduleFeaturedRail(){
+ const run=()=>{if(!document.hidden)loadFeaturedRail()};
+ if('requestIdleCallback' in window)requestIdleCallback(run,{timeout:4000});
+ else setTimeout(run,1800);
+}
+if(document.readyState==='complete')scheduleFeaturedRail();
+else window.addEventListener('load',scheduleFeaturedRail,{once:true});
 let aqwSupabaseFeaturesPromise=null;
 window.aqwOpenSocialFeatures=async()=>{
  if(!sb)return;
