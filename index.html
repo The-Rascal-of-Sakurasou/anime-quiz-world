@@ -2159,11 +2159,17 @@ function synopsisSimilarity(a,b){const x=normalizeAnswer(a),y=normalizeAnswer(b)
   .map(value=>value.normalize('NFC').trim());
  return candidates.find(value=>/[ぁ-んァ-ヶ]/.test(value))||'';
 }
+const synopsisChoiceCache=new WeakMap();
 function synopsisChoiceRecords(a,answerIsTitle=false){
+ const summary=questionChoiceSummary();
+ let cache=synopsisChoiceCache.get(summary);
+ if(!cache){cache=new Map();synopsisChoiceCache.set(summary,cache)}
+ const cacheKey=String(Number(a?.id)||0)+'|'+(answerIsTitle?'title':'synopsis');
+ if(cache.has(cacheKey))return cache.get(cacheKey);
  const options=new Map(),answerKeys=new Set(),chosenTexts=[],correctSynopsis=synopsisText(a),correctKey=normalizeAnswer(correctSynopsis),correctAnswer=answerIsTitle?synopsisJapaneseAnswerTitle(a):descriptionOf(a),correctAnswerKey=normalizeAnswer(correctAnswer);
- if(!correctSynopsis||!correctKey||!correctAnswerKey)return [];
+ if(!correctSynopsis||!correctKey||!correctAnswerKey){cache.set(cacheKey,[]);return []}
  options.set(correctKey,{label:correctSynopsis,value:correctAnswer,mediaId:Number(a.id)});answerKeys.add(correctAnswerKey);chosenTexts.push(correctSynopsis);
- const candidates=questionChoiceSummary().synopsisCandidates,start=candidates.length?randomInt(candidates.length):0;
+ const candidates=summary.synopsisCandidates,start=candidates.length?randomInt(candidates.length):0;
  const addCandidate=(item,similarityLimit)=>{
   if(options.size>=4)return;
   const synopsis=synopsisText(item),key=normalizeAnswer(synopsis),answer=answerIsTitle?synopsisJapaneseAnswerTitle(item):descriptionOf(item),answerKey=normalizeAnswer(answer);
@@ -2172,9 +2178,13 @@ function synopsisChoiceRecords(a,answerIsTitle=false){
  };
  const visit=similarityLimit=>{for(let offset=0;offset<candidates.length&&options.size<4;offset++){const item=candidates[(start+offset)%candidates.length];if(Number(item?.id)!==Number(a.id))addCandidate(item,similarityLimit)}};
  visit(0.86);if(options.size<4)visit(0.94);if(options.size<4)visit(1.01);
- return [...options.values()]
-}function hasFourDistinctSynopsisChoices(a,answerIsTitle=false){return synopsisChoiceRecords(a,answerIsTitle).length>=4}
-function makeSynopsisOptions(a,answerIsTitle=false){return shuffle(synopsisChoiceRecords(a,answerIsTitle))}function normalizeAnswer(value){return String(value||'').normalize('NFKC').toLocaleLowerCase().replace(/[\s　・･:：!！?？.,，。'"“”「」『』()（）‐‑–—―−_-]/g,'').trim()}
+ const result=[...options.values()];
+ cache.set(cacheKey,result);
+ return result
+}
+function hasFourDistinctSynopsisChoices(a,answerIsTitle=false){return synopsisChoiceRecords(a,answerIsTitle).length>=4}
+function makeSynopsisOptions(a,answerIsTitle=false){return shuffle(synopsisChoiceRecords(a,answerIsTitle))}
+function normalizeAnswer(value){return String(value||'').normalize('NFKC').toLocaleLowerCase().replace(/[\s　・･:：!！?？.,，。'"“”「」『』()（）‐‑–—―−_-]/g,'').trim()}
 function titleAnswerVariants(a){const titles=[a?.title?.native,a?.title?.english,a?.title?.romaji,titleOf(a),...(a?.synonyms||[])].filter(Boolean),variants=[...titles];for(const title of [a?.title?.english,a?.title?.romaji,...(a?.synonyms||[])].filter(Boolean)){const words=String(title).normalize('NFKC').match(/[A-Za-z0-9]+/g)||[];if(words.length>=2){const initials=words.map(word=>word[0]).join('');if(initials.length>=2&&initials.length<=8)variants.push(initials)}}const seasonPatterns=[/\s*[-:：–—|｜]?\s*(?:第\s*\d+\s*(?:期|シーズン|season)|season\s*\d+|\d+(?:st|nd|rd|th)?\s*season|s\s*\d+)\s*$/i,/\s*[-:：–—|｜]?\s*(?:final\s+season|the\s+final\s+season|second\s+season|third\s+season|fourth\s+season|fifth\s+season|first\s+season|ファースト\s*シーズン|セカンド\s*シーズン|サード\s*シーズン|フォース\s*シーズン|フィフス\s*シーズン|part\s*\d+|第\s*\d+\s*部)\s*$/i,/\s*[-:：–—|｜]?\s*(?:第\s*\d+\s*クール|\d+\s*クール)\s*$/i],moviePatterns=[/^\s*(?:劇場版|the\s+movie|movie\s+version|anime\s+film|film\s+version)\s*[:：\-–—]?\s*/i,/\s*[-:：–—|｜]?\s*(?:劇場版|the\s+movie|movie\s+version|anime\s+film|film\s+version|movie|film)\s*$/i];for(const title of titles){let base=String(title).normalize('NFKC').trim();for(let pass=0;pass<3;pass++){const before=base;for(const pattern of [...seasonPatterns,...moviePatterns])base=base.replace(pattern,'').trim();if(base===before)break}if(base&&base!==title)variants.push(base)}return [...new Set(variants)]}function distinctTitleDistractor(correctAnime,candidate){const correctKeys=new Set(titleAnswerVariants(correctAnime).map(normalizeAnswer).filter(Boolean));return !titleAnswerVariants(candidate).some(title=>{const key=normalizeAnswer(title);return key&&correctKeys.has(key)})}
 function acceptedAnswers(a,mode,correct){if(mode==='titleYear')return [String(animeYear(a))];if(mode==='titleStudio')return [a.studios?.nodes?.[0]?.name||''];return titleAnswerVariants(a)}
 function answersMatch(input,a,mode,correct){const typed=normalizeAnswer(input);if(!typed)return false;const candidates=acceptedAnswers(a,mode,correct).map(normalizeAnswer).filter(Boolean);return candidates.some(x=>x===typed)}
