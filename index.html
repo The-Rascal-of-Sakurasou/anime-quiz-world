@@ -1203,11 +1203,22 @@ const JAPANESE_SYNOPSIS_OVERRIDES=new Map(Object.entries({
  'ブラッククローバー':'魔法が当たり前の世界で、魔力を持たずに生まれた少年アスタは魔法帝を目指す。反魔法の力を得た彼は、仲間とともに魔法騎士団の任務へ挑んでいく。',
  'ヴィンランド・サガ':'幼い頃に父を失ったトルフィンは、戦士として生きる道を選ぶ。復讐を胸に戦場を渡り歩くなかで、戦争や暴力の先にある生き方を問い直していく。',
  'ブルーロック':'日本代表のストライカーを育てるため、全国から集められた高校生たちが特殊な選抜施設に参加する。生き残りを懸けた競争の中で、潔世一は自分だけの武器を探す。',
- '氷菓':'省エネ主義の高校生・折木奉太郎は、古典部で出会った千反田えるの好奇心に巻き込まれる。学校生活の身近な謎を、仲間とともに解き明かしていく。'
+ '氷菓':'省エネ主義の高校生・折木奉太郎は、古典部で出会った千反田えるの好奇心に巻き込まれる。学校生活の身近な謎を、仲間とともに解き明かしていく。',
+ 'HUNTER×HUNTER (2011)':'父と同じハンターになることを目指す少年ゴンは、父を探す旅に出て過酷なハンター試験へ挑む。試験の中でクラピカ、レオリオ、キルアと出会い、仲間やライバルとともに未知の世界へ踏み出していく。',
+ '東京喰種トーキョーグール':'人間社会に紛れて人を喰らう喰種が存在する東京。平凡な大学生だった金木研は、ある事故をきっかけに半喰種となり、人間と喰種の狭間で生き方を模索する。',
+ 'NARUTO -ナルト-':'忍者の里で暮らす落ちこぼれの少年・うずまきナルトは、火影になる夢を抱いて修行を続ける。仲間との出会いや数々の任務を通じて、里の人々に認められる忍者へと成長していく。',
+ '君の名は。':'東京で暮らす少年・瀧と、山深い町に住む少女・三葉。ある日を境に、二人は夢の中で互いの身体が入れ替わる不思議な体験を繰り返し、やがて時を越えた運命に巻き込まれていく。',
+ '文豪ストレイドッグス':'孤児院を追われた中島敦は、異能力を持つ人々が集う武装探偵社と出会う。横浜の街で探偵社やポートマフィアなどの組織が対立し、それぞれの異能力者たちの思惑が交錯する。',
+ 'キルラキル':'父の死の真相を追う纏流子は、片太刀バサミを手に本能字学園へ乗り込む。生徒会長の鬼龍院皐月や特殊な制服を巡る戦いの中で、学園に隠された秘密へ迫っていく。',
+ 'オーバーロード':'サービス終了を迎えたオンラインゲームの世界に、骸骨の姿をした魔法使いとして取り残されたプレイヤー。配下の仲間たちとともに、新たな世界で自らの勢力を広げていく。',
+ 'ソウルイーター':'死神武器職人専門学校に通う職人と武器たちは、魂を集めて死神様の武器を完成させるため任務に挑む。仲間との絆を深めながら、世界を脅かす存在に立ち向かう。',
+ '暗殺教室':'月の大部分を破壊した謎の生物が、椚ヶ丘中学校の落ちこぼれクラスで教師を務めることになる。生徒たちは卒業までに先生を暗殺するという特別な任務に挑みながら成長していく。',
+ '賭ケグルイ':'私立百花王学園では、ギャンブルの強さが生徒の序列を決めていた。転校生の蛇喰夢子は、常識外れの勝負を楽しみながら、学園を支配する生徒会に挑んでいく。',
+ '僕のヒーローアカデミア２':'多くの人が個性と呼ばれる能力を持つ社会で、無個性の少年・緑谷出久はヒーローを夢見ている。憧れの人物との出会いを機に、夢への道が開かれる。'
 }).map(([title,summary])=>[normalizeAnswer(title),summary]));
 function descriptionOf(a){
  if(lang==='ja'){
-  const titles=[a?.title?.native,a?.title?.english,a?.title?.romaji,...(Array.isArray(a?.synonyms)?a.synonyms:[])];
+  const titles=[a?.title?.native,a?.title?.english,a?.title?.romaji,...(Array.isArray(a?.synonyms)?a.synonyms:[]),...titleAnswerVariants(a)];
   for(const title of titles){const summary=JAPANESE_SYNOPSIS_OVERRIDES.get(normalizeAnswer(title));if(summary)return summary}
  }
  return (a?.description||'').replace(/<[^>]*>/g,' ').replace(/\[[^\]]*\]\([^)]*\)/g,' ').replace(/\\[nrt]/gi,' ').replace(/&nbsp;/gi,' ').replace(/&amp;/gi,'&').replace(/&quot;/gi,'"').replace(/&#39;/g,"'").replace(/\s+/g,' ').trim()
@@ -1625,7 +1636,7 @@ function synopsisChoiceRecords(a,answerIsTitle=false){
  return [...options.values()]
 }function hasFourDistinctSynopsisChoices(a,answerIsTitle=false){return synopsisChoiceRecords(a,answerIsTitle).length>=4}
 function makeSynopsisOptions(a,answerIsTitle=false){return shuffle(synopsisChoiceRecords(a,answerIsTitle))}function normalizeAnswer(value){return String(value||'').normalize('NFKC').toLocaleLowerCase().replace(/[\s　・･:：!！?？.,，。'"“”「」『』()（）‐‑–—_-]/g,'').trim()}
-function titleAnswerVariants(a){const titles=[a?.title?.native,a?.title?.english,a?.title?.romaji,titleOf(a),...(a?.synonyms||[])].filter(Boolean),variants=[...titles];for(const title of [a?.title?.english,a?.title?.romaji,...(a?.synonyms||[])].filter(Boolean)){const words=String(title).normalize('NFKC').match(/[A-Za-z0-9]+/g)||[];if(words.length>=2){const initials=words.map(word=>word[0]).join('');if(initials.length>=2&&initials.length<=8)variants.push(initials)}}const seasonPatterns=[/\s*[-:：–—|｜]?\s*(?:第\s*\d+\s*(?:期|シーズン|season)|season\s*\d+|\d+(?:st|nd|rd|th)?\s*season|s\s*\d+)\s*$/i,/\s*[-:：–—|｜]?\s*(?:final\s+season|the\s+final\s+season|second\s+season|third\s+season|fourth\s+season|fifth\s+season|first\s+season)\s*$/i,/\s*[-:：–—|｜]?\s*(?:第\s*\d+\s*クール|\d+\s*クール)\s*$/i],moviePatterns=[/^\s*(?:劇場版|the\s+movie|movie\s+version|anime\s+film|film\s+version)\s*[:：\-–—]?\s*/i,/\s*[-:：–—|｜]?\s*(?:劇場版|the\s+movie|movie\s+version|anime\s+film|film\s+version|movie|film)\s*$/i];for(const title of titles){let base=String(title).trim();for(let pass=0;pass<3;pass++){const before=base;for(const pattern of [...seasonPatterns,...moviePatterns])base=base.replace(pattern,'').trim();if(base===before)break}if(base&&base!==title)variants.push(base)}return [...new Set(variants)]}function distinctTitleDistractor(correctAnime,candidate){const correctKeys=new Set(titleAnswerVariants(correctAnime).map(normalizeAnswer).filter(Boolean));return !titleAnswerVariants(candidate).some(title=>{const key=normalizeAnswer(title);return key&&correctKeys.has(key)})}
+function titleAnswerVariants(a){const titles=[a?.title?.native,a?.title?.english,a?.title?.romaji,titleOf(a),...(a?.synonyms||[])].filter(Boolean),variants=[...titles];for(const title of [a?.title?.english,a?.title?.romaji,...(a?.synonyms||[])].filter(Boolean)){const words=String(title).normalize('NFKC').match(/[A-Za-z0-9]+/g)||[];if(words.length>=2){const initials=words.map(word=>word[0]).join('');if(initials.length>=2&&initials.length<=8)variants.push(initials)}}const seasonPatterns=[/\s*[-:：–—|｜]?\s*(?:第\s*\d+\s*(?:期|シーズン|season)|season\s*\d+|\d+(?:st|nd|rd|th)?\s*season|s\s*\d+)\s*$/i,/\s*[-:：–—|｜]?\s*(?:final\s+season|the\s+final\s+season|second\s+season|third\s+season|fourth\s+season|fifth\s+season|first\s+season)\s*$/i,/\s*[-:：–—|｜]?\s*(?:第\s*\d+\s*クール|\d+\s*クール)\s*$/i],moviePatterns=[/^\s*(?:劇場版|the\s+movie|movie\s+version|anime\s+film|film\s+version)\s*[:：\-–—]?\s*/i,/\s*[-:：–—|｜]?\s*(?:劇場版|the\s+movie|movie\s+version|anime\s+film|film\s+version|movie|film)\s*$/i];for(const title of titles){let base=String(title).normalize('NFKC').trim();for(let pass=0;pass<3;pass++){const before=base;for(const pattern of [...seasonPatterns,...moviePatterns])base=base.replace(pattern,'').trim();if(base===before)break}if(base&&base!==title)variants.push(base)}return [...new Set(variants)]}function distinctTitleDistractor(correctAnime,candidate){const correctKeys=new Set(titleAnswerVariants(correctAnime).map(normalizeAnswer).filter(Boolean));return !titleAnswerVariants(candidate).some(title=>{const key=normalizeAnswer(title);return key&&correctKeys.has(key)})}
 function acceptedAnswers(a,mode,correct){if(mode==='titleYear')return [String(animeYear(a))];if(mode==='titleStudio')return [a.studios?.nodes?.[0]?.name||''];return titleAnswerVariants(a)}
 function answersMatch(input,a,mode,correct){const typed=normalizeAnswer(input);if(!typed)return false;const candidates=acceptedAnswers(a,mode,correct).map(normalizeAnswer).filter(Boolean);return candidates.some(x=>x===typed)}
 function titleOf(a){if(lang==='ja'){const native=String(a?.title?.native||'').normalize('NFC').trim();if(native)return native;const english=String(a?.title?.english||'').trim();if(english)return english;return String(a?.title?.romaji||'').trim()}return a?.title?.english||a?.title?.romaji||a?.title?.native||'Unknown title'}
