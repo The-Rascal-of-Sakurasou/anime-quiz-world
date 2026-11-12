@@ -532,8 +532,8 @@ def test_main_navigation_and_search(browser):
     context.close()
 
 
-def test_quiz_pause_and_quit(browser):
-    """Verify pause/resume and quit controls respond during an active quiz."""
+def test_quiz_quit_only(browser):
+    """Verify the removed pause controls stay absent and quitting an active quiz works."""
     context = browser.new_context(viewport={"width": 1280, "height": 900}, locale="ja-JP")
     page = context.new_page()
     errors = []
@@ -549,16 +549,14 @@ def test_quiz_pause_and_quit(browser):
     page.locator("#start").click()
     page.locator("#answers button.answer").first.wait_for(state="visible", timeout=20000)
 
-    page.locator("#pauseButton").click()
-    assert page.locator("#pauseNotice").is_visible(), "Pause must display the pause notice"
-    page.locator("#pauseButton").click()
-    assert not page.locator("#pauseNotice").is_visible(), "Resume must hide the pause notice"
+    assert page.locator("#pauseButton").count() == 0, "Pause control must be absent"
+    assert page.locator("#pauseNotice").count() == 0, "Pause notice must be absent"
     page.locator("#quitQuizButton").click()
     page.wait_for_function(
         "() => document.querySelector('#quizArea')?.classList.contains('hidden') && !document.querySelector('#setupControls')?.classList.contains('hidden')",
         timeout=10000,
     )
-    assert not errors, "Pause/resume/quit raised JavaScript errors: " + " | ".join(errors)
+    assert not errors, "Quit raised JavaScript errors: " + " | ".join(errors)
     context.close()
 
 
@@ -797,8 +795,8 @@ def main():
             print("PASS: all selectable question modes")
             test_main_navigation_and_search(browser)
             print("PASS: primary navigation and anime search")
-            test_quiz_pause_and_quit(browser)
-            print("PASS: quiz pause -> resume -> quit")
+            test_quiz_quit_only(browser)
+            print("PASS: quiz quit (pause controls absent)")
             test_recommendation_diagnosis(browser)
             print("PASS: recommendation diagnosis -> results")
             test_mobile_quiz_layout(browser)
