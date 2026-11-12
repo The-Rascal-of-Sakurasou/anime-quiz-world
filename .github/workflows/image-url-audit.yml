@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
     paths:
+      - "data/anime-catalog.json"
+      - "data/anime-catalog.json.gz"
       - "scripts/audit-anime-image-urls.mjs"
       - ".github/workflows/image-url-audit.yml"
   schedule:
