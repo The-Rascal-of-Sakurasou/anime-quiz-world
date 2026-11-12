@@ -780,7 +780,6 @@ function hasFamousJapaneseTitle(a){
 }
 function isJapaneseOriginAnime(a){
  if(!a)return false;
- // Foreign-origin anime qualify only with a popular Japanese-language title.
  if(a.countryOfOrigin!=='JP')return Number(a.popularity)>=10000&&hasFamousJapaneseTitle(a);
  const isJapaneseLanguage=value=>['ja','ja-jp','japanese','日本語'].includes(String(value||'').trim().toLowerCase());
  const languageValues=[a.originLanguage,a.originalLanguage,a.sourceLanguage,a.language].filter(value=>typeof value==='string'&&value.trim());
@@ -806,7 +805,6 @@ function isJapaneseOriginAnime(a){
   return !sourceLanguage.some(value=>!isJapaneseLanguage(value));
  });
  if(relationVerified)return true;
- // AniList sometimes omits source-relation edges. Keep only popular works with a Japanese title for known source types.
  return !!rule&&Number(a.popularity)>=10000&&hasFamousJapaneseTitle(a);
 }
 const $=s=>document.querySelector(s);let pool=[],questions=[],index=0,points=0,skippedQuestionCount=0,locked=false,questionTimer=null,clockTimer=null,secondsLeft=15,questionDeadline=0,startedAt=0,elapsedSeconds=0,missedQuestions=[],questionAttemptResults=[],reviewMode=false,playMode='normal',roundFailed=false,lastResultData=null,combo=0,bestCombo=0,choiceHintUsed=false,typedHintUsed=false,backgroundLoadPromise=null,sharedCatalogActive=false,requestedQuestionCount=10,rateLimitedUntil=0,failedImageUrls=new Set(),lateSharedCatalogItems=[],autoNextTimer=null,questionAdvanceToken=0;

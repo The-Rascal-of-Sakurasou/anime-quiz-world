@@ -119,11 +119,11 @@ export function validateCatalog(catalog) {
       const type = String(link?.type || '').toUpperCase();
       let host = '';
       try { host = new URL(link?.url).hostname; } catch {}
-      const socialHost = /(^|\\.)(twitter\\.com|x\\.com|facebook\\.com|instagram\\.com|youtube\\.com|youtu\\.be|tiktok\\.com|discord\\.gg|discord\\.com|reddit\\.com)$/i;
+      const socialHost = /(^|\.)(twitter\.com|x\.com|facebook\.com|instagram\.com|youtube\.com|youtu\.be|tiktok\.com|discord\.gg|discord\.com|reddit\.com)$/i;
       const officialLabel = /(official|公式|オフィシャル)/i.test(site);
       const homepageLabel = /(website|web site|homepage|home page|ホームページ|公式ページ)/i.test(site);
       const validOfficialLink = !!link && !link.isDisabled &&
-        typeof link.url === 'string' && /^https?:\\/\\//i.test(link.url) &&
+        typeof link.url === 'string' && /^https?:\/\//i.test(link.url) &&
         (officialLabel || homepageLabel) && type !== 'STREAMING' && !socialHost.test(host);
       if (!validOfficialLink) failures.push(label + ': non-official or unusable external link is stored in the shared catalogue');
     }

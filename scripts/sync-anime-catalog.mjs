@@ -204,9 +204,9 @@ function compactDescription(value) {
 }
 
 function compactOfficialExternalLinks(links) {
-  const socialHost = /(^|\\.)(twitter\\.com|x\\.com|facebook\\.com|instagram\\.com|youtube\\.com|youtu\\.be|tiktok\\.com|discord\\.gg|discord\\.com|reddit\\.com)$/i;
+  const socialHost = /(^|\.)(twitter\.com|x\.com|facebook\.com|instagram\.com|youtube\.com|youtu\.be|tiktok\.com|discord\.gg|discord\.com|reddit\.com)$/i;
   return (Array.isArray(links) ? links : []).filter((link) => {
-    if (!link || link.isDisabled || typeof link.url !== 'string' || !/^https?:\\/\\//i.test(link.url)) return false;
+    if (!link || link.isDisabled || typeof link.url !== 'string' || !/^https?:\/\//i.test(link.url)) return false;
     let host = '';
     try { host = new URL(link.url).hostname; } catch { return false; }
     if (socialHost.test(host)) return false;
