@@ -9,7 +9,7 @@ const OUTPUT_GZIP = 'data/anime-catalog.json.gz';
 const FORMATS = ['TV', 'TV_SHORT', 'MOVIE', 'OVA', 'ONA', 'SPECIAL'];
 const BASE_SORTS = ['POPULARITY_DESC', 'ID', 'ID_DESC'];
 const OVERFLOW_SORTS = ['SCORE_DESC', 'FAVOURITES_DESC', 'TRENDING_DESC', 'START_DATE_DESC'];
-const FIELDS = 'id countryOfOrigin source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } format popularity title { romaji english native } description(asHtml:false) synonyms coverImage { large medium extraLarge } episodes seasonYear averageScore genres studios(isMain:true) { nodes { name } } startDate { year month day } characters(sort:ROLE,perPage:5) { nodes { id name { full native } image { large } } } externalLinks { url site type isDisabled language }';
+const FIELDS = 'id countryOfOrigin source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } format popularity title { romaji english native } description(asHtml:false) synonyms coverImage { large medium extraLarge } episodes seasonYear averageScore genres studios(isMain:true) { nodes { name } } startDate { year month day } externalLinks { url site type isDisabled language }';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const normalize = (value) => {
@@ -169,23 +169,13 @@ export function dedupeAnimeMetadata(anime) {
     synonymKeys.add(key);
     synonyms.push(raw.normalize('NFC').trim());
   }
-  const characters = [];
-  const characterKeys = new Set();
-  for (const character of Array.isArray(anime?.characters?.nodes) ? anime.characters.nodes : []) {
-    if (!character || typeof character !== 'object') continue;
-    const id = Number(character.id);
-    const name = character.name?.full || character.name?.native || '';
-    const key = Number.isSafeInteger(id) && id > 0
-      ? 'id:' + id
-      : 'name:' + metadataKey(name) + '|image:' + String(character.image?.large || '');
-    if (key === 'name:|image:' || characterKeys.has(key)) continue;
-    characterKeys.add(key);
-    characters.push(character);
-  }
+  const compact = { ...anime };
+  // Character records are not used by the four active quiz formats. Keep them
+  // out of the shared catalogue to reduce transfer size and JSON parse work.
+  delete compact.characters;
   return {
-    ...anime,
+    ...compact,
     ...(Array.isArray(anime?.synonyms) ? { synonyms } : {}),
-    ...(anime?.characters ? { characters: { ...anime.characters, nodes: characters } } : {}),
   };
 }
 function compactDescription(value) {
