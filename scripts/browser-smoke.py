@@ -269,6 +269,7 @@ def test_live_quiz_preparation_performance(browser):
         metrics = page.evaluate("""() => ({
           candidateSelectionMs: window.__aqwLastCandidateSelectionMs ?? null,
           quizPreparationMs: window.__aqwLastQuizPreparationMs ?? null,
+          preparationStages: (window.__aqwQuizPreparationStages || []).slice(),
           profileLoadSamples: (window.__aqwProfileLoadSamples || []).slice(),
           candidateCount: (window.__aqwLastCandidateSelectionMs == null) ? null :
             (window.__aqwLastCandidateCount ?? null),
@@ -284,6 +285,7 @@ def test_live_quiz_preparation_performance(browser):
             "clickToFirstQuestionMs": first_question_ms,
             "candidateSelectionMs": metrics["candidateSelectionMs"],
             "quizPreparationMs": metrics["quizPreparationMs"],
+            "preparationStages": metrics["preparationStages"],
             "profileLoadMs": profile_samples[-1] if profile_samples else None,
             "performanceLog": log_text[-1] if log_text else None,
             "catalogueResources": metrics["catalogueResources"],
