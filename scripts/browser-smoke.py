@@ -197,7 +197,7 @@ def test_compressed_catalogue_preferred(browser):
         """() => {
           const button = document.querySelector('#start');
           return button && !button.classList.contains('hidden') && !button.disabled
-            && button.textContent.includes('クイズを開始');
+            && button.textContent.trim() === 'クイズを開始';
         }""",
         timeout=60000,
     )
