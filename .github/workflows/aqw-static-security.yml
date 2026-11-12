@@ -30,6 +30,7 @@ on:
     paths:
       - "multiplayer.html"
       - "index.html"
+      - "data/anime-catalog.json"
       - "admin.html"
       - "recommend.html"
       - "guide.html"
