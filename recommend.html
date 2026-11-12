@@ -308,8 +308,8 @@ if(new Set(questionTitles).size!==questionTitles.length||new Set(questionDimensi
 const FIXED_QUESTION_COUNT=18;
 if(questions.length!==FIXED_QUESTION_COUNT)throw new Error('診断の質問数は18問固定です。')
 let step=0;const answers=Array(questions.length).fill(null);
-const SAVE_KEY='aqw-recommendation-v7';
-const PREVIOUS_SAVE_KEY='aqw-recommendation-v6';
+const SAVE_KEY='aqw-recommendation-v8';
+const PREVIOUS_SAVE_KEY='aqw-recommendation-v7';
 const LEGACY_SAVE_KEY='aqw-recommendation-v2';
 const FEEDBACK_KEY='aqw-recommendation-feedback-v1';
 const EVALUATION_HISTORY_KEY='aqw-recommendation-evaluation-history-v1';
@@ -637,7 +637,7 @@ function runRecommendationSelfTests(){
   const profileProbeOk=questions.every((question,questionIndex)=>question.options.every((option,optionIndex)=>{
    const probe=Array(questions.length).fill(null);probe[questionIndex]=optionIndex;
    const actual=profileFromAnswers(probe);
-   const expected={genres:{},tags:{},avoidGenres:{},avoidTags:{},length:option.length||'any'};
+   const expected={genres:{},tags:{},avoidGenres:{},avoidTags:{},length:option.length||'any',startYearMin:Number.isFinite(option.startYearMin)?option.startYearMin:null,startYearMax:Number.isFinite(option.startYearMax)?option.startYearMax:null};
    for(const [key,listKey,weightKey] of [['genres','genres','genreWeights'],['tags','tags','tagWeights'],['avoidGenres','avoidGenres','avoidGenreWeights'],['avoidTags','avoidTags','avoidTagWeights']]){
     for(const name of option[listKey]||[])expected[key][name]=(expected[key][name]||0)+1;
     for(const [name,weight] of Object.entries(option[weightKey]||{}))expected[key][name]=(expected[key][name]||0)+weight;
@@ -653,7 +653,7 @@ function runRecommendationSelfTests(){
   check('物語の複雑さはジャンル加点と分離',questionByDimension.get('narrative_complexity').options.every(o=>!o.genres?.length&&!o.avoidGenres?.length));
   check('シンプル回答は考察要素を抑える',questionByDimension.get('narrative_complexity').options[0].avoidTags?.includes('Conspiracy')&&questionByDimension.get('narrative_complexity').options[0].avoidTags?.includes('World Building'));
   check('主人公の目標は複雑さの質問と異なる題材を扱う',questionByDimension.get('protagonist_challenge').options.every(o=>!['Mystery','Conspiracy','World Building','Ensemble Cast'].some(tag=>o.tags?.includes(tag))));
-  check('年代の質問は他の質問と異なる開始年フィルターを使う',questions.find(q=>q.dimension==='release_era')?.options.every(o=>o.startYearMin||o.startYearMax));
+  check('年代の質問は開始年・終了年を推薦スコアに反映',questions.find(q=>q.dimension==='release_era')?.options.every(o=>o.startYearMin||o.startYearMax)&&profileFromAnswers([null,null,null,null,null,null,null,null,1]).startYearMin===2000);
   check('人物関係の質問は恋愛量と重複しない',questionByDimension.get('relationships').options.every(o=>!o.genres?.includes('Romance')&&!o.tags?.includes('Love Triangle')));
   check('テンポと物語構成を別の信号で扱う',questionByDimension.get('pacing').options.every(o=>!o.genres?.length)&&questionByDimension.get('story_structure').options.some(o=>o.tagWeights?.Episodic>0));
   check('笑いとシリアスの配分を独立して反映する',questionByDimension.get('tone_balance').options.some(o=>o.genreWeights?.Comedy>0)&&questionByDimension.get('tone_balance').options.some(o=>o.genreWeights?.Drama>0));
@@ -765,7 +765,7 @@ function runRecommendationSelfTests(){
 }
 
 function saveDiagnosis(result=null){
- try{const data={v:7,savedAt:new Date().toISOString(),answers:[...answers],favorite:$('favoriteTitles').value.slice(0,180),disliked:$('dislikedTitles').value.slice(0,180),result};safeStorage.setItem(SAVE_KEY,JSON.stringify(data));}
+ try{const data={v:8,savedAt:new Date().toISOString(),answers:[...answers],favorite:$('favoriteTitles').value.slice(0,180),disliked:$('dislikedTitles').value.slice(0,180),result};safeStorage.setItem(SAVE_KEY,JSON.stringify(data));}
  catch(e){$('shareStatus').textContent='保存できませんでした。ブラウザの保存容量や設定を確認してください。';}
 }
 function restoreSavedDiagnosis(){
@@ -811,10 +811,10 @@ function render(){
  $('back').disabled=step===0;$('next').disabled=answers[step]===null;$('next').textContent=step===questions.length-1?'診断する':'次へ';
 }
 function profileFromAnswers(answerValues=answers){
- const genres={},tags={},avoidGenres={},avoidTags={};let length='any';
+ const genres={},tags={},avoidGenres={},avoidTags={};let length='any',startYearMin=null,startYearMax=null;
  const addWeights=(target,values)=>{for(const [name,weight] of Object.entries(values||{})){const amount=Number(weight);if(Number.isFinite(amount)&&amount>0)target[name]=(target[name]||0)+amount}};
- answerValues.forEach((choice,i)=>{if(!Number.isInteger(choice)||!questions[i]?.options?.[choice])return;const option=questions[i].options[choice];(option.genres||[]).forEach(g=>genres[g]=(genres[g]||0)+1);(option.tags||[]).forEach(t=>tags[t]=(tags[t]||0)+1);addWeights(genres,option.genreWeights);addWeights(tags,option.tagWeights);(option.avoidGenres||[]).forEach(g=>avoidGenres[g]=(avoidGenres[g]||0)+1);(option.avoidTags||[]).forEach(t=>avoidTags[t]=(avoidTags[t]||0)+1);addWeights(avoidGenres,option.avoidGenreWeights);addWeights(avoidTags,option.avoidTagWeights);if(option.length)length=option.length});
- return {genres,tags,avoidGenres,avoidTags,length};
+ answerValues.forEach((choice,i)=>{if(!Number.isInteger(choice)||!questions[i]?.options?.[choice])return;const option=questions[i].options[choice];(option.genres||[]).forEach(g=>genres[g]=(genres[g]||0)+1);(option.tags||[]).forEach(t=>tags[t]=(tags[t]||0)+1);addWeights(genres,option.genreWeights);addWeights(tags,option.tagWeights);(option.avoidGenres||[]).forEach(g=>avoidGenres[g]=(avoidGenres[g]||0)+1);(option.avoidTags||[]).forEach(t=>avoidTags[t]=(avoidTags[t]||0)+1);addWeights(avoidGenres,option.avoidGenreWeights);addWeights(avoidTags,option.avoidTagWeights);if(option.length)length=option.length;if(Number.isFinite(option.startYearMin))startYearMin=option.startYearMin;if(Number.isFinite(option.startYearMax))startYearMax=option.startYearMax});
+ return {genres,tags,avoidGenres,avoidTags,length,startYearMin,startYearMax};
 }
 function escapeHTML(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function parseTitleInput(id){
@@ -1067,6 +1067,7 @@ async function getRecommendations(profile){
   const favoritePoints=fav.score;score+=favoritePoints;if(favoritePoints)scoreBreakdown.push({label:'好きな作品との類似度',points:favoritePoints});
   const dislikedPenalty=dis.score*0.75;score-=dislikedPenalty;if(dislikedPenalty)scoreBreakdown.push({label:'苦手な作品との類似度',points:-dislikedPenalty});
   if(lengthPoints){score+=0;scoreBreakdown.push({label:'希望する作品の長さ',points:lengthPoints});}
+  let eraPoints=0;const year=Number(a.seasonYear)||0;if(year&&profile.startYearMin!==null&&profile.startYearMin!==undefined&&year<profile.startYearMin)eraPoints-=3;if(year&&profile.startYearMax!==null&&profile.startYearMax!==undefined&&year>profile.startYearMax)eraPoints-=3;if(year&&profile.startYearMin!==null&&profile.startYearMin!==undefined&&year>=profile.startYearMin&&(profile.startYearMax===null||year<=profile.startYearMax))eraPoints+=4;if(eraPoints){score+=eraPoints;scoreBreakdown.push({label:'希望する制作年代',points:eraPoints});}
   const learnedTotalAdjustment=calculateLearnedTotalAdjustment(animeGenres,animeTags.filter(t=>!t.isMediaSpoiler&&t.rank>=40).map(t=>t.name),learnedPreferences,{strength:learningReliability.strength});
   score+=learnedTotalAdjustment;if(learnedTotalAdjustment)scoreBreakdown.push({label:'過去の評価傾向',points:learnedTotalAdjustment});
   const priorFeedback=recommendationFeedback[String(a.id)];
@@ -1212,7 +1213,7 @@ function renderCardList(containerId,items){
 }
 let latestResult=null;
 function encodeShareState(){
- const state={v:7,a:answers,f:$('favoriteTitles').value.slice(0,180),d:$('dislikedTitles').value.slice(0,180)};
+ const state={v:8,a:answers,f:$('favoriteTitles').value.slice(0,180),d:$('dislikedTitles').value.slice(0,180)};
  const bytes=new TextEncoder().encode(JSON.stringify(state));
  let binary='';bytes.forEach(byte=>binary+=String.fromCharCode(byte));
  return btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
@@ -1253,9 +1254,12 @@ function mapVersionFourAnswersToThirteen(values){
 function normalizeSharedAnswers(state){
  if(!Array.isArray(state?.a))return null;
  let values;
- if(state.v===7){
+ if(state.v===8){
   if(state.a.length!==questions.length)return null;
   values=state.a;
+ }else if(state.v===7){
+  if(state.a.length!==questions.length||!areValidLegacyAnswers(state.a))return null;
+  values=[...state.a];[8,15,17].forEach(i=>values[i]=null);
  }else if(state.v===6){
   if(state.a.length!==questions.length||!areValidLegacyAnswers(state.a))return null;
   values=[...state.a];[8,15,17].forEach(i=>values[i]=null);
@@ -1275,9 +1279,12 @@ function normalizeSharedAnswers(state){
 function normalizeSavedAnswers(data){
  if(!Array.isArray(data?.answers))return null;
  let values;
- if(data.v===7){
+ if(data.v===8){
   if(data.answers.length!==questions.length)return null;
   values=data.answers;
+ }else if(data.v===7){
+  if(data.answers.length!==questions.length||!areValidLegacyAnswers(data.answers))return null;
+  values=[...data.answers];[8,15,17].forEach(i=>values[i]=null);
  }else if(data.v===6){
   if(data.answers.length!==questions.length||!areValidLegacyAnswers(data.answers))return null;
   values=[...data.answers];[8,15,17].forEach(i=>values[i]=null);
