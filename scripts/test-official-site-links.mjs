@@ -192,9 +192,10 @@ assert.ok(html.includes("card.href=link.url;card.target='_self';"), "Featured an
 
 const oshiriTantei = catalog.items.find((anime) => Number(anime.id) === 100790);
 assert.ok(oshiriTantei, "Curated Oshiri Tantei record must be present in the catalogue");
-assert.ok(
-  !getSearchAnimeOfficialUrl(oshiriTantei).startsWith(fallback),
-  "Oshiri Tantei must resolve its official NHK site link"
+assert.equal(
+  getSearchAnimeOfficialUrl(oshiriTantei),
+  "https://oshiri-tantei.com/",
+  "Oshiri Tantei must use its current official anime homepage"
 );
 console.log("Reference title pending manual metadata review: おさるのジョージ (no verified AniList record; do not invent a catalogue ID).");
 
