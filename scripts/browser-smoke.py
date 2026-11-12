@@ -669,7 +669,7 @@ def test_main_navigation_and_search(browser):
       };
       return aliasCandidates(item);
     }""")
-    assert "暗教" in sequel_alias, (
+    assert "暗教2期" in sequel_alias, (
         "Curated Japanese abbreviations must also match season-title variants: "
         + str(sequel_alias)
     )
