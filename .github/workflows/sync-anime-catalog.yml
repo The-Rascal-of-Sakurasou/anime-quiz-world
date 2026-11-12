@@ -18,7 +18,7 @@ permissions:
 jobs:
   sync:
     concurrency:
-      group: aqw-shared-anime-catalogue-incremental
+      group: aqw-shared-anime-catalogue-sync-v2
       cancel-in-progress: false
     runs-on: ubuntu-latest
     outputs:
