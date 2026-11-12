@@ -93,7 +93,18 @@ async function mapLimit(items, limit, worker) {
   return output;
 }
 
+function parseLimit(args) {
+  const index = args.indexOf('--limit');
+  if (index < 0) return 0;
+  const value = Number(args[index + 1]);
+  if (!Number.isInteger(value) || value < 1 || value > 1000) throw new Error('--limit must be an integer from 1 to 1000.');
+  return value;
+}
+
 async function selfTest() {
+  assert.equal(parseLimit([]), 0);
+  assert.equal(parseLimit(['--limit', '100']), 100);
+  assert.throws(() => parseLimit(['--limit', '0']), /1 to 1000/);
   assert.equal(isPlaceholderImageUrl('NO IMAGE'), true);
   assert.equal(isPlaceholderImageUrl('https://example.test/no-image.jpg'), true);
   assert.equal(isPlaceholderImageUrl('https://example.test/placeholder.png'), true);
@@ -113,10 +124,13 @@ async function main() {
   if (process.argv.includes('--self-test')) return selfTest();
   const catalog = JSON.parse(await readFile(CATALOG, 'utf8'));
   if (!Array.isArray(catalog.items)) throw new Error('Catalogue items array is missing.');
+  const sampleLimit = parseLimit(process.argv.slice(2));
+  // The sync job sorts the catalogue by popularity; a limited run therefore audits the most popular records first.
+  const auditedItems = sampleLimit ? catalog.items.slice(0, sampleLimit) : catalog.items;
   const byUrl = new Map();
   const missing = [];
   const placeholders = [];
-  for (const anime of catalog.items) {
+  for (const anime of auditedItems) {
     const image = anime?.coverImage || {};
     const url = String(image.large || image.medium || image.extraLarge || '').trim();
     if (!url) {
@@ -131,19 +145,21 @@ async function main() {
     byUrl.get(url).push({ id: anime.id, title: anime?.title?.native || anime?.title?.romaji || '' });
   }
   const urls = [...byUrl.keys()];
-  console.log('Auditing ' + urls.length + ' unique image URLs across ' + catalog.items.length + ' anime records.');
+  console.log('Auditing ' + urls.length + ' unique image URLs across ' + auditedItems.length + ' of ' + catalog.items.length + ' anime records' + (sampleLimit ? ' (popularity-ranked sample).' : '.'));
   const results = await mapLimit(urls, WORKERS, async url => ({ url, ...(await inspectUrl(url)), anime: byUrl.get(url) }));
   const broken = results.filter(item => !item.ok);
   const sharedImageGroups = [...byUrl.entries()]
     .filter(([, anime]) => anime.length > 1)
     .map(([url, anime]) => ({ url, referenceCount: anime.length, anime: anime.slice(0, 20) }))
     .sort((a, b) => b.referenceCount - a.referenceCount);
-  const duplicateImageReferenceCount = catalog.items.length - missing.length - placeholders.length - urls.length;
+  const duplicateImageReferenceCount = auditedItems.length - missing.length - placeholders.length - urls.length;
   const report = {
     schemaVersion: 2,
     generatedAt: new Date().toISOString(),
     catalogGeneratedAt: catalog.generatedAt || null,
     catalogCount: catalog.items.length,
+    auditedRecordCount: auditedItems.length,
+    sampleLimit: sampleLimit || null,
     uniqueImageUrlCount: urls.length,
     checkedUrlCount: results.length,
     duplicateImageReferenceCount,
