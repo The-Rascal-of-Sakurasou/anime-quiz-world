@@ -5,6 +5,7 @@ The tests use a small fixture catalogue and a mocked AniList GraphQL response so
 they exercise the real deployed HTML/JavaScript without depending on API quotas
 or downloading the full production catalogue.
 """
+import gzip
 import json
 import os
 import re
@@ -112,6 +113,17 @@ def install_routes(page):
             body=json.dumps({"schemaVersion": 2, "items": QUIZ_FIXTURES}, ensure_ascii=False),
         )
 
+    def compressed_catalogue(route):
+        payload = json.dumps(
+            {"schemaVersion": 2, "items": QUIZ_FIXTURES},
+            ensure_ascii=False,
+        ).encode("utf-8")
+        route.fulfill(
+            status=200,
+            content_type="application/gzip",
+            body=gzip.compress(payload, mtime=0),
+        )
+
     def image(route):
         # A real PNG avoids browser-specific SVG decoding differences in CI.
         route.fulfill(
@@ -147,6 +159,7 @@ def install_routes(page):
             body=json.dumps({"data": data}, ensure_ascii=False),
         )
 
+    page.route("**/data/anime-catalog.json.gz", compressed_catalogue)
     page.route("**/data/anime-catalog.json", catalogue)
     page.route(
         "**/data/title-image-exclusions.json",
