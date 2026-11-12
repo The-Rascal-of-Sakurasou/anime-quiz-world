@@ -598,6 +598,8 @@ assert.ok(rendererStart >= 0 && rendererEnd > rendererStart, "Question renderer 
 const modeAvailability = index.slice(availabilityStart, index.indexOf("\n}", availabilityStart) + 2);
 const modeValidation = index.slice(validationStart, index.indexOf("\n}", validationStart) + 2);
 const questionRenderer = index.slice(rendererStart, rendererEnd);
+assert.ok(questionRenderer.includes("const coverUrl=a?.coverImage?.extraLarge||a?.coverImage?.large||a?.coverImage?.medium||'';"), "Image questions must resolve a usable AniList cover URL");
+assert.ok(questionRenderer.includes("if(actualMode==='image'&&coverUrl){$('#cover').src=coverUrl;"), "Image questions must assign the resolved artwork URL to the cover element");
 for (const mode of questionModes) {
   const availabilityMode = mode;
   assert.ok(modeAvailability.includes("'" + availabilityMode + "'"), `Question mode ${mode} must be considered by availability filtering`);
