@@ -75,7 +75,7 @@ jobs:
           ]).sort((a, b) => a[0] - b[0]);
           const before = await readFile(process.env.RUNNER_TEMP + '/aqw-image-references.json', 'utf8');
           const changed = before !== JSON.stringify(images);
-          await appendFile(process.env.GITHUB_OUTPUT, 'changed=' + changed + '\\n');
+          await appendFile(process.env.GITHUB_OUTPUT, 'changed=' + changed + '\n');
           console.log('Image references changed: ' + changed);
           NODE
       - name: Commit catalogue when changed
