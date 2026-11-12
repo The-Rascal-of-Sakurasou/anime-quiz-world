@@ -2262,7 +2262,16 @@ document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',e=>{
 try{restoreLanguage()}catch(e){console.error('AQW language initialization failed:',e);const status=document.getElementById('quizStatus');if(status)status.textContent='表示設定の初期化に失敗しました。作品データの読み込みを続行します。';const start=document.getElementById('start');if(start){start.classList.remove('hidden');start.disabled=false;start.textContent='クイズを開始';}prepare().catch(error=>console.error('AQW recovery loading failed:',error))}
 
 $('#resetProgress').onclick=()=>{const msg=lang==='ja'?'実績とプレイ記録をすべてリセットします。この操作は取り消せません。続行しますか？':'Reset all achievements and play records? This cannot be undone.';if(!confirm(msg))return;['aqw-history','aqw-total-runs','aqw-xp','aqw-daily-progress','aqw-daily-quest-claims','aqw-streak'].forEach(k=>safeStorage.removeItem(k));safeStorage.keys().filter(k=>k.startsWith('aqw-best-')).forEach(k=>safeStorage.removeItem(k));renderProgress();const hs=document.getElementById('historySummary');if(hs)hs.textContent='';const status=document.getElementById('resetDescription');if(status)status.textContent=lang==='ja'?'実績とプレイ記録をリセットしました。':'Achievements and play records have been reset.'};
+const OFFICIAL_SITE_OVERRIDES=new Map([
+ [11061,'https://madhouse.co.jp/works/tv_hunter/'],
+ [199,'https://www.ghibli.jp/works/chihiro/'],
+ [10620,'https://future-diary.tv/'],
+ [3588,'https://www.bones.co.jp/work/soul-eater/'],
+ [11111,'https://www.pa-works.jp/works/another/']
+]);
 function getSearchAnimeOfficialUrl(anime){
+ const override=OFFICIAL_SITE_OVERRIDES.get(Number(anime?.id));
+ if(override)return override;
  const links=Array.isArray(anime?.externalLinks)?anime.externalLinks:[];
  const socialHost=/(^|\.)(twitter\.com|x\.com|facebook\.com|instagram\.com|youtube\.com|youtu\.be|tiktok\.com|discord\.gg|discord\.com|reddit\.com)$/i;
  const candidates=links.map(link=>{
