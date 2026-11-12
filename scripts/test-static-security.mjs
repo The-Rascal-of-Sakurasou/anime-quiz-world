@@ -432,7 +432,7 @@ assert.match(index, /sharedCatalogPromise\.then\(items=>\(\{timedOut:false,items
 assert.match(index, /if\(sharedCatalogActive\)\{[\s\S]*?pool=initial;[\s\S]*?Fetching additional records\./, "A shared catalogue must be used immediately while additional anime are fetched in the background");
 assert.match(index, /if\(!backgroundLoadPromise&&!sharedCatalogActive\)\{\s*backgroundLoadPromise=\(async\(\)=>/, "The quiz must not repeat the expensive AniList backfill when the complete shared catalogue is already active");
 assert.match(index, /sharedCatalogActive\?\(/, "The loading screen must distinguish the shared catalogue from local background backfill");
-assert.match(index, /const cacheKey='aqw-anime-pool-v21-compact-shared-catalog'/, "Verified original-source eligibility must rebuild the browser catalogue");
+assert.match(index, /const cacheKey='aqw-anime-pool-v22-compact-shared-catalog'/, "Verified original-source eligibility must rebuild the browser catalogue");
 assert.ok(index.includes("source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } }"), "Quiz queries must request detailed source metadata and adaptation-origin evidence");
 assert.ok(recommend.includes("source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } }"), "Recommendation queries must request detailed source metadata and adaptation-origin evidence");
 
