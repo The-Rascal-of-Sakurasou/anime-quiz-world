@@ -95,6 +95,10 @@ export function validateCatalog(catalog) {
       failures.push(label + ": no usable title");
     }
 
+    if (typeof anime?.description === 'string' && anime.description.length > 260) {
+      failures.push(label + ': synopsis description exceeds the 260-character display limit');
+    }
+
     for (const link of Array.isArray(anime?.externalLinks) ? anime.externalLinks : []) {
       const site = String(link?.site || '').toLowerCase();
       const type = String(link?.type || '').toUpperCase();
