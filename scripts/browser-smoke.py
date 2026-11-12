@@ -237,7 +237,7 @@ def test_live_quiz_preparation_performance(browser):
       }
     }""")
 
-    page.locator("#modeSelect").select_option("image")
+    page.locator("#modeSelect").select_option("mixed")
     page.locator("#answerFormatSelect").select_option("choices")
     page.locator("#difficultySelect").select_option("easy")
     page.locator("#questionCount").fill("1")
