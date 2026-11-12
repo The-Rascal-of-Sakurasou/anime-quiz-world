@@ -35,6 +35,17 @@ const CURATED = [
   [["カウボーイビバップ","Cowboy Bebop"],"ビバップ"],
   [["デス・パレード","Death Parade"],"デスパレ"],
   [["青の祓魔師","Ao no Exorcist","Blue Exorcist"],"青エク"],
+  [["暗殺教室","Ansatsu Kyoushitsu","Assassination Classroom"],"暗教"],
+  [["賭ケグルイ","Kakegurui"],"賭ケグル"],
+  [["文豪ストレイドッグス","Bungou Stray Dogs"],"文スト"],
+  [["キルラキル","Kill la Kill"],"キルラ"],
+  [["オーバーロード","Overlord"],"オバロ"],
+  [["ようこそ実力至上主義の教室へ","Youkoso Jitsuryoku Shijou Shugi no Kyoushitsu e","Classroom of the Elite"],"よう実"],
+  [["その着せ替え人形は恋をする","Sono Bisque Doll wa Koi wo Suru","My Dress-Up Darling"],"着せ恋"],
+  [["ダーリン・イン・ザ・フランキス","Darling in the FranXX"],"ダリフラ"],
+  [["モブサイコ100 II","Mob Psycho 100 II"],"モブサイコ2期"],
+  [["ハイキュー!! セカンドシーズン","Haikyuu!! Second Season"],"ハイキュー2期"],
+  [["SPY×FAMILY","SPY x FAMILY"],"スパファミ"],
 ];
 const norm = (v) => String(v || "").normalize("NFKC").toLocaleLowerCase().replace(/[\s　・･:：!！?？.,，。'"“”「」『』()（）‐‑–—_-]/g, "").trim();
 const title = (a) => String(a?.title?.native || a?.title?.english || a?.title?.romaji || "").trim();
