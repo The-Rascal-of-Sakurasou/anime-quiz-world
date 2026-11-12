@@ -657,6 +657,8 @@ const leaderboardSubmission = index.slice(leaderboardSubmissionStart, leaderboar
 assert.ok(leaderboardSubmission.includes("questionResults:Array.isArray(result.questionResults)?result.questionResults:[]"), "Pending leaderboard runs must preserve per-question analytics");
 assert.ok(leaderboardSubmission.includes("p_question_results:pendingRun.questionResults"), "Leaderboard retries must submit the preserved per-question analytics");
 assert.ok(leaderboardSubmission.includes("queuePendingRun(pendingPlayerRuns,pendingRun)"), "Leaderboard retries must queue the complete run payload");
+assert.ok(leaderboardSubmission.includes("catch(error)=>{\n  queuePendingRun(pendingPlayerRuns,pendingRun);"), "Unexpected submission errors must also preserve per-question analytics");
+assert.ok(!leaderboardSubmission.includes("summaryOnly"), "Leaderboard retry handler must not reference the removed summary-only payload");
 
 // Regression coverage: quiz candidate eligibility must be chunked and share in-flight prewarm work.
 assert.match(index, /async function getEligibleCandidatePoolAsync\(mode,format,ignoreDifficulty=false\)/, "Candidate eligibility must be prepared asynchronously");
