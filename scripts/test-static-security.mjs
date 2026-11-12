@@ -296,7 +296,7 @@ const originResults = vm.runInNewContext(`(()=>{${syncJapaneseTitleHelper};${syn
   check({ countryOfOrigin: "US", popularity: 9999, title: { native: "日本語タイトル" } }),
   check({ countryOfOrigin: "US", popularity: 10000, title: { native: "English Only" } })
 ]})()`);
-assert.deepEqual(originResults, [true, true, true, false, false, true, false, false], "Shared catalogue origin eligibility must pass Japanese works and only popular foreign works with Japanese titles");
+assert.deepEqual(Array.from(originResults), [true, true, true, false, false, true, false, false], "Shared catalogue origin eligibility must pass Japanese works and only popular foreign works with Japanese titles");
 assert.match(syncScript, /startDate_greater/, "The shared catalogue must split oversized format scopes by release decade");
 
 assert.match(syncScript, /if \(anime\.countryOfOrigin !== 'JP'\) return Number\(anime\.popularity\) >= 10000 && hasJapaneseTitle\(anime\)/, "Foreign catalogue entries must pass both the popularity and Japanese-title requirements");
