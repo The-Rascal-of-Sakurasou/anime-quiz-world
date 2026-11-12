@@ -68,7 +68,7 @@ async function fetchBatch(sort, pages, format = null) {
   const aliases = pages.map((page, index) =>
     'p' + index + ': Page(page:' + page + ',perPage:' + PER_PAGE + ') {' +
     ' pageInfo { hasNextPage } media(type:ANIME,sort:' + sort + ',isAdult:false' +
-    (format ? ',format:' + format : '') + ') { ' + FIELDS + ' } }'
+    (format ? ',format_in:[' + format + ']' : '') + ') { ' + FIELDS + ' } }'
   ).join('\n');
   const query = 'query { ' + aliases + ' }';
   let lastError;
