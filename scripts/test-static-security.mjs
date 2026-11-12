@@ -41,7 +41,7 @@ assert.match(aqwHtml, /function submitUserReport\(/, "The client must submit mod
 assert.match(aqwHtml, /post_id:reportTargetPostId/, "Post and reply reports must retain their target post id");
 assert.match(aqwHtml, /blockedUserIds\.has\(reply\.user_id\)/, "Blocked users' replies must be hidden from the current user's feed");
 
-const moderationMigrationPath = "supabase/migrations/20261112180000_aqw_friend_chat_blocks_and_reports.sql";
+const moderationMigrationPath = "supabase/migrations/20261112091214_aqw_friend_chat_blocks_and_reports.sql";
 assert.ok(fs.existsSync(moderationMigrationPath), "Chat block/report migration is missing");
 const moderationMigration = fs.readFileSync(moderationMigrationPath, "utf8");
 assert.match(moderationMigration, /ALTER TABLE public\.user_blocks ENABLE ROW LEVEL SECURITY/i, "Block records must have RLS enabled");
