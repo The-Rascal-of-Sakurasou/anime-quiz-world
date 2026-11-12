@@ -2,8 +2,15 @@ name: Multiplayer SQL and Edge Function checks
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - "supabase/migrations/20261112160000_retain_completed_aqw_match_history_after_exit.sql"
+      - "scripts/test-match-history-migration.sql"
+      - ".github/workflows/multiplayer-sql-tests.yml"
   push:
     paths:
+      - "supabase/migrations/20261112160000_retain_completed_aqw_match_history_after_exit.sql"
+      - "scripts/test-match-history-migration.sql"
       - "docs/ONLINE_MULTIPLAYER_SCHEMA_DRAFT.sql"
       - "supabase/functions/match/**"
       - "supabase/functions/aqw-match-prepare/**"
@@ -52,6 +59,12 @@ jobs:
           psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -f /tmp/aqw-question-bank-seed.sql
           COUNT=$(psql -h 127.0.0.1 -U postgres -d postgres -Atc "SELECT count(*) FROM private.aqw_question_bank WHERE source_key LIKE 'ci:sample:%'")
           test "$COUNT" = "2"
+      - name: Verify completed match history survives room exit
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -c "CREATE DATABASE aqw_match_history_test"
+          psql -h 127.0.0.1 -U postgres -d aqw_match_history_test -v ON_ERROR_STOP=1 -f scripts/test-match-history-migration.sql
 
   edge-function-typecheck:
     name: Edge Function type check
