@@ -298,7 +298,7 @@ def test_main_navigation_and_search(browser):
     page.on("pageerror", lambda error: errors.append(str(error)))
     page.route("**/supabase-js@2*", lambda route: route.abort())
     install_routes(page)
-    page.goto(f"${BASE_URL}/index.html", wait_until="domcontentloaded")
+    page.goto(f"{BASE_URL}/index.html", wait_until="domcontentloaded")
     page.locator("#start").wait_for(state="visible", timeout=60000)
 
     page.locator("#searchTab").click()
@@ -328,7 +328,7 @@ def test_quiz_pause_and_quit(browser):
     page.on("pageerror", lambda error: errors.append(str(error)))
     page.on("dialog", lambda dialog: dialog.accept())
     install_routes(page)
-    page.goto(f"${BASE_URL}/index.html", wait_until="domcontentloaded")
+    page.goto(f"{BASE_URL}/index.html", wait_until="domcontentloaded")
     page.locator("#start").wait_for(state="visible", timeout=60000)
     page.locator("#modeSelect").select_option("image")
     page.locator("#answerFormatSelect").select_option("choices")
