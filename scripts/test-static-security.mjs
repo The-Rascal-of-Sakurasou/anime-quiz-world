@@ -291,9 +291,12 @@ assert.equal(isSyncOriginJapanese({ countryOfOrigin: "JP", originVerified: true 
 assert.equal(isSyncOriginJapanese({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "ANIME", countryOfOrigin: "JP", format: "TV" } }] } }), true, "Verified Japanese anime-source spin-offs must enter the shared catalogue");
 assert.equal(isSyncOriginJapanese({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "ANIME", countryOfOrigin: "US", format: "TV" } }] } }), false, "Foreign anime-source works must not enter the shared catalogue");
 assert.equal(isSyncOriginJapanese({ countryOfOrigin: "JP", source: "VIDEO_GAME", relations: [] }), false, "Unverified game-source origin must fail closed in the shared catalogue");
+assert.equal(isSyncOriginJapanese({ countryOfOrigin: "US", popularity: 10000, title: { native: "日本語タイトル" } }), true, "Popular foreign anime with a Japanese title must enter the shared catalogue");
+assert.equal(isSyncOriginJapanese({ countryOfOrigin: "US", popularity: 9999, title: { native: "日本語タイトル" } }), false, "Foreign anime below the popularity threshold must stay out of the shared catalogue");
+assert.equal(isSyncOriginJapanese({ countryOfOrigin: "US", popularity: 10000, title: { native: "English Only" } }), false, "Foreign anime without a Japanese title must stay out of the shared catalogue");
 assert.match(syncScript, /startDate_greater/, "The shared catalogue must split oversized format scopes by release decade");
 
-assert.match(syncScript, /countryOfOrigin !== 'JP'/, "Shared catalogue sync must reject non-Japanese animation");
+assert.match(syncScript, /if \(anime\.countryOfOrigin !== 'JP'\) return Number\(anime\.popularity\) >= 10000 && hasJapaneseTitle\(anime\)/, "Foreign catalogue entries must pass both the popularity and Japanese-title requirements");
 assert.match(syncScript, /isAdult:false/, "Shared catalogue sync must exclude adult catalogue entries");
 assert.match(syncScript, /const OVERFLOW_SORTS = \['SCORE_DESC', 'FAVOURITES_DESC', 'TRENDING_DESC', 'START_DATE_DESC'\]/, "Shared catalogue sync must cover AniList pagination overflow");
 assert.ok(syncWorkflow.includes("cron: '0 */6 * * *'"), "Shared catalogue sync must run incremental discovery every six hours");
