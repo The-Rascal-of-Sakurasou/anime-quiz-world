@@ -1589,8 +1589,8 @@ function scheduleEligibleCandidatePrewarm(){
   prepareDifficultyTiers(pool);
   getEligibleCandidatePoolAsync(mode,format).catch(error=>console.warn('Candidate prewarm deferred:',error));
  };
- if('requestIdleCallback' in window)requestIdleCallback(run,{timeout:8000});
- else setTimeout(run,5000);
+ if('requestIdleCallback' in window)requestIdleCallback(run,{timeout:1500});
+ else setTimeout(run,1200);
 }
 let aqwPreparationStageLog=[];
 async function aqwMeasurePreparationStage(name,task){
