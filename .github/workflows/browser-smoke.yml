@@ -8,6 +8,7 @@ on:
       - recommend.html
       - scripts/browser-smoke.py
       - scripts/test-official-site-links.mjs
+      - scripts/audit-anime-image-urls.mjs
       - data/anime-catalog.json
       - data/anime-catalog.json.gz
   push:
@@ -76,6 +77,12 @@ jobs:
 
       - name: Test official-site link resolution and mobile navigation
         run: node scripts/test-official-site-links.mjs
+
+      - name: Test top 100 popular anime cover URLs
+        run: |
+          node --check scripts/audit-anime-image-urls.mjs
+          node scripts/audit-anime-image-urls.mjs --self-test
+          node scripts/audit-anime-image-urls.mjs --limit 100
 
       - name: Set up Python
         uses: actions/setup-python@v5
