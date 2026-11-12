@@ -28,6 +28,12 @@ const CURATED = [
   [["五等分の花嫁","Go-Toubun no Hanayome"],"五等分"],
   [["かぐや様は告らせたい","Kaguya-sama wa Kokurasetai"],"かぐや様"],
   [["ぼっち・ざ・ろっく！","ぼっち・ざ・ろっく!","Bocchi the Rock!"],"ぼざろ"],
+  [["ブラッククローバー","Black Clover"],"ブラクロ"],
+  [["ヴィンランド・サガ","Vinland Saga"],"ヴィンサガ"],
+  [["炎炎ノ消防隊","Enen no Shouboutai","Fire Force"],"炎炎"],
+  [["カウボーイビバップ","Cowboy Bebop"],"ビバップ"],
+  [["デス・パレード","Death Parade"],"デスパレ"],
+  [["青の祓魔師","Ao no Exorcist","Blue Exorcist"],"青エク"],
 ];
 const norm = (v) => String(v || "").normalize("NFKC").toLocaleLowerCase().replace(/[\s　・･:：!！?？.,，。'"“”「」『』()（）‐‑–—_-]/g, "").trim();
 const title = (a) => String(a?.title?.native || a?.title?.english || a?.title?.romaji || "").trim();
@@ -36,9 +42,10 @@ const desc = (a) => String(a?.description || "").replace(/<[^>]*>/g, " ").replac
 const usableSynopsis = (a) => {
   const s = desc(a);
   if (s.length < 45 || /^(no synopsis|no description|not available|tba|unknown|未定|あらすじなし|情報なし)\.?$/i.test(s)) return false;
-  const jp = (s.match(/[ぁ-んァ-ヶ一-龯]/g) || []).length;
+  const kana = (s.match(/[ぁ-んァ-ヶ]/g) || []).length;
   const latin = (s.match(/[A-Za-z]/g) || []).length;
-  return (jp >= 10 && jp / s.length >= .16) || latin >= 30;
+  // Match the actual Japanese quiz eligibility rule, not a broader kanji-only heuristic.
+  return kana >= 10 && kana / s.length >= .08 && latin / s.length < .25;
 };
 const titleVariants = (a) => {
   const values = [a?.title?.native, a?.title?.english, a?.title?.romaji, title(a), ...(a?.synonyms || [])].filter(Boolean);
