@@ -252,7 +252,8 @@ if (CURATED_ANIME_IDS.length) {
   if (!response.ok) throw new Error('AniList curated-record HTTP ' + response.status);
   const json = await response.json();
   if (json.errors?.length) throw new Error(json.errors.map((item) => item.message).join('; '));
-  const curated = normalize(json.data?.Page?.media || []);
+  const curatedPayload = json.data?.Page?.media;
+  const curated = Array.isArray(curatedPayload) ? normalize(curatedPayload) : curatedPayload ? [normalize(curatedPayload)] : [];
   for (const anime of curated) {
     // Japanese origin is independently confirmed by the publisher's official anime page.
     // The regular image, title, format, and adult-content checks still apply.
