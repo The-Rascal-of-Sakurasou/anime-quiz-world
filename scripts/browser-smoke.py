@@ -666,6 +666,38 @@ def test_multiplayer_auth_gate(browser):
     context.close()
 
 
+def test_public_information_and_admin_pages(browser):
+    """Smoke-test public information pages and the unauthenticated admin gate."""
+    context = browser.new_context(viewport={"width": 1280, "height": 900}, locale="ja-JP")
+    page = context.new_page()
+    errors = []
+    page.on("pageerror", lambda error: errors.append(str(error)))
+
+    for path, heading in [
+        ("guide.html", "遊び方・お知らせ"),
+        ("privacy.html", "プライバシーポリシー"),
+        ("terms.html", "利用規約"),
+    ]:
+        page.goto(f"{BASE_URL}/{path}", wait_until="domcontentloaded")
+        page.locator("h1").filter(has_text=heading).wait_for(state="visible", timeout=10000)
+        assert page.title().strip(), f"{path} must have a document title"
+
+    page.route(
+        "**/supabase-js@2*",
+        lambda route: route.fulfill(
+            status=200,
+            content_type="application/javascript",
+            body="window.supabase={createClient:()=>({auth:{onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}})}})};",
+        ),
+    )
+    page.goto(f"{BASE_URL}/admin.html", wait_until="domcontentloaded")
+    page.locator("#loginCard:not(.hidden)").wait_for(state="visible", timeout=10000)
+    assert page.locator("#loginForm").is_visible(), "Admin console must show sign-in when no session exists"
+    assert page.locator("#loginButton").is_enabled(), "Admin sign-in control must be enabled"
+    assert not errors, "Public/admin pages raised JavaScript errors: " + " | ".join(errors)
+    context.close()
+
+
 def test_mobile_quiz_layout(browser):
     """Check that the quiz controls and four choices fit a narrow mobile viewport."""
     context = browser.new_context(viewport={"width": 390, "height": 844}, device_scale_factor=2, is_mobile=True, has_touch=True, locale="ja-JP")
@@ -906,6 +938,8 @@ def main():
             print("PASS: multiplayer authentication gate")
             test_recommendation_diagnosis(browser)
             print("PASS: recommendation diagnosis -> results")
+            test_public_information_and_admin_pages(browser)
+            print("PASS: guide/privacy/terms/admin authentication gate")
             test_mobile_quiz_layout(browser)
             print("PASS: mobile quiz layout and touch answer")
             test_live_seasonal_anilist()
