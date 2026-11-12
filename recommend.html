@@ -634,7 +634,7 @@ function runRecommendationSelfTests(){
    const questionByDimension=new Map(questions.map(q=>[q.dimension,q]));
   const tagsFor=dimension=>new Set((questionByDimension.get(dimension)?.options||[]).flatMap(option=>option.tags||[]));
   check('診断は18問固定',questions.length===18&&FIXED_QUESTION_COUNT===18);
-  check('13問すべてに異なる分類が設定されている',new Set(questions.map(q=>q.dimension)).size===13);
+  check('18問すべてに異なる分類が設定されている',new Set(questions.map(q=>q.dimension)).size===18);
   const profileProbeOk=questions.every((question,questionIndex)=>question.options.every((option,optionIndex)=>{
    const probe=Array(questions.length).fill(null);probe[questionIndex]=optionIndex;
    const actual=profileFromAnswers(probe);
@@ -655,10 +655,10 @@ function runRecommendationSelfTests(){
   check('人物関係の質問は恋愛量と重複しない',questionByDimension.get('relationships').options.every(o=>!o.genres?.includes('Romance')&&!o.tags?.includes('Love Triangle')));
   check('テンポと物語構成を別の信号で扱う',questionByDimension.get('pacing').options.every(o=>!o.genres?.length)&&questionByDimension.get('story_structure').options.some(o=>o.tagWeights?.Episodic>0));
   check('笑いとシリアスの配分を独立して反映する',questionByDimension.get('tone_balance').options.some(o=>o.genreWeights?.Comedy>0)&&questionByDimension.get('tone_balance').options.some(o=>o.genreWeights?.Drama>0));
-  const legacyRelationshipAnswers=Array(18).fill(0);legacyRelationshipAnswers[9]=3;
+  const legacyRelationshipAnswers=Array(13).fill(0);legacyRelationshipAnswers[9]=3;
   check('旧13問版の恋愛関係回答は恋愛量と重複させず再回答を求める',mapLegacyThirteenAnswers(legacyRelationshipAnswers)?.[9]===null);
   const previousV4Answers=Array(13).fill(0);
-  check('直前の13問版の保存回答を新しい質問順へ移行',mapVersionFourAnswersToThirteen(previousV4Answers)?.[1]===2&&mapVersionFourAnswersToThirteen(previousV4Answers)?.[8]===3);
+  check('旧13問版の回答を保持し、新しい5問は未回答にする',mapVersionFourAnswersToThirteen(previousV4Answers)?.[1]===2&&mapVersionFourAnswersToThirteen(previousV4Answers)?.[8]===3&&[...mapVersionFourAnswersToThirteen(previousV4Answers),...Array(5).fill(null)].length===18);
   check('推薦2枠で同じ作品IDを重複表示しない',deduplicateRecommendationGroups([{id:7,title:{native:'A'}}],[{id:7,title:{native:'B'}}]).discoveries.length===0);
  check('好きな作品の日本語タイトルを完全一致で照合',matchesSeedTitle({title:{native:'葬送のフリーレン'}},'葬送のフリーレン'));
  check('好きな作品の英語タイトルを完全一致で照合',matchesSeedTitle({title:{english:'Frieren: Beyond Journey’s End'}},'Frieren: Beyond Journey’s End'));
@@ -1210,7 +1210,7 @@ function renderCardList(containerId,items){
 }
 let latestResult=null;
 function encodeShareState(){
- const state={v:5,a:answers,f:$('favoriteTitles').value.slice(0,180),d:$('dislikedTitles').value.slice(0,180)};
+ const state={v:6,a:answers,f:$('favoriteTitles').value.slice(0,180),d:$('dislikedTitles').value.slice(0,180)};
  const bytes=new TextEncoder().encode(JSON.stringify(state));
  let binary='';bytes.forEach(byte=>binary+=String.fromCharCode(byte));
  return btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
