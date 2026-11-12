@@ -67,6 +67,15 @@ Tracking issue: https://github.com/The-Rascal-of-Sakurasou/anime-quiz-world/issu
 - [ ] Enable Supabase Auth leaked-password protection in the project dashboard; the connected tools cannot change this Auth setting.
 - [ ] Rework solo and Speed Rush leaderboard submissions to use server-verified sessions before treating scores as tamper-resistant.
 
+### Catalogue quality baseline (2026-11-12)
+- [x] 10,276 records: 10,266 Japanese-origin works and 10 popular foreign works with Japanese titles.
+- [x] Usable broadcast year: 10,124 records (98.52%).
+- [x] Usable unique aliases: 6,760 records (65.78%).
+- [x] Usable studio metadata: 7,369 records (71.71%).
+- [ ] Japanese synopsis: 625 eligible records (6.08%) and 452 distinct synopsis texts; expand curated coverage for popular works.
+- [ ] 21 top-500 synopsis candidates remain without a usable Japanese synopsis.
+- [x] Shared catalogue size: 11.1 MB raw / 2.56 MB gzip; loaded asynchronously.
+
 ## Security and quality requirements
 - Reuse existing profiles, follows, messages, notifications, and leaderboard infrastructure.
 - Keep solo and multiplayer rankings separate.
