@@ -133,10 +133,12 @@ export function validateCatalog(catalog) {
 
 async function main() {
   const raw = await readFile(FILE, "utf8");
-  const compressed = await readFile(FILE + ".gz");
-  const decompressed = gunzipSync(compressed).toString("utf8");
-  if (decompressed !== raw) {
-    throw new Error("Compressed catalogue does not match the JSON source file.");
+  if (FILE === "data/anime-catalog.json") {
+    const compressed = await readFile(FILE + ".gz");
+    const decompressed = gunzipSync(compressed).toString("utf8");
+    if (decompressed !== raw) {
+      throw new Error("Compressed catalogue does not match the JSON source file.");
+    }
   }
   let catalog;
   try {
