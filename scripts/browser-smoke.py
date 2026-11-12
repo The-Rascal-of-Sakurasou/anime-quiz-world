@@ -284,6 +284,16 @@ def test_public_catalogue_all_modes(browser):
     assert any("葬送のフリーレン" in title for title in local_english_search), (
         "Local search failed to find a Japanese title from its English name: " + repr(local_english_search)
     )
+    curated_search_ids = page.evaluate("""async () => ({
+      idolmaster: (await fetchAnime({search: "アイドルマスター"})).map(anime => Number(anime.id)),
+      oshiriTantei: (await fetchAnime({search: "おしりたんてい"})).map(anime => Number(anime.id))
+    })""")
+    assert 10278 in curated_search_ids["idolmaster"], (
+        "Local search must find the curated 2011 THE IDOLM@STER record: " + repr(curated_search_ids)
+    )
+    assert 100790 in curated_search_ids["oshiriTantei"], (
+        "Local search must find the curated Oshiri Tantei record: " + repr(curated_search_ids)
+    )
     assert any(url.endswith("anime-catalog.json.gz") for url in catalogue_requests), (
         "The public page did not request the compressed catalogue: " + repr(catalogue_requests)
     )
