@@ -113,8 +113,16 @@ for (const id of overrides.keys()) {
 const hasOfficial = (anime) => !getSearchAnimeOfficialUrl(anime).startsWith(fallback);
 const top100Missing = catalog.items.slice(0, 100).filter((anime) => !hasOfficial(anime));
 assert.equal(top100Missing.length, 0, "All top 100 popular works must have a verified official link or curated override");
-const top250Missing = catalog.items.slice(0, 250).filter((anime) => !hasOfficial(anime)).length;
-const top500Missing = catalog.items.slice(0, 500).filter((anime) => !hasOfficial(anime)).length;
+const top250Unresolved = catalog.items.slice(0, 250).filter((anime) => !hasOfficial(anime));
+const top500Unresolved = catalog.items.slice(0, 500).filter((anime) => !hasOfficial(anime));
+const display = (anime) => ({
+  id: Number(anime.id),
+  title: titleOf(anime),
+  english: anime.title?.english || null,
+  popularity: Number(anime.popularity) || 0,
+});
 
 console.log("Official anime-site link tests passed: overrides, Japanese and English labels, social filtering, disabled/streaming links, featured rail, and catalogue coverage.");
-console.log("Official-link coverage: top 100 = 100%; top 250 unresolved = " + top250Missing + "; top 500 unresolved = " + top500Missing + ".");
+console.log("Official-link coverage: top 100 = 100%; top 250 unresolved = " + top250Unresolved.length + "; top 500 unresolved = " + top500Unresolved.length + ".");
+if (top250Unresolved.length) console.log("Top-250 unresolved titles: " + JSON.stringify(top250Unresolved.map(display)));
+if (top500Unresolved.length) console.log("Top-500 unresolved titles: " + JSON.stringify(top500Unresolved.map(display)));
