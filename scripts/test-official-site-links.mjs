@@ -88,6 +88,7 @@ const verifiedOfficialOverrides = [
   [6, "TRIGUN", "https://madhouse.co.jp/english/works/"],
   [392, "幽☆遊☆白書", "https://pierrot.jp/archive/1990/"],
   [100790, "おしりたんてい", "https://oshiri-tantei.com/"],
+  [10278, "アイドルマスター", "https://www.aniplex.co.jp/lineup/idolmaster/"],
 ];
 for (const [id, title, expected] of verifiedOfficialOverrides) {
   assert.equal(
@@ -190,6 +191,13 @@ assert.ok(html.includes("imageLink.target='_self';"), "Search-result cover links
 assert.ok(html.includes("titleLink.target='_self';"), "Search-result title links must navigate in the current page on mobile browsers");
 assert.ok(html.includes("card.href=link.url;card.target='_self';"), "Featured anime links must navigate in the current page on mobile browsers");
 
+const idolmaster = catalog.items.find((anime) => Number(anime.id) === 10278);
+assert.ok(idolmaster, "The original 2011 THE IDOLM@STER TV series must be present as its own catalogue record");
+assert.equal(
+  getSearchAnimeOfficialUrl(idolmaster),
+  "https://www.aniplex.co.jp/lineup/idolmaster/",
+  "THE IDOLM@STER must resolve to the verified Aniplex official page"
+);
 const oshiriTantei = catalog.items.find((anime) => Number(anime.id) === 100790);
 assert.ok(oshiriTantei, "Curated Oshiri Tantei record must be present in the catalogue");
 assert.equal(

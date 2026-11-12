@@ -12,7 +12,7 @@ const OVERFLOW_SORTS = ['SCORE_DESC', 'FAVOURITES_DESC', 'TRENDING_DESC', 'START
 const FIELDS = 'id countryOfOrigin source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } format popularity title { romaji english native } description(asHtml:false) synonyms coverImage { large medium extraLarge } episodes seasonYear averageScore genres studios(isMain:true) { nodes { name } } startDate { year month day } externalLinks { url site type isDisabled language }';
 
 // Manually reviewed, high-priority Japanese anime that may fall outside AniList popularity pages.
-const CURATED_ANIME_IDS = [21366, 100790]; // 3-gatsu no Lion and Oshiri Tantei, manually verified Japanese-origin works
+const CURATED_ANIME_IDS = [21366, 100790, 10278]; // 3-gatsu no Lion and Oshiri Tantei, manually verified Japanese-origin works
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const normalize = (value) => {
