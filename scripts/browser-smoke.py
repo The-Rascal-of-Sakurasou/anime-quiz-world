@@ -290,6 +290,7 @@ def test_all_question_modes(browser):
                     questionMode: typeof currentQuestionMode === 'undefined' ? null : currentQuestionMode,
                     questionIndex: typeof index === 'undefined' ? null : index,
                     questionCount: typeof questions === 'undefined' ? null : questions.length,
+                    lastRender: window.__aqwLastQuestionRender || null,
                     currentQuestion: typeof questions === 'undefined' ? null : (() => {
                       const q = questions[index];
                       return q ? {
