@@ -110,6 +110,49 @@ const catalogIds = new Set(catalog.items.map((anime) => Number(anime.id)));
 for (const id of overrides.keys()) {
   assert.ok(catalogIds.has(id), "Official-site override must reference an existing catalogue record: " + id);
 }
+const normalizeTitle = (value) => String(value || "").normalize("NFKC").toLowerCase().replace(/[^\\p{L}\\p{N}]/gu, "");
+const catalogTitleKeys = catalog.items.flatMap((anime) => [
+  anime.title?.native, anime.title?.english, anime.title?.romaji, ...(anime.synonyms || [])
+].filter(Boolean).map(normalizeTitle));
+const requiredPopularTitleGroups = [
+  ["葬送のフリーレン", "Frieren Beyond Journeys End"],
+  ["薬屋のひとりごと", "The Apothecary Diaries"],
+  ["SPY×FAMILY", "Spy x Family"],
+  ["進撃の巨人", "Attack on Titan", "Shingeki no Kyojin"],
+  ["鬼滅の刃", "Demon Slayer", "Kimetsu no Yaiba"],
+  ["呪術廻戦", "Jujutsu Kaisen"],
+  ["僕のヒーローアカデミア", "My Hero Academia"],
+  ["ハイキュー", "Haikyu"],
+  ["ぼっちざろっく", "Bocchi the Rock"],
+  ["STEINS;GATE", "シュタインズゲート"],
+  ["Re:ゼロから始める異世界生活", "Re Zero"],
+  ["無職転生", "Mushoku Tensei"],
+  ["この素晴らしい世界に祝福を", "KonoSuba"],
+  ["ノーゲームノーライフ", "No Game No Life"],
+  ["Angel Beats"],
+  ["Charlotte"],
+  ["青春ブタ野郎", "Rascal Does Not Dream"],
+  ["聲の形", "A Silent Voice"],
+  ["君の名は", "Your Name"],
+  ["ONE PIECE"],
+  ["NARUTO", "ナルト"],
+  ["ドラゴンボール", "Dragon Ball"],
+  ["名探偵コナン", "Detective Conan"],
+  ["新世紀エヴァンゲリオン", "Neon Genesis Evangelion"],
+  ["コードギアス", "Code Geass"],
+  ["あの日見た花の名前を僕達はまだ知らない", "Anohana"],
+  ["さくら荘のペットな彼女", "The Pet Girl of Sakurasou"],
+  ["魔法少女まどかマギカ", "Puella Magi Madoka Magica"],
+  ["ソードアートオンライン", "Sword Art Online"],
+];
+const missingPopularTitles = requiredPopularTitleGroups.filter((aliases) =>
+  !aliases.some((alias) => {
+    const key = normalizeTitle(alias);
+    return catalogTitleKeys.some((candidate) => candidate.includes(key) || key.includes(candidate));
+  })
+);
+assert.equal(missingPopularTitles.length, 0, "Famous anime must be present in the shared catalogue: " + JSON.stringify(missingPopularTitles));
+
 const hasOfficial = (anime) => !getSearchAnimeOfficialUrl(anime).startsWith(fallback);
 const top100Missing = catalog.items.slice(0, 100).filter((anime) => !hasOfficial(anime));
 assert.equal(top100Missing.length, 0, "All top 100 popular works must have a verified official link or curated override");
