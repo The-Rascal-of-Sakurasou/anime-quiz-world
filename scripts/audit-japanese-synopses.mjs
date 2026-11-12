@@ -99,16 +99,19 @@ const headers = {
   'content-type': 'application/json'
 };
 const base = `https://api.github.com/repos/${repo}`;
-const listResponse = await fetch(`${base}/issues?state=open&per_page=100`, { headers });
+const listResponse = await fetch(`${base}/issues?state=all&per_page=100`, { headers });
 if (!listResponse.ok) throw new Error(`GitHub issue lookup failed: HTTP ${listResponse.status}`);
 const issues = await listResponse.json();
 const existing = issues.find(issue => !issue.pull_request && issue.title === title);
 
 if (missing.length) {
   if (existing) {
-    if (existing.body !== body) {
+    const patch = {};
+    if (existing.body !== body) patch.body = body;
+    if (existing.state !== 'open') patch.state = 'open';
+    if (Object.keys(patch).length) {
       const response = await fetch(`${base}/issues/${existing.number}`, {
-        method: 'PATCH', headers, body: JSON.stringify({ body })
+        method: 'PATCH', headers, body: JSON.stringify(patch)
       });
       if (!response.ok) throw new Error(`GitHub issue update failed: HTTP ${response.status}`);
     }
@@ -122,10 +125,12 @@ if (missing.length) {
     console.log(`Created synopsis audit issue #${issue.number}; ${missing.length} candidates.`);
   }
 } else if (existing) {
-  const update = await fetch(`${base}/issues/${existing.number}`, {
-    method: 'PATCH', headers, body: JSON.stringify({ body, state: 'closed' })
-  });
-  if (!update.ok) throw new Error(`GitHub issue close failed: HTTP ${update.status}`);
+  if (existing.body !== body || existing.state !== 'closed') {
+    const update = await fetch(`${base}/issues/${existing.number}`, {
+      method: 'PATCH', headers, body: JSON.stringify({ body, state: 'closed' })
+    });
+    if (!update.ok) throw new Error(`GitHub issue close failed: HTTP ${update.status}`);
+  }
   console.log(`Closed synopsis audit issue #${existing.number}; no missing candidates.`);
 } else {
   console.log('Synopsis coverage audit passed; no missing candidates in the top 100.');
