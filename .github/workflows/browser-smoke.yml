@@ -8,6 +8,7 @@ on:
       - recommend.html
       - scripts/browser-smoke.py
       - data/anime-catalog.json
+      - data/anime-catalog.json.gz
   push:
     branches:
       - main
@@ -17,6 +18,7 @@ on:
       - recommend.html
       - scripts/browser-smoke.py
       - data/anime-catalog.json
+      - data/anime-catalog.json.gz
   workflow_dispatch:
 
 permissions:
