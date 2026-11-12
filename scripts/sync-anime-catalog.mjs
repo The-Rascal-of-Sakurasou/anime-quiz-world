@@ -8,7 +8,7 @@ const OUTPUT_GZIP = 'data/anime-catalog.json.gz';
 const FORMATS = ['TV', 'TV_SHORT', 'MOVIE', 'OVA', 'ONA', 'SPECIAL'];
 const BASE_SORTS = ['POPULARITY_DESC', 'ID', 'ID_DESC'];
 const OVERFLOW_SORTS = ['SCORE_DESC', 'FAVOURITES_DESC', 'TRENDING_DESC', 'START_DATE_DESC'];
-const FIELDS = 'id countryOfOrigin source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } format popularity title { romaji english native } description(asHtml:false) synonyms coverImage { large medium extraLarge } episodes seasonYear averageScore genres studios(isMain:true) { nodes { name } } startDate { year month day } characters(sort:ROLE,perPage:5) { nodes { id name { full native } image { large } } } externalLinks { url site type isDisabled }';
+const FIELDS = 'id countryOfOrigin source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } format popularity title { romaji english native } description(asHtml:false) synonyms coverImage { large medium extraLarge } episodes seasonYear averageScore genres studios(isMain:true) { nodes { name } } startDate { year month day } characters(sort:ROLE,perPage:5) { nodes { id name { full native } image { large } } } externalLinks { url site type isDisabled language }';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const normalize = (value) => {
@@ -26,9 +26,7 @@ function hasJapaneseTitle(anime) {
 
 function isJapaneseOriginAnime(anime) {
   if (!anime || typeof anime.countryOfOrigin !== 'string' || !anime.countryOfOrigin) return false;
-  if (anime.countryOfOrigin !== 'JP') {
-    return Number(anime.popularity) >= 10000 && hasJapaneseTitle(anime);
-  }
+  if (anime.countryOfOrigin !== 'JP') return Number(anime.popularity) >= 10000 && hasJapaneseTitle(anime);
   if (anime.originVerified === true) return true;
   if (anime.source === 'ORIGINAL') return true;
   const sourceRules = {
@@ -43,15 +41,15 @@ function isJapaneseOriginAnime(anime) {
     ANIME: { type: 'ANIME', formats: ['TV', 'TV_SHORT', 'MOVIE', 'OVA', 'ONA', 'SPECIAL'] },
   };
   const rule = sourceRules[anime.source];
-  if (!rule || !Array.isArray(anime.relations?.edges)) return false;
-  return anime.relations.edges.some((edge) =>
+  const relationVerified = !!rule && Array.isArray(anime.relations?.edges) && anime.relations.edges.some((edge) =>
     (edge?.relationType === 'SOURCE' || edge?.relationType === 'ADAPTATION') &&
     edge.node?.type === rule.type &&
     edge.node?.countryOfOrigin === 'JP' &&
     rule.formats.includes(edge.node?.format)
   );
+  if (relationVerified) return true;
+  return !!rule && Number(anime.popularity) >= 10000 && hasJapaneseTitle(anime);
 }
-
 function isUsableAnime(anime) {
   const image = anime?.coverImage?.large || anime?.coverImage?.medium || anime?.coverImage?.extraLarge || '';
   return Boolean(
@@ -206,21 +204,26 @@ function compactDescription(value) {
 }
 
 function compactOfficialExternalLinks(links) {
+  const socialHost = /(^|\\.)(twitter\\.com|x\\.com|facebook\\.com|instagram\\.com|youtube\\.com|youtu\\.be|tiktok\\.com|discord\\.gg|discord\\.com|reddit\\.com)$/i;
   return (Array.isArray(links) ? links : []).filter((link) => {
-    if (!link || link.isDisabled || typeof link.url !== 'string' || !/^https?:\/\//i.test(link.url)) return false;
-    const site = String(link.site || '').toLowerCase();
+    if (!link || link.isDisabled || typeof link.url !== 'string' || !/^https?:\\/\\//i.test(link.url)) return false;
+    let host = '';
+    try { host = new URL(link.url).hostname; } catch { return false; }
+    if (socialHost.test(host)) return false;
+    const site = String(link.site || '').normalize('NFKC').toLowerCase();
     const type = String(link.type || '').toUpperCase();
-    return /official|公式/i.test(site) &&
-      !/(twitter|x\.com|facebook|instagram|youtube|tiktok|discord|reddit)/i.test(site) &&
-      (!type || type === 'INFO');
+    if (type === 'STREAMING') return false;
+    const explicitOfficial = /(official|公式|オフィシャル)/i.test(site);
+    const homepageLabel = /(website|web site|homepage|home page|ホームページ|公式ページ)/i.test(site);
+    return explicitOfficial || homepageLabel;
   }).map((link) => ({
     url: link.url,
     site: link.site,
     type: link.type,
+    language: link.language,
     isDisabled: false,
   }));
 }
-
 function mergeRecord(existing, incoming) {
   if (!existing) return incoming;
   const merge = (oldValue, newValue) => {

@@ -13,12 +13,9 @@ function hasJapaneseTitle(anime) {
 
 function isJapaneseOriginAnime(anime) {
   if (!anime || typeof anime.countryOfOrigin !== "string" || !anime.countryOfOrigin) return false;
-  if (anime.countryOfOrigin !== "JP") {
-    return Number(anime.popularity) >= 10000 && hasJapaneseTitle(anime);
-  }
+  if (anime.countryOfOrigin !== "JP") return Number(anime.popularity) >= 10000 && hasJapaneseTitle(anime);
   if (anime.originVerified === true) return true;
   if (anime.source === "ORIGINAL") return true;
-
   const sourceRules = {
     MANGA: { type: "MANGA", formats: ["MANGA", "ONE_SHOT"] },
     LIGHT_NOVEL: { type: "MANGA", formats: ["NOVEL"] },
@@ -30,18 +27,16 @@ function isJapaneseOriginAnime(anime) {
     OTHER: { type: "MANGA", formats: ["MANGA", "ONE_SHOT", "NOVEL"] },
     ANIME: { type: "ANIME", formats: ["TV", "TV_SHORT", "MOVIE", "OVA", "ONA", "SPECIAL"] },
   };
-
   const rule = sourceRules[anime.source];
-  if (!rule || !Array.isArray(anime.relations?.edges)) return false;
-
-  return anime.relations.edges.some((edge) =>
+  const relationVerified = !!rule && Array.isArray(anime.relations?.edges) && anime.relations.edges.some((edge) =>
     (edge?.relationType === "SOURCE" || edge?.relationType === "ADAPTATION") &&
     edge.node?.type === rule.type &&
     edge.node?.countryOfOrigin === "JP" &&
     rule.formats.includes(edge.node?.format)
   );
+  if (relationVerified) return true;
+  return !!rule && Number(anime.popularity) >= 10000 && hasJapaneseTitle(anime);
 }
-
 function metadataKey(value) {
   return String(value || '').normalize('NFKC').toLocaleLowerCase().replace(/\s+/g, '');
 }
@@ -118,13 +113,16 @@ export function validateCatalog(catalog) {
     }
 
     for (const link of Array.isArray(anime?.externalLinks) ? anime.externalLinks : []) {
-      const site = String(link?.site || '').toLowerCase();
+      const site = String(link?.site || '').normalize('NFKC').toLowerCase();
       const type = String(link?.type || '').toUpperCase();
+      let host = '';
+      try { host = new URL(link?.url).hostname; } catch {}
+      const socialHost = /(^|\\.)(twitter\\.com|x\\.com|facebook\\.com|instagram\\.com|youtube\\.com|youtu\\.be|tiktok\\.com|discord\\.gg|discord\\.com|reddit\\.com)$/i;
+      const officialLabel = /(official|公式|オフィシャル)/i.test(site);
+      const homepageLabel = /(website|web site|homepage|home page|ホームページ|公式ページ)/i.test(site);
       const validOfficialLink = !!link && !link.isDisabled &&
-        typeof link.url === 'string' && /^https?:\/\//i.test(link.url) &&
-        /official|公式/i.test(site) &&
-        !/(twitter|x\.com|facebook|instagram|youtube|tiktok|discord|reddit)/i.test(site) &&
-        (!type || type === 'INFO');
+        typeof link.url === 'string' && /^https?:\\/\\//i.test(link.url) &&
+        (officialLabel || homepageLabel) && type !== 'STREAMING' && !socialHost.test(host);
       if (!validOfficialLink) failures.push(label + ': non-official or unusable external link is stored in the shared catalogue');
     }
 

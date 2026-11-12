@@ -780,12 +780,11 @@ function hasFamousJapaneseTitle(a){
 }
 function isJapaneseOriginAnime(a){
  if(!a)return false;
- // Foreign productions qualify only when a Japanese-language title and the popularity threshold are both verified.
+ // Foreign-origin anime qualify only with a popular Japanese-language title.
  if(a.countryOfOrigin!=='JP')return Number(a.popularity)>=10000&&hasFamousJapaneseTitle(a);
  const isJapaneseLanguage=value=>['ja','ja-jp','japanese','日本語'].includes(String(value||'').trim().toLowerCase());
  const languageValues=[a.originLanguage,a.originalLanguage,a.sourceLanguage,a.language].filter(value=>typeof value==='string'&&value.trim());
  if(languageValues.some(value=>!isJapaneseLanguage(value)))return false;
- // The compact shared catalogue carries this marker only after build-time source verification.
  if(a.originVerified===true)return true;
  if(a.source==='ORIGINAL')return true;
  const sourceRules={
@@ -800,13 +799,15 @@ function isJapaneseOriginAnime(a){
   OTHER:{type:'MANGA',formats:['MANGA','ONE_SHOT','NOVEL']}
  };
  const rule=sourceRules[a.source];
- if(!rule||!Array.isArray(a.relations?.edges))return false;
- return a.relations.edges.some(edge=>{
+ const relationVerified=!!rule&&Array.isArray(a.relations?.edges)&&a.relations.edges.some(edge=>{
   const node=edge?.node;
   if(!['SOURCE','ADAPTATION'].includes(edge?.relationType)||!node||node.type!==rule.type||node.countryOfOrigin!=='JP'||!rule.formats.includes(node.format))return false;
   const sourceLanguage=[node.originLanguage,node.originalLanguage,node.sourceLanguage,node.language].filter(value=>typeof value==='string'&&value.trim());
   return !sourceLanguage.some(value=>!isJapaneseLanguage(value));
  });
+ if(relationVerified)return true;
+ // AniList sometimes omits source-relation edges. Keep only popular works with a Japanese title for known source types.
+ return !!rule&&Number(a.popularity)>=10000&&hasFamousJapaneseTitle(a);
 }
 const $=s=>document.querySelector(s);let pool=[],questions=[],index=0,points=0,skippedQuestionCount=0,locked=false,questionTimer=null,clockTimer=null,secondsLeft=15,questionDeadline=0,startedAt=0,elapsedSeconds=0,missedQuestions=[],questionAttemptResults=[],reviewMode=false,playMode='normal',roundFailed=false,lastResultData=null,combo=0,bestCombo=0,choiceHintUsed=false,typedHintUsed=false,backgroundLoadPromise=null,sharedCatalogActive=false,requestedQuestionCount=10,rateLimitedUntil=0,failedImageUrls=new Set(),lateSharedCatalogItems=[],autoNextTimer=null,questionAdvanceToken=0;
 function titleImageIsSafe(anime){const image=anime?.coverImage?.large||anime?.coverImage?.medium||anime?.coverImage?.extraLarge||'';return hasUsableImageUrl(image)}
@@ -859,7 +860,7 @@ async function fetchAnime(vars={}){
  const requestPageBatch=async(pages,sort,format,yearStart,yearEnd)=>{
   const fields='id countryOfOrigin source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } format popularity title { romaji english native } description(asHtml:false) synonyms coverImage { large medium extraLarge } episodes seasonYear averageScore genres studios(isMain:true) { nodes { name } } characters(sort:ROLE,perPage:5) { nodes { id name { full native } image { large } } } externalLinks { url site type isDisabled language }';
   const formatArg=(format?',format_in:['+format+']':'')+(yearStart?',startDate_greater:'+(yearStart*10000)+',startDate_lesser:'+((yearEnd+1)*10000):'');
-  const aliases=pages.map((page,index)=>'p'+index+': Page(page:'+page+',perPage:25) { pageInfo { hasNextPage } media(type:ANIME,sort:'+sort+',isAdult:false'+formatArg+') { '+fields+' } }').join(' ');
+  const aliases=pages.map((page,index)=>'p'+index+': Page(page:'+page+',perPage:50) { pageInfo { hasNextPage } media(type:ANIME,sort:'+sort+',isAdult:false'+formatArg+') { '+fields+' } }').join(' ');
   const batchQuery='query { '+aliases+' }';
   let lastError;
   for(let attempt=0;attempt<4;attempt++){
@@ -881,7 +882,7 @@ async function fetchAnime(vars={}){
     if(attempt<3)await new Promise(resolve=>setTimeout(resolve,800*Math.pow(2,attempt)));
    }finally{clearTimeout(timeout)}
   }
-  if(lastError?.batchUnsupported)return Promise.all(pages.map(async page=>{const items=await request({page,perPage:25,format_in:format?[format]:undefined,startDate_greater:yearStart?yearStart*10000+101:undefined,startDate_lesser:yearEnd?yearEnd*10000+1231:undefined},sort);return {items,hasNextPage:items.hasNextPage===true}}));
+  if(lastError?.batchUnsupported)return Promise.all(pages.map(async page=>{const items=await request({page,perPage:50,format_in:format?[format]:undefined,startDate_greater:yearStart?yearStart*10000+101:undefined,startDate_lesser:yearEnd?yearEnd*10000+1231:undefined},sort);return {items,hasNextPage:items.hasNextPage===true}}));
   throw lastError||new Error('データをまとめて取得できませんでした。');
  };
  if(vars.search){const pages=await Promise.all([1,2].map(page=>request({page,perPage:25,search:vars.search})));const raw=mergeAnimeCollection(pages.flat()).filter(isUsableAnime);const unique=deduplicateSearchResults(raw),duplicateCount=Math.max(0,raw.length-unique.length),limited=unique.slice(0,30);limited.duplicateCount=duplicateCount;return limited;}
@@ -978,7 +979,7 @@ async function fetchAnime(vars={}){
  }
  
  if(!initial.length){
-  const first=(await request({page:1,perPage:25},'POPULARITY_DESC')).filter(isUsableAnime);
+  const first=(await request({page:1,perPage:50},'POPULARITY_DESC')).filter(isUsableAnime);
   if(!first.length)throw new Error(lang==='ja'?'作品データを取得できませんでした。通信制限または接続障害の可能性があります。':'Could not load anime data. The connection may be blocked or temporarily unavailable.');
   initial=first;
   try{safeStorage.setItem(cacheKey,JSON.stringify({savedAt:Date.now(),items:initial}))}catch(e){}
@@ -990,15 +991,15 @@ async function fetchAnime(vars={}){
    const makeTasks=()=>{
     const list=[];
     const missingPopularity=[...all.values()].filter(a=>!Number.isFinite(Number(a.popularity))||Number(a.popularity)<=0).map(a=>Number(a.id)).filter(Number.isFinite);
-    for(let i=0;i<missingPopularity.length;i+=25)list.push(['ID_IN',missingPopularity.slice(i,i+25),'enrich']);
+    for(let i=0;i<missingPopularity.length;i+=50)list.push(['ID_IN',missingPopularity.slice(i,i+50),'enrich']);
     // Query all pages available to the public AniList API across complementary sort orders.
     // AniList limits page depth; use its full accessible range for each sort, with no app-level item cap.
     // Start at page 1 so older catalogues are fully backfilled.
-    for(let page=1;page<=200;page++)list.push(['POPULARITY_DESC',page,'fill']);
-    for(let page=1;page<=200;page++)list.push(['ID',page,'fill']);
-    for(let page=1;page<=200;page++)list.push(['ID_DESC',page,'fill']);
-    for(const sort of ['SCORE_DESC','FAVOURITES_DESC'])for(let page=1;page<=200;page++)list.push([sort,page,'fill']);
-    for(const sort of ['TRENDING_DESC','START_DATE_DESC'])for(let page=1;page<=200;page++)list.push([sort,page,'fill']);
+    for(let page=1;page<=100;page++)list.push(['POPULARITY_DESC',page,'fill']);
+    for(let page=1;page<=100;page++)list.push(['ID',page,'fill']);
+    for(let page=1;page<=100;page++)list.push(['ID_DESC',page,'fill']);
+    for(const sort of ['SCORE_DESC','FAVOURITES_DESC'])for(let page=1;page<=100;page++)list.push([sort,page,'fill']);
+    for(const sort of ['TRENDING_DESC','START_DATE_DESC'])for(let page=1;page<=100;page++)list.push([sort,page,'fill']);
     return list;
    };
    // Keep the exact task plan and cursor in IndexedDB so reloading the page resumes rather than restarting.
@@ -1009,7 +1010,7 @@ async function fetchAnime(vars={}){
    const existingFormatScopes=new Set(tasks.filter(task=>task[3]).map(task=>task[0]+'|'+task[3]));
    for(const format of formats)for(const sort of sorts){
     if(existingFormatScopes.has(sort+'|'+format))continue;
-    for(let page=1;page<=200;page++)tasks.push([sort,page,'fill',format]);
+    for(let page=1;page<=100;page++)tasks.push([sort,page,'fill',format]);
    }
    let taskIndex=Number.isInteger(savedProgress?.taskIndex)?Math.max(0,Math.min(tasks.length,savedProgress.taskIndex)):0;
    if(taskIndex>=tasks.length&&Date.now()-Number(savedProgress?.updatedAt||0)>7*24*60*60*1000)taskIndex=0;
@@ -1036,7 +1037,7 @@ async function fetchAnime(vars={}){
     await new Promise(resolve=>setTimeout(resolve,1200));
     let pageResults=[];
     try{
-     pageResults=sort==='ID_IN'?[{items:await request({id_in:page,perPage:25}),hasNextPage:false}]:await requestPageBatch(batch.map(task=>task[1]),sort,format,yearStart,yearEnd);
+     pageResults=sort==='ID_IN'?[{items:await request({id_in:page,perPage:50}),hasNextPage:false}]:await requestPageBatch(batch.map(task=>task[1]),sort,format,yearStart,yearEnd);
      pageResults.forEach(result=>(result.items||[]).forEach(a=>{if(isUsableAnime(a)){const previous=all.get(a.id);all.set(a.id,previous?mergeAnimeRecords(previous,a):a)}}));
     }catch(err){failures+=batch.length;console.warn('Background anime page batch failed:',sort,page,err);const retryable=batch.filter(task=>Number(task[6]||0)<2);if(retryable.length)tasks.push(...retryable.map(task=>[...task,Number(task[6]||0)+1]))}
     if(format&&!yearStart&&batch.some(task=>task[1]===100)&&pageResults.some(result=>result.hasNextPage===true)){
@@ -1346,13 +1347,6 @@ const JAPANESE_SYNOPSIS_OVERRIDES=new Map(Object.entries({
  '僕のヒーローアカデミア６':'ヒーローと敵対勢力の大規模な戦いが迫る中、雄英高校の生徒たちも重要な任務に参加する。緑谷出久たちは仲間と力を合わせ、社会を揺るがす危機に立ち向かっていく。',
  '無職転生Ⅱ ～異世界行ったら本気だす～':'新たな人生を歩むルーデウスは、家族を探す旅の手がかりを求めて魔法大学へ向かう。仲間との出会いや学びを通じて、自分の過去やこれからの生き方に向き合っていく。',
  'とある科学の超電磁砲S':'学園都市で暮らす御坂美琴は、街で起きている不可解な事件を調べるうちに、ある秘密の計画へ近づいていく。仲間たちと協力しながら、事件の真相を追っていく。',
- '魔王学院の不適合者 ～史上最強の魔王の始祖、転生して子孫たちの学校へ通う～':'魔王アノスは平和な時代を築くため、二千年後の世界へ転生する。しかし、魔法の常識も血筋も変化した時代では、彼の力は正しく評価されていなかった。アノスは魔王学院で自らの実力を示していく。',
- 'ニセコイ':'極道一家の跡取りである高校生・一条楽は、転校生の桐崎千棘と事情から恋人のふりをすることになる。お互いに反発しながらも、学校生活や幼い頃の約束を巡る出来事に巻き込まれていく。',
- 'イジらないで、長瀞さん':'内気な高校生の先輩は、後輩の長瀞さんにからかわれるようになる。美術部での交流や日々の出来事を通じて、先輩は少しずつ自分の考えを表現し、二人の距離も変化していく。',
- 'オーバーロードⅡ':'異世界に残ったアインズは、ナザリックの仲間たちとともに新たな世界の情報を集めていく。配下の者たちがそれぞれの目的で行動する中、アインズも周辺勢力との関わりを深めていく。',
- 'ゴールデンタイム':'東京の大学に入学した多田万里は、同じ大学に通う加賀香子や友人たちと出会う。新しい環境で人間関係を築く一方、過去の記憶や自分自身の変化と向き合っていく。',
- 'モブサイコ100 Ⅲ':'強力な超能力を持ちながら目立たず暮らしたい影山茂夫は、進路や人間関係について考え始める。師匠や友人たちとの日々を通じて、自分の気持ちと向き合いながら成長していく。',
- '鋼の錬金術師':'錬金術の禁忌を犯し、身体を失ったエドワードとアルフォンスの兄弟は、元の身体を取り戻す方法を探して旅に出る。国家錬金術師として活動する中で、錬金術と国家を巡る大きな謎に近づいていく。',
 }).map(([title,summary])=>[normalizeAnswer(title),summary]));
 function descriptionOf(a){
  if(lang==='ja'){
