@@ -475,6 +475,9 @@ def test_live_quiz_preparation_performance(browser):
             .map(entry => ({name: entry.name.split('/').pop(), durationMs: Math.round(entry.duration * 10) / 10,
               transferSize: entry.transferSize || null}))
         })""")
+        assert metrics["questionSummaryCached"], (
+            "The active quiz must use a question-choice summary cached for the current catalogue"
+        )
         profile_samples = metrics["profileLoadSamples"][profile_start:]
         log_text = performance_logs[log_start:]
         rounds.append({
@@ -492,6 +495,12 @@ def test_live_quiz_preparation_performance(browser):
         page.locator("#result:not(.hidden)").wait_for(state="visible", timeout=30000)
         if round_index < 2:
             page.locator("#restart").wait_for(state="visible", timeout=30000)
+            page.wait_for_function(
+                """() => typeof questionChoiceSummaryCache !== 'undefined'
+                  && questionChoiceSummaryCache
+                  && questionChoiceSummaryCache.pool === pool""",
+                timeout=15000,
+            )
 
     assert not page_errors, "Live quiz raised JavaScript errors: " + " | ".join(page_errors)
     print("PERFORMANCE: " + json.dumps({
