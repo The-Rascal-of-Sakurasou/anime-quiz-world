@@ -183,6 +183,27 @@ for (const file of ["index.html", "admin.html", "multiplayer.html"]) {
   }
 }
 
+const sitemap = fs.readFileSync("sitemap.xml", "utf8");
+const robots = fs.readFileSync("robots.txt", "utf8");
+const publicSeoPages = [
+  ["index.html", "https://the-rascal-of-sakurasou.github.io/anime-quiz-world/"],
+  ["multiplayer.html", "https://the-rascal-of-sakurasou.github.io/anime-quiz-world/multiplayer.html"],
+  ["recommend.html", "https://the-rascal-of-sakurasou.github.io/anime-quiz-world/recommend.html"],
+  ["guide.html", "https://the-rascal-of-sakurasou.github.io/anime-quiz-world/guide.html"],
+  ["privacy.html", "https://the-rascal-of-sakurasou.github.io/anime-quiz-world/privacy.html"],
+  ["terms.html", "https://the-rascal-of-sakurasou.github.io/anime-quiz-world/terms.html"],
+];
+for (const [file, canonical] of publicSeoPages) {
+  assert.ok(source.get(file).includes('<link rel="canonical" href="' + canonical + '">'), file + ": canonical URL missing or incorrect");
+  assert.ok(sitemap.includes("<loc>" + canonical + "</loc>"), file + ": public page missing from sitemap");
+}
+for (const file of ["multiplayer.html", "privacy.html", "terms.html"]) {
+  assert.ok(source.get(file).includes('property="og:url"'), file + ": social-sharing URL metadata missing");
+  assert.ok(source.get(file).includes('name="twitter:card"'), file + ": X card metadata missing");
+}
+assert.match(robots, /Sitemap:\s*https:\/\/the-rascal-of-sakurasou\.github\.io\/anime-quiz-world\/sitemap\.xml/, "robots.txt must reference the canonical sitemap");
+assert.doesNotMatch(sitemap, /admin\.html/, "The private admin page must stay out of the sitemap");
+
 const admin = source.get("admin.html");
 assert.match(admin, /persistSession\s*:\s*false/, "Admin session persistence must stay disabled");
 assert.match(admin, /autoRefreshToken\s*:\s*true/, "Admin token auto-refresh must stay enabled for active in-memory sessions");
