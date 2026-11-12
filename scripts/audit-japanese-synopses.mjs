@@ -10,13 +10,12 @@ const mapEnd = html.indexOf('}).map(([title,summary])', mapStart);
 if (mapStart < 0 || mapEnd < 0) throw new Error('Could not locate JAPANESE_SYNOPSIS_OVERRIDES.');
 const mapSource = html.slice(mapStart, mapEnd);
 const covered = new Set(
-  [...mapSource.matchAll(/^\s*'((?:\\\\.|[^'])*)'\s*:/gm)]
-    .map(match => normalize(match[1].replaceAll("\\\\'", "'")))
+  [...mapSource.matchAll(/^\s*'([^']*)'\s*:/gm)].map(match => normalize(match[1]))
 );
 
 function normalize(value) {
   return String(value || '').normalize('NFKC').toLocaleLowerCase()
-    .replace(/[\\s　・･:：!！?？.,，。'"“”「」『』()（）‐‑–—_-]/g, '').trim();
+    .replace(/[\s　・･:：!！?？.,，。'"“”「」『』()（）‐‑–—_-]/g, ''), '').trim();
 }
 
 async function fetchAniListPage(page) {
