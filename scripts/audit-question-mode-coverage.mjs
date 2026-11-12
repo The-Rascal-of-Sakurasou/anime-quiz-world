@@ -94,6 +94,14 @@ const eligible = {
   titleStudio: items.filter(a => (a.studios?.nodes || []).some(n => String(n?.name || "").trim()) && studioSet.size >= 4),
 };
 const total = items.length;
+const catalogueBytes = Buffer.byteLength(JSON.stringify(payload), "utf8");
+const fieldBytes = {};
+for (const anime of payload.items) {
+  for (const [key, value] of Object.entries(anime || {})) {
+    fieldBytes[key] = (fieldBytes[key] || 0) + Buffer.byteLength(JSON.stringify(value ?? null), "utf8");
+  }
+}
+const largestFields = Object.entries(fieldBytes).sort((a,b)=>b[1]-a[1]).slice(0,12).map(([field,bytes])=>({field,bytes,percent:catalogueBytes?Number((bytes/catalogueBytes*100).toFixed(1)):0}));
 const summarize = (key, label, ready) => ({
   mode: key, label, total, eligible: ready.length, missing: total-ready.length,
   coveragePercent: total ? Number((ready.length/total*100).toFixed(2)) : 0,
@@ -103,6 +111,9 @@ const report = {
   generatedAt: new Date().toISOString(),
   catalogueGeneratedAt: payload.generatedAt,
   catalogueCount: payload.count,
+  catalogueBytes,
+  averageBytesPerRecord: total ? Math.round(catalogueBytes / total) : 0,
+  largestFields,
   auditedUsableCount: total,
   uniqueBroadcastYears: yearSet.size,
   uniqueProductionStudios: studioSet.size,
@@ -124,6 +135,8 @@ await mkdir("artifacts/question-mode-coverage", { recursive: true });
 await writeFile(REPORT, JSON.stringify(report,null,2)+"\n");
 console.log("Question-mode coverage audit");
 console.log("Catalogue: "+total+" records (generated "+payload.generatedAt+")");
+console.log("JSON size: "+catalogueBytes+" bytes; average "+report.averageBytesPerRecord+" bytes per record");
+console.log("Largest fields: "+largestFields.map(row=>row.field+" "+row.bytes+" bytes ("+row.percent+"%)").join("; "));
 for (const row of report.modes) console.log(row.label+": "+row.eligible+"/"+row.total+" ("+row.coveragePercent+"%); missing "+row.missing);
 console.log("Unique years: "+yearSet.size+"; studios: "+studioSet.size+"; synopsis texts: "+synopsisCandidateCount);
 console.log("Detailed report: "+REPORT);
