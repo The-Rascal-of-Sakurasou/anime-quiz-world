@@ -34,13 +34,12 @@ jobs:
       - name: Check out the test revision
         uses: actions/checkout@v4
 
-      - name: Start a local preview for pull-request browser tests
-        if: github.event_name == 'pull_request'
+      - name: Start a local preview for deterministic browser tests
         run: |
           python3 -m http.server 8765 --bind 127.0.0.1 --directory . >/tmp/aqw-http.log 2>&1 &
           for attempt in $(seq 1 20); do
             if curl --fail --silent http://127.0.0.1:8765/index.html -o /tmp/aqw-index.html; then
-              echo "Local pull-request preview is reachable."
+              echo "Local preview of the checked-out revision is reachable."
               exit 0
             fi
             sleep 1
@@ -48,22 +47,22 @@ jobs:
           cat /tmp/aqw-http.log
           exit 1
 
-      - name: Check deployed GitHub Pages site
+      - name: Check deployed GitHub Pages site reachability
         if: github.event_name != 'pull_request'
         env:
           AQW_BASE_URL: https://the-rascal-of-sakurasou.github.io/anime-quiz-world
         run: |
           set -euo pipefail
           for attempt in $(seq 1 10); do
-            if curl --fail --silent --show-error "$AQW_BASE_URL/index.html" -o /tmp/aqw-index.html \
-              && grep -q 'aqwAuthForm' /tmp/aqw-index.html; then
+            if curl --fail --silent --show-error "$AQW_BASE_URL/index.html" -o /tmp/aqw-published-index.html \
+              && grep -q 'aqwAuthForm' /tmp/aqw-published-index.html; then
               echo "Published Anime Quiz World page is reachable."
               exit 0
             fi
-            echo "Published page not ready (attempt ${attempt}/10)."
+            echo "Published page not reachable (attempt ${attempt}/10)."
             sleep 6
           done
-          echo "Published Anime Quiz World page did not become ready." >&2
+          echo "Published Anime Quiz World page is unavailable." >&2
           exit 1
 
       - name: Set up Python
@@ -84,5 +83,5 @@ jobs:
 
       - name: Test quiz and recommendation diagnosis in Chromium
         env:
-          AQW_BASE_URL: ${{ github.event_name == 'pull_request' && 'http://127.0.0.1:8765' || 'https://the-rascal-of-sakurasou.github.io/anime-quiz-world' }}
+          AQW_BASE_URL: http://127.0.0.1:8765
         run: python scripts/browser-smoke.py
