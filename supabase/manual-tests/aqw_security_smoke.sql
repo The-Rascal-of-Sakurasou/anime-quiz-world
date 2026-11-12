@@ -60,6 +60,31 @@ begin
     raise exception 'FAIL: block lookup is not restricted to a caller-related pair';
   end if;
 
+  if has_table_privilege('authenticated', 'public.aqw_match_rooms', 'SELECT')
+     or has_table_privilege('authenticated', 'public.aqw_match_rooms', 'INSERT')
+     or has_table_privilege('authenticated', 'public.aqw_match_rooms', 'UPDATE')
+     or has_table_privilege('authenticated', 'public.aqw_match_rooms', 'DELETE')
+     or has_table_privilege('authenticated', 'public.aqw_match_players', 'SELECT')
+     or has_table_privilege('authenticated', 'public.aqw_match_players', 'INSERT')
+     or has_table_privilege('authenticated', 'private.aqw_match_questions', 'SELECT')
+     or has_table_privilege('authenticated', 'private.aqw_match_answers', 'SELECT') then
+    raise exception 'FAIL: clients have direct access to match or answer tables';
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.aqw_match_rooms'::regclass
+      and conname = 'aqw_match_rooms_max_players_check'
+      and pg_get_constraintdef(oid) like '%max_players = 2%'
+  ) or not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.aqw_match_players'::regclass
+      and conname = 'aqw_match_players_seat_check'
+      and pg_get_constraintdef(oid) like '%seat <= 2%'
+  ) then
+    raise exception 'FAIL: database constraints do not enforce exactly two players';
+  end if;
+
   if has_table_privilege('authenticated', 'public.user_reports', 'INSERT')
      or has_column_privilege('authenticated', 'public.user_reports', 'status', 'INSERT')
      or has_column_privilege('authenticated', 'public.user_reports', 'reviewed_at', 'INSERT')
