@@ -635,6 +635,25 @@ def test_main_navigation_and_search(browser):
 
     page.locator("#searchTab").click()
     assert page.locator("#search").is_visible(), "Search tab must open the search panel"
+    dedupe_ids = page.evaluate("""() => {
+      const make = (id, native, english, year, format, popularity) => ({
+        id, countryOfOrigin: "JP", source: "ORIGINAL", originVerified: true,
+        isAdult: false, format, seasonYear: year, popularity,
+        title: { native, english, romaji: english }, coverImage: { large: "https://example.test/cover.jpg" },
+        genres: []
+      });
+      return deduplicateSearchResults([
+        make(1, "作品A", "Title A", 2024, "TV", 100),
+        make(2, "作品A", "Title A", 2024, "TV", 90),
+        make(3, "作品A", "Title A Season 2", 2025, "TV", 80),
+        make(4, "別作品", "Title A", 2024, "TV", 70),
+        make(5, "作品A", "Title A", 2024, "OVA", 60)
+      ]).map(item => item.id);
+    }""")
+    assert dedupe_ids == [1, 3, 4, 5], (
+        "Search deduplication must remove exact duplicates without hiding sequels, "
+        "different titles sharing an alias, or distinct formats: " + str(dedupe_ids)
+    )
     page.locator("#query").fill("作品A")
     page.locator("#searchButton").click()
     page.locator("#results .anime").first.wait_for(state="visible", timeout=20000)
