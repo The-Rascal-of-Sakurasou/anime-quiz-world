@@ -89,6 +89,7 @@ const verifiedOfficialOverrides = [
   [392, "幽☆遊☆白書", "https://pierrot.jp/archive/1990/"],
   [100790, "おしりたんてい", "https://oshiri-tantei.com/"],
   [10278, "アイドルマスター", "https://www.aniplex.co.jp/lineup/idolmaster/"],
+  [1887, "らき☆すた", "https://www.kyotoanimation.co.jp/works/luckystar/"],
 ];
 for (const [id, title, expected] of verifiedOfficialOverrides) {
   assert.equal(
