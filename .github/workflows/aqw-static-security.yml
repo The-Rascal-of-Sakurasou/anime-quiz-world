@@ -12,6 +12,7 @@ on:
       - "privacy.html"
       - "terms.html"
       - "scripts/test-static-security.mjs"
+      - "scripts/test-official-site-links.mjs"
       - "scripts/sync-anime-catalog.mjs"
       - "scripts/audit-anime-image-urls.mjs"
       - "scripts/detect-title-image-text.py"
@@ -59,6 +60,7 @@ jobs:
       - name: Run security checks
         run: |
           node scripts/test-static-security.mjs
+          node scripts/test-official-site-links.mjs
           node --check scripts/audit-anime-image-urls.mjs
           node scripts/audit-anime-image-urls.mjs --self-test
           node --check scripts/audit-japanese-synopses.mjs
