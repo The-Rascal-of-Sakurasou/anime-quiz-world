@@ -33,7 +33,7 @@ as $function$
 declare
   v_user_id uuid := auth.uid();
   v_run_id uuid;
-  v_now timestamptz := clock_timestamp();
+  v_now timestamptz;
 begin
   if v_user_id is null then
     raise exception 'ログインが必要です。' using errcode = '28000';
@@ -43,6 +43,7 @@ begin
   perform pg_catalog.pg_advisory_xact_lock(
     pg_catalog.hashtextextended(v_user_id::text, 0)
   );
+  v_now := clock_timestamp();
 
   delete from private.aqw_speed_rush_sessions
    where user_id = v_user_id
