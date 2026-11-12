@@ -9,6 +9,9 @@ on:
       - scripts/browser-smoke.py
       - scripts/test-official-site-links.mjs
       - scripts/audit-anime-image-urls.mjs
+      - scripts/validate-anime-catalog.mjs
+      - scripts/test-anime-search-deduplication.mjs
+      - scripts/audit-anime-image-urls.mjs
       - data/anime-catalog.json
       - data/anime-catalog.json.gz
   push:
@@ -20,6 +23,9 @@ on:
       - recommend.html
       - scripts/browser-smoke.py
       - scripts/test-official-site-links.mjs
+      - scripts/audit-anime-image-urls.mjs
+      - scripts/validate-anime-catalog.mjs
+      - scripts/test-anime-search-deduplication.mjs
       - data/anime-catalog.json
       - data/anime-catalog.json.gz
   workflow_dispatch:
@@ -77,6 +83,12 @@ jobs:
 
       - name: Test official-site link resolution and mobile navigation
         run: node scripts/test-official-site-links.mjs
+
+      - name: Validate shared catalogue and search deduplication
+        run: |
+          node --check scripts/validate-anime-catalog.mjs
+          node scripts/validate-anime-catalog.mjs
+          node scripts/test-anime-search-deduplication.mjs
 
       - name: Test top 100 popular anime cover URLs
         run: |
