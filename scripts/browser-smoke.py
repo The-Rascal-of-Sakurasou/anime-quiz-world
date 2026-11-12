@@ -217,7 +217,11 @@ def test_all_question_modes(browser):
         )
         page = context.new_page()
         errors = []
+        image_failures = []
         page.on("pageerror", lambda error: errors.append(str(error)))
+        page.on("requestfailed", lambda request: image_failures.append({
+            "url": request.url, "failure": request.failure
+        }) if "example.test" in request.url else None)
         install_routes(page)
         page.goto(f"{BASE_URL}/index.html", wait_until="domcontentloaded")
         page.wait_for_function(
@@ -241,10 +245,32 @@ def test_all_question_modes(browser):
         prompt = page.locator("#answerPrompt").inner_text().strip()
         assert prompt, f"Question mode {mode} must display a prompt"
         if mode == "image":
-            page.wait_for_function(
-                "() => { const image = document.querySelector('#cover'); return image && !image.classList.contains('hidden') && image.complete && image.naturalWidth > 0; }",
-                timeout=15000,
-            )
+            try:
+                page.wait_for_function(
+                    "() => { const image = document.querySelector('#cover'); return image && !image.classList.contains('hidden') && image.complete && image.naturalWidth > 0; }",
+                    timeout=15000,
+                )
+            except Exception as error:
+                image_state = page.evaluate("""() => {
+                  const image = document.querySelector('#cover');
+                  return {
+                    src: image?.getAttribute('src') || '',
+                    currentSrc: image?.currentSrc || '',
+                    complete: image?.complete ?? null,
+                    naturalWidth: image?.naturalWidth ?? null,
+                    naturalHeight: image?.naturalHeight ?? null,
+                    className: image?.className || '',
+                    alt: image?.alt || '',
+                    feedback: document.querySelector('#feedback')?.textContent || '',
+                    prompt: document.querySelector('#answerPrompt')?.textContent || '',
+                    mode: document.querySelector('#modeSelect')?.value || '',
+                    questionMode: window.currentQuestionMode || null
+                  };
+                }""")
+                raise AssertionError(
+                    "Image question did not load its cover: "
+                    + json.dumps({"state": image_state, "requestFailures": image_failures, "pageErrors": errors}, ensure_ascii=False)
+                ) from error
         answers.first.click()
         page.locator("#result:not(.hidden)").wait_for(state="visible", timeout=20000)
         assert not errors, f"Question mode {mode} raised JavaScript errors: " + " | ".join(errors)
