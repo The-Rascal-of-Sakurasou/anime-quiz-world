@@ -430,6 +430,8 @@ assert.match(syncScript, /isAdult:false/, "Shared catalogue sync must exclude ad
 assert.match(syncScript, /const OVERFLOW_SORTS = \['SCORE_DESC', 'FAVOURITES_DESC', 'TRENDING_DESC', 'START_DATE_DESC'\]/, "Shared catalogue sync must cover AniList pagination overflow");
 assert.ok(syncWorkflow.includes("# Manual-only while AniList bulk-data usage terms are reviewed."), "Bulk catalogue sync must remain manual until API terms are reviewed");
 assert.doesNotMatch(syncWorkflow, /cron:|^\\s+push:/m, "Bulk catalogue sync must not run automatically while terms are unresolved");
+assert.match(syncWorkflow, /terms_reviewed:/, "Manual bulk sync must require explicit terms review");
+assert.match(syncWorkflow, /if: inputs\\.terms_reviewed == true/, "Bulk sync must be gated on the reviewed-terms confirmation");
 assert.ok(syncScript.includes("const incremental = process.env.AQW_FULL_CATALOG !== 'true'"), "Shared catalogue sync must preserve the existing catalogue during incremental runs");
 assert.ok(syncScript.includes("if (appendOnly && addedThisBatch === 0) return false"), "Incremental discovery must stop after reaching existing catalogue records");
 assert.match(syncWorkflow, /workflow_dispatch:/, "Shared catalogue sync must support manual runs");
