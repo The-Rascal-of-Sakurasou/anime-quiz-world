@@ -13,7 +13,9 @@ on:
       - "privacy.html"
       - "terms.html"
       - "scripts/test-static-security.mjs"
+      - "scripts/test-anime-search-deduplication.mjs"
       - "scripts/test-official-site-links.mjs"
+      - "scripts/test-anime-search-deduplication.mjs"
       - "scripts/sync-anime-catalog.mjs"
       - "scripts/audit-anime-image-urls.mjs"
       - "scripts/detect-title-image-text.py"
@@ -63,6 +65,7 @@ jobs:
         run: |
           node scripts/test-static-security.mjs
           node scripts/test-official-site-links.mjs
+          node scripts/test-anime-search-deduplication.mjs
           node --check scripts/audit-anime-image-urls.mjs
           node scripts/audit-anime-image-urls.mjs --self-test
           node --check scripts/audit-japanese-synopses.mjs
