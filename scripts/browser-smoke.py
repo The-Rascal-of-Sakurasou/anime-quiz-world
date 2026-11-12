@@ -240,6 +240,8 @@ def test_all_question_modes(browser):
         page.locator("#answerFormatSelect").select_option("choices")
         page.locator("#difficultySelect").select_option("easy")
         page.locator("#questionCount").fill("1")
+        # Keep the question alive while validating image decoding in slower CI runners.
+        page.locator("#timeLimitSelect").select_option("60")
         page.locator("#start").click()
         answers = page.locator("#answers button.answer")
         try:
