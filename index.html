@@ -3681,23 +3681,27 @@ async function submitUserReport(){
  const reason=$s('aqwReportReason').value;
  const details=$s('aqwReportDetails').value.trim();
  const button=$s('aqwSubmitReport');button.disabled=true;
- const {error}=await sb.from('user_reports').insert({
-  reporter_id:currentUser.id,
-  reported_user_id:reportTargetUserId,
-  message_id:reportTargetMessageId,
-  post_id:reportTargetPostId,
-  reason,
-  details
- });
- button.disabled=false;
- if(error){
-  message($s('aqwReportStatus'),error.code==='23505'
-   ?(localJa()?'この内容はすでに通報されています。':'This item has already been reported.')
-   :(localJa()?'通報できませんでした：':'Could not submit report: ')+errText(error));
-  return;
+ try{
+  const {error}=await sb.from('user_reports').insert({
+   reporter_id:currentUser.id,
+   reported_user_id:reportTargetUserId,
+   message_id:reportTargetMessageId,
+   post_id:reportTargetPostId,
+   reason,
+   details
+  });
+  if(error){
+   message($s('aqwReportStatus'),error.code==='23505'
+    ?(localJa()?'この内容はすでに通報されています。':'This item has already been reported.')
+    :(localJa()?'通報できませんでした：':'Could not submit report: ')+errText(error));
+   button.disabled=false;
+   return;
+  }
+  message($s('aqwReportStatus'),localJa()?'通報を受け付けました。':'Report submitted.');
+ }catch(error){
+  message($s('aqwReportStatus'),(localJa()?'通報できませんでした：':'Could not submit report: ')+errText(error));
+  button.disabled=false;
  }
- message($s('aqwReportStatus'),localJa()?'通報を受け付けました。':'Report submitted.');
- button.disabled=true;
 }
 async function openFriendConversation(friendId,friendName){
  if(!currentUser)return;
@@ -3754,12 +3758,15 @@ async function loadMessages(){
 }
 async function sendFriendMessage(e){
  e.preventDefault();if(!currentUser||!selectedFriendId)return;
- const input=$s('aqwMessageInput'),body=input.value.trim();if(!body)return;
- $s('aqwSendMessage').disabled=true;message($s('aqwMessageStatus'),localJa()?'送信中…':'Sending…');
- const {error}=await sb.from('friend_messages').insert({sender_id:currentUser.id,recipient_id:selectedFriendId,body});
- $s('aqwSendMessage').disabled=false;
- if(error){message($s('aqwMessageStatus'),error.code==='42501'?(localJa()?'この相手とのチャットは利用できません。':'Chat is unavailable for this user.'):(localJa()?'送信できませんでした：':'Could not send: ')+errText(error));return}
- input.value='';message($s('aqwMessageStatus'),localJa()?'送信しました。':'Sent.');await loadMessages();
+ const input=$s('aqwMessageInput'),body=input.value.trim(),button=$s('aqwSendMessage');if(!body)return;
+ button.disabled=true;message($s('aqwMessageStatus'),localJa()?'送信中…':'Sending…');
+ try{
+  const {error}=await sb.from('friend_messages').insert({sender_id:currentUser.id,recipient_id:selectedFriendId,body});
+  if(error){message($s('aqwMessageStatus'),error.code==='42501'?(localJa()?'この相手とのチャットは利用できません。':'Chat is unavailable for this user.'):(localJa()?'送信できませんでした：':'Could not send: ')+errText(error));return}
+  input.value='';message($s('aqwMessageStatus'),localJa()?'送信しました。':'Sent.');await loadMessages();
+ }catch(error){
+  message($s('aqwMessageStatus'),(localJa()?'送信できませんでした：':'Could not send: ')+errText(error));
+ }finally{button.disabled=false}
 }
 
 function officialAnimeLink(anime){
