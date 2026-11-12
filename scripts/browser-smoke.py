@@ -282,7 +282,18 @@ def test_all_question_modes(browser):
                     feedback: document.querySelector('#feedback')?.textContent || '',
                     prompt: document.querySelector('#answerPrompt')?.textContent || '',
                     mode: document.querySelector('#modeSelect')?.value || '',
-                    questionMode: window.currentQuestionMode || null
+                    questionMode: typeof currentQuestionMode === 'undefined' ? null : currentQuestionMode,
+                    questionIndex: typeof index === 'undefined' ? null : index,
+                    questionCount: typeof questions === 'undefined' ? null : questions.length,
+                    currentQuestion: typeof questions === 'undefined' ? null : (() => {
+                      const q = questions[index];
+                      return q ? {
+                        id: q.id,
+                        title: q.title,
+                        coverImage: q.coverImage || null,
+                        selectedImage: q.coverImage?.extraLarge || q.coverImage?.large || q.coverImage?.medium || ''
+                      } : null;
+                    })()
                   };
                 }""")
                 raise AssertionError(
