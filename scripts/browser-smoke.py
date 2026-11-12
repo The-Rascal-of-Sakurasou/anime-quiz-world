@@ -392,7 +392,7 @@ def test_live_quiz_preparation_performance(browser):
         service_workers="block",
     )
     page = context.new_page()
-    page.add_init_script("""() => {
+    page.add_init_script("""(() => {
       window.__aqwLongTasks = [];
       if ('PerformanceObserver' in window) {
         try {
@@ -407,7 +407,7 @@ def test_live_quiz_preparation_performance(browser):
           }).observe({entryTypes: ['longtask']});
         } catch {}
       }
-    }""")
+    })();""")
     page_errors = []
     performance_logs = []
     page.on("pageerror", lambda error: page_errors.append(str(error)))
