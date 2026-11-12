@@ -11,7 +11,6 @@ on:
       - scripts/audit-anime-image-urls.mjs
       - scripts/validate-anime-catalog.mjs
       - scripts/test-anime-search-deduplication.mjs
-      - scripts/audit-anime-image-urls.mjs
       - data/anime-catalog.json
       - data/anime-catalog.json.gz
   push:
@@ -116,3 +115,46 @@ jobs:
         env:
           AQW_BASE_URL: http://127.0.0.1:8765
         run: python scripts/browser-smoke.py
+
+      - name: Wait for deployed revision and validate public catalogue
+        if: github.event_name != 'pull_request'
+        env:
+          AQW_BASE_URL: https://the-rascal-of-sakurasou.github.io/anime-quiz-world
+        run: |
+          set -euo pipefail
+          EXPECTED_MARKER=$(python - <<'PY'
+          import re
+          with open("index.html", encoding="utf-8") as handle:
+              html = handle.read()
+          match = re.search(r'<meta name="aqw-build-marker" content="([^"]+)"', html)
+          if not match:
+              raise SystemExit("Expected AQW build marker is missing.")
+          print(match.group(1))
+          PY
+          )
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error "$AQW_BASE_URL/index.html" -o /tmp/aqw-live-index.html \
+              && grep -Fq "$EXPECTED_MARKER" /tmp/aqw-live-index.html \
+              && curl --fail --silent --show-error "$AQW_BASE_URL/data/anime-catalog.json.gz" -o /tmp/aqw-live-catalogue.gz; then
+              python - <<'PY'
+          import gzip, json
+          with gzip.open("/tmp/aqw-live-catalogue.gz", "rt", encoding="utf-8") as handle:
+              catalogue = json.load(handle)
+          items = catalogue.get("items", [])
+          assert len(items) >= 9000, f"Unexpected public catalogue size: {len(items)}"
+          assert not any("characters" in item for item in items), "Unused character records found."
+          print(f"Live catalogue verified: {len(items)} records.")
+          PY
+              exit 0
+            fi
+            echo "Waiting for deployed build $EXPECTED_MARKER (attempt ${attempt}/30)."
+            sleep 6
+          done
+          echo "The expected public build was not deployed." >&2
+          exit 1
+
+      - name: Test deployed public site with real catalogue data
+        if: github.event_name != 'pull_request'
+        env:
+          AQW_BASE_URL: https://the-rascal-of-sakurasou.github.io/anime-quiz-world
+        run: python scripts/browser-smoke.py --public-smoke
