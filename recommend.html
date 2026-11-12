@@ -263,6 +263,37 @@ const questions=[
 {label:'1話ごとに話がまとまる物語',tagWeights:{Episodic:2.2}},
 {label:'全体の物語も、各話の面白さもある作品',tagWeights:{Episodic:0.7}},
 {label:'特にこだわりはない'}
+]},
+
+{dimension:'visual_style',title:'どんな映像表現が好み？',help:'作品の映像や演出で惹かれるものを選んでください。',options:[
+{label:'迫力のあるアクションや動き',tags:['Full CGI']},
+{label:'美しい背景や世界の描写',tags:['Urban','Rural']},
+{label:'独特で印象に残る演出',tags:['Surreal','Experimental']},
+{label:'自然で見やすい映像',tags:['Character Development']}
+]},
+{dimension:'sound_music',title:'音楽や音の演出で重視するのは？',help:'作品を盛り上げる音の要素を選んでください。',options:[
+{label:'熱く盛り上がる主題歌や劇伴',tags:['Music','Coming of Age']},
+{label:'緊張感を高める音楽',tags:['Psychological','Thriller']},
+{label:'感情に寄り添う落ち着いた音楽',tags:['Iyashikei','Drama']},
+{label:'音楽はあまり気にしない'}
+]},
+{dimension:'stakes',title:'物語で描かれる危機や課題の規模は？',help:'登場人物が向き合う問題の大きさを選んでください。',options:[
+{label:'世界や社会を揺るがす大きな危機',tags:['War','Politics','Survival']},
+{label:'組織や仲間を守るための戦い',tags:['Military','Team Sports']},
+{label:'個人の人生や身近な問題',tags:['Coming of Age','Family']},
+{label:'大きな危機より日々の出来事',tags:['Slice of Life','Iyashikei']}
+]},
+{dimension:'ending_preference',title:'結末はどのようなものが好み？',help:'ネタバレではなく、作品全体の結末の傾向を選んでください。',options:[
+{label:'明確に決着がつく結末',tags:['Satisfying Ending']},
+{label:'余韻が残り、考える余地がある結末',tags:['Bittersweet Ending']},
+{label:'意外な展開で驚かされる結末',tags:['Surprise Ending']},
+{label:'結末のタイプにはこだわらない'}
+]},
+{dimension:'source_preference',title:'作品の世界観や題材で惹かれるものは？',help:'特に見てみたい題材を選んでください。',options:[
+{label:'科学技術や未来の社会',tags:['Technology','Cyberpunk','Space']},
+{label:'歴史や実在の出来事をもとにした物語',tags:['Historical','Politics']},
+{label:'神話・伝承・伝説をもとにした物語',tags:['Mythology','Supernatural']},
+{label:'現実にはない独自の設定',tags:['World Building','Magic']}
 ]}
 ];
 const allQuestionTitles=questions.map(q=>q.title.trim());
@@ -275,11 +306,11 @@ const duplicateChoiceLabels=questions.some(q=>new Set(q.options.map(o=>o.label.t
 if(new Set(questionTitles).size!==questionTitles.length||new Set(questionDimensions).size!==questionDimensions.length||questionDimensions.some(d=>typeof d!=='string'||!d)||questions.some(q=>new Set(q.options.map(o=>o.label.trim())).size!==q.options.length)){
  throw new Error('診断の質問または選択肢に重複があります。');
 }
-const MAX_QUESTIONS=20;
-if(questions.length>MAX_QUESTIONS)throw new Error('診断の質問数が上限の20問を超えています。');
+const FIXED_QUESTION_COUNT=18;
+if(questions.length!==FIXED_QUESTION_COUNT)throw new Error('診断の質問数は18問固定です。')
 let step=0;const answers=Array(questions.length).fill(null);
-const SAVE_KEY='aqw-recommendation-v5';
-const PREVIOUS_SAVE_KEY='aqw-recommendation-v4';
+const SAVE_KEY='aqw-recommendation-v6';
+const PREVIOUS_SAVE_KEY='aqw-recommendation-v5';
 const LEGACY_SAVE_KEY='aqw-recommendation-v2';
 const FEEDBACK_KEY='aqw-recommendation-feedback-v1';
 const EVALUATION_HISTORY_KEY='aqw-recommendation-evaluation-history-v1';
@@ -561,7 +592,7 @@ function runRecommendationSelfTests(){
   const profile=profileFromAnswers(answerSet);
   return eligibilitySamples.filter(anime=>isRecommendationCandidate(anime,profile)).map(anime=>anime.id).join(',')===eligibilityBaseline;
  });
- check('52選択肢のどれを選んでも候補作品の適格判定は変わらない',profileIndependentEligibility);
+ check('72選択肢のどれを選んでも候補作品の適格判定は変わらない',profileIndependentEligibility);
  const allCandidates=[{id:1,_score:100,_popularity:100},{id:2,_score:-80,_popularity:5},{id:3,_score:0,_popularity:20}];
  const openPool=buildDiscoveryPool(allCandidates,new Set([1]));
  check('相性スコアが低い作品も意外なおすすめ候補に残る',openPool.some(a=>a.id===2));
@@ -602,7 +633,7 @@ function runRecommendationSelfTests(){
  check('全ページ失敗時も取得失敗を警告する',buildRecommendationDataWarnings(1,1)[0]?.includes('1/1ページ'));
    const questionByDimension=new Map(questions.map(q=>[q.dimension,q]));
   const tagsFor=dimension=>new Set((questionByDimension.get(dimension)?.options||[]).flatMap(option=>option.tags||[]));
-  check('診断は13問を維持',questions.length===13);
+  check('診断は18問固定',questions.length===18&&FIXED_QUESTION_COUNT===18);
   check('13問すべてに異なる分類が設定されている',new Set(questions.map(q=>q.dimension)).size===13);
   const profileProbeOk=questions.every((question,questionIndex)=>question.options.every((option,optionIndex)=>{
    const probe=Array(questions.length).fill(null);probe[questionIndex]=optionIndex;
@@ -614,8 +645,8 @@ function runRecommendationSelfTests(){
    }
    return JSON.stringify(actual)===JSON.stringify(expected);
   }));
-  check('全52選択肢の回答が推薦profileへ正しく反映される',profileProbeOk);
-  check('全13問の選択肢ラベルが重複していない',!duplicateChoiceLabels&&questions.every(q=>q.options.length===4));
+  check('全72選択肢の回答が推薦profileへ正しく反映される',profileProbeOk);
+  check('全18問の選択肢ラベルが重複していない',!duplicateChoiceLabels&&questions.every(q=>q.options.length===4));
   check('舞台質問はジャンル加点と分離',questionByDimension.get('setting').options.every(o=>!o.genres?.length));
   check('物語の複雑さはジャンル加点と分離',questionByDimension.get('narrative_complexity').options.every(o=>!o.genres?.length&&!o.avoidGenres?.length));
   check('シンプル回答は考察要素を抑える',questionByDimension.get('narrative_complexity').options[0].avoidTags?.includes('Conspiracy')&&questionByDimension.get('narrative_complexity').options[0].avoidTags?.includes('World Building'));
@@ -624,7 +655,7 @@ function runRecommendationSelfTests(){
   check('人物関係の質問は恋愛量と重複しない',questionByDimension.get('relationships').options.every(o=>!o.genres?.includes('Romance')&&!o.tags?.includes('Love Triangle')));
   check('テンポと物語構成を別の信号で扱う',questionByDimension.get('pacing').options.every(o=>!o.genres?.length)&&questionByDimension.get('story_structure').options.some(o=>o.tagWeights?.Episodic>0));
   check('笑いとシリアスの配分を独立して反映する',questionByDimension.get('tone_balance').options.some(o=>o.genreWeights?.Comedy>0)&&questionByDimension.get('tone_balance').options.some(o=>o.genreWeights?.Drama>0));
-  const legacyRelationshipAnswers=Array(13).fill(0);legacyRelationshipAnswers[9]=3;
+  const legacyRelationshipAnswers=Array(18).fill(0);legacyRelationshipAnswers[9]=3;
   check('旧13問版の恋愛関係回答は恋愛量と重複させず再回答を求める',mapLegacyThirteenAnswers(legacyRelationshipAnswers)?.[9]===null);
   const previousV4Answers=Array(13).fill(0);
   check('直前の13問版の保存回答を新しい質問順へ移行',mapVersionFourAnswersToThirteen(previousV4Answers)?.[1]===2&&mapVersionFourAnswersToThirteen(previousV4Answers)?.[8]===3);
@@ -732,7 +763,7 @@ function runRecommendationSelfTests(){
 }
 
 function saveDiagnosis(result=null){
- try{const data={v:5,savedAt:new Date().toISOString(),answers:[...answers],favorite:$('favoriteTitles').value.slice(0,180),disliked:$('dislikedTitles').value.slice(0,180),result};safeStorage.setItem(SAVE_KEY,JSON.stringify(data));}
+ try{const data={v:6,savedAt:new Date().toISOString(),answers:[...answers],favorite:$('favoriteTitles').value.slice(0,180),disliked:$('dislikedTitles').value.slice(0,180),result};safeStorage.setItem(SAVE_KEY,JSON.stringify(data));}
  catch(e){$('shareStatus').textContent='保存できませんでした。ブラウザの保存容量や設定を確認してください。';}
 }
 function restoreSavedDiagnosis(){
@@ -1220,11 +1251,14 @@ function mapVersionFourAnswersToThirteen(values){
 function normalizeSharedAnswers(state){
  if(!Array.isArray(state?.a))return null;
  let values;
- if(state.v===5){
+ if(state.v===6){
   if(state.a.length!==questions.length)return null;
   values=state.a;
+ }else if(state.v===5){
+  if(state.a.length!==13||!areValidLegacyAnswers(state.a))return null;
+  values=[...state.a,...Array(5).fill(null)];
  }else if(state.v===4){
-  values=mapVersionFourAnswersToThirteen(state.a);
+  const old=mapVersionFourAnswersToThirteen(state.a);values=old?[...old,...Array(5).fill(null)]:null;
  }else if(state.v===3){
   values=mapLegacySevenAnswersToThirteen(state.a);
  }else if(state.v===2){
@@ -1236,11 +1270,14 @@ function normalizeSharedAnswers(state){
 function normalizeSavedAnswers(data){
  if(!Array.isArray(data?.answers))return null;
  let values;
- if(data.v===5){
+ if(data.v===6){
   if(data.answers.length!==questions.length)return null;
   values=data.answers;
+ }else if(data.v===5){
+  if(data.answers.length!==13||!areValidLegacyAnswers(data.answers))return null;
+  values=[...data.answers,...Array(5).fill(null)];
  }else if(data.v===4){
-  values=mapVersionFourAnswersToThirteen(data.answers);
+  const old=mapVersionFourAnswersToThirteen(data.answers);values=old?[...old,...Array(5).fill(null)]:null;
  }else if([1,2].includes(data.v)){
   if(data.answers.length===7){
    values=mapLegacySevenAnswersToThirteen(data.answers);
