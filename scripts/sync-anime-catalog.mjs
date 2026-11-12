@@ -269,7 +269,8 @@ for (const format of FORMATS) {
   await scanScope(format, 'POPULARITY_DESC', undefined, undefined, false, true, 20);
 }
 
-const items = [...records.values()].map((anime) => {
+// Recheck the final merged set so legacy placeholder covers cannot survive an incremental refresh.
+const items = [...records.values()].filter(isUsableAnime).map((anime) => {
   const { source, relations, ...compact } = dedupeAnimeMetadata(anime);
   compact.description = compactDescription(compact.description);
   compact.externalLinks = compactOfficialExternalLinks(compact.externalLinks);
