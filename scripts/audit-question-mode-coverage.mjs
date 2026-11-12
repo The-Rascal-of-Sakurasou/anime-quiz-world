@@ -114,7 +114,7 @@ const titleVariants = (a) => {
 const curatedMap = new Map();
 for (const [names, alias] of CURATED) for (const name of names) curatedMap.set(norm(name), alias);
 function aliases(a) {
-  const primaryTitles = [a?.title?.romaji, a?.title?.english, a?.title?.native].filter(Boolean), values = [], keys = new Set(primaryTitles.map(norm)), titleVariantKeys = new Set(titleVariants({ ...a, synonyms: [] }).map(norm));
+  const primaryTitles = [a?.title?.romaji, a?.title?.english, a?.title?.native].filter(Boolean), values = [], keys = new Set(primaryTitles.map(norm)), titleVariantKeys = new Set([...titleVariants({ ...a, synonyms: [] })].map(norm));
   for (const candidate of [a?.title?.romaji, a?.title?.english, a?.title?.native].filter(Boolean)) {
     const curated = curatedMap.get(norm(candidate)) || [...titleVariantKeys].map(key => curatedMap.get(key)).find(Boolean); if (curated) values.push(curated);
   }
