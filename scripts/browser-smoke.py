@@ -333,6 +333,14 @@ def test_all_question_modes(browser):
         assert rendered_mode == mode, (
             f"Question mode {mode} silently fell back to {rendered_mode!r}"
         )
+        if mode == "synopsis":
+            assert re.search(r"[ぁ-んァ-ヶ一-龯]", prompt), (
+                "Japanese synopsis questions must display a Japanese prompt: " + prompt
+            )
+            for label in answers.all_inner_texts():
+                assert re.search(r"[ぁ-んァ-ヶ一-龯]", label), (
+                    "Japanese synopsis answer choices must use Japanese titles: " + label
+                )
         assert not console_errors, (
             f"Question mode {mode} logged browser console errors: " + " | ".join(console_errors)
         )
