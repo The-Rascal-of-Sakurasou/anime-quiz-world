@@ -36,6 +36,12 @@ const officialAnimeLink = new Function(
 )(getSearchAnimeOfficialUrl);
 
 assert.equal(
+  getSearchAnimeOfficialUrl({ id: 21366, title: { native: "３月のライオン" } }),
+  "https://www.aniplex.co.jp/lineup/3lion/",
+  "3-gatsu no Lion must link to Aniplex's official anime page"
+);
+
+assert.equal(
   getSearchAnimeOfficialUrl({ id: 199, title: { native: "千と千尋の神隠し" } }),
   "https://www.ghibli.jp/works/chihiro/",
   "Curated overrides must be used before external links"
