@@ -308,11 +308,14 @@ def test_public_catalogue_all_modes(browser):
     modes = ["synopsis", "titleYear", "synonym", "titleStudio"]
     timings = []
     for index, mode in enumerate(modes):
+        if index:
+            page.locator("#homeAfterQuiz").click()
+            page.locator("#setupControls").wait_for(state="visible", timeout=20000)
         page.locator("#modeSelect").select_option(mode)
         page.locator("#answerFormatSelect").select_option("choices")
         page.locator("#difficultySelect").select_option("easy")
         page.locator("#questionCount").fill("1")
-        start_button = page.locator("#start" if index == 0 else "#restart")
+        start_button = page.locator("#start")
         start_button.wait_for(state="visible", timeout=20000)
         started = __import__("time").perf_counter()
         start_button.click()
