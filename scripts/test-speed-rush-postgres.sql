@@ -6,7 +6,6 @@ DECLARE
   v_run_id uuid;
   v_result jsonb;
   v_elapsed_ms integer;
-  v_attempt_count integer;
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', true);
   v_result := public.start_aqw_speed_rush();
@@ -47,13 +46,7 @@ BEGIN
     NULL;
   END;
 
-  SELECT count(*) INTO v_attempt_count
-    FROM private.aqw_speed_rush_attempts
-   WHERE user_id = '11111111-1111-4111-8111-111111111111'
-     AND run_id = v_run_id;
-  IF v_attempt_count <> 1 THEN
-    RAISE EXCEPTION 'expected exactly one attempt row, found %', v_attempt_count;
-  END IF;
+  PERFORM set_config('aqw_test.run_id', v_run_id::text, false);
 
   IF NOT EXISTS (
     SELECT 1 FROM public.aqw_speed_rush_scores
@@ -66,8 +59,23 @@ BEGIN
 END
 $test$;
 
--- Verify that unauthenticated callers are rejected by the private start logic.
+-- Inspect private attempt storage only after returning to the database owner.
 RESET ROLE;
+DO $attempt_check$
+DECLARE
+  v_attempt_count integer;
+BEGIN
+  SELECT count(*) INTO v_attempt_count
+    FROM private.aqw_speed_rush_attempts
+   WHERE user_id = '11111111-1111-4111-8111-111111111111'
+     AND run_id = current_setting('aqw_test.run_id')::uuid;
+  IF v_attempt_count <> 1 THEN
+    RAISE EXCEPTION 'expected exactly one attempt row, found %', v_attempt_count;
+  END IF;
+END
+$attempt_check$;
+
+-- Verify that unauthenticated callers are rejected by the private start logic.
 SELECT set_config('request.jwt.claim.sub', '', false);
 DO $unauth$
 BEGIN
