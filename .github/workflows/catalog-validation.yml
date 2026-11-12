@@ -5,11 +5,13 @@ on:
     branches: [main]
     paths:
       - "scripts/validate-anime-catalog.mjs"
+      - "scripts/test-anime-catalog-validator.mjs"
       - "scripts/fixtures/anime-catalog-sample.json"
       - ".github/workflows/catalog-validation.yml"
   pull_request:
     paths:
       - "scripts/validate-anime-catalog.mjs"
+      - "scripts/test-anime-catalog-validator.mjs"
       - "scripts/fixtures/anime-catalog-sample.json"
       - ".github/workflows/catalog-validation.yml"
   workflow_dispatch:
