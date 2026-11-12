@@ -175,11 +175,11 @@ export function dedupeAnimeMetadata(anime) {
 }
 function compactOfficialExternalLinks(links) {
   return (Array.isArray(links) ? links : []).filter((link) => {
-    if (!link || link.isDisabled || typeof link.url !== 'string' || !/^https?:\\/\\//i.test(link.url)) return false;
+    if (!link || link.isDisabled || typeof link.url !== 'string' || !/^https?:\/\//i.test(link.url)) return false;
     const site = String(link.site || '').toLowerCase();
     const type = String(link.type || '').toUpperCase();
     return /official|公式/i.test(site) &&
-      !/(twitter|x\\.com|facebook|instagram|youtube|tiktok|discord|reddit)/i.test(site) &&
+      !/(twitter|x\.com|facebook|instagram|youtube|tiktok|discord|reddit)/i.test(site) &&
       (!type || type === 'INFO');
   }).map((link) => ({
     url: link.url,
