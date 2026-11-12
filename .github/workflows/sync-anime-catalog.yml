@@ -3,12 +3,19 @@ name: Sync shared anime catalogue
 # Manual-only while AniList bulk-data usage terms are reviewed.
 on:
   workflow_dispatch:
+    inputs:
+      terms_reviewed:
+        description: "A parent or guardian has reviewed AniList's current API terms and confirmed this bulk sync is permitted."
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: write
 
 jobs:
   sync:
+    if: inputs.terms_reviewed == true
     concurrency:
       group: aqw-shared-anime-catalogue-sync-v2
       cancel-in-progress: false
