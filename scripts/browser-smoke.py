@@ -184,6 +184,31 @@ def install_routes(page):
     page.route(re.compile(r"^https://example\.test/.*"), image)
 
 
+def test_compressed_catalogue_preferred(browser):
+    """Verify modern browsers load the gzip catalogue without falling back to JSON."""
+    context = browser.new_context(locale="ja-JP")
+    page = context.new_page()
+    catalogue_requests = []
+    page.on("request", lambda request: catalogue_requests.append(request.url)
+            if "anime-catalog.json" in request.url else None)
+    install_routes(page)
+    page.goto(f"{BASE_URL}/index.html", wait_until="domcontentloaded")
+    page.wait_for_function(
+        """() => {
+          const button = document.querySelector('#start');
+          return button && !button.classList.contains('hidden') && !button.disabled
+            && button.textContent.includes('クイズを開始');
+        }""",
+        timeout=60000,
+    )
+    assert any(url.endswith('anime-catalog.json.gz') for url in catalogue_requests), (
+        "The compressed shared catalogue was not requested: " + repr(catalogue_requests)
+    )
+    assert not any(url.endswith('anime-catalog.json') for url in catalogue_requests), (
+        "The browser fell back to the uncompressed JSON catalogue: " + repr(catalogue_requests)
+    )
+    context.close()
+
 def test_quiz_translation_question_text(browser):
     """Ensure question text and core UI translations work in every supported locale."""
     context = browser.new_context(locale="ja-JP")
@@ -757,6 +782,8 @@ def main():
         try:
             # Run the core quiz journey first so network-heavy checks cannot
             # delay detection of a broken start -> answer -> finish flow.
+            test_compressed_catalogue_preferred(browser)
+            print("PASS: compressed catalogue preferred without JSON fallback")
             test_quiz_translation_question_text(browser)
             print("PASS: question text translations (8 locales)")
             test_quiz_start_answer_finish(browser)
