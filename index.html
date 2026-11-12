@@ -807,7 +807,7 @@ function isJapaneseOriginAnime(a){
  if(relationVerified)return true;
  return !!rule&&Number(a.popularity)>=10000&&hasFamousJapaneseTitle(a);
 }
-const $=s=>document.querySelector(s);let pool=[],questions=[],index=0,points=0,skippedQuestionCount=0,locked=false,questionTimer=null,clockTimer=null,secondsLeft=15,questionDeadline=0,startedAt=0,elapsedSeconds=0,missedQuestions=[],questionAttemptResults=[],reviewMode=false,playMode='normal',roundFailed=false,lastResultData=null,combo=0,bestCombo=0,choiceHintUsed=false,typedHintUsed=false,backgroundLoadPromise=null,sharedCatalogActive=false,requestedQuestionCount=10,rateLimitedUntil=0,failedImageUrls=new Set(),lateSharedCatalogItems=[],autoNextTimer=null,questionAdvanceToken=0,sharedSearchCatalogCache=null;
+const $=s=>document.querySelector(s);let pool=[],questions=[],index=0,points=0,skippedQuestionCount=0,locked=false,questionTimer=null,clockTimer=null,secondsLeft=15,questionDeadline=0,startedAt=0,elapsedSeconds=0,missedQuestions=[],questionAttemptResults=[],reviewMode=false,playMode='normal',roundFailed=false,lastResultData=null,combo=0,bestCombo=0,choiceHintUsed=false,typedHintUsed=false,backgroundLoadPromise=null,sharedCatalogActive=false,requestedQuestionCount=10,rateLimitedUntil=0,failedImageUrls=new Set(),lateSharedCatalogItems=[],autoNextTimer=null,questionAdvanceToken=0,sharedSearchCatalogCache=null,sharedSearchIndexCache=new Map();
 function titleImageIsSafe(anime){const image=anime?.coverImage?.large||anime?.coverImage?.medium||anime?.coverImage?.extraLarge||'';return hasUsableImageUrl(image)}
 async function fetchSharedAnimeCatalog(){
  if(sharedSearchCatalogCache?.length)return sharedSearchCatalogCache;
@@ -897,7 +897,15 @@ async function fetchAnime(vars={}){
    const sharedItems=await fetchSharedAnimeCatalog();
    const localSource=mergeAnimeCollection([...sharedItems,...pool]);
    if(searchKey&&localSource.length){
-    localMatches=localSource.filter(anime=>titleAnswerVariants(anime).some(value=>normalizeAnswer(value).includes(searchKey)));
+    for(const anime of localSource){
+     const id=Number(anime.id);
+     if(!Number.isFinite(id)||sharedSearchIndexCache.has(id))continue;
+     const keys=[...new Set(titleAnswerVariants(anime).map(normalizeAnswer).filter(Boolean))];
+     sharedSearchIndexCache.set(id,{anime,keys});
+    }
+    localMatches=[...sharedSearchIndexCache.values()]
+     .filter(record=>record.keys.some(key=>key.includes(searchKey)))
+     .map(record=>record.anime);
    }
   }catch(error){console.warn('Local anime catalogue search was unavailable:',error)}
   let remoteItems=[];
