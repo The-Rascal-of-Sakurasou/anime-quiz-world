@@ -1263,6 +1263,14 @@ const JAPANESE_SYNOPSIS_OVERRIDES=new Map(Object.entries({
  'ハイキュー!! セカンドシーズン':'春高予選を目指す烏野高校バレー部は、東京での合同合宿に参加する。日向と影山をはじめとする部員たちは、強豪校との練習を通じて新たな課題を見つけ、チームとして成長していく。',
  'ダンジョンに出会いを求めるのは間違っているだろうか':'迷宮都市オラリオで冒険者を目指す少年ベル・クラネルは、小さな神ヘスティアと出会いファミリアに加わる。仲間との冒険や強敵との戦いを通じて、ベルは急速に成長していく。',
  'はたらく魔王さま!':'異世界で敗れた魔王サタンは、現代の東京へ逃れ、笹塚のファストフード店で働き始める。勇者エミリアも人間界に現れ、二人は慣れない日常と異世界の因縁に向き合う。',
+ 'ジョジョの奇妙な冒険 スターダストクルセイダース':'謎の力に目覚めた空条承太郎は、仲間たちとともにエジプトを目指す旅へ出る。宿敵DIOを倒すため、各地で待ち受けるスタンド使いたちとの戦いに挑む。',
+ 'MONSTER':'手術の方針を巡って病院の権力と対立した天才外科医テンマは、かつて救った少年が恐ろしい事件に関わっていることを知る。彼は少年の行方を追い、各地で起こる謎の事件を調べ始める。',
+ '化物語':'高校生の阿良々木暦は、怪異に関わる少女たちと出会い、それぞれが抱える不思議な問題に向き合う。忍野メメの助けを借りながら、言葉と対話を通じて怪異の謎を解いていく。',
+ '終わりのセラフ':'未知のウイルスによって大人が失われ、吸血鬼が人間を支配する世界。孤児院の仲間を奪われた百夜優一郎は、吸血鬼に対抗する日本帝鬼軍へ入り、復讐を誓う。',
+ '小林さんちのメイドラゴン':'会社員の小林は、ある夜に出会ったドラゴンのトールをメイドとして家に迎える。人間の暮らしに慣れないトールや仲間のドラゴンたちとの交流が、賑やかな日常を生み出していく。',
+ '86－エイティシックス－':'隣国との戦争を続ける共和国では、無人兵器とされる機体を少数民族の少年少女たちが操縦していた。指揮官となったレーナは、戦場の実態と仲間たちの想いに向き合う。',
+ 'ヲタクに恋は難しい':'隠れオタクの会社員・桃瀬成海は、転職先で幼なじみの二藤宏嵩と再会する。趣味を理解し合える二人は、ゲームやイベントを楽しみながら不器用な関係を築いていく。',
+ '五等分の花嫁':'家計の事情から家庭教師を引き受けた上杉風太郎は、勉強が苦手な五つ子の姉妹を担当する。個性も考え方も異なる五人と向き合いながら、全員の卒業を目指して奮闘する。',
  '氷菓':'省エネ主義の高校生・折木奉太郎は、古典部で出会った千反田えるの好奇心に巻き込まれる。学校生活の身近な謎を、仲間とともに解き明かしていく。',
  'キルラキル':'父の死の真相を追う纏流子は、片太刀バサミを手に本能字学園へ乗り込む。生徒会長の鬼龍院皐月や特殊な制服を巡る戦いの中で、学園に隠された秘密へ迫っていく。',
  'ソウルイーター':'死神武器職人専門学校に通う職人と武器たちは、魂を集めて死神様の武器を完成させるため任務に挑む。仲間との絆を深めながら、世界を脅かす存在に立ち向かう。',
@@ -1720,7 +1728,7 @@ function synopsisChoiceRecords(a,answerIsTitle=false){
  visit(0.86);if(options.size<4)visit(0.94);if(options.size<4)visit(1.01);
  return [...options.values()]
 }function hasFourDistinctSynopsisChoices(a,answerIsTitle=false){return synopsisChoiceRecords(a,answerIsTitle).length>=4}
-function makeSynopsisOptions(a,answerIsTitle=false){return shuffle(synopsisChoiceRecords(a,answerIsTitle))}function normalizeAnswer(value){return String(value||'').normalize('NFKC').toLocaleLowerCase().replace(/[\s　・･:：!！?？.,，。'"“”「」『』()（）‐‑–—_-]/g,'').trim()}
+function makeSynopsisOptions(a,answerIsTitle=false){return shuffle(synopsisChoiceRecords(a,answerIsTitle))}function normalizeAnswer(value){return String(value||'').normalize('NFKC').toLocaleLowerCase().replace(/[\s　・･:：!！?？.,，。'"“”「」『』()（）‐‑–—―−_-]/g,'').trim()}
 function titleAnswerVariants(a){const titles=[a?.title?.native,a?.title?.english,a?.title?.romaji,titleOf(a),...(a?.synonyms||[])].filter(Boolean),variants=[...titles];for(const title of [a?.title?.english,a?.title?.romaji,...(a?.synonyms||[])].filter(Boolean)){const words=String(title).normalize('NFKC').match(/[A-Za-z0-9]+/g)||[];if(words.length>=2){const initials=words.map(word=>word[0]).join('');if(initials.length>=2&&initials.length<=8)variants.push(initials)}}const seasonPatterns=[/\s*[-:：–—|｜]?\s*(?:第\s*\d+\s*(?:期|シーズン|season)|season\s*\d+|\d+(?:st|nd|rd|th)?\s*season|s\s*\d+)\s*$/i,/\s*[-:：–—|｜]?\s*(?:final\s+season|the\s+final\s+season|second\s+season|third\s+season|fourth\s+season|fifth\s+season|first\s+season|ファースト\s*シーズン|セカンド\s*シーズン|サード\s*シーズン|フォース\s*シーズン|フィフス\s*シーズン|part\s*\d+|第\s*\d+\s*部)\s*$/i,/\s*[-:：–—|｜]?\s*(?:第\s*\d+\s*クール|\d+\s*クール)\s*$/i],moviePatterns=[/^\s*(?:劇場版|the\s+movie|movie\s+version|anime\s+film|film\s+version)\s*[:：\-–—]?\s*/i,/\s*[-:：–—|｜]?\s*(?:劇場版|the\s+movie|movie\s+version|anime\s+film|film\s+version|movie|film)\s*$/i];for(const title of titles){let base=String(title).normalize('NFKC').trim();for(let pass=0;pass<3;pass++){const before=base;for(const pattern of [...seasonPatterns,...moviePatterns])base=base.replace(pattern,'').trim();if(base===before)break}if(base&&base!==title)variants.push(base)}return [...new Set(variants)]}function distinctTitleDistractor(correctAnime,candidate){const correctKeys=new Set(titleAnswerVariants(correctAnime).map(normalizeAnswer).filter(Boolean));return !titleAnswerVariants(candidate).some(title=>{const key=normalizeAnswer(title);return key&&correctKeys.has(key)})}
 function acceptedAnswers(a,mode,correct){if(mode==='titleYear')return [String(animeYear(a))];if(mode==='titleStudio')return [a.studios?.nodes?.[0]?.name||''];return titleAnswerVariants(a)}
 function answersMatch(input,a,mode,correct){const typed=normalizeAnswer(input);if(!typed)return false;const candidates=acceptedAnswers(a,mode,correct).map(normalizeAnswer).filter(Boolean);return candidates.some(x=>x===typed)}
