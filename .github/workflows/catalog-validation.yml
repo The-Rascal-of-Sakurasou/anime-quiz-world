@@ -6,11 +6,13 @@ on:
     paths:
       - "scripts/validate-anime-catalog.mjs"
       - "scripts/test-anime-catalog-validator.mjs"
+      - "scripts/test-anime-catalog-validator.mjs"
       - "scripts/fixtures/anime-catalog-sample.json"
       - ".github/workflows/catalog-validation.yml"
   pull_request:
     paths:
       - "scripts/validate-anime-catalog.mjs"
+      - "scripts/test-anime-catalog-validator.mjs"
       - "scripts/test-anime-catalog-validator.mjs"
       - "scripts/fixtures/anime-catalog-sample.json"
       - ".github/workflows/catalog-validation.yml"
