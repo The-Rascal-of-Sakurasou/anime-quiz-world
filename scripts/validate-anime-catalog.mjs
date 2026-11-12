@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
+import { gunzipSync } from "node:zlib";
 
 const FILE = process.argv[2] || "data/anime-catalog.json";
 const FORMATS = new Set(["TV", "TV_SHORT", "MOVIE", "OVA", "ONA", "SPECIAL"]);
@@ -132,6 +133,11 @@ export function validateCatalog(catalog) {
 
 async function main() {
   const raw = await readFile(FILE, "utf8");
+  const compressed = await readFile(FILE + ".gz");
+  const decompressed = gunzipSync(compressed).toString("utf8");
+  if (decompressed !== raw) {
+    throw new Error("Compressed catalogue does not match the JSON source file.");
+  }
   let catalog;
   try {
     catalog = JSON.parse(raw);
@@ -142,6 +148,7 @@ async function main() {
   const result = validateCatalog(catalog);
   console.log("Catalogue validation passed: " + result.count + " unique Japanese-origin anime.");
   console.log("Generated at: " + result.generatedAt);
+  console.log("Compressed catalogue matches the JSON source.");
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
