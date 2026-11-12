@@ -196,7 +196,7 @@ assert.ok(
   !getSearchAnimeOfficialUrl(oshiriTantei).startsWith(fallback),
   "Oshiri Tantei must resolve its official NHK site link"
 );
-console.log("Reference title pending manual metadata review: おさるのジョージ (no verified AniList catalogue record found)");
+console.log("Reference title pending manual metadata review: おさるのジョージ (no verified AniList record; do not invent a catalogue ID).");
 
 const catalogIds = new Set(catalog.items.map((anime) => Number(anime.id)));
 for (const id of overrides.keys()) {
