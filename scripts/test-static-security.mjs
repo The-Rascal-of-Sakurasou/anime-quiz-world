@@ -286,15 +286,17 @@ assert.match(syncScript, /function isJapaneseOriginAnime\(anime\)/, "Shared cata
 const syncOriginHelper = syncScript.match(/function isJapaneseOriginAnime\(anime\)\s*\{[\s\S]*?\n\}/)?.[0];
 const syncJapaneseTitleHelper = syncScript.match(/function hasJapaneseTitle\(anime\)\s*\{[\s\S]*?\n\}/)?.[0];
 assert.ok(syncOriginHelper && syncJapaneseTitleHelper, "Shared catalogue origin helpers must be extractable for regression tests");
-const isSyncOriginJapanese = vm.runInNewContext(`(()=>{${syncJapaneseTitleHelper};${syncOriginHelper};return isJapaneseOriginAnime})()`);
-assert.equal(isSyncOriginJapanese({ countryOfOrigin: "JP", source: "ORIGINAL" }), true, "Japanese original anime must enter the shared catalogue");
-assert.equal(isSyncOriginJapanese({ countryOfOrigin: "JP", originVerified: true }), true, "The compact shared catalogue may use its build-time verified-origin marker");
-assert.equal(isSyncOriginJapanese({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "ANIME", countryOfOrigin: "JP", format: "TV" } }] } }), true, "Verified Japanese anime-source spin-offs must enter the shared catalogue");
-assert.equal(isSyncOriginJapanese({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "ANIME", countryOfOrigin: "US", format: "TV" } }] } }), false, "Foreign anime-source works must not enter the shared catalogue");
-assert.equal(isSyncOriginJapanese({ countryOfOrigin: "JP", source: "VIDEO_GAME", relations: [] }), false, "Unverified game-source origin must fail closed in the shared catalogue");
-assert.equal(isSyncOriginJapanese({ countryOfOrigin: "US", popularity: 10000, title: { native: "日本語タイトル" } }), true, "Popular foreign anime with a Japanese title must enter the shared catalogue");
-assert.equal(isSyncOriginJapanese({ countryOfOrigin: "US", popularity: 9999, title: { native: "日本語タイトル" } }), false, "Foreign anime below the popularity threshold must stay out of the shared catalogue");
-assert.equal(isSyncOriginJapanese({ countryOfOrigin: "US", popularity: 10000, title: { native: "English Only" } }), false, "Foreign anime without a Japanese title must stay out of the shared catalogue");
+const originResults = vm.runInNewContext(`(()=>{${syncJapaneseTitleHelper};${syncOriginHelper};const check=isJapaneseOriginAnime;return [
+  check({ countryOfOrigin: "JP", source: "ORIGINAL" }),
+  check({ countryOfOrigin: "JP", originVerified: true }),
+  check({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "ANIME", countryOfOrigin: "JP", format: "TV" } }] } }),
+  check({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "ANIME", countryOfOrigin: "US", format: "TV" } }] } }),
+  check({ countryOfOrigin: "JP", source: "VIDEO_GAME", relations: [] }),
+  check({ countryOfOrigin: "US", popularity: 10000, title: { native: "日本語タイトル" } }),
+  check({ countryOfOrigin: "US", popularity: 9999, title: { native: "日本語タイトル" } }),
+  check({ countryOfOrigin: "US", popularity: 10000, title: { native: "English Only" } })
+]})()`);
+assert.deepEqual(originResults, [true, true, true, false, false, true, false, false], "Shared catalogue origin eligibility must pass Japanese works and only popular foreign works with Japanese titles");
 assert.match(syncScript, /startDate_greater/, "The shared catalogue must split oversized format scopes by release decade");
 
 assert.match(syncScript, /if \(anime\.countryOfOrigin !== 'JP'\) return Number\(anime\.popularity\) >= 10000 && hasJapaneseTitle\(anime\)/, "Foreign catalogue entries must pass both the popularity and Japanese-title requirements");
