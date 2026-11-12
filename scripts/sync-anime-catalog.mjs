@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { gzipSync } from 'node:zlib';
+import { isUsableCoverImage } from './catalog-image-url.mjs';
 
 const API = 'https://graphql.anilist.co';
 const OUTPUT = 'data/anime-catalog.json';
@@ -57,8 +58,7 @@ function isUsableAnime(anime) {
     Number.isInteger(Number(anime.id)) &&
     anime.isAdult !== true &&
     isJapaneseOriginAnime(anime) &&
-    /^https?:\/\//i.test(String(image)) &&
-    !/(?:no[-_ ]?image|placeholder|default[-_ ]?image|(?:^|\/)default(?:\.[a-z0-9]+)?(?:[?#]|$))/i.test(String(image)) &&
+    isUsableCoverImage(String(image)) &&
     (anime.title?.native || anime.title?.english || anime.title?.romaji) &&
     FORMATS.includes(anime.format) &&
     !(anime.genres || []).includes('Hentai')
