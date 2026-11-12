@@ -39,13 +39,55 @@ begin
 
   if has_table_privilege(current_user, 'private.aqw_player_stat_runs', 'SELECT')
      or has_table_privilege(current_user, 'private.aqw_speed_rush_attempts', 'SELECT')
-     or has_table_privilege(current_user, 'private.site_admins', 'SELECT') then
+     or has_table_privilege(current_user, 'private.site_admins', 'SELECT')
+     or has_table_privilege(current_user, 'public.user_reports', 'SELECT')
+     or has_table_privilege(current_user, 'public.user_blocks', 'SELECT') then
     raise exception 'FAIL: anonymous role can read a private table';
   end if;
 end
 $anon_checks$;
 
 reset role;
+
+-- Users may submit reports, but cannot set moderation-owned columns.
+do $column_checks$
+begin
+  if has_table_privilege('authenticated', 'public.user_reports', 'INSERT')
+     or has_column_privilege('authenticated', 'public.user_reports', 'status', 'INSERT')
+     or has_column_privilege('authenticated', 'public.user_reports', 'reviewed_at', 'INSERT')
+     or has_column_privilege('authenticated', 'public.user_reports', 'reviewed_by', 'INSERT')
+     or has_column_privilege('authenticated', 'public.user_reports', 'created_at', 'INSERT')
+     or has_column_privilege('authenticated', 'public.user_reports', 'id', 'INSERT') then
+    raise exception 'FAIL: users can set moderation-owned report fields';
+  end if;
+
+  if not has_column_privilege('authenticated', 'public.user_reports', 'reporter_id', 'INSERT')
+     or not has_column_privilege('authenticated', 'public.user_reports', 'reported_user_id', 'INSERT')
+     or not has_column_privilege('authenticated', 'public.user_reports', 'reason', 'INSERT')
+     or not has_column_privilege('authenticated', 'public.user_reports', 'details', 'INSERT') then
+    raise exception 'FAIL: report submission fields are not writable';
+  end if;
+
+  if has_table_privilege('authenticated', 'public.user_reports', 'UPDATE')
+     or has_column_privilege('authenticated', 'public.user_reports', 'details', 'UPDATE')
+     or has_column_privilege('authenticated', 'public.user_reports', 'reporter_id', 'UPDATE') then
+    raise exception 'FAIL: users can update report content or ownership';
+  end if;
+
+  if not has_column_privilege('authenticated', 'public.user_reports', 'status', 'UPDATE')
+     or not has_column_privilege('authenticated', 'public.user_reports', 'reviewed_at', 'UPDATE')
+     or not has_column_privilege('authenticated', 'public.user_reports', 'reviewed_by', 'UPDATE') then
+    raise exception 'FAIL: moderation update fields are not writable';
+  end if;
+
+  if has_table_privilege('authenticated', 'public.user_blocks', 'INSERT')
+     or has_column_privilege('authenticated', 'public.user_blocks', 'created_at', 'INSERT')
+     or not has_column_privilege('authenticated', 'public.user_blocks', 'blocker_id', 'INSERT')
+     or not has_column_privilege('authenticated', 'public.user_blocks', 'blocked_id', 'INSERT') then
+    raise exception 'FAIL: block insertion column privileges are incorrect';
+  end if;
+end
+$column_checks$;
 
 -- The site owner must fail the admin gate at AAL1.
 do $set_aal1$
