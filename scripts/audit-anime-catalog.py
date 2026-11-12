@@ -10,6 +10,7 @@ Requires Python 3.10+, Pillow, and the Tesseract executable with jpn and eng dat
 from __future__ import annotations
 
 import argparse
+import gzip
 import io
 import json
 import re
@@ -30,7 +31,11 @@ SOURCE_RULES = {
     "MANGA": ("MANGA", {"MANGA", "ONE_SHOT"}),
     "LIGHT_NOVEL": ("MANGA", {"NOVEL"}),
     "NOVEL": ("MANGA", {"NOVEL"}),
+    "WEB_NOVEL": ("MANGA", {"NOVEL"}),
     "DOUJINSHI": ("MANGA", {"MANGA", "ONE_SHOT", "NOVEL"}),
+    "VISUAL_NOVEL": ("MANGA", {"MANGA", "ONE_SHOT", "NOVEL"}),
+    "VIDEO_GAME": ("MANGA", {"MANGA", "ONE_SHOT", "NOVEL"}),
+    "OTHER": ("MANGA", {"MANGA", "ONE_SHOT", "NOVEL"}),
     "ANIME": ("ANIME", ALLOWED_FORMATS),
 }
 
@@ -41,8 +46,18 @@ def norm(value: str) -> str:
 
 
 def japanese_origin(item: dict) -> bool:
-    if item.get("countryOfOrigin") != "JP":
+    country = item.get("countryOfOrigin")
+    if not isinstance(country, str) or not country:
         return False
+    if country != "JP":
+        title = item.get("title") or {}
+        names = [title.get("native"), title.get("english"), title.get("romaji")]
+        names.extend(item.get("synonyms") or [])
+        has_japanese_title = any(
+            isinstance(name, str) and re.search(r"[ぁ-んァ-ヶ]", name)
+            for name in names
+        )
+        return int(item.get("popularity") or 0) >= 10000 and has_japanese_title
     if item.get("originVerified") is True or item.get("source") == "ORIGINAL":
         return True
     rule = SOURCE_RULES.get(item.get("source"))
@@ -153,14 +168,21 @@ def main() -> int:
 
     # A partial --limit run must not overwrite the full catalogue or claim the rest were audited.
     if args.limit:
-        print(f"TEST ONLY: retained {len(kept)} Japanese-origin records; OCR checked {len(records)}.")
+        print(f"TEST ONLY: retained {len(kept)} eligible records; OCR checked {len(records)}.")
         print(f"Title/uncertain images excluded: {len(excluded)}; full files were not changed.")
         return 0
 
     payload["items"] = kept
+    payload["count"] = len(kept)
+    if "itemCount" in payload:
+        payload["itemCount"] = len(kept)
     payload["generatedAt"] = datetime.now(timezone.utc).isoformat()
+    payload["originRule"] = "Verified Japanese-origin works plus foreign works with a Japanese-language title and popularity >= 10000"
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+    serialized = json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + "\n"
+    args.output.write_text(serialized, encoding="utf-8")
+    if args.output.resolve() == CATALOG.resolve():
+        args.output.with_suffix(args.output.suffix + ".gz").write_bytes(gzip.compress(serialized.encode("utf-8"), compresslevel=9, mtime=0))
     audit = {
         "schemaVersion": 1,
         "generatedAt": datetime.now(timezone.utc).isoformat(),
@@ -172,7 +194,7 @@ def main() -> int:
         "records": records,
     }
     EXCLUSIONS.write_text(json.dumps(audit, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(f"Japanese-origin catalogue: {len(original)} -> {len(kept)}")
+    print(f"Eligible catalogue: {len(original)} -> {len(kept)}")
     print(f"Images OCR checked: {len(records)}; title/uncertain images excluded: {len(set(excluded))}")
     print(f"Unverified images (excluded): {len(failures)}")
     print(f"Wrote: {args.output.relative_to(ROOT) if args.output.is_relative_to(ROOT) else args.output}")

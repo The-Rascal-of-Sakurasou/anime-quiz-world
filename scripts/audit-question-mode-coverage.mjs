@@ -112,8 +112,11 @@ function aliases(a) {
 function synopsisText(a) { const s = desc(a); return s.length > 260 ? s.slice(0,257).trimEnd()+"…" : s; }
 
 const payload = JSON.parse(await readFile(CATALOG, "utf8"));
-if (payload.schemaVersion !== 2 || !Array.isArray(payload.items) || payload.items.length !== payload.count) throw new Error("Catalogue schema/count validation failed.");
-const items = payload.items.filter(a => a && a.id && a.isAdult !== true && a.countryOfOrigin === "JP" && !((a.genres || []).includes("Hentai")) && ["TV","TV_SHORT","MOVIE","OVA","ONA","SPECIAL"].includes(a.format) && title(a));
+const declaredCount = payload.count ?? payload.itemCount;
+if (payload.schemaVersion !== 2 || !Array.isArray(payload.items) || payload.items.length !== declaredCount) throw new Error("Catalogue schema/count validation failed.");
+const hasJapaneseTitle = (a) => [a?.title?.native,a?.title?.english,a?.title?.romaji,...(Array.isArray(a?.synonyms)?a.synonyms:[])].some(value => typeof value === "string" && /[ぁ-んァ-ヶ]/.test(value));
+const eligibleOrigin = (a) => a?.countryOfOrigin === "JP" || (typeof a?.countryOfOrigin === "string" && a.countryOfOrigin.length > 0 && Number(a?.popularity) >= 10000 && hasJapaneseTitle(a));
+const items = payload.items.filter(a => a && a.id && a.isAdult !== true && eligibleOrigin(a) && !((a.genres || []).includes("Hentai")) && ["TV","TV_SHORT","MOVIE","OVA","ONA","SPECIAL"].includes(a.format) && title(a));
 const yearSet = new Set(items.map(year).filter(y => Number.isInteger(y) && y > 1900));
 const studioSet = new Set(items.flatMap(a => (a.studios?.nodes || []).map(n => norm(n?.name)).filter(Boolean)));
 const aliasOwners = new Map();

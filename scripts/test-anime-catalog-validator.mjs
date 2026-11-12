@@ -5,6 +5,17 @@ import { validateCatalog } from "./validate-anime-catalog.mjs";
 const fixture = JSON.parse(await readFile("scripts/fixtures/anime-catalog-sample.json", "utf8"));
 assert.equal(validateCatalog(fixture).count, 2, "Known-good catalogue fixture should pass");
 
+const foreignFixture = structuredClone(fixture);
+const foreignAnime = structuredClone(fixture.items[0]);
+foreignAnime.id = 3;
+foreignAnime.countryOfOrigin = "US";
+foreignAnime.popularity = 10000;
+foreignAnime.title.native = "海外作品の日本語タイトル";
+delete foreignAnime.originVerified;
+foreignFixture.items.push(foreignAnime);
+foreignFixture.count = foreignFixture.items.length;
+assert.equal(validateCatalog(foreignFixture).count, 3, "Famous foreign anime with a Japanese title should pass");
+
 const rejects = (label, mutate) => {
   const sample = structuredClone(fixture);
   mutate(sample);
@@ -13,7 +24,18 @@ const rejects = (label, mutate) => {
 
 rejects("count mismatch", (sample) => { sample.count += 1; });
 rejects("duplicate AniList IDs", (sample) => { sample.items[1].id = sample.items[0].id; });
-rejects("unverified foreign origin", (sample) => { sample.items[0].countryOfOrigin = "US"; });
+rejects("foreign anime without a Japanese title", (sample) => {
+  sample.items[0].countryOfOrigin = "US";
+  sample.items[0].popularity = 50000;
+  sample.items[0].title.native = "English Only";
+  delete sample.items[0].originVerified;
+});
+rejects("foreign anime below popularity threshold", (sample) => {
+  sample.items[0].countryOfOrigin = "US";
+  sample.items[0].popularity = 9999;
+  sample.items[0].title.native = "海外作品の日本語タイトル";
+  delete sample.items[0].originVerified;
+});
 rejects("missing build-time origin marker", (sample) => { sample.items[0].originVerified = false; });
 rejects("unsupported format", (sample) => { sample.items[0].format = "MUSIC"; });
 rejects("placeholder cover image", (sample) => { sample.items[0].coverImage.large = "https://example.com/no-image.png"; });

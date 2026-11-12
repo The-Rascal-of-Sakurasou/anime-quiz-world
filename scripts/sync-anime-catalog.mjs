@@ -18,15 +18,28 @@ const normalize = (value) => {
   return value;
 };
 
+function hasJapaneseTitle(anime) {
+  const names = [anime?.title?.native, anime?.title?.english, anime?.title?.romaji,
+    ...(Array.isArray(anime?.synonyms) ? anime.synonyms : [])];
+  return names.some((name) => typeof name === 'string' && /[ぁ-んァ-ヶ]/.test(name));
+}
+
 function isJapaneseOriginAnime(anime) {
-  if (!anime || anime.countryOfOrigin !== 'JP') return false;
+  if (!anime || typeof anime.countryOfOrigin !== 'string' || !anime.countryOfOrigin) return false;
+  if (anime.countryOfOrigin !== 'JP') {
+    return Number(anime.popularity) >= 10000 && hasJapaneseTitle(anime);
+  }
   if (anime.originVerified === true) return true;
   if (anime.source === 'ORIGINAL') return true;
   const sourceRules = {
     MANGA: { type: 'MANGA', formats: ['MANGA', 'ONE_SHOT'] },
     LIGHT_NOVEL: { type: 'MANGA', formats: ['NOVEL'] },
     NOVEL: { type: 'MANGA', formats: ['NOVEL'] },
+    WEB_NOVEL: { type: 'MANGA', formats: ['NOVEL'] },
     DOUJINSHI: { type: 'MANGA', formats: ['MANGA', 'ONE_SHOT', 'NOVEL'] },
+    VISUAL_NOVEL: { type: 'MANGA', formats: ['MANGA', 'ONE_SHOT', 'NOVEL'] },
+    VIDEO_GAME: { type: 'MANGA', formats: ['MANGA', 'ONE_SHOT', 'NOVEL'] },
+    OTHER: { type: 'MANGA', formats: ['MANGA', 'ONE_SHOT', 'NOVEL'] },
     ANIME: { type: 'ANIME', formats: ['TV', 'TV_SHORT', 'MOVIE', 'OVA', 'ONA', 'SPECIAL'] },
   };
   const rule = sourceRules[anime.source];
@@ -54,12 +67,13 @@ function isUsableAnime(anime) {
   );
 }
 
-async function fetchBatch(pages, sort, format, yearStart, yearEnd) {
+async function fetchBatch(pages, sort, format, yearStart, yearEnd, includeForeign = false) {
   const dateFilter = Number.isInteger(yearStart) && Number.isInteger(yearEnd)
     ? ',startDate_greater:' + (yearStart * 10000) + ',startDate_lesser:' + ((yearEnd + 1) * 10000)
     : '';
+  const countryFilter = includeForeign ? '' : 'countryOfOrigin:JP,';
   const aliases = pages.map((page, index) =>
-    'p' + index + ': Page(page:' + page + ',perPage:50) { pageInfo { hasNextPage } media(type:ANIME,countryOfOrigin:JP,sort:' +
+    'p' + index + ': Page(page:' + page + ',perPage:50) { pageInfo { hasNextPage } media(type:ANIME,' + countryFilter + 'sort:' +
     sort + ',isAdult:false,format_in:[' + format + ']' + dateFilter + ') { ' + FIELDS + ' } }'
   ).join(' ');
   const query = 'query { ' + aliases + ' }';
@@ -104,11 +118,11 @@ let requests = 0;
 let accepted = 0;
 let filtered = 0;
 
-async function scanScope(format, sort, yearStart, yearEnd, appendOnly = false) {
-  for (let page = 1; page <= 100; page += 3) {
-    const pages = [page, page + 1, page + 2].filter((value) => value <= 100);
+async function scanScope(format, sort, yearStart, yearEnd, appendOnly = false, includeForeign = false, pageLimit = 100) {
+  for (let page = 1; page <= pageLimit; page += 3) {
+    const pages = [page, page + 1, page + 2].filter((value) => value <= pageLimit);
     await sleep(1200);
-    const results = await fetchBatch(pages, sort, format, yearStart, yearEnd);
+    const results = await fetchBatch(pages, sort, format, yearStart, yearEnd, includeForeign);
     requests++;
     let addedThisBatch = 0;
     for (const result of results) {
@@ -134,7 +148,7 @@ async function scanScope(format, sort, yearStart, yearEnd, appendOnly = false) {
     // contains no unseen IDs, older pages cannot add newer catalogue entries.
     if (appendOnly && addedThisBatch === 0) return false;
     if (!hasMore) return false;
-    if (pages.at(-1) === 100) return true;
+    if (pages.at(-1) === pageLimit) return true;
     if (requests % 10 === 0) {
       console.log('Requests: ' + requests + ', unique catalogue: ' + records.size + ', accepted records: ' + accepted);
     }
@@ -230,6 +244,8 @@ async function scanDateRanges(format, sort) {
 for (const format of FORMATS) {
   if (incremental) {
     await scanScope(format, 'ID_DESC', undefined, undefined, true);
+    // Add a bounded supplement of famous foreign works with Japanese titles.
+    await scanScope(format, 'POPULARITY_DESC', undefined, undefined, false, true, 20);
     continue;
   }
   let overflow = false;
@@ -245,13 +261,19 @@ for (const format of FORMATS) {
       if (reachedLimit) await scanDateRanges(format, sort);
     }
   }
+  // The foreign supplement is deliberately popularity-bounded to avoid a catalogue-size explosion.
+  await scanScope(format, 'POPULARITY_DESC', undefined, undefined, false, true, 20);
 }
 
 const items = [...records.values()].map((anime) => {
   const { source, relations, ...compact } = dedupeAnimeMetadata(anime);
   compact.description = compactDescription(compact.description);
   compact.externalLinks = compactOfficialExternalLinks(compact.externalLinks);
-  return { ...compact, originVerified: true };
+  return {
+    ...compact,
+    catalogueEligible: true,
+    originVerified: compact.countryOfOrigin === 'JP',
+  };
 }).sort((a, b) =>
   (Number(b.popularity) || 0) - (Number(a.popularity) || 0) || Number(a.id) - Number(b.id)
 );
@@ -260,7 +282,7 @@ const output = {
   schemaVersion: 2,
   generatedAt: unchanged ? previousOutput.generatedAt : new Date().toISOString(),
   source: 'AniList GraphQL API',
-  originRule: 'Japanese-origin verification matching the AQW client filter',
+  originRule: 'Verified Japanese-origin works plus foreign works with a Japanese-language title and popularity >= 10000',
   count: items.length,
   items,
 };
