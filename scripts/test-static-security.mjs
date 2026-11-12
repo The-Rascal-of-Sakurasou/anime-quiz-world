@@ -132,6 +132,10 @@ assert.match(multiplayer, /functions\/v1\/aqw-match-prepare/, "Starting a match 
 assert.match(multiplayer, /['"]Authorization['"]:'Bearer '\+session\.access_token/, "Starting a match must send the authenticated user's access token");
 assert.match(multiplayer, /players\.length!==2\|\|!players\.every\(p=>p\.is_ready\)/, "Client must require both players ready before starting");
 assert.match(multiplayer, /room\.host_id===user\.id/, "Only the room host may start a match in the UI");
+const featuredOfficialLink = quizIndex.match(/function officialAnimeLink\\(anime\\)\\{[\\s\\S]*?\\n\\}/)?.[0];
+assert.ok(featuredOfficialLink, "Featured rail official-link resolver must exist");
+assert.match(featuredOfficialLink, /getSearchAnimeOfficialUrl\\(anime\\)/, "Featured rail must use the same verified official URL resolver as search results");
+
 const privacy = source.get("privacy.html");
 assert.doesNotMatch(privacy, /コレクション/, "Privacy policy must not describe the removed anime collection feature");
 
