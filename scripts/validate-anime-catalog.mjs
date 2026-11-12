@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import { gunzipSync } from "node:zlib";
+import { isUsableCoverImage } from "./catalog-image-url.mjs";
 
 const FILE = process.argv[2] || "data/anime-catalog.json";
 const FORMATS = new Set(["TV", "TV_SHORT", "MOVIE", "OVA", "ONA", "SPECIAL"]);
@@ -129,14 +130,8 @@ export function validateCatalog(catalog) {
     }
 
     const image = anime?.coverImage?.large || anime?.coverImage?.medium || anime?.coverImage?.extraLarge || "";
-    try {
-      const url = new URL(image);
-      if (!["https:", "http:"].includes(url.protocol) || !url.hostname || url.username || url.password ||
-          /(?:no[-_ ]?image|placeholder|default[-_ ]?image|(?:^|\/)default(?:\.[a-z0-9]+)?(?:[?#]|$))/i.test(image)) {
-        failures.push(label + ": unusable cover image URL");
-      }
-    } catch {
-      failures.push(label + ": missing or invalid cover image URL");
+    if (!isUsableCoverImage(image)) {
+      failures.push(label + ": missing, invalid, placeholder, or credential-bearing cover image URL");
     }
   }
 
