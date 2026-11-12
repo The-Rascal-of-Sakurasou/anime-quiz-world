@@ -774,7 +774,23 @@ const ph=document.getElementById('query');if(ph)ph.placeholder=lang==='ja'?'例�
 }
 const query=`query ($page:Int,$perPage:Int,$search:String,$id_in:[Int],$format_in:[MediaFormat],$startDate_greater:FuzzyDateInt,$startDate_lesser:FuzzyDateInt) { Page(page:$page,perPage:$perPage) { pageInfo { hasNextPage } media(id_in:$id_in,format_in:$format_in,startDate_greater:$startDate_greater,startDate_lesser:$startDate_lesser,type:ANIME,countryOfOrigin:JP,sort:POPULARITY_DESC,search:$search,isAdult:false) { id countryOfOrigin source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } format popularity title { romaji english native } description(asHtml:false) synonyms coverImage { large medium extraLarge } episodes seasonYear averageScore genres studios { nodes { name } } startDate { year } characters(sort:ROLE,perPage:5) { nodes { id name { full native } image { large } } } externalLinks { url site type isDisabled } } } }`;
 function normalizeUnicode(value){if(typeof value==='string')return value.normalize('NFC');if(Array.isArray(value))return value.map(normalizeUnicode);if(value&&typeof value==='object'){const out={};for(const [key,item] of Object.entries(value))out[key]=normalizeUnicode(item);return out}return value}
-function isJapaneseOriginAnime(a){if(!a||a.countryOfOrigin!=='JP')return false;if(a.originVerified===true)return true;if(a.source==='ORIGINAL')return true;const sourceRules={MANGA:{type:'MANGA',formats:['MANGA','ONE_SHOT']},LIGHT_NOVEL:{type:'MANGA',formats:['NOVEL']},NOVEL:{type:'MANGA',formats:['NOVEL']},DOUJINSHI:{type:'MANGA',formats:['MANGA','ONE_SHOT','NOVEL']},ANIME:{type:'ANIME',formats:['TV','TV_SHORT','MOVIE','OVA','ONA','SPECIAL']}};const rule=sourceRules[a.source];if(!rule||!Array.isArray(a.relations?.edges))return false;return a.relations.edges.some(edge=>(edge?.relationType==='SOURCE'||edge?.relationType==='ADAPTATION')&&edge.node?.type===rule.type&&edge.node?.countryOfOrigin==='JP'&&rule.formats.includes(edge.node?.format))}
+function isJapaneseOriginAnime(a){
+ // AniList does not expose a universal original-language field. Use explicit language metadata when present, then require Japanese origin/source evidence; unknown or foreign-origin source works are excluded.
+ if(!a||a.countryOfOrigin!=='JP')return false;
+ const languageValues=[a.originLanguage,a.originalLanguage,a.sourceLanguage,a.language].filter(value=>typeof value==='string'&&value.trim());
+ if(languageValues.some(value=>!['ja','ja-jp','japanese','日本語'].includes(value.trim().toLowerCase())))return false;
+ if(a.originVerified===true)return true;
+ if(a.source==='ORIGINAL')return true;
+ const sourceRules={MANGA:{type:'MANGA',formats:['MANGA','ONE_SHOT']},LIGHT_NOVEL:{type:'MANGA',formats:['NOVEL']},NOVEL:{type:'MANGA',formats:['NOVEL']},DOUJINSHI:{type:'MANGA',formats:['MANGA','ONE_SHOT','NOVEL']},ANIME:{type:'ANIME',formats:['TV','TV_SHORT','MOVIE','OVA','ONA','SPECIAL']}};
+ const rule=sourceRules[a.source];
+ if(!rule||!Array.isArray(a.relations?.edges))return false;
+ return a.relations.edges.some(edge=>{
+  const node=edge?.node;
+  if(!node||node.type!==rule.type||node.countryOfOrigin!=='JP'||!rule.formats.includes(node.format))return false;
+  const sourceLanguage=[node.originLanguage,node.originalLanguage,node.sourceLanguage,node.language].filter(value=>typeof value==='string'&&value.trim());
+  return !sourceLanguage.some(value=>!['ja','ja-jp','japanese','日本語'].includes(value.trim().toLowerCase()));
+ });
+}
 const $=s=>document.querySelector(s);let pool=[],questions=[],index=0,points=0,skippedQuestionCount=0,locked=false,questionTimer=null,clockTimer=null,secondsLeft=15,questionDeadline=0,pausedQuestionSeconds=0,isPaused=false,pausedAt=0,totalPausedMs=0,startedAt=0,elapsedSeconds=0,missedQuestions=[],questionAttemptResults=[],reviewMode=false,playMode='normal',roundFailed=false,lastResultData=null,combo=0,bestCombo=0,choiceHintUsed=false,typedHintUsed=false,backgroundLoadPromise=null,sharedCatalogActive=false,requestedQuestionCount=10,rateLimitedUntil=0,failedImageUrls=new Set(),titleImageExcludedIds=new Set(),titleImageAuditedIds=new Set(),lateSharedCatalogItems=[],autoNextTimer=null,questionAdvanceToken=0;
 function titleImageIsSafe(anime){const id=Number(anime?.id),image=anime?.coverImage?.large||anime?.coverImage?.medium||anime?.coverImage?.extraLarge||'';return Number.isSafeInteger(id)&&id>0&&titleImageAuditedIds.has(id)&&!titleImageExcludedIds.has(id)&&hasUsableImageUrl(image)}
 async function fetchSharedAnimeCatalog(){
@@ -2818,7 +2834,7 @@ function getCurrentAnimeSeason(date=new Date()){
 async function loadFeaturedRail(){
  const root=document.getElementById('featuredRail');if(!root)return;
  const current=getCurrentAnimeSeason();
- const cacheKey='aqw-featured-season-v5-'+current.year+'-'+current.season;
+ const cacheKey='aqw-featured-season-v6-'+current.year+'-'+current.season;
  const cacheMaxAge=24*60*60*1000;
  const renderItems=items=>{
   const unique=new Map();
