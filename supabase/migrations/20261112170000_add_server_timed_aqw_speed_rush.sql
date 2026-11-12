@@ -44,6 +44,10 @@ begin
     pg_catalog.hashtextextended(v_user_id::text, 0)
   );
 
+  delete from private.aqw_speed_rush_sessions
+   where user_id = v_user_id
+     and started_at < v_now - interval '30 days';
+
   update private.aqw_speed_rush_sessions
      set completed_at = v_now
    where user_id = v_user_id
@@ -130,6 +134,19 @@ begin
   returning started_at into v_started_at;
 
   if not found then
+    if exists (
+      select 1 from private.aqw_speed_rush_attempts
+       where user_id = v_user_id and run_id = p_run_id
+    ) then
+      select * into v_score from public.aqw_speed_rush_scores where user_id = v_user_id;
+      return jsonb_build_object(
+        'updated', false,
+        'duplicate', true,
+        'correct_count', v_score.correct_count,
+        'elapsed_ms', v_score.elapsed_ms,
+        'updated_at', v_score.updated_at
+      );
+    end if;
     raise exception 'プレイセッションが存在しないか、期限切れまたは使用済みです。'
       using errcode = '22023';
   end if;
