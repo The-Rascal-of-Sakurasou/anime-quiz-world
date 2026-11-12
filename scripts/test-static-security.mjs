@@ -40,7 +40,7 @@ for (const title of synopsisOverrideEntries) {
   assert.ok(entryStart >= 0 && entryEnd - entryStart > 80, "A substantial Japanese synopsis override must exist for " + title);
 }
 
-assert.match(source.get("index.html"), /for\(;taskIndex<tasks\.length;\)\{\s*\/\/ A late shared-catalogue response supersedes the expensive AniList fallback crawl\.\s*if\(sharedCatalogActive\)break;/, "A late shared catalogue must stop the AniList fallback crawl");
+assert.match(source.get("index.html"), /for\(;taskIndex<tasks\.length;\)\{\s*\/\/ A late shared-catalogue response supersedes this limited AniList fallback query\.\s*if\(sharedCatalogActive\)break;/, "A late shared catalogue must stop the limited AniList fallback query");
 
 assert.match(source.get("index.html"), /\.featured-track\{display:flex;width:max-content;gap:12px;animation:featured-scroll 64s linear infinite\}/, "Featured anime rail must use the faster scroll speed");
 assert.match(source.get("index.html"), /\.featured-track\.reverse\{animation-name:featured-scroll-reverse;animation-duration:70s\}/, "Reverse featured anime rail must use the faster scroll speed");
