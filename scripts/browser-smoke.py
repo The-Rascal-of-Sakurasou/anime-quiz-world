@@ -792,7 +792,7 @@ def test_recommendation_diagnosis(browser):
     assert self_test_button.count() == 1, "Recommendation self-test control must be available"
     self_test_button.click()
     self_test_text = page.locator("#results").inner_text()
-    match = re.search(r"自己点検結果：(\\d+) / (\\d+) 項目成功", self_test_text)
+    match = re.search(r"自己点検結果：(\d+) / (\d+) 項目成功", self_test_text)
     assert match, "Recommendation self-test did not produce a result: " + self_test_text
     assert match.group(1) == match.group(2), (
         "Recommendation self-tests reported failures: " + self_test_text
