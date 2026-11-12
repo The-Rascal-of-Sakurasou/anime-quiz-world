@@ -244,6 +244,8 @@ def test_public_catalogue_all_modes(browser):
     )
     install_live_catalogue_routes(page)
     page.goto(f"{BASE_URL}/index.html", wait_until="domcontentloaded", timeout=60000)
+    page.locator("#quizTab").click()
+    page.locator("#quiz").wait_for(state="visible", timeout=20000)
     page.wait_for_function(
         """() => {
           const button = document.querySelector('#start');
