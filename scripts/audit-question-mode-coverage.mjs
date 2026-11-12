@@ -168,39 +168,6 @@ const eligible = {
 const total = items.length;
 const japaneseOriginCount = items.filter(a => a.countryOfOrigin === "JP").length;
 const famousForeignCount = total - japaneseOriginCount;
-const characterStats = (() => {
-  const ids = new Set();
-  const namesByAnime = new Map();
-  let totalRecords = 0;
-  let animeWithAny = 0;
-  let animeWithAtLeast4 = 0;
-  let animeWithAtLeast5 = 0;
-  for (const anime of items) {
-    const nodes = Array.isArray(anime?.characters?.nodes) ? anime.characters.nodes : [];
-    if (nodes.length) animeWithAny++;
-    if (nodes.length >= 4) animeWithAtLeast4++;
-    if (nodes.length >= 5) animeWithAtLeast5++;
-    for (const character of nodes) {
-      totalRecords++;
-      const id = Number(character?.id);
-      if (Number.isSafeInteger(id) && id > 0) ids.add(id);
-      const key = norm(character?.name?.native || character?.name?.full || "");
-      if (!key) continue;
-      if (!namesByAnime.has(key)) namesByAnime.set(key, new Set());
-      namesByAnime.get(key).add(Number(anime.id));
-    }
-  }
-  return {
-    totalRecords,
-    uniqueCharacterIds: ids.size,
-    uniqueCharacterNames: namesByAnime.size,
-    namesUniqueToOneAnime: [...namesByAnime.values()].filter(ownerIds => ownerIds.size === 1).length,
-    animeWithAnyCharacter: animeWithAny,
-    animeWithAtLeast4Characters: animeWithAtLeast4,
-    animeWithAtLeast5Characters: animeWithAtLeast5,
-    maxCharactersRequestedPerAnime: 5,
-  };
-})();
 const catalogueBytes = Buffer.byteLength(JSON.stringify(payload), "utf8");
 const catalogueGzipBytes = await readFile(CATALOG + ".gz").then(buffer => buffer.byteLength).catch(() => null);
 const fieldBytes = {};
@@ -229,7 +196,6 @@ const report = {
   uniqueBroadcastYears: yearSet.size,
   uniqueProductionStudios: studioSet.size,
   uniqueSynopsisTexts: synopsisCandidateCount,
-  characterStats,
   modes: [
     summarize("synopsis","あらすじ → 作品名",eligible.synopsis),
     summarize("titleYear","作品名 → 放送年",eligible.titleYear),
