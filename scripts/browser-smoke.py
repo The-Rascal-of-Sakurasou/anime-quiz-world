@@ -246,6 +246,11 @@ def test_public_catalogue_all_modes(browser):
     page.goto(f"{BASE_URL}/index.html", wait_until="domcontentloaded", timeout=60000)
     page.locator("#quizTab").click()
     page.locator("#quiz").wait_for(state="visible", timeout=20000)
+    page.evaluate("prepare()")
+    page.wait_for_function(
+        "() => typeof pool !== 'undefined' && pool.length >= 9000",
+        timeout=120000,
+    )
     page.evaluate("goHome()")
     page.locator("#setupControls").wait_for(state="visible", timeout=20000)
     page.wait_for_function(
