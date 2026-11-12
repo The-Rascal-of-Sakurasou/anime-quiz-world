@@ -425,7 +425,9 @@ assert.ok(!sharedCatalogLoader.includes("cache:'reload'")&&!sharedCatalogLoader.
 assert.match(index, /payload\?\.schemaVersion!==2/, "The quiz must require the compact shared-catalogue schema");
 assert.ok(syncScript.includes("const { source, relations, ...compact } = dedupeAnimeMetadata(anime)"), "The published catalogue must deduplicate metadata and omit bulky source-relation details after verification");
 assert.ok(syncScript.includes("export function dedupeAnimeMetadata(anime)"), "Catalogue synchronization must deduplicate synonym and character metadata");
-assert.match(syncScript, /originVerified: true/, "The published catalogue must retain the build-time Japanese-origin verification marker");
+assert.match(syncScript, /catalogueEligible: true/, "The published catalogue must mark every accepted record as catalogue-eligible");
+assert.match(syncScript, /originVerified: compact\.countryOfOrigin === 'JP'/, "Only Japanese-origin records may carry the Japanese-origin verification marker");
+assert.match(syncScript, /POPULARITY_DESC.*true, 20/, "The catalogue must include a bounded popularity scan for famous foreign works with Japanese titles");
 assert.match(index, /new URL\('data\/anime-catalog\.json',document\.baseURI\)/, "The shared catalogue must resolve correctly from GitHub Pages subpaths");
 assert.match(index, /const sharedCatalogPromise=fetchSharedAnimeCatalog\(\)/, "Shared catalogue loading must start independently of the local cache");
 assert.match(index, /sharedCatalogPromise\.then\(items=>\(\{timedOut:false,items\}\)\)/, "The quiz must merge shared catalogue entries when the asynchronous load completes");
