@@ -666,6 +666,7 @@ assert.ok(questionRenderer.includes("if(!typingOnly&&opts.length<4)throw new Err
 assert.ok(index.includes("function normalizeAnswer(value){return String(value||'').normalize('NFKC')"), "Answer de-duplication must normalize full-width and compatibility characters");
 
 assert.ok(index.includes('<textarea id="aqwPostBody" maxlength="2000">'), "Post composer must enforce the database 2,000-character limit");
+assert.ok(index.includes('id="aqwPostImage" type="file" accept="image/jpeg,image/png,image/webp,image/gif"'), "Post image picker must match the supported storage MIME types");
 const playerLeaderboardLoaderStart = index.indexOf("async function loadPlayerLeaderboard(force=false){");
 const playerLeaderboardLoaderEnd = index.indexOf("async function loadQuestionDifficultyStats", playerLeaderboardLoaderStart);
 assert.ok(playerLeaderboardLoaderStart >= 0 && playerLeaderboardLoaderEnd > playerLeaderboardLoaderStart, "Player leaderboard loader must exist");
