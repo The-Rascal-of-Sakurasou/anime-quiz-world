@@ -42,6 +42,8 @@ for (const title of synopsisOverrideEntries) {
 
 assert.match(source.get("index.html"), /for\(;taskIndex<tasks\.length;\)\{\s*\/\/ A late shared-catalogue response supersedes the expensive AniList fallback crawl\.\s*if\(sharedCatalogActive\)break;/, "A late shared catalogue must stop the AniList fallback crawl");
 
+assert.match(source.get("index.html"), /\.featured-track\{display:flex;width:max-content;gap:12px;animation:featured-scroll 64s linear infinite\}/, "Featured anime rail must use the faster scroll speed");
+assert.match(source.get("index.html"), /\.featured-track\.reverse\{animation-name:featured-scroll-reverse;animation-duration:70s\}/, "Reverse featured anime rail must use the faster scroll speed");
 const aqwHtml = source.get("index.html");
 assert.match(aqwHtml, /id="aqwBlockFriend"/, "The chat must expose a block action");
 assert.match(aqwHtml, /id="aqwReportFriend"/, "The chat must expose a user-report action");
