@@ -620,7 +620,47 @@ def test_live_quiz_preparation_performance(browser):
                     + json.dumps(cache_state, ensure_ascii=False)
                 ) from error
 
+    # Enforce generous but meaningful regression budgets on the real catalogue.
+    # These measurements run on the same GitHub Actions Chromium runner each time.
+    catalogue_ready_budget_ms = 10000
+    first_question_budget_ms = 2500
+    question_render_budget_ms = 250
+    catalogue_transfer_budget_bytes = 4 * 1024 * 1024
+    assert ready_ms <= catalogue_ready_budget_ms, (
+        f"Catalogue readiness exceeded {catalogue_ready_budget_ms} ms: {ready_ms} ms"
+    )
+    for sample in rounds:
+        assert sample["clickToFirstQuestionMs"] <= first_question_budget_ms, (
+            f"Quiz start exceeded {first_question_budget_ms} ms in round "
+            f"{sample['round']}: {sample['clickToFirstQuestionMs']} ms"
+        )
+        assert sample["questionRenderMs"] is not None, (
+            f"Question render timing was not captured in round {sample['round']}"
+        )
+        assert sample["questionRenderMs"] <= question_render_budget_ms, (
+            f"Question rendering exceeded {question_render_budget_ms} ms in round "
+            f"{sample['round']}: {sample['questionRenderMs']} ms"
+        )
+    catalogue_transfer_bytes = sum(
+        resource["transferSize"] or 0
+        for sample in rounds[:1]
+        for resource in sample["catalogueResources"]
+    )
+    if catalogue_transfer_bytes:
+        assert catalogue_transfer_bytes <= catalogue_transfer_budget_bytes, (
+            "Compressed catalogue resources exceeded the 4 MiB transfer budget: "
+            f"{catalogue_transfer_bytes} bytes"
+        )
+
     assert not page_errors, "Live quiz raised JavaScript errors: " + " | ".join(page_errors)
+    print("PERFORMANCE BUDGETS: " + json.dumps({
+        "catalogueReadyMs": ready_ms,
+        "catalogueReadyBudgetMs": catalogue_ready_budget_ms,
+        "firstQuestionBudgetMs": first_question_budget_ms,
+        "questionRenderBudgetMs": question_render_budget_ms,
+        "catalogueTransferBytes": catalogue_transfer_bytes or None,
+        "catalogueTransferBudgetBytes": catalogue_transfer_budget_bytes,
+    }, ensure_ascii=False))
     print("PERFORMANCE: " + json.dumps({
         "browser": "Playwright Chromium (GitHub Actions Linux runner)",
         "catalogueReadyMs": ready_ms,
