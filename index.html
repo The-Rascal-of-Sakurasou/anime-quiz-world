@@ -2844,7 +2844,7 @@ async function loadFeaturedRail(){
  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),6000);
  try{
   // 今シーズンの作品だけを取得し、関連作品情報など表示に不要なデータは要求しない。
-  const fields='id countryOfOrigin format season seasonYear startDate { year month day } title { romaji english native } coverImage { large medium } externalLinks { url site type isDisabled }';
+  const fields='id countryOfOrigin source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } format season seasonYear startDate { year month day } title { romaji english native } coverImage { extraLarge large medium } externalLinks { url site type isDisabled }';
   const queryText='query { Page(page:1,perPage:50) { media(type:ANIME,countryOfOrigin:JP,season:'+current.season+',seasonYear:'+current.year+',format_in:[TV,ONA],isAdult:false,sort:POPULARITY_DESC) { '+fields+' } } }';
   const response=await fetch(API,{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query:queryText}),signal:controller.signal});
   if(!response.ok)throw new Error('HTTP '+response.status);
