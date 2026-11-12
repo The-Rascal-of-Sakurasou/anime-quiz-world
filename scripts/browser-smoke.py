@@ -1078,6 +1078,43 @@ def test_mobile_quiz_layout(browser):
     context.close()
 
 
+def test_mobile_page_overflow(browser):
+    """Check all primary public pages for document-level horizontal overflow on mobile."""
+    context = browser.new_context(
+        viewport={"width": 390, "height": 844},
+        device_scale_factor=2,
+        is_mobile=True,
+        has_touch=True,
+        locale="ja-JP",
+    )
+    page = context.new_page()
+    install_routes(page)
+    paths = [
+        "index.html",
+        "recommend.html",
+        "multiplayer.html",
+        "guide.html",
+        "privacy.html",
+        "terms.html",
+        "admin.html",
+    ]
+    try:
+        for path in paths:
+            page.goto(f"{BASE_URL}/{path}", wait_until="domcontentloaded")
+            page.wait_for_timeout(250)
+            dimensions = page.evaluate("""() => ({
+                viewport: window.innerWidth,
+                document: document.documentElement.scrollWidth,
+                body: document.body?.scrollWidth || 0
+            })""")
+            widest = max(dimensions["document"], dimensions["body"])
+            assert widest <= dimensions["viewport"] + 1, (
+                f"Mobile horizontal overflow on {path}: {dimensions}"
+            )
+    finally:
+        context.close()
+
+
 def test_auth_form_reads_filled_inputs(browser):
     """Ensure filled fields are not misreported as empty when Supabase is unavailable."""
     context = browser.new_context(viewport={"width": 1280, "height": 900}, locale="ja-JP")
@@ -1304,6 +1341,8 @@ def main():
                 print("PASS: public recommendation diagnosis -> results")
                 test_mobile_quiz_layout(browser)
                 print("PASS: public mobile quiz layout and touch answer")
+                test_mobile_page_overflow(browser)
+                print("PASS: public mobile page overflow (7 pages)")
                 return
             # Run the core quiz journey first so network-heavy checks cannot
             # delay detection of a broken start -> answer -> finish flow.
@@ -1327,6 +1366,8 @@ def main():
             print("PASS: guide/privacy/terms/admin authentication gate")
             test_mobile_quiz_layout(browser)
             print("PASS: mobile quiz layout and touch answer")
+            test_mobile_page_overflow(browser)
+            print("PASS: mobile page overflow (7 pages)")
             test_live_seasonal_anilist()
             test_featured_season_rail(browser)
             print("PASS: featured seasonal rail -> visible cards and loaded images")
