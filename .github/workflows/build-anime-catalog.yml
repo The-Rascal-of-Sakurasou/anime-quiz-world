@@ -1,0 +1,38 @@
+name: Build shared anime catalogue
+
+on:
+  schedule:
+    - cron: '0 2 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: anime-catalogue-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Build catalogue from AniList
+        run: node scripts/build-anime-catalog.mjs
+      - name: Commit updated catalogue
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/anime-catalog.json data/anime-catalog.json.gz
+          if git diff --cached --quiet; then
+            echo "Catalogue has no changes."
+          else
+            git commit -m "Update shared anime catalogue"
+            git push
+          fi
