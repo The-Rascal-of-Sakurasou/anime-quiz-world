@@ -9,7 +9,7 @@ const TIMEOUT_MS = 15000;
 const USER_AGENT = 'AnimeQuizWorld-image-audit/1.0';
 
 export function isPlaceholderImageUrl(value) {
-  return /(?:no[-_ ]?image|placeholder|default[-_ ]?image)/i.test(String(value || ''));
+  return /(?:no[-_ ]?image|placeholder|default[-_ ]?image|(?:^|\\/)default(?:\\.[a-z0-9]+)?(?:[?#]|$))/i.test(String(value || ''));
 }
 
 export function isHttpImageUrl(value) {
@@ -98,6 +98,7 @@ async function selfTest() {
   assert.equal(isPlaceholderImageUrl('https://example.test/no-image.jpg'), true);
   assert.equal(isPlaceholderImageUrl('https://example.test/placeholder.png'), true);
   assert.equal(isPlaceholderImageUrl('https://example.test/default-image.png'), true);
+  assert.equal(isPlaceholderImageUrl('https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/default.jpg'), true);
   assert.equal(isPlaceholderImageUrl('https://example.test/cover.jpg'), false);
   assert.equal(isHttpImageUrl('https://s4.anilist.co/file/anime/1.jpg'), true);
   assert.equal(isHttpImageUrl('javascript:alert(1)'), false);
