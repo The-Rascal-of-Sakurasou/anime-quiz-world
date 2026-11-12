@@ -30,7 +30,8 @@ AS $$
   SELECT nullif(current_setting('request.jwt.claim.sub', true), '')::uuid
 $$;
 GRANT USAGE ON SCHEMA auth TO anon, authenticated;
-GRANT USAGE ON SCHEMA private TO authenticated;
+-- Production grants anon schema visibility, but not execution of privileged RPCs.
+GRANT USAGE ON SCHEMA private TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION auth.uid() TO anon, authenticated;
 
 CREATE TABLE public.profiles (
