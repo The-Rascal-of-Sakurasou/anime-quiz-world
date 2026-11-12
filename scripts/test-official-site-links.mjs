@@ -40,6 +40,23 @@ assert.equal(
   "https://www.aniplex.co.jp/lineup/3lion/",
   "3-gatsu no Lion must link to Aniplex's official anime page"
 );
+const verifiedOfficialOverrides = [
+  [578, "火垂るの墓", "https://www.ghibli.jp/works/hotarunohaka/"],
+  [777, "HELLSING OVA", "https://www.satelight.co.jp/works/hellsing-%EF%BC%88ova%E2%85%B0%EF%BD%9E%E2%85%B3%EF%BC%89/"],
+  [14467, "K", "https://goraproject.com/works/%EF%BD%8b%E3%80%80%E3%82%A2%E3%83%8B%E3%83%A1%E3%82%B7%E3%83%AA%E3%83%BC%E3%82%BA/"],
+  [270, "HELLSING", "https://www.gonzo.co.jp/works/hellsing/index.html"],
+  [1195, "ゼロの使い魔", "https://zero-tsukaima.com/"],
+  [6, "TRIGUN", "https://madhouse.co.jp/english/works/"],
+  [392, "幽☆遊☆白書", "https://pierrot.jp/archive/1990/"],
+];
+for (const [id, title, expected] of verifiedOfficialOverrides) {
+  assert.equal(
+    getSearchAnimeOfficialUrl({ id, title: { native: title } }),
+    expected,
+    title + " must use its verified official or studio archive page"
+  );
+}
+
 
 assert.equal(
   getSearchAnimeOfficialUrl({ id: 6880, title: { native: "デッドマン・ワンダーランド" } }),
@@ -79,6 +96,16 @@ assert.equal(
 );
 
 const fallback = "https://www.google.com/search?";
+const unresolvedPopularWorks = catalog.items
+  .slice(0, 500)
+  .filter((anime) => getSearchAnimeOfficialUrl(anime).startsWith(fallback))
+  .map((anime) => ({ id: anime.id, title: titleOf(anime) }));
+assert.deepEqual(
+  unresolvedPopularWorks,
+  [],
+  "The 500 most popular catalogue works must resolve to an official page or an archived official site"
+);
+
 assert.ok(
   getSearchAnimeOfficialUrl({
     id: 999003,
