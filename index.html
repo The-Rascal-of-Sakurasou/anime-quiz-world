@@ -2207,13 +2207,14 @@ function synopsisChoiceRecords(a,answerIsTitle=false){
  if(cache.has(cacheKey))return cache.get(cacheKey);
  const options=new Map(),answerKeys=new Set(),chosenTexts=[],correctSynopsis=synopsisText(a),correctKey=normalizeAnswer(correctSynopsis),correctAnswer=answerIsTitle?synopsisJapaneseAnswerTitle(a):descriptionOf(a),correctAnswerKey=normalizeAnswer(correctAnswer);
  if(!correctSynopsis||!correctKey||!correctAnswerKey){cache.set(cacheKey,[]);return []}
- options.set(correctKey,{label:correctSynopsis,value:correctAnswer,mediaId:Number(a.id)});answerKeys.add(correctAnswerKey);chosenTexts.push(correctSynopsis);
+ const correctOptionKey=answerIsTitle?correctAnswerKey:correctKey;options.set(correctOptionKey,{label:answerIsTitle?correctAnswer:correctSynopsis,value:correctAnswer,mediaId:Number(a.id)});answerKeys.add(correctAnswerKey);chosenTexts.push(correctSynopsis);
  const candidates=summary.synopsisCandidates,start=candidates.length?randomInt(candidates.length):0;
  const addCandidate=(item,similarityLimit)=>{
   if(options.size>=4)return;
   const synopsis=synopsisText(item),key=normalizeAnswer(synopsis),answer=answerIsTitle?synopsisJapaneseAnswerTitle(item):descriptionOf(item),answerKey=normalizeAnswer(answer);
-  if(!synopsis||!key||!answerKey||options.has(key)||answerKeys.has(answerKey)||chosenTexts.some(text=>synopsisSimilarity(text,synopsis)>=similarityLimit))return;
-  options.set(key,{label:synopsis,value:answer,mediaId:Number(item.id)});answerKeys.add(answerKey);chosenTexts.push(synopsis)
+  const optionKey=answerIsTitle?answerKey:key;
+  if(!synopsis||!key||!answerKey||options.has(optionKey)||answerKeys.has(answerKey)||chosenTexts.some(text=>synopsisSimilarity(text,synopsis)>=similarityLimit))return;
+  options.set(optionKey,{label:answerIsTitle?answer:synopsis,value:answer,mediaId:Number(item.id)});answerKeys.add(answerKey);chosenTexts.push(synopsis)
  };
  const visit=similarityLimit=>{for(let offset=0;offset<candidates.length&&options.size<4;offset++){const item=candidates[(start+offset)%candidates.length];if(Number(item?.id)!==Number(a.id))addCandidate(item,similarityLimit)}};
  visit(0.86);if(options.size<4)visit(0.94);if(options.size<4)visit(1.01);
