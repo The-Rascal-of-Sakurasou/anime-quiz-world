@@ -186,114 +186,113 @@ const safeStorage={
 const API='https://graphql.anilist.co';
 const MAX_RECOMMENDATION_PAGES_PER_SORT=20;
 const questions=[
-{dimension:'genre',title:'どんなジャンルのアニメが見たい？',help:'今見たいジャンルを1つ選んでください。',options:[
-{label:'冒険やファンタジー',genres:['Fantasy','Adventure']},
-{label:'SFやミステリー',genres:['Sci-Fi','Mystery','Thriller']},
-{label:'バトルやアクション',genres:['Action','Adventure']},
-{label:'日常や人間ドラマ、コメディ',genres:['Drama','Comedy','Slice of Life']}
+{dimension:'genre',title:'見たい作品のジャンルは？',help:'作品の大まかなジャンルを選んでください。',options:[
+{label:'ファンタジー・冒険',genres:['Fantasy','Adventure']},
+{label:'SF・ミステリー',genres:['Sci-Fi','Mystery']},
+{label:'アクション・バトル',genres:['Action']},
+{label:'日常・コメディ・人間ドラマ',genres:['Slice of Life','Comedy','Drama']}
 ]},
-{dimension:'protagonist_challenge',title:'どんな物語の展開が好き？',help:'物語の中で見たい展開を1つ選んでください。',options:[
-{label:'謎や事件の真相を解き明かす',tags:['Crime','Detective']},
-{label:'困難を乗り越える',tags:['Survival','Battle Royale']},
-{label:'目標に向かって挑戦する',tags:['Quest','Training']},
-{label:'自分の生き方を見つけていく',tags:['Philosophy','Coming of Age']}
+{dimension:'protagonist_challenge',title:'物語を動かす中心的な要素は？',help:'どのような展開を軸にした物語を見たいか選んでください。',options:[
+{label:'謎や事件の真相を追う',tags:['Detective','Crime']},
+{label:'過酷な状況を生き抜く',tags:['Survival','Battle Royale']},
+{label:'目標や夢の達成を目指す',tags:['Goal','Training']},
+{label:'自分自身や生き方を見つめ直す',tags:['Coming of Age','Philosophy']}
 ]},
-{dimension:'pacing',title:'話が進む速さはどれが好き？',help:'好きな展開の速さを選んでください。',options:[
-{label:'次々と話が進む',tags:['Fast-Paced']},
-{label:'落ち着いた速さで進む'},
-{label:'ゆっくり話が進む',tags:['Slow Burn']},
-{label:'静かな場面と盛り上がる場面がある',tags:['Slow Burn','Fast-Paced']}
+{dimension:'pacing',title:'物語の進行ペースは？',help:'全体を通した展開の速さを選んでください。',options:[
+{label:'展開が速く、次々に進む',tags:['Fast-Paced']},
+{label:'標準的なテンポで進む'},
+{label:'時間をかけてじっくり進む',tags:['Slow Burn']},
+{label:'緩急の差が大きい',tags:['Fast-Paced','Slow Burn']}
 ]},
-{dimension:'emotional_intensity',title:'見ているとき、どんな気分になりたい？',help:'見ている間に感じたいことを選んでください。',options:[
-{label:'ハラハラしながら見たい',tags:['Psychological']},
-{label:'感動したい',tags:['Tragedy','Coming of Age']},
-{label:'気楽に笑いたい',tags:['Gag Humor','Parody']},
-{label:'落ち着いた気分で見たい',tags:['Iyashikei']}
+{dimension:'emotional_intensity',title:'視聴中に味わいたい感情は？',help:'見ている最中に感じたいものを選んでください。',options:[
+{label:'緊張感やスリル',tags:['Psychological','Thriller']},
+{label:'感動や胸を打つ展開',tags:['Tragedy','Emotional']},
+{label:'笑いや楽しさ',tags:['Gag Humor','Parody']},
+{label:'安心感や癒やし',tags:['Iyashikei']}
 ]},
-{dimension:'setting',title:'どんな場所が舞台のアニメが見たい？',help:'気になる舞台を1つ選んでください。',options:[
-{label:'魔法や異世界',tags:['Magic','Isekai','World Building']},
-{label:'現代の街や学校',tags:['School','Urban','Coming of Age']},
-{label:'未来や宇宙',tags:['Space','Cyberpunk','Mecha']},
-{label:'歴史や神話の世界',tags:['Historical','Mythology','Samurai']}
+{dimension:'setting',title:'好みの物語の舞台は？',help:'物語の主な舞台となる環境を選んでください。',options:[
+{label:'魔法や異世界のある世界',tags:['Magic','Isekai']},
+{label:'現代の街や学校',tags:['School','Urban']},
+{label:'未来社会や宇宙',tags:['Space','Cyberpunk','Mecha']},
+{label:'過去の時代や歴史的な世界',tags:['Historical','Samurai']}
 ]},
-{dimension:'duration',title:'どのくらいの長さのアニメが見たい？',help:'見やすい長さを選んでください。',options:[
+{dimension:'duration',title:'希望する作品の長さは？',help:'視聴にかけたい時間に近いものを選んでください。',options:[
 {label:'短め（映画・1クール程度）',length:'short'},
 {label:'中くらい（2〜3クール程度）',length:'medium'},
-{label:'長い作品をじっくり見たい',length:'long'},
-{label:'作品の長さは気にしない',length:'any'}
+{label:'長編をじっくり見たい',length:'long'},
+{label:'長さは気にしない',length:'any'}
 ]},
-{dimension:'character_appeal',title:'どんなキャラクターが好き？',help:'好きなキャラクターに近いものを選んでください。',options:[
-{label:'成長していくキャラクター',tags:['Character Development','Coming of Age']},
-{label:'個性的で印象に残るキャラクター',tags:['Unusual Characters','Ensemble Cast']},
-{label:'頭がよく、考え方が深いキャラクター',tags:['Genius','Strategic','Psychological','Philosophy']},
-{label:'自分の信念を貫くキャラクター',tags:['Leadership','Revenge']}
+{dimension:'character_appeal',title:'特に惹かれるキャラクター像は？',help:'人物の性格や魅力について選んでください。',options:[
+{label:'努力して成長する人物',tags:['Character Development']},
+{label:'個性的で予測できない人物',tags:['Unusual Characters']},
+{label:'知的で戦略的な人物',tags:['Genius','Strategic']},
+{label:'信念を曲げずに行動する人物',tags:['Leadership','Revenge']}
 ]},
-{dimension:'narrative_complexity',title:'物語の複雑さはどれくらいが好き？',help:'物語の分かりやすさや、考察する楽しさについて選んでください。',options:[
-{label:'シンプルで分かりやすい話',avoidTags:['Conspiracy','Politics','World Building','Ensemble Cast']},
-{label:'伏線や謎を考えながら見る話',tags:['Conspiracy']},
-{label:'多くの人物や出来事が関わる話',tags:['Politics','Ensemble Cast']},
-{label:'独自の設定や世界観を楽しむ話',tags:['World Building','Politics']}
+{dimension:'narrative_complexity',title:'物語の理解しやすさはどの程度が好み？',help:'伏線や設定の複雑さについて選んでください。',options:[
+{label:'説明が分かりやすく、気軽に見られる',avoidTags:['Conspiracy','Politics','World Building']},
+{label:'伏線や謎を読み解く楽しさがある',tags:['Conspiracy']},
+{label:'複数の視点や勢力が絡み合う',tags:['Politics','Ensemble Cast']},
+{label:'独自設定が緻密に作り込まれている',tags:['World Building']}
 ]},
-{dimension:'aftertaste',title:'見終わったあと、どんな気持ちが残ってほしい？',help:'見終わった後の気持ちを選んでください。',options:[
-{label:'驚きが残ってほしい',tags:['Surprise Ending']},
-{label:'切なさや感動が残ってほしい',tags:['Bittersweet Ending']},
-{label:'すっきりした気分になりたい',tags:['Satisfying Ending']},
-{label:'明るい気持ちになりたい',tags:['Happy Ending']}
+{dimension:'release_era',title:'どの年代のアニメを見たい？',help:'制作・放送された年代の好みを選んでください。',options:[
+{label:'2000年以前の作品',startYearMax:1999},
+{label:'2000年代の作品',startYearMin:2000,startYearMax:2009},
+{label:'2010年代の作品',startYearMin:2010,startYearMax:2019},
+{label:'2020年代以降の作品',startYearMin:2020}
 ]},
-{dimension:'relationships',title:'キャラクター同士の関係で好きなのは？',help:'好きな関係を1つ選んでください。',options:[
-{label:'仲間と協力し合う',tags:['Friendship','Found Family']},
-{label:'ライバル同士で競い合う',tags:['Rivalry']},
-{label:'家族や身近な人との関係を描く',tags:['Family','Family Life']},
-{label:'先輩や師匠が後輩を支える',tags:['Mentor','Teacher-Student Relationship']}
+{dimension:'relationships',title:'好みの人間関係の描かれ方は？',help:'登場人物同士の関係性について選んでください。',options:[
+{label:'仲間が協力して困難に立ち向かう',tags:['Friendship','Found Family']},
+{label:'ライバル同士が競い合う',tags:['Rivalry']},
+{label:'家族の絆や家族間の葛藤を描く',tags:['Family','Family Life']},
+{label:'師匠と弟子・先輩と後輩の関係',tags:['Mentor','Teacher-Student Relationship']}
 ]},
-{dimension:'romance_amount',title:'恋愛要素はどのくらい欲しい？',help:'恋愛が物語にどのくらい含まれていてほしいか選んでください。',options:[
-{label:'恋愛が中心の作品',genreWeights:{Romance:2.5}},
-{label:'恋愛が少し入っている作品',genreWeights:{Romance:1.1}},
-{label:'恋愛が少ない作品',avoidGenres:['Romance'],avoidGenreWeights:{Romance:0.8}},
-{label:'恋愛がほとんどない作品',avoidGenres:['Romance'],avoidGenreWeights:{Romance:1.8}}
+{dimension:'romance_amount',title:'恋愛要素の割合はどのくらいが好み？',help:'恋愛が作品に占める比重を選んでください。',options:[
+{label:'恋愛が物語の中心',genreWeights:{Romance:2.5}},
+{label:'恋愛はサブ要素として登場',genreWeights:{Romance:1.1}},
+{label:'恋愛要素は少なめ',avoidGenres:['Romance'],avoidGenreWeights:{Romance:0.8}},
+{label:'恋愛要素はほぼ不要',avoidGenres:['Romance'],avoidGenreWeights:{Romance:1.8}}
 ]},
-{dimension:'tone_balance',title:'笑いとシリアスのバランスは？',help:'作品全体で、笑える場面と真剣な場面のどちらを多く見たいか選んでください。',options:[
-{label:'笑える場面が多い',genreWeights:{Comedy:2.5}},
-{label:'笑いは少なく、シリアスな場面が多い',genreWeights:{Drama:1.4},avoidGenreWeights:{Comedy:0.5}},
-{label:'笑いとシリアスが半分ずつ',genreWeights:{Drama:1.2,Comedy:1.2}},
-{label:'シリアスが中心で、ときどき笑える',genreWeights:{Drama:1.8},avoidGenres:['Comedy'],avoidGenreWeights:{Comedy:1.2}}
+{dimension:'tone_balance',title:'コメディとシリアスの配分は？',help:'作品全体の笑いと真剣な場面の割合を選んでください。',options:[
+{label:'コメディ中心',genreWeights:{Comedy:2.5}},
+{label:'シリアス中心',genreWeights:{Drama:1.8},avoidGenres:['Comedy'],avoidGenreWeights:{Comedy:1.2}},
+{label:'コメディとシリアスが半々',genreWeights:{Drama:1.2,Comedy:1.2}},
+{label:'基本はシリアス、ときどき笑える',genreWeights:{Drama:1.4},avoidGenreWeights:{Comedy:0.5}}
 ]},
-{dimension:'story_structure',title:'各話のつながり方はどれが好き？',help:'1話ごとのまとまり方を選んでください。',options:[
-{label:'最初から最後まで続く物語',avoidTags:['Episodic'],avoidTagWeights:{Episodic:1.2}},
-{label:'1話ごとに話がまとまる物語',tagWeights:{Episodic:2.2}},
-{label:'全体の物語も、各話の面白さもある作品',tagWeights:{Episodic:0.7}},
-{label:'特にこだわりはない'}
+{dimension:'story_structure',title:'各話の構成はどれが好み？',help:'1話ごとのまとまり方と、全体の連続性について選んでください。',options:[
+{label:'全話が一本の物語として続く',avoidTags:['Episodic'],avoidTagWeights:{Episodic:1.2}},
+{label:'各話ごとに話が完結する',tagWeights:{Episodic:2.2}},
+{label:'各話の区切りと長い物語の両方がある',tagWeights:{Episodic:0.7}},
+{label:'構成にはこだわらない'}
 ]},
-
-{dimension:'visual_style',title:'どんな映像表現が好み？',help:'作品の映像や演出で惹かれるものを選んでください。',options:[
-{label:'迫力のあるアクションや動き',tags:['Full CGI']},
-{label:'美しい背景や世界の描写',tags:['Urban','Rural']},
-{label:'独特で印象に残る演出',tags:['Surreal','Experimental']},
-{label:'自然で見やすい映像',tags:['Character Development']}
+{dimension:'visual_style',title:'映像の見せ方で重視するものは？',help:'作画や画面演出の好みを選んでください。',options:[
+{label:'滑らかで迫力のある動き'},
+{label:'背景や色彩の美しさ'},
+{label:'独創的な構図や演出',tags:['Surreal','Experimental']},
+{label:'落ち着いていて見やすい画面'}
 ]},
-{dimension:'sound_music',title:'音楽や音の演出で重視するのは？',help:'作品を盛り上げる音の要素を選んでください。',options:[
-{label:'熱く盛り上がる主題歌や劇伴',tags:['Music','Coming of Age']},
-{label:'緊張感を高める音楽',tags:['Psychological','Thriller']},
-{label:'感情に寄り添う落ち着いた音楽',tags:['Iyashikei','Drama']},
-{label:'音楽はあまり気にしない'}
+{dimension:'sound_music',title:'音楽・音響で重視するものは？',help:'音楽や音の演出について選んでください。',options:[
+{label:'印象に残る主題歌や劇中歌',tags:['Music']},
+{label:'場面を盛り上げる劇伴'},
+{label:'声優の演技や声の表現'},
+{label:'音響より映像や物語を重視する'}
 ]},
-{dimension:'stakes',title:'物語で描かれる危機や課題の規模は？',help:'登場人物が向き合う問題の大きさを選んでください。',options:[
-{label:'世界や社会を揺るがす大きな危機',tags:['War','Politics','Survival']},
-{label:'組織や仲間を守るための戦い',tags:['Military','Team Sports']},
-{label:'個人の人生や身近な問題',tags:['Coming of Age','Family']},
-{label:'大きな危機より日々の出来事',tags:['Slice of Life','Iyashikei']}
+{dimension:'stakes',title:'物語で扱う問題の規模は？',help:'登場人物が直面する問題の大きさを選んでください。',options:[
+{label:'世界全体に関わる危機',tags:['War','Survival']},
+{label:'国・社会・組織に関わる問題',tags:['Politics','Military']},
+{label:'仲間や地域など身近な集団の問題',tags:['Team Sports','Community']},
+{label:'個人の人生や日常の問題',tags:['Coming of Age','Family']}
 ]},
-{dimension:'ending_preference',title:'結末はどのようなものが好み？',help:'ネタバレではなく、作品全体の結末の傾向を選んでください。',options:[
-{label:'明確に決着がつく結末',tags:['Satisfying Ending']},
-{label:'余韻が残り、考える余地がある結末',tags:['Bittersweet Ending']},
-{label:'意外な展開で驚かされる結末',tags:['Surprise Ending']},
-{label:'結末のタイプにはこだわらない'}
+{dimension:'ending_preference',title:'好みの結末は？',help:'物語の終わり方と、見終わった後に残る印象を合わせて選んでください。',options:[
+{label:'問題が解決し、すっきり終わる',tags:['Satisfying Ending']},
+{label:'明るく前向きな気持ちで終わる',tags:['Happy Ending']},
+{label:'切なさや余韻が残る',tags:['Bittersweet Ending']},
+{label:'解釈の余地を残す、明確に閉じない結末'}
 ]},
-{dimension:'source_preference',title:'作品の世界観や題材で惹かれるものは？',help:'特に見てみたい題材を選んでください。',options:[
-{label:'科学技術や未来の社会',tags:['Technology','Cyberpunk','Space']},
-{label:'歴史や実在の出来事をもとにした物語',tags:['Historical','Politics']},
-{label:'神話・伝承・伝説をもとにした物語',tags:['Mythology','Supernatural']},
-{label:'現実にはない独自の設定',tags:['World Building','Magic']}
+{dimension:'theme_focus',title:'作品で深く描いてほしいテーマは？',help:'舞台やジャンルではなく、物語が掘り下げる題材を選んでください。',options:[
+{label:'正義・倫理・善悪の判断',tags:['Philosophy','Politics']},
+{label:'科学・技術が人間や社会に与える影響',tags:['Technology','Cyberpunk']},
+{label:'芸術・創作・表現活動',tags:['Art','Music']},
+{label:'競争・勝負・限界への挑戦',tags:['Competition','Team Sports']}
 ]}
 ];
 const allQuestionTitles=questions.map(q=>q.title.trim());
@@ -309,8 +308,8 @@ if(new Set(questionTitles).size!==questionTitles.length||new Set(questionDimensi
 const FIXED_QUESTION_COUNT=18;
 if(questions.length!==FIXED_QUESTION_COUNT)throw new Error('診断の質問数は18問固定です。')
 let step=0;const answers=Array(questions.length).fill(null);
-const SAVE_KEY='aqw-recommendation-v6';
-const PREVIOUS_SAVE_KEY='aqw-recommendation-v5';
+const SAVE_KEY='aqw-recommendation-v7';
+const PREVIOUS_SAVE_KEY='aqw-recommendation-v6';
 const LEGACY_SAVE_KEY='aqw-recommendation-v2';
 const FEEDBACK_KEY='aqw-recommendation-feedback-v1';
 const EVALUATION_HISTORY_KEY='aqw-recommendation-evaluation-history-v1';
@@ -647,11 +646,14 @@ function runRecommendationSelfTests(){
   }));
   check('全72選択肢の回答が推薦profileへ正しく反映される',profileProbeOk);
   check('全18問の選択肢ラベルが重複していない',!duplicateChoiceLabels&&questions.every(q=>q.options.length===4));
+  check('結末の好みを1問に統合し、余韻質問を重ねない',!questionByDimension.has('aftertaste')&&questionByDimension.has('ending_preference'));
+  check('舞台と作品テーマを別々の観点にする',questionByDimension.get('theme_focus').title.includes('テーマ')&&questionByDimension.get('setting').title.includes('舞台'));
+  check('旧18問版の意味が変わった回答は未回答に戻す',(()=>{const old=Array(18).fill(0);old[8]=1;old[15]=2;old[17]=3;const migrated=[...old];[8,15,17].forEach(i=>migrated[i]=null);return migrated[8]===null&&migrated[15]===null&&migrated[17]===null})());
   check('舞台質問はジャンル加点と分離',questionByDimension.get('setting').options.every(o=>!o.genres?.length));
   check('物語の複雑さはジャンル加点と分離',questionByDimension.get('narrative_complexity').options.every(o=>!o.genres?.length&&!o.avoidGenres?.length));
   check('シンプル回答は考察要素を抑える',questionByDimension.get('narrative_complexity').options[0].avoidTags?.includes('Conspiracy')&&questionByDimension.get('narrative_complexity').options[0].avoidTags?.includes('World Building'));
   check('主人公の目標は複雑さの質問と異なる題材を扱う',questionByDimension.get('protagonist_challenge').options.every(o=>!['Mystery','Conspiracy','World Building','Ensemble Cast'].some(tag=>o.tags?.includes(tag))));
-  check('視聴中の感情と結末の余韻は別のタグで扱う',[...tagsFor('aftertaste')].every(tag=>!tagsFor('emotional_intensity').has(tag)));
+  check('年代の質問は他の質問と異なる開始年フィルターを使う',questions.find(q=>q.dimension==='release_era')?.options.every(o=>o.startYearMin||o.startYearMax));
   check('人物関係の質問は恋愛量と重複しない',questionByDimension.get('relationships').options.every(o=>!o.genres?.includes('Romance')&&!o.tags?.includes('Love Triangle')));
   check('テンポと物語構成を別の信号で扱う',questionByDimension.get('pacing').options.every(o=>!o.genres?.length)&&questionByDimension.get('story_structure').options.some(o=>o.tagWeights?.Episodic>0));
   check('笑いとシリアスの配分を独立して反映する',questionByDimension.get('tone_balance').options.some(o=>o.genreWeights?.Comedy>0)&&questionByDimension.get('tone_balance').options.some(o=>o.genreWeights?.Drama>0));
@@ -763,7 +765,7 @@ function runRecommendationSelfTests(){
 }
 
 function saveDiagnosis(result=null){
- try{const data={v:6,savedAt:new Date().toISOString(),answers:[...answers],favorite:$('favoriteTitles').value.slice(0,180),disliked:$('dislikedTitles').value.slice(0,180),result};safeStorage.setItem(SAVE_KEY,JSON.stringify(data));}
+ try{const data={v:7,savedAt:new Date().toISOString(),answers:[...answers],favorite:$('favoriteTitles').value.slice(0,180),disliked:$('dislikedTitles').value.slice(0,180),result};safeStorage.setItem(SAVE_KEY,JSON.stringify(data));}
  catch(e){$('shareStatus').textContent='保存できませんでした。ブラウザの保存容量や設定を確認してください。';}
 }
 function restoreSavedDiagnosis(){
@@ -1210,7 +1212,7 @@ function renderCardList(containerId,items){
 }
 let latestResult=null;
 function encodeShareState(){
- const state={v:6,a:answers,f:$('favoriteTitles').value.slice(0,180),d:$('dislikedTitles').value.slice(0,180)};
+ const state={v:7,a:answers,f:$('favoriteTitles').value.slice(0,180),d:$('dislikedTitles').value.slice(0,180)};
  const bytes=new TextEncoder().encode(JSON.stringify(state));
  let binary='';bytes.forEach(byte=>binary+=String.fromCharCode(byte));
  return btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
@@ -1251,9 +1253,12 @@ function mapVersionFourAnswersToThirteen(values){
 function normalizeSharedAnswers(state){
  if(!Array.isArray(state?.a))return null;
  let values;
- if(state.v===6){
+ if(state.v===7){
   if(state.a.length!==questions.length)return null;
   values=state.a;
+ }else if(state.v===6){
+  if(state.a.length!==questions.length||!areValidLegacyAnswers(state.a))return null;
+  values=[...state.a];[8,15,17].forEach(i=>values[i]=null);
  }else if(state.v===5){
   if(state.a.length!==13||!areValidLegacyAnswers(state.a))return null;
   values=[...state.a,...Array(5).fill(null)];
@@ -1270,9 +1275,12 @@ function normalizeSharedAnswers(state){
 function normalizeSavedAnswers(data){
  if(!Array.isArray(data?.answers))return null;
  let values;
- if(data.v===6){
+ if(data.v===7){
   if(data.answers.length!==questions.length)return null;
   values=data.answers;
+ }else if(data.v===6){
+  if(data.answers.length!==questions.length||!areValidLegacyAnswers(data.answers))return null;
+  values=[...data.answers];[8,15,17].forEach(i=>values[i]=null);
  }else if(data.v===5){
   if(data.answers.length!==13||!areValidLegacyAnswers(data.answers))return null;
   values=[...data.answers,...Array(5).fill(null)];
