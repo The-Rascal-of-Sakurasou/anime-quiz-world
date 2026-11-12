@@ -796,22 +796,11 @@ function isJapaneseOriginAnime(a){
   return !sourceLanguage.some(value=>!['ja','ja-jp','japanese','日本語'].includes(value.trim().toLowerCase()));
  });
 }
-const $=s=>document.querySelector(s);let pool=[],questions=[],index=0,points=0,skippedQuestionCount=0,locked=false,questionTimer=null,clockTimer=null,secondsLeft=15,questionDeadline=0,pausedQuestionSeconds=0,isPaused=false,pausedAt=0,totalPausedMs=0,startedAt=0,elapsedSeconds=0,missedQuestions=[],questionAttemptResults=[],reviewMode=false,playMode='normal',roundFailed=false,lastResultData=null,combo=0,bestCombo=0,choiceHintUsed=false,typedHintUsed=false,backgroundLoadPromise=null,sharedCatalogActive=false,requestedQuestionCount=10,rateLimitedUntil=0,failedImageUrls=new Set(),titleImageExcludedIds=new Set(),titleImageAuditedIds=new Set(),lateSharedCatalogItems=[],autoNextTimer=null,questionAdvanceToken=0;
-function titleImageIsSafe(anime){const id=Number(anime?.id),image=anime?.coverImage?.large||anime?.coverImage?.medium||anime?.coverImage?.extraLarge||'';return Number.isSafeInteger(id)&&id>0&&titleImageAuditedIds.has(id)&&!titleImageExcludedIds.has(id)&&hasUsableImageUrl(image)}
+const $=s=>document.querySelector(s);let pool=[],questions=[],index=0,points=0,skippedQuestionCount=0,locked=false,questionTimer=null,clockTimer=null,secondsLeft=15,questionDeadline=0,pausedQuestionSeconds=0,isPaused=false,pausedAt=0,totalPausedMs=0,startedAt=0,elapsedSeconds=0,missedQuestions=[],questionAttemptResults=[],reviewMode=false,playMode='normal',roundFailed=false,lastResultData=null,combo=0,bestCombo=0,choiceHintUsed=false,typedHintUsed=false,backgroundLoadPromise=null,sharedCatalogActive=false,requestedQuestionCount=10,rateLimitedUntil=0,failedImageUrls=new Set(),lateSharedCatalogItems=[],autoNextTimer=null,questionAdvanceToken=0;
+function titleImageIsSafe(anime){const image=anime?.coverImage?.large||anime?.coverImage?.medium||anime?.coverImage?.extraLarge||'';return hasUsableImageUrl(image)}
 async function fetchSharedAnimeCatalog(){
  try{
-  // Load the small OCR audit index first so unverified cover images are never shown.
-  const exclusionResponse=await fetch(new URL('data/title-image-exclusions.json',document.baseURI),{cache:'no-store',headers:{'Accept':'application/json'}}).catch(()=>null);
-  if(exclusionResponse?.ok){
-   try{
-    const exclusions=await exclusionResponse.json();
-    if(exclusions?.schemaVersion===1&&Array.isArray(exclusions.excludedIds)&&Array.isArray(exclusions.records)){
-     titleImageExcludedIds=new Set(exclusions.excludedIds.map(Number).filter(id=>Number.isSafeInteger(id)&&id>0));
-     // Only OCR-checked images with no detected title text are allowed in artwork questions.
-     titleImageAuditedIds=new Set(exclusions.records.filter(row=>Number.isSafeInteger(Number(row?.id))&&row?.hasText===false&&row?.hasTitleText===false).map(row=>Number(row.id)));
-    }
-   }catch(error){console.warn('Title-image exclusion data is invalid:',error)}
-  }
+  // The shared catalogue has already filtered invalid and placeholder image URLs.
   const response=await fetch(new URL('data/anime-catalog.json',document.baseURI),{cache:'default',headers:{'Accept':'application/json'}});
   if(!response.ok)return [];
   const payload=await response.json();
@@ -1605,7 +1594,6 @@ async function aqwMeasurePreparationStage(name,task){
 async function collectEligibleAnime(mode,format,target,ignoreDifficulty=false){
  const sourcePool=pool,key=eligibleCandidateCacheKey(mode,format,ignoreDifficulty),cached=eligibleCandidateCache.get(key);
  const candidates=[...(cached||sourcePool)],eligible=[],startedAt=performance.now();
- if(!cached&&mode==='image'&&!titleImageAuditedIds.size)return [];
  if(!cached&&!['image','titleStudio'].includes(mode))await ensureQuestionChoiceSummaryAsync();
  for(let i=0;i<candidates.length&&eligible.length<target;i++){
   const j=i+randomInt(candidates.length-i);[candidates[i],candidates[j]]=[candidates[j],candidates[i]];
