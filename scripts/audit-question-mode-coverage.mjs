@@ -94,7 +94,7 @@ const titleVariants = (a) => {
 const curatedMap = new Map();
 for (const [names, alias] of CURATED) for (const name of names) curatedMap.set(norm(name), alias);
 function aliases(a) {
-  const values = [], keys = new Set([a?.title?.romaji, a?.title?.english, a?.title?.native].filter(Boolean).map(norm));
+  const values = [], keys = new Set([...([a?.title?.romaji, a?.title?.english, a?.title?.native].filter(Boolean)), ...titleVariants(a)].map(norm));
   for (const candidate of [a?.title?.romaji, a?.title?.english, a?.title?.native].filter(Boolean)) {
     const curated = curatedMap.get(norm(candidate)); if (curated) values.push(curated);
   }
