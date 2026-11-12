@@ -654,6 +654,13 @@ def test_main_navigation_and_search(browser):
         "Search deduplication must remove exact duplicates without hiding sequels, "
         "different titles sharing an alias, or distinct formats: " + str(dedupe_ids)
     )
+    sequel_synopsis = page.evaluate("""() => descriptionOf({
+      title: { native: "進撃の巨人 The Final Season Part 2", english: "Attack on Titan: The Final Season Part 2" }
+    })""")
+    assert len(sequel_synopsis) >= 45 and re.search(r"[ぁ-んァ-ヶ一-龯]", sequel_synopsis), (
+        "Japanese synopsis overrides must also resolve supported sequel/part title variants: "
+        + sequel_synopsis
+    )
     page.locator("#query").fill("作品A")
     page.locator("#searchButton").click()
     page.locator("#results .anime").first.wait_for(state="visible", timeout=20000)
