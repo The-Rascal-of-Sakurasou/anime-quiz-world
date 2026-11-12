@@ -561,6 +561,27 @@ def test_quiz_quit_only(browser):
 
 
 
+def test_multiplayer_auth_gate(browser):
+    """Ensure the online match controls remain hidden until a user is authenticated."""
+    context = browser.new_context(viewport={"width": 1280, "height": 900}, locale="ja-JP")
+    page = context.new_page()
+    errors = []
+    page.on("pageerror", lambda error: errors.append(str(error)))
+    page.route(
+        "**/supabase-js@2*",
+        lambda route: route.fulfill(
+            status=200,
+            content_type="application/javascript",
+            body="window.supabase={createClient:()=>({auth:{getSession:async()=>({data:{session:null},error:null})}})};",
+        ),
+    )
+    page.goto(f"{BASE_URL}/multiplayer.html", wait_until="domcontentloaded")
+    page.locator("#authGate:not(.hidden)").wait_for(state="visible", timeout=10000)
+    assert page.locator("#mainArea:not(.hidden)").count() == 0, "Online match controls must remain hidden without a session"
+    assert not errors, "Multiplayer authentication gate raised JavaScript errors: " + " | ".join(errors)
+    context.close()
+
+
 def test_mobile_quiz_layout(browser):
     """Check that the quiz controls and four choices fit a narrow mobile viewport."""
     context = browser.new_context(viewport={"width": 390, "height": 844}, device_scale_factor=2, is_mobile=True, has_touch=True, locale="ja-JP")
@@ -797,6 +818,8 @@ def main():
             print("PASS: primary navigation and anime search")
             test_quiz_quit_only(browser)
             print("PASS: quiz quit (pause controls absent)")
+            test_multiplayer_auth_gate(browser)
+            print("PASS: multiplayer authentication gate")
             test_recommendation_diagnosis(browser)
             print("PASS: recommendation diagnosis -> results")
             test_mobile_quiz_layout(browser)
