@@ -650,6 +650,14 @@ assert.ok(index.includes("if(mode==='image'&&!titleImageIsSafe(a))return false")
 assert.ok(questionRenderer.includes("if(!typingOnly&&opts.length<4)throw new Error('Four unique answer choices could not be prepared.')"), "Choice questions must fail safely instead of displaying fewer than four choices");
 assert.ok(index.includes("function normalizeAnswer(value){return String(value||'').normalize('NFKC')"), "Answer de-duplication must normalize full-width and compatibility characters");
 
+const leaderboardSubmissionStart = index.indexOf("async function submitPlayerRun(result){");
+const leaderboardSubmissionEnd = index.indexOf("async function loadMyRushRank", leaderboardSubmissionStart);
+assert.ok(leaderboardSubmissionStart >= 0 && leaderboardSubmissionEnd > leaderboardSubmissionStart, "Leaderboard submission handler missing");
+const leaderboardSubmission = index.slice(leaderboardSubmissionStart, leaderboardSubmissionEnd);
+assert.ok(leaderboardSubmission.includes("questionResults:Array.isArray(result.questionResults)?result.questionResults:[]"), "Pending leaderboard runs must preserve per-question analytics");
+assert.ok(leaderboardSubmission.includes("p_question_results:pendingRun.questionResults"), "Leaderboard retries must submit the preserved per-question analytics");
+assert.ok(leaderboardSubmission.includes("queuePendingRun(pendingPlayerRuns,pendingRun)"), "Leaderboard retries must queue the complete run payload");
+
 // Regression coverage: quiz candidate eligibility must be chunked and share in-flight prewarm work.
 assert.match(index, /async function getEligibleCandidatePoolAsync\(mode,format,ignoreDifficulty=false\)/, "Candidate eligibility must be prepared asynchronously");
 assert.match(index, /seen=new Set\(\),chunkSize=24/, "Candidate eligibility must be processed in smaller bounded batches");
