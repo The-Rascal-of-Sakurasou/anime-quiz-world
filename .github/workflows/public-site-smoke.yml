@@ -2,7 +2,7 @@ name: AQW public-site browser smoke tests
 
 on:
   workflow_run:
-    workflows: ["pages build and deployment"]
+    workflows: ["AQW browser smoke tests"]
     types: [completed]
 
 permissions:
@@ -36,13 +36,28 @@ jobs:
       - name: Install Chromium
         run: python -m playwright install --with-deps chromium
 
-      - name: Wait for the published catalogue and validate its contents
+      - name: Read the expected public build marker
+        id: marker
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import re
+          with open("index.html", encoding="utf-8") as handle:
+              html = handle.read()
+          match = re.search(r'<meta name="aqw-build-marker" content="([^"]+)"', html)
+          if not match:
+              raise SystemExit("Expected AQW public build marker is missing from checked-out revision.")
+          print("value=" + match.group(1))
+          PY
+
+      - name: Wait for the published revision and validate its catalogue
         env:
           AQW_BASE_URL: https://the-rascal-of-sakurasou.github.io/anime-quiz-world
+          EXPECTED_MARKER: ${{ steps.marker.outputs.value }}
         run: |
           set -euo pipefail
-          for attempt in $(seq 1 20); do
+          for attempt in $(seq 1 30); do
             if curl --fail --silent --show-error "$AQW_BASE_URL/index.html" -o /tmp/aqw-published-index.html \
+              && grep -Fq "$EXPECTED_MARKER" /tmp/aqw-published-index.html \
               && curl --fail --silent --show-error "$AQW_BASE_URL/data/anime-catalog.json.gz" -o /tmp/aqw-public-catalogue.gz; then
               python - <<'PY'
           import gzip, json
@@ -56,10 +71,10 @@ jobs:
           PY
               exit 0
             fi
-            echo "Published files not ready (attempt ${attempt}/20)."
+            echo "Waiting for public revision $EXPECTED_MARKER (attempt ${attempt}/30)."
             sleep 6
           done
-          echo "Published Anime Quiz World files are unavailable." >&2
+          echo "Expected public revision or catalogue did not become available." >&2
           exit 1
 
       - name: Validate public browser test script
