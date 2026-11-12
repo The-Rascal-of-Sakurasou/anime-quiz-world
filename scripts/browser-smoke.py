@@ -250,7 +250,20 @@ def test_live_quiz_preparation_performance(browser):
         start_button = page.locator("#start" if round_index == 0 else "#restart")
         start_button.wait_for(state="visible", timeout=30000)
         start_button.click()
-        page.locator("#answers button.answer").first.wait_for(state="visible", timeout=120000)
+        try:
+            page.locator("#answers button.answer").first.wait_for(state="visible", timeout=30000)
+        except Exception as error:
+            state = page.evaluate("""() => ({
+              quizStatus: document.querySelector('#quizStatus')?.textContent || '',
+              answerPrompt: document.querySelector('#answerPrompt')?.textContent || '',
+              answerCount: document.querySelectorAll('#answers button.answer').length,
+              quizAreaClass: document.querySelector('#quizArea')?.className || '',
+              startDisabled: document.querySelector('#start')?.disabled ?? null,
+              preparationStages: window.__aqwQuizPreparationStages || [],
+              candidateSelectionMs: window.__aqwLastCandidateSelectionMs ?? null,
+              quizPreparationMs: window.__aqwLastQuizPreparationMs ?? null
+            })""")
+            raise AssertionError("First quiz question did not render within 30 seconds: " + json.dumps(state, ensure_ascii=False)) from error
         first_question_ms = round((__import__("time").perf_counter() - started) * 1000, 1)
 
         metrics = page.evaluate("""() => ({
