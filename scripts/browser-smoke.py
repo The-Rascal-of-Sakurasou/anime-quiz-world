@@ -666,6 +666,14 @@ def test_main_navigation_and_search(browser):
         "Curated Japanese abbreviations must also match season-title variants: "
         + str(sequel_alias)
     )
+    synonym_aliases = page.evaluate("""() => aliasCandidates({
+      id: 992, title: { native: "検証作品", english: "Test Anime", romaji: "Test Anime" },
+      synonyms: ["検証略称", "検証作品"], genres: []
+    })""")
+    assert "検証略称" in synonym_aliases and "検証作品" not in synonym_aliases, (
+        "A real alternate title must remain eligible as an alias, while the primary title itself must not be duplicated: "
+        + str(synonym_aliases)
+    )
     sequel_synopsis = page.evaluate("""() => descriptionOf({
       title: { native: "進撃の巨人 The Final Season Part 2", english: "Attack on Titan: The Final Season Part 2" }
     })""")
