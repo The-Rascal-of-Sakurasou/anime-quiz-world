@@ -4,6 +4,35 @@ import { readFile } from "node:fs/promises";
 const html = await readFile("index.html", "utf8");
 const catalog = JSON.parse(await readFile("data/anime-catalog.json", "utf8"));
 assert.ok(Array.isArray(catalog.items) && catalog.items.length >= 100, "Shared anime catalogue must contain at least 100 works");
+const normalizeTitle = (value) => String(value || "")
+  .normalize("NFKC")
+  .toLocaleLowerCase()
+  .replace(/[\\s　・:：!！?？.,，。'"“”「」『』()（）‐‑–—―−_-]/g, "");
+const requiredPopularTitles = [
+  "進撃の巨人", "シュタインズ・ゲート", "青春ブタ野郎", "無職転生", "Re:ゼロ",
+  "この素晴らしい世界に祝福を", "ノーゲーム・ノーライフ", "Angel Beats!", "Charlotte",
+  "葬送のフリーレン", "薬屋のひとりごと", "SPY×FAMILY", "ONE PIECE", "NARUTO",
+  "ドラゴンボール", "名探偵コナン", "鬼滅の刃", "呪術廻戦", "僕のヒーローアカデミア",
+  "ハイキュー!!", "ぼっち・ざ・ろっく！", "新世紀エヴァンゲリオン", "コードギアス",
+  "カウボーイビバップ", "あの日見た花の名前を僕達はまだ知らない。",
+  "さくら荘のペットな彼女", "とある魔術の禁書目録", "とある科学の超電磁砲",
+  "夏目友人帳", "銀魂", "HUNTER×HUNTER", "鋼の錬金術師", "東京喰種",
+  "モブサイコ100", "ワンパンマン", "ヴァイオレット・エヴァーガーデン",
+  "四月は君の嘘", "けいおん！", "氷菓", "とらドラ！", "魔法少女まどか☆マギカ"
+];
+const missingPopularTitles = requiredPopularTitles.filter((required) => {
+  const query = normalizeTitle(required);
+  return !catalog.items.some((anime) =>
+    [anime.title?.native, anime.title?.english, anime.title?.romaji, ...(anime.synonyms || [])]
+      .some((title) => normalizeTitle(title).includes(query))
+  );
+});
+assert.deepEqual(
+  missingPopularTitles,
+  [],
+  "The shared catalogue is missing expected major anime titles"
+);
+
 const mapMatch = html.match(/const OFFICIAL_SITE_OVERRIDES=new Map\(\[([\s\S]*?)\]\);/);
 assert.ok(mapMatch, "Official-site override map must exist");
 const overrides = new Map(
