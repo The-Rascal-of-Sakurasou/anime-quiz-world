@@ -4,26 +4,26 @@ import { runInNewContext } from "node:vm";
 const CATALOG = "data/anime-catalog.json";
 const REPORT = "artifacts/question-mode-coverage/report.json";
 const CURATED = [
-  [["進撃の巨人 Season２","進撃の巨人 Season 2","Shingeki no Kyojin Season 2","Attack on Titan Season 2"],"進撃2期"],
-  [["進撃の巨人 Season３","進撃の巨人 Season 3","Shingeki no Kyojin Season 3","Attack on Titan Season 3"],"進撃3期"],
-  [["進撃の巨人 Season３ Part.2","進撃の巨人 Season 3 Part 2","Shingeki no Kyojin Season 3 Part 2","Attack on Titan Season 3 Part 2"],"進撃3期後半"],
-  [["僕だけがいない街","Boku dake ga Inai Machi","Erased"],"僕街"],
-  [["モブサイコ100","Mob Psycho 100"],"モブサイコ1期"],
-  [["モブサイコ100 Ⅲ","Mob Psycho 100 III","Mob Psycho 100 3rd Season"],"モブサイコ3期"],
-  [["僕のヒーローアカデミア６","僕のヒーローアカデミア 6th Season","Boku no Hero Academia 6th Season","My Hero Academia Season 6"],"ヒロアカ6期"],
-  [["鬼滅の刃 刀鍛冶の里編","Kimetsu no Yaiba: Katanakaji no Sato-hen","Demon Slayer: Swordsmith Village Arc"],"鬼滅刀鍛冶編"],
-  [["鬼滅の刃 柱稽古編","Kimetsu no Yaiba: Hashira Geiko-hen","Demon Slayer: Hashira Training Arc"],"鬼滅柱稽古編"],
-  [["オーバーロードⅡ","Overlord II","Overlord 2"],"オバロ2期"],
-  [["無職転生Ⅱ ～異世界行ったら本気だす～","Mushoku Tensei II","Mushoku Tensei: Jobless Reincarnation Season 2"],"無職転生2期"],
-  [["ハイキュー!! TO THE TOP","Haikyuu!! To the Top","Haikyuu to the Top"],"ハイキュー4期"],
-  [["七つの大罪 戒めの復活","Nanatsu no Taizai: Imashime no Fukkatsu","The Seven Deadly Sins: Revival of The Commandments"],"七つの大罪2期"],
-  [["コードギアス 反逆のルルーシュ R2","Code Geass: Lelouch of the Rebellion R2"],"ギアスR2"],
-  [["この素晴らしい世界に祝福を！2","この素晴らしい世界に祝福を! 2","Kono Subarashii Sekai ni Shukufuku wo! 2","KonoSuba 2"],"このすば2期"],
-  [["とある科学の超電磁砲S","Toaru Kagaku no Railgun S","A Certain Scientific Railgun S"],"レールガンS"],
-  [["とある魔術の禁書目録Ⅱ","とある魔術の禁書目録 II","Toaru Majutsu no Index II","A Certain Magical Index II"],"禁書2期"],
-  [["ソードアート・オンライン アリシゼーション","Sword Art Online: Alicization"],"SAOアリシゼーション"],
-  [["ジョジョの奇妙な冒険 黄金の風","JoJo no Kimyou na Bouken: Ougon no Kaze","JoJo's Bizarre Adventure: Golden Wind"],"ジョジョ5部"],
-  [["かぐや様は告らせたい-ウルトラロマンティック-","Kaguya-sama wa Kokurasetai: Ultra Romantic"],"かぐや様3期"],
+  [[],"進撃2期"],
+  [[],"進撃3期"],
+  [[],"進撃3期後半"],
+  [[],"僕街"],
+  [[],"モブサイコ1期"],
+  [[],"モブサイコ3期"],
+  [[],"ヒロアカ6期"],
+  [[],"鬼滅刀鍛冶編"],
+  [[],"鬼滅柱稽古編"],
+  [[],"オバロ2期"],
+  [[],"無職転生2期"],
+  [[],"ハイキュー4期"],
+  [[],"七つの大罪2期"],
+  [[],"ギアスR2"],
+  [[],"このすば2期"],
+  [[],"レールガンS"],
+  [[],"禁書2期"],
+  [[],"SAOアリシゼーション"],
+  [[],"ジョジョ5部"],
+  [[],"かぐや様3期"],
   [["青春ブタ野郎はバニーガール先輩の夢を見ない","Seishun Buta Yarou wa Bunny Girl Senpai no Yume wo Minai","Rascal Does Not Dream of Bunny Girl Senpai"],"青ブタ"],
   [["Re:ゼロから始める異世界生活","Re:Zero kara Hajimeru Isekai Seikatsu","Re:ZERO -Starting Life in Another World-"],"リゼロ"],
   [["STEINS;GATE","シュタインズ・ゲート"],"シュタゲ"],
@@ -66,6 +66,13 @@ const CURATED = [
   [["モブサイコ100 II","Mob Psycho 100 II"],"モブサイコ2期"],
   [["ハイキュー!! セカンドシーズン","Haikyuu!! Second Season"],"ハイキュー2期"],
   [["SPY×FAMILY","SPY x FAMILY"],"スパファミ"],
+  [["暗殺教室 第2期","Assassination Classroom Second Season","Ansatsu Kyoushitsu 2nd Season"],"暗教2期"],
+  [["SPY×FAMILY Season 2","SPY×FAMILY 第2期","SPY x FAMILY Season 2"],"スパファミ2期"],
+  [["ヴィンランド・サガ SEASON 2","Vinland Saga Season 2"],"ヴィンサガ2期"],
+  [["炎炎ノ消防隊 弐ノ章","Fire Force Season 2","Enen no Shouboutai: Ni no Shou"],"炎炎2期"],
+  [["青の祓魔師 京都不浄王篇","Blue Exorcist: Kyoto Saga","Ao no Exorcist: Kyoto Fujouou-hen"],"青エク2期"],
+  [["賭ケグルイ××","Kakegurui XX"],"賭ケグルイ2期"],
+  [["文豪ストレイドッグス 第2期","Bungou Stray Dogs 2nd Season","Bungo Stray Dogs Season 2"],"文スト2期"],
 ];
 const norm = (v) => String(v || "").normalize("NFKC").toLocaleLowerCase().replace(/[\s　・･:：!！?？.,，。'"“”「」『』()（）‐‑–—―−_-]/g, "").trim();
 const title = (a) => String(a?.title?.native || a?.title?.english || a?.title?.romaji || "").trim();
@@ -114,9 +121,9 @@ const titleVariants = (a) => {
 const curatedMap = new Map();
 for (const [names, alias] of CURATED) for (const name of names) curatedMap.set(norm(name), alias);
 function aliases(a) {
-  const primaryTitles = [a?.title?.romaji, a?.title?.english, a?.title?.native].filter(Boolean), values = [], keys = new Set(primaryTitles.map(norm)), titleVariantKeys = new Set([...titleVariants({ ...a, synonyms: [] })].map(norm));
+  const primaryTitles = [a?.title?.romaji, a?.title?.english, a?.title?.native].filter(Boolean), values = [], keys = new Set(primaryTitles.map(norm));
   for (const candidate of [a?.title?.romaji, a?.title?.english, a?.title?.native].filter(Boolean)) {
-    const curated = curatedMap.get(norm(candidate)) || [...titleVariantKeys].map(key => curatedMap.get(key)).find(Boolean); if (curated) values.push(curated);
+    const curated = curatedMap.get(norm(candidate)); if (curated) values.push(curated);
   }
   for (const candidate of [a?.title?.romaji, a?.title?.english].filter(Boolean)) {
     const words = String(candidate).normalize("NFKC").match(/[A-Za-z0-9]+/g) || [];
