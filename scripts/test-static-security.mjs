@@ -70,6 +70,24 @@ assert.equal(
   "K-On punctuation variants must resolve through one canonical synopsis entry"
 );
 
+const requiredPopularSynopsisTitles = [
+  "メイドインアビス 烈日の黄金郷",
+  "東京リベンジャーズ 聖夜決戦編",
+  "転生したらスライムだった件 第4期 第1&2クール",
+  "七つの大罪 憤怒の審判",
+  "スライム倒して300年、知らないうちにレベルMAXになってました",
+  "魔王学院の不適合者 ～史上最強の魔王の始祖、転生して子孫たちの学校へ通う～ Ⅱ",
+  "はじめの一歩 THE FIGHTING!",
+  "私がモテないのはどう考えてもお前らが悪い!",
+  "メガロボクス"
+];
+for (const title of requiredPopularSynopsisTitles) {
+  assert.ok(
+    synopsisByNormalizedTitle.has(normalizeSynopsisTitle(title)),
+    "Popular anime must retain a verified Japanese synopsis override: " + title
+  );
+}
+
 const aqwHtml = source.get("index.html");
 assert.match(aqwHtml, /id="aqwMatchProfilePanel"/, "The signed-in profile must include a 1v1 match record panel");
 assert.match(aqwHtml, /id="aqwMatchProfileStats"/, "The match profile must display summary statistics");
