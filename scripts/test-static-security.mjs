@@ -40,6 +40,8 @@ for (const title of synopsisOverrideEntries) {
   assert.ok(entryStart >= 0 && entryEnd - entryStart > 80, "A substantial Japanese synopsis override must exist for " + title);
 }
 
+assert.match(source.get("index.html"), /for\(;taskIndex<tasks\.length;\)\{\s*\/\/ A late shared-catalogue response supersedes the expensive AniList fallback crawl\.\s*if\(sharedCatalogActive\)break;/, "A late shared catalogue must stop the AniList fallback crawl");
+
 const aqwHtml = source.get("index.html");
 assert.match(aqwHtml, /id="aqwBlockFriend"/, "The chat must expose a block action");
 assert.match(aqwHtml, /id="aqwReportFriend"/, "The chat must expose a user-report action");
