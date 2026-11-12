@@ -392,6 +392,22 @@ def test_live_quiz_preparation_performance(browser):
         service_workers="block",
     )
     page = context.new_page()
+    page.add_init_script("""() => {
+      window.__aqwLongTasks = [];
+      if ('PerformanceObserver' in window) {
+        try {
+          new PerformanceObserver(list => {
+            for (const entry of list.getEntries()) {
+              window.__aqwLongTasks.push({
+                startTime: Math.round(entry.startTime * 10) / 10,
+                duration: Math.round(entry.duration * 10) / 10,
+                name: entry.name
+              });
+            }
+          }).observe({entryTypes: ['longtask']});
+        } catch {}
+      }
+    }""")
     page_errors = []
     performance_logs = []
     page.on("pageerror", lambda error: page_errors.append(str(error)))
@@ -492,7 +508,8 @@ def test_live_quiz_preparation_performance(browser):
           catalogueResources: performance.getEntriesByType('resource')
             .filter(entry => /anime-catalog|title-image-exclusions/.test(entry.name))
             .map(entry => ({name: entry.name.split('/').pop(), durationMs: Math.round(entry.duration * 10) / 10,
-              transferSize: entry.transferSize || null}))
+              transferSize: entry.transferSize || null})),
+          longTasks: (window.__aqwLongTasks || []).slice(-20)
         })""")
         profile_samples = metrics["profileLoadSamples"][profile_start:]
         log_text = performance_logs[log_start:]
@@ -503,6 +520,7 @@ def test_live_quiz_preparation_performance(browser):
             "quizPreparationMs": metrics["quizPreparationMs"],
             "questionRenderMs": metrics["questionRenderMs"],
             "questionRenderInternalMs": metrics["questionRenderInternalMs"],
+            "longTasks": metrics["longTasks"],
             "preparationStages": metrics["preparationStages"],
             "profileLoadMs": profile_samples[-1] if profile_samples else None,
             "performanceLog": log_text[-1] if log_text else None,
