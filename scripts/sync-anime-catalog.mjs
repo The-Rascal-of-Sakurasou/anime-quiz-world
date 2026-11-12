@@ -178,13 +178,13 @@ export function dedupeAnimeMetadata(anime) {
 function compactDescription(value) {
   const cleaned = String(value || '')
     .replace(/<[^>]*>/g, ' ')
-    .replace(/\\[[^\\]]*\\]\\([^)]*\\)/g, ' ')
-    .replace(/\\\\[nrt]/gi, ' ')
+    .replace(/\[[^\]]*\]\([^)]*\)/g, ' ')
+    .replace(/\\[nrt]/gi, ' ')
     .replace(/&nbsp;/gi, ' ')
     .replace(/&amp;/gi, '&')
     .replace(/&quot;/gi, '"')
     .replace(/&#39;/g, "'")
-    .replace(/\\s+/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim();
   return cleaned.length > 260 ? cleaned.slice(0, 257).trimEnd() + '…' : cleaned;
 }
