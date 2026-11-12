@@ -428,7 +428,7 @@ assert.match(index, /new URL\('data\/anime-catalog\.json',document\.baseURI\)/, 
 assert.match(index, /const sharedCatalogPromise=fetchSharedAnimeCatalog\(\)/, "Shared catalogue loading must start independently of the local cache");
 assert.match(index, /sharedCatalogPromise\.then\(items=>\(\{timedOut:false,items\}\)\)/, "The quiz must merge shared catalogue entries when the asynchronous load completes");
 assert.match(index, /if\(sharedCatalogActive\)\{[\s\S]*?pool=initial;[\s\S]*?Fetching additional records\./, "A shared catalogue must be used immediately while additional anime are fetched in the background");
-assert.match(index, /if\(!backgroundLoadPromise\)\{\s*backgroundLoadPromise=\(async\(\)=>/, "Shared catalogue visitors must continue expanding the anime pool without blocking quiz start");
+assert.match(index, /if\(!backgroundLoadPromise&&!sharedCatalogActive\)\{\s*backgroundLoadPromise=\(async\(\)=>/, "The quiz must not repeat the expensive AniList backfill when the complete shared catalogue is already active");
 assert.match(index, /sharedCatalogActive\?\(/, "The loading screen must distinguish the shared catalogue from local background backfill");
 assert.match(index, /const cacheKey='aqw-anime-pool-v21-compact-shared-catalog'/, "Verified original-source eligibility must rebuild the browser catalogue");
 assert.ok(index.includes("source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } }"), "Quiz queries must request detailed source metadata and adaptation-origin evidence");
