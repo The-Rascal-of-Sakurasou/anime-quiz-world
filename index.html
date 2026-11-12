@@ -3658,6 +3658,7 @@ function openReportPanel(userId,messageId=null,postId=null){
  if(!currentUser||!userId)return;
  reportTargetUserId=userId;reportTargetMessageId=messageId;reportTargetPostId=postId;
  const panel=$s('aqwReportPanel');if(!panel)return;
+ const submitButton=$s('aqwSubmitReport');if(submitButton)submitButton.disabled=false;
  panel.classList.remove('hidden');
  $s('aqwReportTitle').textContent=localJa()?(postId?'投稿を通報':messageId?'メッセージを通報':'ユーザーを通報'):(postId?'Report post':messageId?'Report message':'Report user');
  $s('aqwReportReasonLabel').textContent=localJa()?'理由':'Reason';
@@ -3673,6 +3674,7 @@ function openReportPanel(userId,messageId=null,postId=null){
 }
 function closeReportPanel(){
  const panel=$s('aqwReportPanel');if(panel)panel.classList.add('hidden');
+ const submitButton=$s('aqwSubmitReport');if(submitButton)submitButton.disabled=false;
  reportTargetUserId=null;reportTargetMessageId=null;reportTargetPostId=null;
  const status=$s('aqwReportStatus');if(status)status.textContent='';
 }
