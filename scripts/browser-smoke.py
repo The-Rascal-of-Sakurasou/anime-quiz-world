@@ -785,11 +785,15 @@ def test_recommendation_diagnosis(browser):
     card_count = page.locator("#animeCards .anime").count() + page.locator("#discoveryCards .anime").count()
     assert card_count > 0, "Diagnosis completed but returned no recommendation cards"
 
+    # Record one recommendation rating first. The analytics panel (which
+    # contains the self-test control) is intentionally hidden until feedback exists.
+    first_card = page.locator("#animeCards .anime, #discoveryCards .anime").first
+    first_card.get_by_role("button", name="合っている").click()
     # Run the page's complete recommendation self-test suite, including the
     # 18-question structure, non-overlapping dimensions, scoring, exclusions,
     # duplicate prevention, and foreign-title eligibility rules.
     self_test_button = page.get_by_role("button", name="推薦ロジックを自己点検")
-    assert self_test_button.count() == 1, "Recommendation self-test control must be available"
+    self_test_button.wait_for(state="visible", timeout=10000)
     self_test_button.click()
     self_test_text = page.locator("#results").inner_text()
     match = re.search(r"自己点検結果：(\d+) / (\d+) 項目成功", self_test_text)
