@@ -1420,6 +1420,26 @@ function availableQuestionModes(a,format=$('#answerFormatSelect')?.value||'choic
  if(typingOnly)modes=modes.filter(mode=>!['titleSynopsis','characterImage','characterNameImage'].includes(mode));
  return modes.filter(mode=>questionModeHasFourChoices(a,mode));
 }
+function hasAnyQuestionMode(a,format=$('#answerFormatSelect')?.value||'choices'){
+ const typingOnly=playMode!=='daily'&&playMode!=='rush'&&format==='typed';
+ if(titleImageIsSafe(a)&&(typingOnly||hasFourDistinctTitleChoices(a)))return true;
+ if(a?.studios?.nodes?.[0]?.name&&(typingOnly||hasFourDistinctStudioChoices(a)))return true;
+ const summary=questionChoiceSummary(),characters=characterRecords([a]),titleKey=normalizeAnswer(titleOf(a));
+ if(typingOnly){
+  if(characters.length)return true;
+  if(uniqueAliasCandidates(a,summary).length)return true;
+  if(Number.isInteger(animeYear(a))&&animeYear(a)>1900)return true;
+  return hasUsableSynopsis(a)&&titleUsable(a);
+ }
+ if(characters.some(record=>isSingleAnimeCharacter(record,summary))&&!!titleKey&&hasFourDistinctTitleChoices(a,summary))return true;
+ if(characterRecordsWithFourTitleChoicesForAnime(a,summary).length>0)return true;
+ if(characterRecordsWithFourChoicesForAnime(a,summary,false).length>0)return true;
+ if(characterRecordsWithFourChoicesForAnime(a,summary,true).length>0)return true;
+ if(uniqueAliasCandidates(a,summary).length>0&&!!titleKey&&hasFourDistinctTitleChoices(a,summary))return true;
+ if(Number.isInteger(animeYear(a))&&animeYear(a)>1900&&yearChoiceRecordsForAnime(a).length>=4)return true;
+ return hasUsableSynopsis(a)&&titleUsable(a)&&hasFourDistinctSynopsisChoices(a,true);
+}
+
 function usablePool(mode,answerFormat=$('#answerFormatSelect')?.value||'choices',validateChoices=true){if(answerFormat==='typed'&&mode==='characterImage')return [];return pool.filter(a=>{if(!isUsableAnime(a))return false;if(mode==='image'&&!titleImageIsSafe(a))return false;if(answerFormat==='typed'&&!typedTitleEligible(a))return false;if(['image','studio','year','synonym','titleYear','titleStudio','synopsis','character','characterImage'].includes(mode)&&!titleUsable(a))return false;if(mode==='studio')return false;if(mode==='titleStudio'&&!a.studios?.nodes?.[0]?.name)return false;if(mode==='character'||mode==='characterImage'){if(!characterRecords([a]).length)return false}if(mode==='synonym'&&!uniqueAliasCandidates(a).length)return false;if(mode==='year')return false;if(mode==='titleYear'&&(!Number.isInteger(animeYear(a))||animeYear(a)<=1900))return false;if(mode==='year')return false;if(mode==='titleYear'&&answerFormat!=='typed'&&yearChoiceRecordsForAnime(a).length<4)return false;if(mode==='synopsis'&&!hasUsableSynopsis(a))return false;return answerFormat==='typed'||!validateChoices||questionModeHasFourChoices(a,mode)})}
 async function extendQuestionsFromPool(items){
  if(!items||!questions.length||$('#quizArea').classList.contains('hidden'))return;
@@ -1518,6 +1538,7 @@ async function getEligibleCandidatePoolAsync(mode,format,ignoreDifficulty=false)
   if(pool!==sourcePool||pool.length!==sourceLength)return [];
   const eligible=[],seen=new Set(),chunkSize=96;
   for(let offset=0;offset<sourceLength;offset+=chunkSize){
+   if(document.body.classList.contains('quiz-active'))return [];
    const limit=Math.min(sourceLength,offset+chunkSize);
    for(let i=offset;i<limit;i++){
     const anime=sourcePool[i],id=Number(anime?.id);
@@ -1582,15 +1603,25 @@ async function aqwMeasurePreparationStage(name,task){
  }
 }
 async function collectEligibleAnime(mode,format,target,ignoreDifficulty=false){
- const candidates=[...(await aqwMeasurePreparationStage('候補プール取得',()=>getEligibleCandidatePoolAsync(mode,format,ignoreDifficulty)))],eligible=[];
- const startedAt=performance.now();
- // Partial Fisher–Yates: sample without replacement and stop as soon as enough questions are ready.
- for(let i=0;i<candidates.length;i++){
+ const sourcePool=pool,key=eligibleCandidateCacheKey(mode,format,ignoreDifficulty),cached=eligibleCandidateCache.get(key);
+ const candidates=[...(cached||sourcePool)],eligible=[],startedAt=performance.now();
+ if(!cached&&mode==='image'&&!titleImageAuditedIds.size)return [];
+ if(!cached&&!['image','titleStudio'].includes(mode))await ensureQuestionChoiceSummaryAsync();
+ for(let i=0;i<candidates.length&&eligible.length<target;i++){
   const j=i+randomInt(candidates.length-i);[candidates[i],candidates[j]]=[candidates[j],candidates[i]];
-  eligible.push(candidates[i]);
-  if(eligible.length>=target)break;
-  if((i+1)%512===0&&i+1<candidates.length){
-   const status=$('#quizStatus');if(status)status.textContent=lang==='ja'?'出題候補を抽出中… '+(i+1).toLocaleString()+' / '+candidates.length.toLocaleString()+'作品':'Selecting questions… '+(i+1)+' / '+candidates.length;
+  const anime=candidates[i];
+  if(!cached){
+   if(pool!==sourcePool)return [];
+   if(!isEligibleBaseAnime(anime,mode,format))continue;
+   if(!ignoreDifficulty&&!matchesDifficulty(anime,format,mode))continue;
+   if(format==='typed'&&!typedTitleEligible(anime))continue;
+   const hasQuestion=mode==='mixed'?hasAnyQuestionMode(anime,format):format==='typed'||questionModeHasFourChoices(anime,mode);
+   if(!hasQuestion)continue;
+  }
+  eligible.push(anime);
+  if((i+1)%96===0&&i+1<candidates.length&&eligible.length<target){
+   const status=$('#quizStatus');
+   if(status)status.textContent=lang==='ja'?'出題候補を確認中… '+(i+1).toLocaleString()+' / '+candidates.length.toLocaleString()+'作品':'Checking candidates… '+(i+1)+' / '+candidates.length;
    await new Promise(resolve=>setTimeout(resolve,0));
   }
  }
@@ -1601,7 +1632,7 @@ async function collectEligibleAnime(mode,format,target,ignoreDifficulty=false){
 }
 async function begin(){
  if(quizStartInProgress||startRetryInProgress)return;
- questionAdvanceToken++;
+ questionAdvanceToken++;eligibleCandidatePrewarmToken++;
  document.body.classList.add('quiz-active','quiz-preparing');
  $('#quizHeader').classList.remove('hidden');$('#quizStatus').classList.remove('hidden');$('#animePoolProgress').classList.remove('hidden');
  $('#setupControls').classList.add('hidden');$('#start').classList.add('hidden');
