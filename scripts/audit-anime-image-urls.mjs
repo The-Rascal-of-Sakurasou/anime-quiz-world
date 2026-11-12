@@ -133,13 +133,21 @@ async function main() {
   console.log('Auditing ' + urls.length + ' unique image URLs across ' + catalog.items.length + ' anime records.');
   const results = await mapLimit(urls, WORKERS, async url => ({ url, ...(await inspectUrl(url)), anime: byUrl.get(url) }));
   const broken = results.filter(item => !item.ok);
+  const sharedImageGroups = [...byUrl.entries()]
+    .filter(([, anime]) => anime.length > 1)
+    .map(([url, anime]) => ({ url, referenceCount: anime.length, anime: anime.slice(0, 20) }))
+    .sort((a, b) => b.referenceCount - a.referenceCount);
+  const duplicateImageReferenceCount = catalog.items.length - missing.length - placeholders.length - urls.length;
   const report = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     generatedAt: new Date().toISOString(),
     catalogGeneratedAt: catalog.generatedAt || null,
     catalogCount: catalog.items.length,
     uniqueImageUrlCount: urls.length,
     checkedUrlCount: results.length,
+    duplicateImageReferenceCount,
+    sharedImageUrlCount: sharedImageGroups.length,
+    largestSharedImageGroups: sharedImageGroups.slice(0, 100),
     missingCoverCount: missing.length,
     placeholderCoverCount: placeholders.length,
     brokenUrlCount: broken.length,
@@ -155,6 +163,7 @@ async function main() {
     '',
     '- Anime records: **' + report.catalogCount + '**',
     '- Unique image URLs checked: **' + report.checkedUrlCount + '**',
+    '- Duplicate image references: **' + report.duplicateImageReferenceCount + '** across **' + report.sharedImageUrlCount + '** shared URLs',
     '- Working URLs: **' + report.healthyUrlCount + '**',
     '- Failed URLs: **' + report.brokenUrlCount + '**',
     '- Missing cover URLs: **' + report.missingCoverCount + '**',
