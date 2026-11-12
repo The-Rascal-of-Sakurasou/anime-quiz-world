@@ -3115,12 +3115,11 @@ async function loadMyDifficultyProfile(){
 window.aqwLoadPersonalDifficultyProfile=loadMyDifficultyProfile;
 async function submitPlayerRun(result){
  if(!result||!result.runId||!Number.isInteger(result.correctCount)||!Number.isInteger(result.questionCount)||![10,15].includes(result.xpMultiplier))return;
- const summaryOnly={runId:result.runId,correctCount:result.correctCount,questionCount:result.questionCount,xpMultiplier:result.xpMultiplier};
- if(!currentUser){queuePendingRun(pendingPlayerRuns,summaryOnly);message($s('aqwPlayerBoardStatus'),aqwPlayerT('needLogin'));return}
+ const pendingRun={runId:result.runId,correctCount:result.correctCount,questionCount:result.questionCount,xpMultiplier:result.xpMultiplier,questionResults:Array.isArray(result.questionResults)?result.questionResults:[]};
+ if(!currentUser){queuePendingRun(pendingPlayerRuns,pendingRun);message($s('aqwPlayerBoardStatus'),aqwPlayerT('needLogin'));return}
  try{
-  const questionResults=Array.isArray(result.questionResults)?result.questionResults:[];
-  const {data,error}=await sb.rpc('submit_aqw_player_run',{p_run_id:result.runId,p_correct_count:result.correctCount,p_question_count:result.questionCount,p_xp_multiplier:result.xpMultiplier,p_question_results:questionResults});
-  if(error){queuePendingRun(pendingPlayerRuns,summaryOnly);message($s('aqwPlayerBoardStatus'),aqwPlayerT('submitError')+errText(error));return}
+  const {data,error}=await sb.rpc('submit_aqw_player_run',{p_run_id:result.runId,p_correct_count:result.correctCount,p_question_count:result.questionCount,p_xp_multiplier:result.xpMultiplier,p_question_results:pendingRun.questionResults});
+  if(error){queuePendingRun(pendingPlayerRuns,pendingRun);message($s('aqwPlayerBoardStatus'),aqwPlayerT('submitError')+errText(error));return}
   removePendingRun(pendingPlayerRuns,result.runId);
   message($s('aqwPlayerBoardStatus'),data?.duplicate?aqwPlayerT('duplicate'):aqwPlayerT('saved'));
   await loadPlayerLeaderboard(true);
