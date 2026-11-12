@@ -1,6 +1,11 @@
 name: Build shared anime catalogue
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/build-anime-catalog.mjs'
+      - '.github/workflows/build-anime-catalog.yml'
   schedule:
     - cron: '0 2 * * 1'
   workflow_dispatch:
