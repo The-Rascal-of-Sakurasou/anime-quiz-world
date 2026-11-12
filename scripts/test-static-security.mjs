@@ -139,9 +139,9 @@ assert.match(recommend, /hasFamousJapaneseTitle\(media\)/, "Foreign anime must h
 
 const recommendOriginHelper = recommend.match(/function isJapaneseOriginAnime\(media\)\{[\s\S]*?\n\}/)?.[0];
 assert.ok(recommendOriginHelper, "Recommendation Japanese-origin verification helper missing");
-const famousTitleHelper = recommend.match(/function hasFamousJapaneseTitle\\(media\\)\\{[\\s\\S]*?\\n\\}/)?.[0];
+const famousTitleHelper = recommend.match(/function hasFamousJapaneseTitle\(media\)\{[\s\S]*?\n\}/)?.[0];
 assert.ok(famousTitleHelper, "Japanese-title verification helper missing");
-const isRecommendedOriginJapanese = vm.runInNewContext(famousTitleHelper + "\\n" + recommendOriginHelper + "\\nisJapaneseOriginAnime");
+const isRecommendedOriginJapanese = vm.runInNewContext(famousTitleHelper + "\n" + recommendOriginHelper + "\nisJapaneseOriginAnime");
 assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "ORIGINAL" }), true, "Japanese original anime must remain eligible");
 assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), true, "Japanese manga adaptations must remain eligible");
 assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "SOURCE", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), true, "AniList v2 SOURCE relations must recognize Japanese manga originals");
@@ -471,8 +471,8 @@ assert.ok(beginBlock, "Quiz begin function not found");
 assert.match(beginBlock, /catch\(error\)\{[\s\S]*?clearInterval\(questionTimer\);clearInterval\(clockTimer\);clearTimeout\(autoNextTimer\)/, "Quiz start failure must stop timers");
 assert.match(beginBlock, /\$\([\x27"]#pauseButton[\x27"]\)\.classList\.add\([\x27"]hidden[\x27"]\)/, "Quiz start failure must hide pause control");
 assert.match(beginBlock, /\$\([\x27"]#quitQuizButton[\x27"]\)\.classList\.add\([\x27"]hidden[\x27"]\)/, "Quiz start failure must hide quit control");
-assert.doesNotMatch(beginBlock, /await window\\.aqwEnsureSupabaseFeatures|await aqwMeasurePreparationStage\\('個人別難易度データ読み込み'/, "Optional Supabase and profile requests must not block the first quiz question");
-assert.match(beginBlock, /Promise\\.resolve\\(\\)\\.then\\(\\(\\)=>window\\.aqwEnsureSupabaseFeatures\\(\\)\\)/, "Optional Supabase initialization must continue in the background");
+assert.doesNotMatch(beginBlock, /await window\.aqwEnsureSupabaseFeatures|await aqwMeasurePreparationStage\('個人別難易度データ読み込み'/, "Optional Supabase and profile requests must not block the first quiz question");
+assert.match(beginBlock, /Promise\.resolve\(\)\.then\(\(\)=>window\.aqwEnsureSupabaseFeatures\(\)\)/, "Optional Supabase initialization must continue in the background");
 
 assert.match(index, /aliasAnimeOwners=new Map\(\)/, "Alias ownership must be tracked across the complete eligible anime pool");
 assert.ok(index.includes("if(primaryKey){const aliasKeys=new Set([...titleAnswerVariants(item),...aliasCandidates(item)].map(normalizeAnswer).filter(Boolean));aliasKeys.add(primaryKey);if(!titleChoiceRecords.has(primaryKey))titleChoiceRecords.set(primaryKey,{id:Number(item.id),aliasKeys});for(const alias of aliasKeys)"), "Every anime record must contribute alias ownership, even when another record has the same primary title");
