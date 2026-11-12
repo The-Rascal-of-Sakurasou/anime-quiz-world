@@ -186,7 +186,8 @@ function compactDescription(value) {
     .replace(/&#39;/g, "'")
     .replace(/\s+/g, ' ')
     .trim();
-  return cleaned;
+  // The quiz renderer already displays at most 260 characters per synopsis.
+  return cleaned.length > 260 ? cleaned.slice(0, 257).trimEnd() + '…' : cleaned;
 }
 
 function compactOfficialExternalLinks(links) {
