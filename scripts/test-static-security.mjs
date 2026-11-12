@@ -666,6 +666,16 @@ assert.ok(questionRenderer.includes("if(!typingOnly&&opts.length<4)throw new Err
 assert.ok(index.includes("function normalizeAnswer(value){return String(value||'').normalize('NFKC')"), "Answer de-duplication must normalize full-width and compatibility characters");
 
 assert.ok(index.includes('<textarea id="aqwPostBody" maxlength="2000">'), "Post composer must enforce the database 2,000-character limit");
+const playerLeaderboardLoaderStart = index.indexOf("async function loadPlayerLeaderboard(force=false){");
+const playerLeaderboardLoaderEnd = index.indexOf("async function loadQuestionDifficultyStats", playerLeaderboardLoaderStart);
+assert.ok(playerLeaderboardLoaderStart >= 0 && playerLeaderboardLoaderEnd > playerLeaderboardLoaderStart, "Player leaderboard loader must exist");
+const playerLeaderboardLoader = index.slice(playerLeaderboardLoaderStart, playerLeaderboardLoaderEnd);
+assert.ok(playerLeaderboardLoader.includes("if(latestKey!==playerLeaderboardLoadedKey)return loadPlayerLeaderboard(true);"), "Player leaderboard must reload if its filters change during an active request");
+const rushLeaderboardLoaderStart = index.indexOf("async function loadRushLeaderboard(force=false){");
+const rushLeaderboardLoaderEnd = index.indexOf("async function submitRushResult", rushLeaderboardLoaderStart);
+assert.ok(rushLeaderboardLoaderStart >= 0 && rushLeaderboardLoaderEnd > rushLeaderboardLoaderStart, "Speed Rush leaderboard loader must exist");
+const rushLeaderboardLoader = index.slice(rushLeaderboardLoaderStart, rushLeaderboardLoaderEnd);
+assert.ok(rushLeaderboardLoader.includes("if(latestPeriod!==rushLeaderboardLoadedPeriod)return loadRushLeaderboard(true);"), "Speed Rush leaderboard must reload if its period changes during an active request");
 const leaderboardSubmissionStart = index.indexOf("async function submitPlayerRun(result){");
 const leaderboardSubmissionEnd = index.indexOf("async function loadMyRushRank", leaderboardSubmissionStart);
 assert.ok(leaderboardSubmissionStart >= 0 && leaderboardSubmissionEnd > leaderboardSubmissionStart, "Leaderboard submission handler missing");
