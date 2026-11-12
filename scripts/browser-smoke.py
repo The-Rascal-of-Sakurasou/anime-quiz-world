@@ -72,7 +72,7 @@ def make_anime(index):
                 "雪山の観測所に赴任した研究員は、毎晩同じ時刻に届く信号を記録する。厳しい自然の中で仲間と調査を続け、信号が示す場所へ向かう決意を固める。"
             ][index % 12] + "（検証用作品番号：" + str(index + 1) + "）"
         ),
-        "synonyms": [f"検証略称{suffix}"],
+        "synonyms": [f"検証の略称{suffix}"],
         "coverImage": {"large": cover, "medium": cover, "extraLarge": cover},
         "episodes": 12,
         "season": CURRENT_SEASON,
@@ -668,9 +668,9 @@ def test_main_navigation_and_search(browser):
     )
     synonym_aliases = page.evaluate("""() => aliasCandidates({
       id: 992, title: { native: "検証作品", english: "Test Anime", romaji: "Test Anime" },
-      synonyms: ["検証略称", "検証作品"], genres: []
+      synonyms: ["検証の略称", "検証作品"], genres: []
     })""")
-    assert "検証略称" in synonym_aliases and "検証作品" not in synonym_aliases, (
+    assert "検証の略称" in synonym_aliases and "検証作品" not in synonym_aliases, (
         "A real alternate title must remain eligible as an alias, while the primary title itself must not be duplicated: "
         + str(synonym_aliases)
     )
