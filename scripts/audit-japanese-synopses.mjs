@@ -90,7 +90,7 @@ const body = missing.length
       '',
       'このIssueはGitHub Actionsが週1回更新します。自動生成・機械翻訳のあらすじを本番データへ直接追加することはありません。'
     ].join('\n')
-  : `## 監査結果（${date}）\n\nAniListの日本制作アニメ人気順上位100作品について、未登録候補は検出されませんでした。\n\n次回の週次監査までこのIssueを閉じます。`;
+  : `## 監査結果（${date}）\n\nAniListの人気上位100作品（日本制作作品と、日本語タイトルがあり人気条件を満たす海外作品）について、未登録候補は検出されませんでした。\n\n次回の週次監査までこのIssueを閉じます。`;
 
 const headers = {
   authorization: `Bearer ${token}`,
