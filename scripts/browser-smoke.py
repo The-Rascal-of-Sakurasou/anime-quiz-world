@@ -789,6 +789,10 @@ def test_recommendation_diagnosis(browser):
     # contains the self-test control) is intentionally hidden until feedback exists.
     first_card = page.locator("#animeCards .anime, #discoveryCards .anime").first
     first_card.get_by_role("button", name="合っている").click()
+    page.wait_for_function(
+        "() => document.querySelector('#shareStatus')?.textContent.includes('評価を保存しました')",
+        timeout=10000,
+    )
     # Run the page's complete recommendation self-test suite, including the
     # 18-question structure, non-overlapping dimensions, scoring, exclusions,
     # duplicate prevention, and foreign-title eligibility rules.
