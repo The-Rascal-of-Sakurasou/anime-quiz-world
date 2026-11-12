@@ -32,7 +32,7 @@ assert.match(matchPrepare, /admin\.rpc\("aqw_match_prepare_questions"/, "Questio
 const supabaseConfig = fs.readFileSync("supabase/config.toml", "utf8");
 assert.match(supabaseConfig, /\[functions\.aqw-match-prepare\][\s\S]*?verify_jwt = true/, "The active match-preparation Edge Function must require JWT verification");
 
-const synopsisOverrideEntries = ["Fate/stay night", "GTO", "幽☆遊☆白書", "偽物語", "魔女の旅々", "見える子ちゃん", "オーバーロードⅣ", "BTOOOM!", "アクダマドライブ", "虚構推理", "ゼロの使い魔", "クズの本懐", "蜘蛛ですが、なにか？", "学戦都市アスタリスク", "四畳半神話大系", "ポケットモンスター", "K", "マギ The kingdom of magic", "ゲーマーズ！"];
+const synopsisOverrideEntries = ["Fate/stay night", "GTO", "幽☆遊☆白書", "偽物語", "魔女の旅々", "見える子ちゃん", "オーバーロードⅣ", "BTOOOM!", "アクダマドライブ", "虚構推理", "ゼロの使い魔", "クズの本懐", "蜘蛛ですが、なにか？", "学戦都市アスタリスク", "四畳半神話大系", "ポケットモンスター", "K", "マギ The kingdom of magic", "ゲーマーズ！", "ヒナまつり", "あそびあそばせ"];
 const synopsisSource = source.get("index.html");
 for (const title of synopsisOverrideEntries) {
   const entryStart = synopsisSource.indexOf("'" + title + "':'");
