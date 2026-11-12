@@ -824,7 +824,7 @@ function matchesSeedTitle(media,title){
  return aliases.some(alias=>normalizeSeedTitle(alias)===wanted);
 }
 async function findSeedAnime(title){
- const query='query ($search:String) { Page(perPage:25) { media(search:$search,type:ANIME,,isAdult:false,sort:SEARCH_MATCH) { id countryOfOrigin popularity source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } title { romaji english native } synonyms genres tags { name rank isMediaSpoiler } } } }';
+ const query='query ($search:String) { Page(perPage:25) { media(search:$search,type:ANIME,isAdult:false,sort:SEARCH_MATCH) { id countryOfOrigin popularity source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } title { romaji english native } synonyms genres tags { name rank isMediaSpoiler } } } }';
  let lastError=null;
  for(let attempt=0;attempt<3;attempt++){
   try{
@@ -890,7 +890,7 @@ function isRecommendationCandidate(anime){
  return Boolean(anime&&isJapaneseOriginAnime(anime)&&anime.coverImage?.large&&anime.title&&allowedFormats.has(anime.format));
 }
 async function getRecommendations(profile){
- const query='query ($page:Int,$sort:[MediaSort]) { Page(page:$page,perPage:50) { pageInfo { totalPages } media(type:ANIME,,sort:$sort,isAdult:false) { id countryOfOrigin source(version:2) format title { romaji english native } synonyms description(asHtml:false) coverImage { extraLarge large } episodes seasonYear averageScore popularity genres tags { name rank isMediaSpoiler } relations { edges { relationType node { id type countryOfOrigin format } } } siteUrl externalLinks { url site language isDisabled } } } }';
+ const query='query ($page:Int,$sort:[MediaSort]) { Page(page:$page,perPage:50) { pageInfo { totalPages } media(type:ANIME,sort:$sort,isAdult:false) { id countryOfOrigin source(version:2) format title { romaji english native } synonyms description(asHtml:false) coverImage { extraLarge large } episodes seasonYear averageScore popularity genres tags { name rank isMediaSpoiler } relations { edges { relationType node { id type countryOfOrigin format } } } siteUrl externalLinks { url site language isDisabled } } } }';
  const fetchPage=async (page,sort)=>{
   let lastError=null;
   for(let attempt=0;attempt<3;attempt++){
