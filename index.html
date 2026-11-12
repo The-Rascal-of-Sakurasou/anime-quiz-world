@@ -2214,7 +2214,7 @@ try{restoreLanguage()}catch(e){console.error('AQW language initialization failed
 $('#resetProgress').onclick=()=>{const msg=lang==='ja'?'実績とプレイ記録をすべてリセットします。この操作は取り消せません。続行しますか？':'Reset all achievements and play records? This cannot be undone.';if(!confirm(msg))return;['aqw-history','aqw-total-runs','aqw-xp','aqw-daily-progress','aqw-daily-quest-claims','aqw-streak'].forEach(k=>safeStorage.removeItem(k));safeStorage.keys().filter(k=>k.startsWith('aqw-best-')).forEach(k=>safeStorage.removeItem(k));renderProgress();const hs=document.getElementById('historySummary');if(hs)hs.textContent='';const status=document.getElementById('resetDescription');if(status)status.textContent=lang==='ja'?'実績とプレイ記録をリセットしました。':'Achievements and play records have been reset.'};
 function getSearchAnimeOfficialUrl(anime){
  const links=Array.isArray(anime?.externalLinks)?anime.externalLinks:[];
- const socialHost=/(^|\\.)(twitter\\.com|x\\.com|facebook\\.com|instagram\\.com|youtube\\.com|youtu\\.be|tiktok\\.com|discord\\.gg|discord\\.com|reddit\\.com)$/i;
+ const socialHost=/(^|\.)(twitter\.com|x\.com|facebook\.com|instagram\.com|youtube\.com|youtu\.be|tiktok\.com|discord\.gg|discord\.com|reddit\.com)$/i;
  const candidates=links.map(link=>{
   if(!link||link.isDisabled||typeof link.url!=='string')return null;
   let parsed;
