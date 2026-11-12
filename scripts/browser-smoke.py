@@ -395,8 +395,26 @@ def test_all_question_modes(browser):
                     "Image question did not load its cover: "
                     + json.dumps({"initialState": initial_image_state, "state": image_state, "responses": image_responses, "requestFailures": image_failures, "pageErrors": errors, "consoleErrors": console_errors}, ensure_ascii=False)
                 ) from error
-        answers.first.click()
+        if mode == "synopsis":
+            correct_answer = page.evaluate("() => correctAnswer")
+            assert isinstance(correct_answer, str) and re.search(r"[ぁ-んァ-ヶ一-龯]", correct_answer), (
+                "Japanese synopsis questions must store a Japanese correct-answer title: "
+                + str(correct_answer)
+            )
+            correct_choice = page.locator("#answers button.answer").filter(has_text=correct_answer)
+            assert correct_choice.count() == 1, (
+                "The Japanese correct-answer title must appear exactly once among the choices: "
+                + correct_answer
+            )
+            correct_choice.click()
+        else:
+            answers.first.click()
         page.locator("#result:not(.hidden)").wait_for(state="visible", timeout=20000)
+        if mode == "synopsis":
+            result_text = page.locator("#resultText").inner_text()
+            assert "1問中 1問正解" in result_text, (
+                "Selecting the Japanese synopsis answer must be scored as correct: " + result_text
+            )
         assert not errors, f"Question mode {mode} raised JavaScript errors: " + " | ".join(errors)
         context.close()
         print(f"PASS: question mode {mode}")
