@@ -3087,7 +3087,11 @@ async function loadPlayerLeaderboard(force=false){
  const key=($s('aqwPlayerBoardSort')?.value||'xp')+'|'+($s('aqwPlayerBoardPeriod')?.value||'all');
  if(playerLeaderboardLoading)return playerLeaderboardLoading;
  if(!force&&playerLeaderboardLoadedKey===key&&Date.now()-playerLeaderboardLoadedAt<30000){renderPlayerLeaderboard();return}
- playerLeaderboardLoading=loadPlayerLeaderboardRemote().then(()=>{playerLeaderboardLoadedAt=Date.now();playerLeaderboardLoadedKey=key}).finally(()=>{playerLeaderboardLoading=null});
+ playerLeaderboardLoading=loadPlayerLeaderboardRemote().then(()=>{playerLeaderboardLoadedAt=Date.now();playerLeaderboardLoadedKey=key}).finally(()=>{
+  playerLeaderboardLoading=null;
+  const latestKey=($s('aqwPlayerBoardSort')?.value||'xp')+'|'+($s('aqwPlayerBoardPeriod')?.value||'all');
+  if(latestKey!==playerLeaderboardLoadedKey)return loadPlayerLeaderboard(true);
+ });
  return playerLeaderboardLoading;
 }
 async function loadQuestionDifficultyStats(){
@@ -3170,7 +3174,11 @@ async function loadRushLeaderboard(force=false){
  const period=$s('aqwRushBoardPeriod')?.value||'all';
  if(rushLeaderboardLoading)return rushLeaderboardLoading;
  if(!force&&rushLeaderboardLoadedPeriod===period&&Date.now()-rushLeaderboardLoadedAt<30000)return;
- rushLeaderboardLoading=loadRushLeaderboardRemote().then(()=>{rushLeaderboardLoadedAt=Date.now();rushLeaderboardLoadedPeriod=period}).finally(()=>{rushLeaderboardLoading=null});
+ rushLeaderboardLoading=loadRushLeaderboardRemote().then(()=>{rushLeaderboardLoadedAt=Date.now();rushLeaderboardLoadedPeriod=period}).finally(()=>{
+  rushLeaderboardLoading=null;
+  const latestPeriod=$s('aqwRushBoardPeriod')?.value||'all';
+  if(latestPeriod!==rushLeaderboardLoadedPeriod)return loadRushLeaderboard(true);
+ });
  return rushLeaderboardLoading;
 }
 async function submitRushResult(result){
