@@ -2684,91 +2684,6 @@ async function sendFriendMessage(e){
  input.value='';message($s('aqwMessageStatus'),localJa()?'送信しました。':'Sent.');await loadMessages();
 }
 
-let aqwSupabaseFeaturesPromise=null;
-window.aqwOpenSocialFeatures=async()=>{
- if(!sb)return;
- const {data,error}=await sb.auth.getSession();
- if(error)throw error;
- await refreshSession(data.session);
-};
-window.aqwEnsureSupabaseFeatures=()=>{
- if(aqwSupabaseFeaturesPromise)return aqwSupabaseFeaturesPromise;
- aqwSupabaseFeaturesPromise=(async()=>{
-const supabaseReady=await initSupabase();
-if(!supabaseReady){aqwSupabaseFeaturesPromise=null;return}
-// Load optional global difficulty feedback after the first render, not during startup.
-if(supabaseReady){
- const loadDifficultyFeedback=()=>{if(!document.hidden)loadQuestionDifficultyStats()};
- if('requestIdleCallback' in window)requestIdleCallback(loadDifficultyFeedback,{timeout:1500});
- else setTimeout(loadDifficultyFeedback,1200);
-}
-const authForm=$s('aqwAuthForm');
-const authEmailInput=$s('aqwEmail'),authPasswordInput=$s('aqwPassword');
-authForm.noValidate=true;
-authForm.addEventListener('submit',e=>{
- e.preventDefault();
- message(authMsg,'');
- const email=authEmailInput.value.trim(),password=authPasswordInput.value;
- if(!email||!password){
-  message(authMsg,localJa()?'メールアドレスとパスワードの両方を入力してください。':'Enter both your email address and password.');
-  return;
- }
- if(!authEmailInput.checkValidity()){
-  message(authMsg,localJa()?'メールアドレスの形式を確認してください。':'Check the email address format.');
-  authEmailInput.focus();return;
- }
- if(password.length<(signupMode?12:8)){
-  message(authMsg,signupMode?(localJa()?'パスワードは12文字以上必要です。':'Password must be at least 12 characters.'):(localJa()?'パスワードは8文字以上必要です。':'Password must be at least 8 characters.'));
-  authPasswordInput.focus();return;
- }
- if(!supabaseReady||!sb){
-  message(authMsg,localJa()?'ログイン機能を読み込めませんでした。ページを再読み込みしてください。':'The sign-in service could not be loaded. Reload the page and try again.');
-  return;
- }
- authAction(signupMode?'signup':'signin');
-});
-if(!supabaseReady)return;
-$s('aqwSignUp').addEventListener('click',()=>setAuthMode(!signupMode));
-$s('aqwForgotPassword').addEventListener('click',async()=>{const emailInput=$s('aqwEmail'),email=emailInput.value.trim(),button=$s('aqwForgotPassword');message(authMsg,'');if(!email||!emailInput.checkValidity()){message(authMsg,localJa()?'先に登録時のメールアドレスを正しく入力してください。':'Enter the email address associated with your account.');emailInput.focus();return}button.disabled=true;try{const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});if(error)throw error;message(authMsg,localJa()?'該当するアカウントがある場合、再設定メールを送信しました。メールをご確認ください。':'If an account exists for this address, a password reset email has been sent. Check your inbox.')}catch(error){message(authMsg,(localJa()?'再設定メールを送信できませんでした：':'Could not send the reset email: ')+errText(error))}finally{button.disabled=false}});
-$s('aqwPasswordForm').addEventListener('submit',async e=>{e.preventDefault();const next=$s('aqwNewPassword').value,confirmPassword=$s('aqwConfirmPassword').value;message($s('aqwPasswordMessage'),'');if(!strongPassword(next)){message($s('aqwPasswordMessage'),localJa()?'新しいパスワードは12文字以上とし、大文字・小文字・数字・記号をそれぞれ1文字以上含めてください。':'Use 12–128 characters with at least one uppercase letter, lowercase letter, number and symbol.');return}if(next!==confirmPassword){message($s('aqwPasswordMessage'),localJa()?'確認用パスワードが一致しません。':'Passwords do not match.');return}const button=$s('aqwPasswordForm').querySelector('button[type="submit"]');button.disabled=true;try{const {error}=await sb.auth.updateUser({password:next});if(error)throw error;$s('aqwNewPassword').value='';$s('aqwConfirmPassword').value='';message($s('aqwPasswordMessage'),localJa()?'パスワードを変更しました。':'Password changed successfully.')}catch(err){message($s('aqwPasswordMessage'),(localJa()?'変更できませんでした：':'Could not change password: ')+errText(err))}finally{button.disabled=false}});
-$s('aqwSignOut').addEventListener('click',async()=>{const {error}=await sb.auth.signOut();if(error)message(authMsg,errText(error));else message(authMsg,localJa()?'ログアウトしました。':'Signed out.')});
-sb.auth.onAuthStateChange((event,session)=>{if(event==='INITIAL_SESSION')return;setTimeout(()=>{refreshSession(session).then(()=>{if(event==='PASSWORD_RECOVERY'){message($s('aqwPasswordMessage'),localJa()?'新しいパスワードを設定してください。':'Set your new password below.');$s('aqwPasswordForm').scrollIntoView({behavior:'smooth',block:'center'});$s('aqwNewPassword').focus()}}).catch(error=>setStatus(errText(error)))},0)});
-await sb.auth.getSession().then(({data,error})=>{if(error)setStatus(errText(error));else refreshSession(data.session,{light:true})});
-$s('aqwProfileForm').addEventListener('submit',async e=>{e.preventDefault();if(!currentUser)return;const username=$s('aqwEditUsername').value.trim();if(!/^[A-Za-z0-9_]{3,24}$/.test(username)){message(authMsg,localJa()?'ユーザー名は半角英数字と _ の3〜24文字にしてください。':'Username must be 3–24 characters using letters, numbers, and underscores.');return}const button=$s('aqwProfileForm').querySelector('button[type=submit]');button.disabled=true;try{let avatarPath=currentProfile?.avatar_path||null;const file=$s('aqwAvatarFile').files?.[0];if(file){const newPath=await uploadAvatar(file);const oldPath=avatarPath;avatarPath=newPath;const {error}=await sb.from('profiles').update({username,display_name:$s('aqwEditDisplayName').value.trim(),bio:$s('aqwBio').value.trim(),avatar_path:avatarPath,updated_at:new Date().toISOString()}).eq('id',currentUser.id);if(error){await removeStoredAvatar(newPath);throw error}await removeStoredAvatar(oldPath)}else{const {error}=await sb.from('profiles').update({username,display_name:$s('aqwEditDisplayName').value.trim(),bio:$s('aqwBio').value.trim(),updated_at:new Date().toISOString()}).eq('id',currentUser.id);if(error)throw error}message(authMsg,rt('profileSave'));await refreshSession({user:currentUser});await Promise.all([loadRushLeaderboard(),loadPlayerLeaderboard()])}catch(error){message(authMsg,errText(error))}finally{button.disabled=false}});
-$s('aqwAvatarFile').addEventListener('change',()=>{const file=$s('aqwAvatarFile').files?.[0];if(!file){updateAvatarPreview(currentProfile?.avatar_path||null);return}if(file.size>5*1024*1024||!['image/jpeg','image/png','image/webp','image/gif'].includes(file.type)){message(authMsg,file.size>5*1024*1024?rt('imageTooLarge'):rt('imageType'));$s('aqwAvatarFile').value='';return}const image=$s('aqwAvatarPreviewImage');image.src=URL.createObjectURL(file);image.classList.remove('hidden');$s('aqwAvatarFallback').classList.add('hidden')});
-$s('aqwRemoveAvatar').addEventListener('click',async()=>{if(!currentUser||!currentProfile?.avatar_path)return;if(!confirm(localJa()?'プロフィールアイコンを削除しますか？':'Remove your profile picture?'))return;const path=currentProfile.avatar_path;const {error}=await sb.from('profiles').update({avatar_path:null,updated_at:new Date().toISOString()}).eq('id',currentUser.id);if(error){message(authMsg,errText(error));return}await removeStoredAvatar(path);currentProfile.avatar_path=null;$s('aqwAvatarFile').value='';updateAvatarPreview(null);message(authMsg,localJa()?'アイコンを削除しました。':'Profile picture removed.');await Promise.all([loadRushLeaderboard(),loadPlayerLeaderboard()])});
-$s('aqwPostForm').addEventListener('submit',e=>{e.preventDefault();doPost()});
-$s('aqwShareQuiz').addEventListener('click',()=>{let h=[];try{h=JSON.parse(safeStorage.getItem('aqw-history')||'[]')}catch{}const runs=safeStorage.getItem('aqw-total-runs')||'0',xp=safeStorage.getItem('aqw-xp')||'0',t=({ja:['AQWクイズ記録','プレイ回数：','経験値：','最近の記録：'],en:['AQW quiz record','Plays: ','XP: ','Recent records: '],ko:['AQW 퀴즈 기록','플레이 횟수: ','경험치: ','최근 기록: '],zh:['AQW 答题记录','游玩次数：','经验值：','最近记录：'],es:['Registro del cuestionario AQW','Partidas: ','Experiencia: ','Registros recientes: '],fr:['Résultat du quiz AQW','Parties jouées : ','Expérience : ','Résultats récents : '],pt:['Registro de quiz AQW','Partidas: ','Experiência: ','Registros recentes: '],de:['AQW-Quizrekord','Gespielte Quizze: ','Erfahrungspunkte: ','Letzte Ergebnisse: ']})[lang]||['AQW quiz record','Plays: ','XP: ','Recent records: '];$s('aqwPostBody').value=t[0]+'\n'+t[1]+runs+'\n'+t[2]+xp+'\n'+(h.length?t[3]+JSON.stringify(h.slice(-3)):'')+'\n#AQW';$s('aqwPostBody').focus()});
-$s('aqwRefreshFeed').addEventListener('click',loadFeed);
-$s('aqwRefreshFriends').addEventListener('click',loadFriends);
-$s('aqwMessageForm').addEventListener('submit',sendFriendMessage);
-$s('aqwUserSearchForm').addEventListener('submit',searchUsers);
-$s('aqwNotificationsButton').addEventListener('click',async()=>{$s('aqwNotifications').classList.toggle('hidden');if(!$s('aqwNotifications').classList.contains('hidden'))await loadNotifications()});
-$s('aqwEnableBrowserNotifications').addEventListener('click',enableBrowserNotifications);
-$s('aqwRushBoardRefresh').addEventListener('click',()=>loadRushLeaderboard(true));
-$s('aqwRushBoardPeriod').addEventListener('change',()=>loadRushLeaderboard(true));
-$s('aqwPlayerBoardRefresh').addEventListener('click',()=>loadPlayerLeaderboard(true));
-$s('aqwPlayerBoardSort').addEventListener('change',()=>loadPlayerLeaderboard(true));
-$s('aqwPlayerBoardPeriod').addEventListener('change',()=>loadPlayerLeaderboard(true));
-$s('aqwRushBoardShare').addEventListener('click',shareRushBoardImage);
-$s('aqwRushBoardSave').addEventListener('click',saveRushBoardImage);
-$s('aqwPlayerBoardShare').addEventListener('click',sharePlayerBoardImage);
-$s('aqwPlayerBoardSave').addEventListener('click',savePlayerBoardImage);
-$s('aqwResetOnlineRecords').addEventListener('click',resetOnlineLeaderboardRecords);
-$s('aqwToggleLeaderboardRegistration').addEventListener('click',toggleLeaderboardRegistration);
-
-document.getElementById('languageSelect')?.addEventListener('change',()=>{applyRushLeaderboardLanguage();applyPlayerLeaderboardLanguage();applyPeriodLabels();renderPlayerLeaderboard()});
-window.addEventListener('aqw:quiz-finished',event=>{
- const detail=event.detail;
- if(!detail||!detail.runId||!Number.isInteger(detail.correctCount)||!Number.isInteger(detail.questionCount)||![10,15].includes(detail.xpMultiplier))return;
- submitPlayerRun(detail);
-});
-window.addEventListener('aqw:rush-finished',event=>{
- const detail=event.detail;
- if(!detail||!Number.isInteger(detail.correctCount)||!Number.isInteger(detail.questionCount)||!Number.isFinite(detail.elapsedMs))return;
- submitRushResult(detail);
-});
-
 function officialAnimeLink(anime){
  const links=Array.isArray(anime?.externalLinks)?anime.externalLinks:[];
  const official=links.find(link=>{
@@ -2883,7 +2798,95 @@ async function loadFeaturedRail(){
   if(!cached)root.innerHTML='<p class="featured-empty">今シーズンの日本アニメを読み込めませんでした。通信状態を確認して再読み込みしてください。</p>';
  }finally{clearTimeout(timeout)}
 }
-loadFeaturedRail();applyRushLeaderboardLanguage();
+
+// Load the seasonal anime rail immediately; it must not wait for optional Supabase setup.
+loadFeaturedRail();
+let aqwSupabaseFeaturesPromise=null;
+window.aqwOpenSocialFeatures=async()=>{
+ if(!sb)return;
+ const {data,error}=await sb.auth.getSession();
+ if(error)throw error;
+ await refreshSession(data.session);
+};
+window.aqwEnsureSupabaseFeatures=()=>{
+ if(aqwSupabaseFeaturesPromise)return aqwSupabaseFeaturesPromise;
+ aqwSupabaseFeaturesPromise=(async()=>{
+const supabaseReady=await initSupabase();
+if(!supabaseReady){aqwSupabaseFeaturesPromise=null;return}
+// Load optional global difficulty feedback after the first render, not during startup.
+if(supabaseReady){
+ const loadDifficultyFeedback=()=>{if(!document.hidden)loadQuestionDifficultyStats()};
+ if('requestIdleCallback' in window)requestIdleCallback(loadDifficultyFeedback,{timeout:1500});
+ else setTimeout(loadDifficultyFeedback,1200);
+}
+const authForm=$s('aqwAuthForm');
+const authEmailInput=$s('aqwEmail'),authPasswordInput=$s('aqwPassword');
+authForm.noValidate=true;
+authForm.addEventListener('submit',e=>{
+ e.preventDefault();
+ message(authMsg,'');
+ const email=authEmailInput.value.trim(),password=authPasswordInput.value;
+ if(!email||!password){
+  message(authMsg,localJa()?'メールアドレスとパスワードの両方を入力してください。':'Enter both your email address and password.');
+  return;
+ }
+ if(!authEmailInput.checkValidity()){
+  message(authMsg,localJa()?'メールアドレスの形式を確認してください。':'Check the email address format.');
+  authEmailInput.focus();return;
+ }
+ if(password.length<(signupMode?12:8)){
+  message(authMsg,signupMode?(localJa()?'パスワードは12文字以上必要です。':'Password must be at least 12 characters.'):(localJa()?'パスワードは8文字以上必要です。':'Password must be at least 8 characters.'));
+  authPasswordInput.focus();return;
+ }
+ if(!supabaseReady||!sb){
+  message(authMsg,localJa()?'ログイン機能を読み込めませんでした。ページを再読み込みしてください。':'The sign-in service could not be loaded. Reload the page and try again.');
+  return;
+ }
+ authAction(signupMode?'signup':'signin');
+});
+if(!supabaseReady)return;
+$s('aqwSignUp').addEventListener('click',()=>setAuthMode(!signupMode));
+$s('aqwForgotPassword').addEventListener('click',async()=>{const emailInput=$s('aqwEmail'),email=emailInput.value.trim(),button=$s('aqwForgotPassword');message(authMsg,'');if(!email||!emailInput.checkValidity()){message(authMsg,localJa()?'先に登録時のメールアドレスを正しく入力してください。':'Enter the email address associated with your account.');emailInput.focus();return}button.disabled=true;try{const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});if(error)throw error;message(authMsg,localJa()?'該当するアカウントがある場合、再設定メールを送信しました。メールをご確認ください。':'If an account exists for this address, a password reset email has been sent. Check your inbox.')}catch(error){message(authMsg,(localJa()?'再設定メールを送信できませんでした：':'Could not send the reset email: ')+errText(error))}finally{button.disabled=false}});
+$s('aqwPasswordForm').addEventListener('submit',async e=>{e.preventDefault();const next=$s('aqwNewPassword').value,confirmPassword=$s('aqwConfirmPassword').value;message($s('aqwPasswordMessage'),'');if(!strongPassword(next)){message($s('aqwPasswordMessage'),localJa()?'新しいパスワードは12文字以上とし、大文字・小文字・数字・記号をそれぞれ1文字以上含めてください。':'Use 12–128 characters with at least one uppercase letter, lowercase letter, number and symbol.');return}if(next!==confirmPassword){message($s('aqwPasswordMessage'),localJa()?'確認用パスワードが一致しません。':'Passwords do not match.');return}const button=$s('aqwPasswordForm').querySelector('button[type="submit"]');button.disabled=true;try{const {error}=await sb.auth.updateUser({password:next});if(error)throw error;$s('aqwNewPassword').value='';$s('aqwConfirmPassword').value='';message($s('aqwPasswordMessage'),localJa()?'パスワードを変更しました。':'Password changed successfully.')}catch(err){message($s('aqwPasswordMessage'),(localJa()?'変更できませんでした：':'Could not change password: ')+errText(err))}finally{button.disabled=false}});
+$s('aqwSignOut').addEventListener('click',async()=>{const {error}=await sb.auth.signOut();if(error)message(authMsg,errText(error));else message(authMsg,localJa()?'ログアウトしました。':'Signed out.')});
+sb.auth.onAuthStateChange((event,session)=>{if(event==='INITIAL_SESSION')return;setTimeout(()=>{refreshSession(session).then(()=>{if(event==='PASSWORD_RECOVERY'){message($s('aqwPasswordMessage'),localJa()?'新しいパスワードを設定してください。':'Set your new password below.');$s('aqwPasswordForm').scrollIntoView({behavior:'smooth',block:'center'});$s('aqwNewPassword').focus()}}).catch(error=>setStatus(errText(error)))},0)});
+await sb.auth.getSession().then(({data,error})=>{if(error)setStatus(errText(error));else refreshSession(data.session,{light:true})});
+$s('aqwProfileForm').addEventListener('submit',async e=>{e.preventDefault();if(!currentUser)return;const username=$s('aqwEditUsername').value.trim();if(!/^[A-Za-z0-9_]{3,24}$/.test(username)){message(authMsg,localJa()?'ユーザー名は半角英数字と _ の3〜24文字にしてください。':'Username must be 3–24 characters using letters, numbers, and underscores.');return}const button=$s('aqwProfileForm').querySelector('button[type=submit]');button.disabled=true;try{let avatarPath=currentProfile?.avatar_path||null;const file=$s('aqwAvatarFile').files?.[0];if(file){const newPath=await uploadAvatar(file);const oldPath=avatarPath;avatarPath=newPath;const {error}=await sb.from('profiles').update({username,display_name:$s('aqwEditDisplayName').value.trim(),bio:$s('aqwBio').value.trim(),avatar_path:avatarPath,updated_at:new Date().toISOString()}).eq('id',currentUser.id);if(error){await removeStoredAvatar(newPath);throw error}await removeStoredAvatar(oldPath)}else{const {error}=await sb.from('profiles').update({username,display_name:$s('aqwEditDisplayName').value.trim(),bio:$s('aqwBio').value.trim(),updated_at:new Date().toISOString()}).eq('id',currentUser.id);if(error)throw error}message(authMsg,rt('profileSave'));await refreshSession({user:currentUser});await Promise.all([loadRushLeaderboard(),loadPlayerLeaderboard()])}catch(error){message(authMsg,errText(error))}finally{button.disabled=false}});
+$s('aqwAvatarFile').addEventListener('change',()=>{const file=$s('aqwAvatarFile').files?.[0];if(!file){updateAvatarPreview(currentProfile?.avatar_path||null);return}if(file.size>5*1024*1024||!['image/jpeg','image/png','image/webp','image/gif'].includes(file.type)){message(authMsg,file.size>5*1024*1024?rt('imageTooLarge'):rt('imageType'));$s('aqwAvatarFile').value='';return}const image=$s('aqwAvatarPreviewImage');image.src=URL.createObjectURL(file);image.classList.remove('hidden');$s('aqwAvatarFallback').classList.add('hidden')});
+$s('aqwRemoveAvatar').addEventListener('click',async()=>{if(!currentUser||!currentProfile?.avatar_path)return;if(!confirm(localJa()?'プロフィールアイコンを削除しますか？':'Remove your profile picture?'))return;const path=currentProfile.avatar_path;const {error}=await sb.from('profiles').update({avatar_path:null,updated_at:new Date().toISOString()}).eq('id',currentUser.id);if(error){message(authMsg,errText(error));return}await removeStoredAvatar(path);currentProfile.avatar_path=null;$s('aqwAvatarFile').value='';updateAvatarPreview(null);message(authMsg,localJa()?'アイコンを削除しました。':'Profile picture removed.');await Promise.all([loadRushLeaderboard(),loadPlayerLeaderboard()])});
+$s('aqwPostForm').addEventListener('submit',e=>{e.preventDefault();doPost()});
+$s('aqwShareQuiz').addEventListener('click',()=>{let h=[];try{h=JSON.parse(safeStorage.getItem('aqw-history')||'[]')}catch{}const runs=safeStorage.getItem('aqw-total-runs')||'0',xp=safeStorage.getItem('aqw-xp')||'0',t=({ja:['AQWクイズ記録','プレイ回数：','経験値：','最近の記録：'],en:['AQW quiz record','Plays: ','XP: ','Recent records: '],ko:['AQW 퀴즈 기록','플레이 횟수: ','경험치: ','최근 기록: '],zh:['AQW 答题记录','游玩次数：','经验值：','最近记录：'],es:['Registro del cuestionario AQW','Partidas: ','Experiencia: ','Registros recientes: '],fr:['Résultat du quiz AQW','Parties jouées : ','Expérience : ','Résultats récents : '],pt:['Registro de quiz AQW','Partidas: ','Experiência: ','Registros recentes: '],de:['AQW-Quizrekord','Gespielte Quizze: ','Erfahrungspunkte: ','Letzte Ergebnisse: ']})[lang]||['AQW quiz record','Plays: ','XP: ','Recent records: '];$s('aqwPostBody').value=t[0]+'\n'+t[1]+runs+'\n'+t[2]+xp+'\n'+(h.length?t[3]+JSON.stringify(h.slice(-3)):'')+'\n#AQW';$s('aqwPostBody').focus()});
+$s('aqwRefreshFeed').addEventListener('click',loadFeed);
+$s('aqwRefreshFriends').addEventListener('click',loadFriends);
+$s('aqwMessageForm').addEventListener('submit',sendFriendMessage);
+$s('aqwUserSearchForm').addEventListener('submit',searchUsers);
+$s('aqwNotificationsButton').addEventListener('click',async()=>{$s('aqwNotifications').classList.toggle('hidden');if(!$s('aqwNotifications').classList.contains('hidden'))await loadNotifications()});
+$s('aqwEnableBrowserNotifications').addEventListener('click',enableBrowserNotifications);
+$s('aqwRushBoardRefresh').addEventListener('click',()=>loadRushLeaderboard(true));
+$s('aqwRushBoardPeriod').addEventListener('change',()=>loadRushLeaderboard(true));
+$s('aqwPlayerBoardRefresh').addEventListener('click',()=>loadPlayerLeaderboard(true));
+$s('aqwPlayerBoardSort').addEventListener('change',()=>loadPlayerLeaderboard(true));
+$s('aqwPlayerBoardPeriod').addEventListener('change',()=>loadPlayerLeaderboard(true));
+$s('aqwRushBoardShare').addEventListener('click',shareRushBoardImage);
+$s('aqwRushBoardSave').addEventListener('click',saveRushBoardImage);
+$s('aqwPlayerBoardShare').addEventListener('click',sharePlayerBoardImage);
+$s('aqwPlayerBoardSave').addEventListener('click',savePlayerBoardImage);
+$s('aqwResetOnlineRecords').addEventListener('click',resetOnlineLeaderboardRecords);
+$s('aqwToggleLeaderboardRegistration').addEventListener('click',toggleLeaderboardRegistration);
+
+document.getElementById('languageSelect')?.addEventListener('change',()=>{applyRushLeaderboardLanguage();applyPlayerLeaderboardLanguage();applyPeriodLabels();renderPlayerLeaderboard()});
+window.addEventListener('aqw:quiz-finished',event=>{
+ const detail=event.detail;
+ if(!detail||!detail.runId||!Number.isInteger(detail.correctCount)||!Number.isInteger(detail.questionCount)||![10,15].includes(detail.xpMultiplier))return;
+ submitPlayerRun(detail);
+});
+window.addEventListener('aqw:rush-finished',event=>{
+ const detail=event.detail;
+ if(!detail||!Number.isInteger(detail.correctCount)||!Number.isInteger(detail.questionCount)||!Number.isFinite(detail.elapsedMs))return;
+ submitRushResult(detail);
+});
+
+applyRushLeaderboardLanguage();
 applyPlayerLeaderboardLanguage();
 applyPeriodLabels();
 // Leaderboards are fetched only when the ranking tab is opened.
