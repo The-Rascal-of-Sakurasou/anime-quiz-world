@@ -492,6 +492,12 @@ def test_live_quiz_preparation_performance(browser):
         page.locator("#result:not(.hidden)").wait_for(state="visible", timeout=30000)
         if round_index < 2:
             page.locator("#restart").wait_for(state="visible", timeout=30000)
+            page.wait_for_function(
+                """() => typeof questionChoiceSummaryCache !== 'undefined'
+                  && questionChoiceSummaryCache
+                  && questionChoiceSummaryCache.pool === pool""",
+                timeout=15000,
+            )
 
     assert not page_errors, "Live quiz raised JavaScript errors: " + " | ".join(page_errors)
     print("PERFORMANCE: " + json.dumps({
