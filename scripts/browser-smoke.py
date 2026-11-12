@@ -281,7 +281,7 @@ def test_all_question_modes(browser):
         assert len(set(labels)) == 4, f"Question mode {mode} must provide four distinct answer labels: {labels}"
         prompt = page.locator("#answerPrompt").inner_text().strip()
         assert prompt, f"Question mode {mode} must display a prompt"
-        rendered_mode = page.evaluate("() => window.__aqwLastQuestionRender?.mode || null")
+        rendered_mode = page.evaluate("() => typeof currentQuestionMode === 'undefined' ? null : currentQuestionMode")
         assert rendered_mode == mode, (
             f"Question mode {mode} silently fell back to {rendered_mode!r}"
         )
