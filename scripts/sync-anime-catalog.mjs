@@ -11,6 +11,9 @@ const BASE_SORTS = ['POPULARITY_DESC', 'ID', 'ID_DESC'];
 const OVERFLOW_SORTS = ['SCORE_DESC', 'FAVOURITES_DESC', 'TRENDING_DESC', 'START_DATE_DESC'];
 const FIELDS = 'id countryOfOrigin source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } format popularity title { romaji english native } description(asHtml:false) synonyms coverImage { large medium extraLarge } episodes seasonYear averageScore genres studios(isMain:true) { nodes { name } } startDate { year month day } externalLinks { url site type isDisabled language }';
 
+// Manually reviewed, high-priority Japanese anime that may fall outside AniList popularity pages.
+const CURATED_ANIME_IDS = [21366]; // 3-gatsu no Lion, verified via Aniplex official anime page
+
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const normalize = (value) => {
   if (typeof value === 'string') return value.normalize('NFC');
@@ -232,6 +235,37 @@ function mergeRecord(existing, incoming) {
 async function scanDateRanges(format, sort) {
   for (let startYear = 1900; startYear <= 2030; startYear += 10) {
     await scanScope(format, sort, startYear, startYear + 9);
+  }
+}
+
+
+if (CURATED_ANIME_IDS.length) {
+  const ids = CURATED_ANIME_IDS.join(',');
+  const query = 'query { Media(id_in:[' + ids + '], type:ANIME, isAdult:false) { ' + FIELDS + ' } }';
+  await sleep(1200);
+  const response = await fetch(API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ query }),
+    signal: AbortSignal.timeout(30000),
+  });
+  if (!response.ok) throw new Error('AniList curated-record HTTP ' + response.status);
+  const json = await response.json();
+  if (json.errors?.length) throw new Error(json.errors.map((item) => item.message).join('; '));
+  const curated = normalize(json.data?.Media || []);
+  for (const anime of curated) {
+    // Japanese origin is independently confirmed by the publisher's official anime page.
+    // The regular image, title, format, and adult-content checks still apply.
+    if (CURATED_ANIME_IDS.includes(Number(anime.id)) && anime.countryOfOrigin === 'JP') {
+      anime.originVerified = true;
+      if (!isUsableAnime(anime)) throw new Error('Curated anime failed normal catalogue validation: ' + anime.id);
+      const id = Number(anime.id);
+      records.set(id, mergeRecord(records.get(id), anime));
+      accepted++;
+    }
+  }
+  if (!CURATED_ANIME_IDS.every((id) => records.has(id))) {
+    throw new Error('A curated high-priority anime could not be added to the catalogue.');
   }
 }
 
