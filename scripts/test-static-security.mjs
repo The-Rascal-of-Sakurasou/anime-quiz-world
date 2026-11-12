@@ -302,14 +302,13 @@ assert.doesNotMatch(index, /id="collection(?:Heading)?"/, "The anime collection 
 assert.doesNotMatch(index, /rememberAnime|safeStorage\.(?:getItem|setItem)\([\'"]aqw-collection[\'"]/, "Quiz answers must not create or load a per-user anime collection");
 assert.match(index, /safeStorage\.removeItem\('aqw-collection'\)/, "Legacy per-user anime collection data must be removed on page load");
 assert.match(index, /\[t\.fifty,runs>=50\]/, "The 50-play achievement must not depend on a stored anime collection");
-assert.match(index, /type:ANIME,countryOfOrigin:JP/, "Quiz search query must be restricted to Japanese-origin anime");
-assert.ok(index.includes("media(type:ANIME,countryOfOrigin:JP"), "Quiz catalog query must be restricted to Japanese-origin anime");
-assert.match(index, /countryOfOrigin!==.JP./, "Quiz data must reject non-Japanese production countries on the client");
-
-assert.ok(index.includes("media(type:ANIME,countryOfOrigin:JP"), "Quiz catalog query must be restricted to Japanese-origin anime");
-const indexOriginHelper = index.match(/function isJapaneseOriginAnime\(a\)\{[^\n]*\}/)?.[0];
-assert.ok(indexOriginHelper, "Quiz Japanese-origin verification helper missing");
-const isQuizOriginJapanese = vm.runInNewContext(`(${indexOriginHelper})`);
+assert.ok(index.includes("media(type:ANIME,sort:"), "Quiz catalogue queries must retrieve candidates before applying source eligibility");
+assert.match(index, /countryOfOrigin popularity title \{ romaji english native \}[^}]*synonyms/, "Quiz catalogue records must include country, popularity and Japanese-title evidence");
+assert.match(index, /countryOfOrigin!==.JP./, "Quiz data must reject non-Japanese production countries unless the documented famous-Japanese-title exception applies");
+const indexOriginHelper = index.match(/function isJapaneseOriginAnime\(a\)\{[\s\S]*?\n\}/)?.[0];
+const indexFamousTitleHelper = index.match(/function hasFamousJapaneseTitle\(a\)\{[\s\S]*?\n\}/)?.[0];
+assert.ok(indexOriginHelper && indexFamousTitleHelper, "Quiz Japanese-origin and Japanese-title verification helpers must exist");
+const isQuizOriginJapanese = vm.runInNewContext(indexFamousTitleHelper + "\n" + indexOriginHelper + "\nisJapaneseOriginAnime");
 assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "ORIGINAL" }), true, "Japanese original anime must remain eligible in the quiz");
 assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", originVerified: true }), true, "Compact shared-catalogue entries must pass the verified-origin marker");
 assert.equal(isQuizOriginJapanese({ countryOfOrigin: "US", originVerified: true }), false, "The verified-origin marker must never override a non-Japanese country");
@@ -458,7 +457,7 @@ assert.ok(index.includes("season seasonYear startDate { year month day }"), "Fea
 assert.ok(index.includes("if(!isJapaneseOriginAnime(anime)||!Number.isFinite(Number(anime.id)))continue"), "New seasonal anime must pass verified Japanese-source filtering");
 assert.match(index, /for\(const anime of items\|\|\[\]\)\{\s*if\(!isJapaneseOriginAnime\(anime\)\|\|!Number\.isFinite\(Number\(anime\.id\)\)\)continue;/, "All seasonal anime results must pass verified Japanese-source filtering before rendering");
 
-assert.match(index, /function isJapaneseOriginAnime\(a\)\{[^\n]*a\.countryOfOrigin!==.JP./, "Japanese-origin eligibility must reject non-Japanese animation records before source verification");
+assert.match(index, /function isJapaneseOriginAnime\(a\)\{[\s\S]*?a\.countryOfOrigin!==.JP./, "Japanese-origin eligibility must reject non-Japanese animation records unless the documented exception applies");
 assert.match(index, /const cleanedItems=value\.items\.filter\(isUsableAnime\)/, "Existing IndexedDB catalogues must be purged of non-Japanese-origin anime when loaded");
 assert.match(index, /const cleanedItems=legacy\.items\.filter\(isUsableAnime\)/, "Existing localStorage catalogues must be purged of non-Japanese-origin anime when loaded");
 assert.match(index, /if\(!isJapaneseOriginAnime\(anime\)\|\|!Number\.isFinite\(Number\(anime\.id\)\)\)continue/, "Featured anime rail must apply strict Japanese-source verification before rendering");
