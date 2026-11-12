@@ -218,5 +218,4 @@ console.log("JSON size: "+catalogueBytes+" bytes; average "+report.averageBytesP
 console.log("Largest fields: "+largestFields.map(row=>row.field+" "+row.bytes+" bytes ("+row.percent+"%)").join("; "));
 for (const row of report.modes) console.log(row.label+": "+row.eligible+"/"+row.total+" ("+row.coveragePercent+"%); missing "+row.missing);
 console.log("Unique years: "+yearSet.size+"; studios: "+studioSet.size+"; synopsis texts: "+synopsisCandidateCount);
-console.log("Characters: "+JSON.stringify(characterStats));
 console.log("Detailed report: "+REPORT);
