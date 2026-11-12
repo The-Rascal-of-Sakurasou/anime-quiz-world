@@ -352,8 +352,12 @@ assert.match(index, /shuffle\(characterRecordsWithFourChoicesForAnime\(a,questio
 assert.match(index, /if\(\[\'image\',\'titleYear\',\'character\',\'characterImage\',\'titleCharacter\'\]\.includes\(currentQuestionMode\)\)skipBrokenImageQuestion\(brokenUrl\)/, "A failed question cover must skip image-dependent questions instead of leaving an unanswerable prompt");
 
 assert.match(index, /function availableQuestionModes\(a,format=/, "Mixed mode must derive the available question types for each anime");
-assert.match(index, /let modes=titleImageIsSafe\(a\)\?\['image'\]\s*:\s*\[\]/, "Only OCR-audited, title-free cover images may enter image questions");
-assert.match(index, /if\(!typingOnly&&opts\.length<4&&titleImageIsSafe\(a\)/, "Image-question fallback must only use an OCR-audited, title-free cover");
+const modeSelectMarkup = index.match(/<select id="modeSelect">([\s\S]*?)<\/select>/)?.[1] || "";
+for (const mode of ["synopsis", "titleYear", "synonym", "titleStudio"]) {
+  assert.ok(modeSelectMarkup.includes('value="' + mode + '"'), "The four requested question formats must remain selectable: " + mode);
+}
+assert.doesNotMatch(modeSelectMarkup, /value="(?:image|character|characterImage|characterNameImage|titleCharacter)"/, "Unrequested legacy question formats must not appear in the selector");
+assert.match(index, /const modes=\[\];\s*if\(titleUsable\(a\)&&a\?\.studios\?\.nodes\?\.\[0\]\?\.name\)modes\.push\('titleStudio'\)/, "Mixed mode must use only the four requested question formats");
 assert.match(index, /const hasQuestion=mode===\'mixed\'\s*\?availableQuestionModes\(anime,format\)\.length>0/, "Cached candidate building must accept mixed-mode anime with at least one valid question type");
 assert.match(index, /mode===\'mixed\'\?items\.filter\(a=>isUsableAnime\(a\)&&titleUsable\(a\)&&availableQuestionModes\(a,format\)\.length>0\)/, "Background loading in mixed mode must use the same per-anime question-type eligibility");
 assert.ok(index.includes("let modesForFormat=availableQuestionModes(a,$('#answerFormatSelect').value)"), "Question rendering must use the same available-mode calculation");
@@ -511,11 +515,7 @@ const aliasResults = uniqueAliasCandidates(fixtureAnime, aliasOwnerFixture, () =
 assert.deepEqual(aliasResults, ["Private Alias"], "Only aliases owned by exactly one anime may be used");
 
 
-const questionModes = [
-  "image", "titleStudio", "titleYear", "synonym",
-  "character", "characterImage", "characterNameImage", "titleCharacter",
-  "synopsis",
-];
+const questionModes = ["titleStudio", "titleYear", "synonym", "synopsis"];
 const availabilityStart = index.indexOf("function availableQuestionModes(a,format=");
 const validationStart = index.indexOf("function questionModeHasFourChoices(a,mode)");
 const rendererStart = index.indexOf("function showQuestionInternal(preserveMode=false)");
