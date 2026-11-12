@@ -1,0 +1,71 @@
+name: AQW public-site browser smoke tests
+
+on:
+  workflow_run:
+    workflows: ["pages build and deployment"]
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aqw-public-site-smoke
+  cancel-in-progress: true
+
+jobs:
+  public-browser-smoke:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out the deployed revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Playwright
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install playwright
+
+      - name: Install Chromium
+        run: python -m playwright install --with-deps chromium
+
+      - name: Wait for the published catalogue and validate its contents
+        env:
+          AQW_BASE_URL: https://the-rascal-of-sakurasou.github.io/anime-quiz-world
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent --show-error "$AQW_BASE_URL/index.html" -o /tmp/aqw-published-index.html \
+              && curl --fail --silent --show-error "$AQW_BASE_URL/data/anime-catalog.json.gz" -o /tmp/aqw-public-catalogue.gz; then
+              python - <<'PY'
+          import gzip, json
+          with gzip.open("/tmp/aqw-public-catalogue.gz", "rt", encoding="utf-8") as handle:
+              catalogue = json.load(handle)
+          items = catalogue.get("items", [])
+          assert len(items) >= 9000, f"Unexpected public catalogue size: {len(items)}"
+          embedded = sum(1 for item in items if "characters" in item)
+          assert embedded == 0, f"Unused character records found: {embedded}"
+          print(f"Public catalogue verified: {len(items)} items; no embedded character records.")
+          PY
+              exit 0
+            fi
+            echo "Published files not ready (attempt ${attempt}/20)."
+            sleep 6
+          done
+          echo "Published Anime Quiz World files are unavailable." >&2
+          exit 1
+
+      - name: Validate public browser test script
+        run: python -m py_compile scripts/browser-smoke.py
+
+      - name: Test the deployed public site with real catalogue data
+        env:
+          AQW_BASE_URL: https://the-rascal-of-sakurasou.github.io/anime-quiz-world
+        run: python scripts/browser-smoke.py --public-smoke

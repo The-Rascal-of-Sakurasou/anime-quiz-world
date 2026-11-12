@@ -9,6 +9,7 @@ import gzip
 import json
 import os
 import re
+import sys
 from datetime import datetime, timedelta, timezone
 from urllib.request import Request, urlopen
 from playwright.sync_api import sync_playwright
@@ -192,6 +193,128 @@ def install_routes(page):
     )
     page.route(re.compile(r"^https://graphql\.anilist\.co/?$"), graphql)
     page.route(re.compile(r"^https://example\.test/.*"), image)
+
+
+
+def install_live_catalogue_routes(page):
+    """Stub AniList seasonal discovery but keep the deployed catalogue request real."""
+    def graphql(route):
+        if route.request.method == "OPTIONS":
+            route.fulfill(status=204, headers=CORS_HEADERS)
+            return
+        payload = route.request.post_data_json or {}
+        query = payload.get("query", "")
+        aliases = re.findall(r"([A-Za-z][A-Za-z0-9_]*)\\s*:\\s*Page\\s*\\(", query)
+        if aliases:
+            data = {
+                alias: {"pageInfo": {"hasNextPage": False}, "media": []}
+                for alias in aliases
+            }
+        else:
+            data = {
+                "Page": {
+                    "pageInfo": {"hasNextPage": False, "totalPages": 1},
+                    "media": [],
+                }
+            }
+        route.fulfill(
+            status=200,
+            headers={**CORS_HEADERS, "Content-Type": "application/json"},
+            body=json.dumps({"data": data}, ensure_ascii=False),
+        )
+
+    page.route(re.compile(r"^https://graphql\\.anilist\\.co/?$"), graphql)
+
+
+def test_public_catalogue_all_modes(browser):
+    """Exercise all four quiz formats against the real catalogue served by GitHub Pages."""
+    context = browser.new_context(
+        viewport={"width": 1280, "height": 900},
+        locale="ja-JP",
+        service_workers="block",
+    )
+    page = context.new_page()
+    errors = []
+    catalogue_requests = []
+    page.on("pageerror", lambda error: errors.append(str(error)))
+    page.on(
+        "request",
+        lambda request: catalogue_requests.append(request.url)
+        if "anime-catalog.json" in request.url else None,
+    )
+    install_live_catalogue_routes(page)
+    page.goto(f"{BASE_URL}/index.html", wait_until="domcontentloaded", timeout=60000)
+    page.wait_for_function(
+        """() => {
+          const button = document.querySelector('#start');
+          return button && !button.classList.contains('hidden')
+            && !button.disabled && button.textContent.includes('クイズを開始')
+            && !button.textContent.includes('読み込み中');
+        }""",
+        timeout=120000,
+    )
+    stats = page.evaluate("""() => ({
+      poolCount: typeof pool === 'undefined' ? null : pool.length,
+      synopsisCount: typeof hasUsableSynopsis === 'function' && typeof pool !== 'undefined'
+        ? pool.filter(item => hasUsableSynopsis(item)).length : null,
+      embeddedCharacterRecords: typeof pool === 'undefined' ? null
+        : pool.filter(item => Object.prototype.hasOwnProperty.call(item, 'characters')).length
+    })""")
+    assert stats["poolCount"] is not None and stats["poolCount"] >= 9000, (
+        "The published quiz catalogue is unexpectedly small: " + json.dumps(stats, ensure_ascii=False)
+    )
+    assert stats["synopsisCount"] is not None and stats["synopsisCount"] >= 400, (
+        "The published catalogue has too few Japanese synopsis questions: " + json.dumps(stats, ensure_ascii=False)
+    )
+    assert stats["embeddedCharacterRecords"] == 0, (
+        "Unused character records returned in the shared catalogue: " + json.dumps(stats, ensure_ascii=False)
+    )
+    assert any(url.endswith("anime-catalog.json.gz") for url in catalogue_requests), (
+        "The public page did not request the compressed catalogue: " + repr(catalogue_requests)
+    )
+    assert not any(url.endswith("anime-catalog.json") for url in catalogue_requests), (
+        "The public page fell back to the uncompressed catalogue: " + repr(catalogue_requests)
+    )
+
+    modes = ["synopsis", "titleYear", "synonym", "titleStudio"]
+    timings = []
+    for index, mode in enumerate(modes):
+        page.locator("#modeSelect").select_option(mode)
+        page.locator("#answerFormatSelect").select_option("choices")
+        page.locator("#difficultySelect").select_option("easy")
+        page.locator("#questionCount").fill("1")
+        start_button = page.locator("#start" if index == 0 else "#restart")
+        start_button.wait_for(state="visible", timeout=20000)
+        started = __import__("time").perf_counter()
+        start_button.click()
+        answers = page.locator("#answers button.answer")
+        answers.first.wait_for(state="visible", timeout=45000)
+        elapsed_ms = round((__import__("time").perf_counter() - started) * 1000, 1)
+        labels = [re.sub(r"\\s+", " ", value).strip().casefold() for value in answers.all_inner_texts()]
+        assert answers.count() == 4 and len(set(labels)) == 4, (
+            f"Public {mode} mode did not produce four distinct choices: {labels}"
+        )
+        rendered_mode = page.evaluate(
+            "() => typeof currentQuestionMode === 'undefined' ? null : currentQuestionMode"
+        )
+        assert rendered_mode == mode, (
+            f"Public {mode} mode silently fell back to {rendered_mode!r}"
+        )
+        prompt = page.locator("#answerPrompt").inner_text().strip()
+        assert prompt, f"Public {mode} mode did not render a question prompt"
+        if mode == "synopsis":
+            assert re.search(r"[ぁ-んァ-ヶ一-龯]", prompt), (
+                "Public synopsis mode did not render Japanese synopsis text: " + prompt
+            )
+        answers.first.click()
+        page.locator("#result:not(.hidden)").wait_for(state="visible", timeout=30000)
+        result_text = page.locator("#resultText").inner_text().strip()
+        assert result_text, f"Public {mode} mode did not finish with a result summary"
+        timings.append({"mode": mode, "clickToQuestionMs": elapsed_ms})
+    assert not errors, "Public quiz raised JavaScript errors: " + " | ".join(errors)
+    print("PUBLIC CATALOGUE: " + json.dumps(stats, ensure_ascii=False))
+    print("PUBLIC FOUR-MODE QUIZ: " + json.dumps(timings, ensure_ascii=False))
+    context.close()
 
 
 def test_compressed_catalogue_preferred(browser):
@@ -1068,9 +1191,20 @@ def test_featured_season_rail(browser):
 
 
 def main():
+    public_smoke = "--public-smoke" in sys.argv
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch()
         try:
+            if public_smoke:
+                test_public_catalogue_all_modes(browser)
+                print("PASS: public catalogue and all four quiz formats")
+                test_live_quiz_preparation_performance(browser)
+                print("PASS: public live-catalogue quiz preparation performance (3 rounds)")
+                test_recommendation_diagnosis(browser)
+                print("PASS: public recommendation diagnosis -> results")
+                test_mobile_quiz_layout(browser)
+                print("PASS: public mobile quiz layout and touch answer")
+                return
             # Run the core quiz journey first so network-heavy checks cannot
             # delay detection of a broken start -> answer -> finish flow.
             test_compressed_catalogue_preferred(browser)
