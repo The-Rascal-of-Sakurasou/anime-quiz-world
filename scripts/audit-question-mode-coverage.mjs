@@ -1,4 +1,5 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { runInNewContext } from "node:vm";
 
 const CATALOG = "data/anime-catalog.json";
 const REPORT = "artifacts/question-mode-coverage/report.json";
@@ -38,7 +39,19 @@ const CURATED = [
 const norm = (v) => String(v || "").normalize("NFKC").toLocaleLowerCase().replace(/[\s　・･:：!！?？.,，。'"“”「」『』()（）‐‑–—_-]/g, "").trim();
 const title = (a) => String(a?.title?.native || a?.title?.english || a?.title?.romaji || "").trim();
 const year = (a) => Number.isInteger(a?.seasonYear) ? a.seasonYear : Number.isInteger(a?.startDate?.year) ? a.startDate.year : null;
-const desc = (a) => String(a?.description || "").replace(/<[^>]*>/g, " ").replace(/\[[^\]]*\]\([^)]*\)/g, " ").replace(/\\[nrt]/gi, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&quot;/gi, '"').replace(/&#39;/g, "'").replace(/\s+/g, " ").trim();
+const indexHtml = await readFile("index.html", "utf8");
+const overrideMatch = indexHtml.match(/const JAPANESE_SYNOPSIS_OVERRIDES=new Map\(Object\.entries\((\{[\s\S]*?\})\)\.map/);
+if (!overrideMatch) throw new Error("Could not extract Japanese synopsis overrides from index.html.");
+const overrideObject = runInNewContext("(" + overrideMatch[1] + ")");
+const synopsisOverrides = new Map(Object.entries(overrideObject).map(([key, value]) => [norm(key), String(value)]));
+const desc = (a) => {
+  const titles = [a?.title?.native, a?.title?.english, a?.title?.romaji, ...(Array.isArray(a?.synonyms) ? a.synonyms : [])];
+  for (const candidate of titles) {
+    const override = synopsisOverrides.get(norm(candidate));
+    if (override) return override;
+  }
+  return String(a?.description || "").replace(/<[^>]*>/g, " ").replace(/\[[^\]]*\]\([^)]*\)/g, " ").replace(/\\[nrt]/gi, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&quot;/gi, '"').replace(/&#39;/g, "'").replace(/\s+/g, " ").trim();
+};
 const usableSynopsis = (a) => {
   const s = desc(a);
   if (s.length < 45 || /^(no synopsis|no description|not available|tba|unknown|未定|あらすじなし|情報なし)\.?$/i.test(s)) return false;
@@ -133,7 +146,7 @@ const report = {
   ],
   caveats: [
     "Japanese locale coverage is audited.",
-    "Synopsis counts require four distinct synopsis texts but do not run the browser's randomized similarity-based distractor selection for every target.",
+    "Synopsis counts include the Japanese overrides extracted from index.html and apply the client's Japanese-language text threshold; randomized similarity-based distractor selection is not run for every target.",
     "Alias coverage reproduces curated aliases, initialisms and catalogue synonyms; browser normalization and title-variant collision checks may differ at edge cases.",
     "The client may also merge additional AniList API records into the shared catalogue at runtime.",
   ],
