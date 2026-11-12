@@ -946,6 +946,9 @@ async function fetchAnime(vars={}){
    if(pool.length){
     pool=deduplicateQuestionPool(mergeAnimeCollection([...pool,...items]));
     sharedCatalogActive=true;
+    // Rebuild candidate indexes during idle time after a late catalogue merge,
+    // rather than forcing the next Start click to pay the full index cost.
+    scheduleEligibleCandidatePrewarm();
     extendQuestionsFromPool(items).catch(error=>console.warn('Late question extension deferred:',error));
    }else lateSharedCatalogItems=items;
   }).catch(error=>console.warn('Late shared catalogue load failed:',error));
