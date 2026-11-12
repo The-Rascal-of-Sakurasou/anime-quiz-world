@@ -3126,7 +3126,7 @@ async function submitPlayerRun(result){
   await loadQuestionDifficultyStats();
   await loadMyDifficultyProfile();
  }catch(error){
-  queuePendingRun(pendingPlayerRuns,summaryOnly);
+  queuePendingRun(pendingPlayerRuns,pendingRun);
   message($s('aqwPlayerBoardStatus'),aqwPlayerT('submitError')+errText(error));
  }
 }
