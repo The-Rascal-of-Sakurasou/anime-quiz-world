@@ -30,10 +30,10 @@ begin
     raise exception 'ログインが必要です。' using errcode = '28000';
   end if;
 
+  -- Keep the run ledger bounded without deleting any still-valid run.
   delete from private.aqw_speed_rush_runs
    where user_id = v_user_id
-     and finished_at is null
-     and expires_at < clock_timestamp() - interval '1 day';
+     and started_at < clock_timestamp() - interval '1 day';
 
   insert into private.aqw_speed_rush_runs(user_id, expires_at)
   values (v_user_id, clock_timestamp() + interval '3 minutes')
@@ -147,6 +147,9 @@ begin
     'updated_at', v_score.updated_at);
 end;
 $function$;
+
+revoke all on function private.submit_aqw_speed_rush(integer, integer, uuid) from public, anon;
+grant execute on function private.submit_aqw_speed_rush(integer, integer, uuid) to authenticated;
 
 comment on function private.submit_aqw_speed_rush(integer, integer, uuid) is
   'Validates Speed Rush elapsed time using a server-issued run and database clock. Correct count remains client-reported and is not authoritative anti-cheat evidence.';
