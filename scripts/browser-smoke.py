@@ -385,6 +385,15 @@ def test_quiz_start_answer_finish(browser):
     context = browser.new_context(viewport={"width": 1280, "height": 900}, locale="ja-JP")
     page = context.new_page()
     errors = []
+    page.add_init_script("""() => {
+      window.__aqwPageErrors = [];
+      window.addEventListener('error', event => {
+        window.__aqwPageErrors.push(event.error?.stack || event.message || 'Unknown page error');
+      });
+      window.addEventListener('unhandledrejection', event => {
+        window.__aqwPageErrors.push(event.reason?.stack || String(event.reason));
+      });
+    }""")
     page.on("pageerror", lambda error: errors.append(str(error)))
     install_routes(page)
 
@@ -408,7 +417,10 @@ def test_quiz_start_answer_finish(browser):
     page.locator("#answers button.answer").first.click()
     page.locator("#result:not(.hidden)").wait_for(state="visible", timeout=20000)
     assert page.locator("#resultText").inner_text().strip(), "Quiz completion summary must be displayed"
-    assert not errors, "Quiz page raised JavaScript errors: " + " | ".join(errors)
+    diagnostic_errors = page.evaluate("() => window.__aqwPageErrors || []")
+    assert not errors and not diagnostic_errors, (
+        "Quiz page raised JavaScript errors: " + " | ".join(errors + diagnostic_errors)
+    )
     context.close()
 
 
