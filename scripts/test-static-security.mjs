@@ -498,8 +498,8 @@ assert.match(index, /function hasUsableImageUrl\(value\)\{[^\n]*no\[-_ \]\?image
 assert.match(index, /function isUsableAnime\(a\)\{[^\n]*hasUsableImageUrl\(titleImage\)/, "Anime without a usable cover image must be excluded from image-backed displays and quiz data");
 assert.match(index, /function titleImageIsSafe\(anime\)\{[^\n]*return hasUsableImageUrl\(image\)/, "Valid non-placeholder cover images must be eligible for title-identification image questions without an OCR audit");
 assert.match(index, /const candidates=shuffle\(uniqueAnimeById\(source\)\.filter\(a=>isUsableAnime\(a\)\)\)\.slice\(0,8\)/, "Featured artwork must restore usable images, exclude placeholders and cap the animated rail at eight cards");
-assert.match(index, /animation:featured-scroll 80s linear infinite/, "Featured anime images must scroll 25 percent faster than the previous 100-second cycle");
-assert.match(index, /animation-duration:88s/, "Reverse featured anime image rail must preserve the same 25-percent speed increase");
+assert.match(index, /animation:featured-scroll 64s linear infinite/, "Featured anime images must use the updated faster scroll duration");
+assert.match(index, /animation-duration:70s/, "Reverse featured anime image rail must use the updated faster scroll duration");
 const imageUrlHelperSource=index.match(/function hasUsableImageUrl\(value\)\{[^\n]*\}/)?.[0];
 assert.ok(imageUrlHelperSource, "Usable-image URL validator must exist");
 const hasUsableImageUrl=vm.runInNewContext('('+imageUrlHelperSource+')',{failedImageUrls:new Set()});
