@@ -650,6 +650,7 @@ assert.ok(index.includes("if(mode==='image'&&!titleImageIsSafe(a))return false")
 assert.ok(questionRenderer.includes("if(!typingOnly&&opts.length<4)throw new Error('Four unique answer choices could not be prepared.')"), "Choice questions must fail safely instead of displaying fewer than four choices");
 assert.ok(index.includes("function normalizeAnswer(value){return String(value||'').normalize('NFKC')"), "Answer de-duplication must normalize full-width and compatibility characters");
 
+assert.ok(index.includes('<textarea id="aqwPostBody" maxlength="2000">'), "Post composer must enforce the database 2,000-character limit");
 const leaderboardSubmissionStart = index.indexOf("async function submitPlayerRun(result){");
 const leaderboardSubmissionEnd = index.indexOf("async function loadMyRushRank", leaderboardSubmissionStart);
 assert.ok(leaderboardSubmissionStart >= 0 && leaderboardSubmissionEnd > leaderboardSubmissionStart, "Leaderboard submission handler missing");
