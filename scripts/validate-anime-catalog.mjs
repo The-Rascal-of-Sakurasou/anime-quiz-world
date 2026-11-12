@@ -132,7 +132,7 @@ export function validateCatalog(catalog) {
     try {
       const url = new URL(image);
       if (!["https:", "http:"].includes(url.protocol) || !url.hostname || url.username || url.password ||
-          /(?:no[-_ ]?image|placeholder|default[-_ ]?image)/i.test(image)) {
+          /(?:no[-_ ]?image|placeholder|default[-_ ]?image|(?:^|\\/)default(?:\\.[a-z0-9]+)?(?:[?#]|$))/i.test(image)) {
         failures.push(label + ": unusable cover image URL");
       }
     } catch {
