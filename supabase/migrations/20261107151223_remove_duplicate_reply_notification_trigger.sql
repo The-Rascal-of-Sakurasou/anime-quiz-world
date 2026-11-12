@@ -1,0 +1,1 @@
+drop trigger if exists posts_reply_notification on public.posts;

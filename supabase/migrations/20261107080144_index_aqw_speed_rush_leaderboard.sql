@@ -1,0 +1,1 @@
+create index if not exists aqw_speed_rush_leaderboard_order_idx on public.aqw_speed_rush_scores (correct_count desc, elapsed_ms asc);
