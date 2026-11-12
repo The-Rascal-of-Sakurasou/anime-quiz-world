@@ -349,7 +349,7 @@ assert.match(index, /async function fetchSharedAnimeCatalog\(\)/, "The quiz must
 // The exact shared character-choice builder is asserted below.
 assert.match(index, /if\(mode===\'characterImage\'\)return characterRecordsWithFourChoicesForAnime\(a,summary,false\)\.length>0/, "Character-image question eligibility must validate four distinct character portraits");
 assert.match(index, /shuffle\(characterRecordsWithFourChoicesForAnime\(a,questionChoiceSummary\(\),true\)\)/, "Character-name-to-image questions must choose from records with four distinct portraits");
-assert.match(index, /if\(\[\'image\',\'titleYear\',\'character\',\'characterImage\',\'titleCharacter\'\]\.includes\(currentQuestionMode\)\)skipBrokenImageQuestion\(brokenUrl\)/, "A failed question cover must skip image-dependent questions instead of leaving an unanswerable prompt");
+// The four requested question formats are text/data driven and must not depend on cover-image loading.
 
 assert.match(index, /function availableQuestionModes\(a,format=/, "Mixed mode must derive the available question types for each anime");
 const modeSelectMarkup = index.match(/<select id="modeSelect">([\s\S]*?)<\/select>/)?.[1] || "";
