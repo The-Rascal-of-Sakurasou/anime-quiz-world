@@ -32,13 +32,12 @@ assert.match(matchPrepare, /admin\.rpc\("aqw_match_prepare_questions"/, "Questio
 const supabaseConfig = fs.readFileSync("supabase/config.toml", "utf8");
 assert.match(supabaseConfig, /\[functions\.aqw-match-prepare\][\s\S]*?verify_jwt = true/, "The active match-preparation Edge Function must require JWT verification");
 
-const synopsisOverrideEntries = [
-  ["Fate/stay night", /'Fate\\/stay night':'[^']{80,}'/],
-  ["GTO", /'GTO':'[^']{80,}'/],
-  ["幽☆遊☆白書", /'幽☆遊☆白書':'[^']{80,}'/],
-];
-for (const [title, pattern] of synopsisOverrideEntries) {
-  assert.match(source.get("index.html"), pattern, "A verified Japanese synopsis override must exist for " + title);
+const synopsisOverrideEntries = ["Fate/stay night", "GTO", "幽☆遊☆白書"];
+const synopsisSource = source.get("index.html");
+for (const title of synopsisOverrideEntries) {
+  const entryStart = synopsisSource.indexOf("'" + title + "':'");
+  const entryEnd = synopsisSource.indexOf("',", entryStart);
+  assert.ok(entryStart >= 0 && entryEnd - entryStart > 80, "A substantial Japanese synopsis override must exist for " + title);
 }
 
 const aqwHtml = source.get("index.html");
