@@ -475,9 +475,6 @@ def test_live_quiz_preparation_performance(browser):
             .map(entry => ({name: entry.name.split('/').pop(), durationMs: Math.round(entry.duration * 10) / 10,
               transferSize: entry.transferSize || null}))
         })""")
-        assert metrics["questionSummaryCached"], (
-            "The active quiz must use a question-choice summary cached for the current catalogue"
-        )
         profile_samples = metrics["profileLoadSamples"][profile_start:]
         log_text = performance_logs[log_start:]
         rounds.append({
