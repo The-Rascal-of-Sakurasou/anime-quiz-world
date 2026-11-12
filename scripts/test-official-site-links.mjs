@@ -86,6 +86,7 @@ const verifiedOfficialOverrides = [
   [1195, "ゼロの使い魔", "https://zero-tsukaima.com/"],
   [6, "TRIGUN", "https://madhouse.co.jp/english/works/"],
   [392, "幽☆遊☆白書", "https://pierrot.jp/archive/1990/"],
+  [100790, "おしりたんてい", "https://oshiri-tantei.com/"],
 ];
 for (const [id, title, expected] of verifiedOfficialOverrides) {
   assert.equal(
