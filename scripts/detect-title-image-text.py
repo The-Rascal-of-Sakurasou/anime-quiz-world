@@ -59,7 +59,7 @@ def usable_image_url(value):
     url = str(value or "").strip()
     return bool(
         url.startswith(("https://", "http://"))
-        and not re.search(r"(?:no[-_ ]?image|placeholder|default[-_ ]?image|(?:^|/)default(?:\\.[a-z0-9]+)?(?:[?#]|$))", url, re.IGNORECASE)
+        and not re.search(r"(?:no[-_ ]?image|placeholder|default[-_ ]?image|(?:^|/)default(?:\.[a-z0-9]+)?(?:[?#]|$))", url, re.IGNORECASE)
     )
 
 
