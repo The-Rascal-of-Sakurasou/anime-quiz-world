@@ -303,7 +303,9 @@ assert.doesNotMatch(index, /rememberAnime|safeStorage\.(?:getItem|setItem)\([\'"
 assert.match(index, /safeStorage\.removeItem\('aqw-collection'\)/, "Legacy per-user anime collection data must be removed on page load");
 assert.match(index, /\[t\.fifty,runs>=50\]/, "The 50-play achievement must not depend on a stored anime collection");
 assert.ok(index.includes("media(type:ANIME,sort:"), "Quiz catalogue queries must retrieve candidates before applying source eligibility");
-assert.match(index, /countryOfOrigin popularity title \{ romaji english native \}[^}]*synonyms/, "Quiz catalogue records must include country, popularity and Japanese-title evidence");
+assert.ok(index.includes("countryOfOrigin source(version:2) relations"), "Quiz catalogue records must include source-country verification metadata");
+assert.ok(index.includes("format popularity title { romaji english native }"), "Quiz catalogue records must include popularity and title evidence");
+assert.ok(index.includes("synonyms coverImage"), "Quiz catalogue records must include alternate titles for Japanese-title verification");
 assert.match(index, /countryOfOrigin!==.JP./, "Quiz data must reject non-Japanese production countries unless the documented famous-Japanese-title exception applies");
 const indexOriginHelper = index.match(/function isJapaneseOriginAnime\(a\)\{[\s\S]*?\n\}/)?.[0];
 const indexFamousTitleHelper = index.match(/function hasFamousJapaneseTitle\(a\)\{[\s\S]*?\n\}/)?.[0];
