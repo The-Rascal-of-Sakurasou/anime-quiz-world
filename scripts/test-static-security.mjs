@@ -440,6 +440,14 @@ assert.match(syncWorkflow, /workflow_dispatch:/, "Shared catalogue sync must sup
 assert.match(syncWorkflow, /contents: write/, "Shared catalogue sync must be able to publish the generated dataset");
 
 const index = source.get("index.html");
+const fallbackPlanStart = index.indexOf("const makeTasks=()=>{");
+const fallbackPlanEnd = index.indexOf("const tasks=makeTasks();", fallbackPlanStart);
+assert.ok(fallbackPlanStart >= 0 && fallbackPlanEnd > fallbackPlanStart, "Limited AniList fallback task plan must exist");
+const fallbackPlan = index.slice(fallbackPlanStart, fallbackPlanEnd);
+assert.ok(fallbackPlan.includes(".slice(0,150)"), "AniList fallback enrichment must be capped at 150 cached records");
+assert.ok(fallbackPlan.includes("for(let page=2;page<=3;page++)"), "AniList fallback must fetch only two additional popular pages after the initial page");
+assert.doesNotMatch(fallbackPlan, /page<=100|page<=200|ID_DESC|SCORE_DESC|FAVOURITES_DESC|TRENDING_DESC|START_DATE_DESC/, "Browser fallback must not crawl AniList catalogue pages or alternate full-catalogue sorts");
+assert.ok(index.includes("setTimeout(resolve,2100)"), "Browser fallback requests must respect the current AniList rate limit");
 assert.doesNotMatch(index, /id="collection(?:Heading)?"/, "The anime collection display must be removed");
 assert.doesNotMatch(index, /rememberAnime|safeStorage\.(?:getItem|setItem)\([\'"]aqw-collection[\'"]/, "Quiz answers must not create or load a per-user anime collection");
 assert.match(index, /safeStorage\.removeItem\('aqw-collection'\)/, "Legacy per-user anime collection data must be removed on page load");
