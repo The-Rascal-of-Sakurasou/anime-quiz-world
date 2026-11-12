@@ -43,7 +43,7 @@ def make_anime(index):
     # "Anime 10" overlap and are correctly rejected as ambiguous distractors.
     suffix = chr(65 + index)
     title = f"検証作品{suffix}"
-    cover = f"https://example.test/cover-{index + 1}.svg"
+    cover = f"https://example.test/cover-{index + 1}.png"
     return {
         "id": anime_id,
         "countryOfOrigin": "JP",
@@ -113,10 +113,13 @@ def install_routes(page):
         )
 
     def image(route):
+        # A real PNG avoids browser-specific SVG decoding differences in CI.
         route.fulfill(
             status=200,
-            content_type="image/svg+xml",
-            body='<svg xmlns="http://www.w3.org/2000/svg" width="120" height="180"><rect width="120" height="180" fill="#ddd"/></svg>',
+            content_type="image/png",
+            body=__import__("base64").b64decode(
+                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p5sAAAAASUVORK5CYII="
+            ),
         )
 
     def graphql(route):
