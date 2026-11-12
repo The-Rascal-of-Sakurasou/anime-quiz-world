@@ -18,6 +18,23 @@ function normalize(value) {
     .replace(/[\s　・･:：!！?？.,，。'"“”「」『』()（）‐‑–—―−_-]/g, '').trim();
 }
 
+function hasUsableJapaneseSynopsis(value) {
+  const text = String(value || '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\[[^\]]*\]\([^)]*\)/g, ' ')
+    .replace(/\\[nrt]/gi, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (text.length < 45 || /^(no synopsis|no description|not available|tba|unknown|未定|あらすじなし|情報なし)\.?$/i.test(text)) return false;
+  const kana = (text.match(/[ぁ-んァ-ヶ]/g) || []).length;
+  const latin = (text.match(/[A-Za-z]/g) || []).length;
+  return kana >= 10 && kana / text.length >= 0.08 && latin / text.length < 0.25;
+}
+
 function titleVariants(item) {
   const values = [item?.title?.native, item?.title?.romaji, item?.title?.english, ...(item?.synonyms || [])].filter(Boolean);
   const variants = new Set(values.map(normalize).filter(Boolean));
@@ -48,6 +65,7 @@ async function fetchAniListPage(page) {
       media(type: ANIME, sort: POPULARITY_DESC, isAdult: false) {
         countryOfOrigin\n        title { native romaji english }
         synonyms
+        description(asHtml: false)
         popularity
         format
         seasonYear
@@ -77,6 +95,7 @@ const supportedFormats = new Set(['TV', 'TV_SHORT', 'MOVIE', 'OVA', 'ONA', 'SPEC
 const missing = media.filter(item => {
   if (!supportedFormats.has(item.format)) return false;
   if (item.countryOfOrigin !== 'JP' && (!(Number(item.popularity) >= 10000) || ![item.title?.native, item.title?.english, item.title?.romaji, ...(item.synonyms || [])].some(value => typeof value === 'string' && /[ぁ-んァ-ヶ]/.test(value)))) return false;
+  if (hasUsableJapaneseSynopsis(item.description)) return false;
   return ![...titleVariants(item)].some(alias => covered.has(alias));
 }).sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
 
@@ -97,7 +116,7 @@ const body = missing.length
       '',
       'このIssueはGitHub Actionsが週1回更新します。自動生成・機械翻訳のあらすじを本番データへ直接追加することはありません。'
     ].join('\n')
-  : `## 監査結果（${date}）\n\nAniListの人気上位100作品（日本制作作品と、日本語タイトルがあり人気条件を満たす海外作品）について、未登録候補は検出されませんでした。\n\n次回の週次監査までこのIssueを閉じます。`;
+  : `## 監査結果（${date}）\n\nAniListの人気上位500作品（日本制作作品と、日本語タイトルがあり人気条件を満たす海外作品）について、未登録候補は検出されませんでした。\n\n次回の週次監査までこのIssueを閉じます。`;
 
 const headers = {
   authorization: `Bearer ${token}`,
