@@ -173,6 +173,22 @@ export function dedupeAnimeMetadata(anime) {
     ...(anime?.characters ? { characters: { ...anime.characters, nodes: characters } } : {}),
   };
 }
+function compactOfficialExternalLinks(links) {
+  return (Array.isArray(links) ? links : []).filter((link) => {
+    if (!link || link.isDisabled || typeof link.url !== 'string' || !/^https?:\\/\\//i.test(link.url)) return false;
+    const site = String(link.site || '').toLowerCase();
+    const type = String(link.type || '').toUpperCase();
+    return /official|公式/i.test(site) &&
+      !/(twitter|x\\.com|facebook|instagram|youtube|tiktok|discord|reddit)/i.test(site) &&
+      (!type || type === 'INFO');
+  }).map((link) => ({
+    url: link.url,
+    site: link.site,
+    type: link.type,
+    isDisabled: false,
+  }));
+}
+
 function mergeRecord(existing, incoming) {
   if (!existing) return incoming;
   const merge = (oldValue, newValue) => {
@@ -216,6 +232,7 @@ for (const format of FORMATS) {
 
 const items = [...records.values()].map((anime) => {
   const { source, relations, ...compact } = dedupeAnimeMetadata(anime);
+  compact.externalLinks = compactOfficialExternalLinks(compact.externalLinks);
   return { ...compact, originVerified: true };
 }).sort((a, b) =>
   (Number(b.popularity) || 0) - (Number(a.popularity) || 0) || Number(a.id) - Number(b.id)
