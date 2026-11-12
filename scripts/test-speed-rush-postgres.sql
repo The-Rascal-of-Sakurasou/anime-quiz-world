@@ -1,5 +1,6 @@
 -- Integration test against a disposable real PostgreSQL instance.
 -- Runs as authenticated, while auth.uid() is driven by the JWT claim fixture.
+SET ROLE authenticated;
 DO $test$
 DECLARE
   v_run_id uuid;
