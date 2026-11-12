@@ -8,7 +8,7 @@ assert.notEqual(start, -1, "Search-result deduplication function must exist");
 assert.notEqual(end, -1, "Search-result deduplication function must have a stable boundary");
 const source = html.slice(start, end).trim();
 const normalizeStart = html.indexOf("function normalizeAnswer(");
-const normalizeEnd = html.indexOf("\\nfunction titleAnswerVariants", normalizeStart);
+const normalizeEnd = html.indexOf("\nfunction titleAnswerVariants", normalizeStart);
 assert.notEqual(normalizeStart, -1, "Production title normalizer must exist");
 assert.notEqual(normalizeEnd, -1, "Production title normalizer must have a stable boundary");
 const normalizeSource = html.slice(normalizeStart, normalizeEnd).trim();
