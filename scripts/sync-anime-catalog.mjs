@@ -111,7 +111,7 @@ async function fetchBatch(pages, sort, format, yearStart, yearEnd, includeForeig
 let previousOutput = null;
 try { previousOutput = JSON.parse(await readFile(OUTPUT, 'utf8')); } catch {}
 const incremental = process.env.AQW_FULL_CATALOG !== 'true' && previousOutput?.schemaVersion === 2 && Array.isArray(previousOutput.items);
-const records = new Map(incremental ? previousOutput.items.filter((item) => Number.isInteger(Number(item?.id))).map((item) => [Number(item.id), item]) : []);
+const records = new Map(incremental ? previousOutput.items.filter((item) => Number.isInteger(Number(item?.id)) && isUsableAnime(item)).map((item) => [Number(item.id), item]) : []);
 const initialRecordCount = records.size;
 let requests = 0;
 let accepted = 0;
