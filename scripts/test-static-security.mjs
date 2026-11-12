@@ -121,6 +121,11 @@ assert.doesNotMatch(multiplayer, /<option value="3">3人|<option value="4">4人/
 const matchMigration = fs.readFileSync("supabase/migrations/20261111090000_restrict_aqw_matches_to_one_on_one.sql", "utf8");
 assert.match(matchMigration, /p_max_players <> 2/, "The database must reject match sizes other than two players");
 assert.match(matchMigration, /現在のオンライン対戦は1対1のみ対応しています/, "The database must explain the one-on-one restriction");
+const historyMigration = fs.readFileSync("supabase/migrations/20261112160000_retain_completed_aqw_match_history_after_exit.sql", "utf8");
+assert.match(historyMigration, /r\.status='completed'[\s\S]*?r\.max_players=2/, "Match history must include only completed one-on-one rooms");
+assert.match(historyMigration, /count\(\*\) from public\.aqw_match_players p where p\.room_id=r\.id\)=2/, "Match history must require exactly two participants");
+assert.doesNotMatch(historyMigration, /mine\.left_at\s+is\s+null|opponent\.left_at\s+is\s+null/, "Leaving a completed room must not erase match history");
+assert.match(historyMigration, /r\.winner_id is not null/, "Match history must preserve surrender winners");
 assert.match(multiplayer, /id="startMatch"/, "Host start-match control missing");
 assert.match(multiplayer, /async function startMatch\(\)/, "Host start-match handler missing");
 assert.match(multiplayer, /functions\/v1\/aqw-match-prepare/, "Starting a match must use the protected server-side match preparation function");
