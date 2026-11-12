@@ -185,7 +185,7 @@ const tagsFor = dimension => new Set(questionByDimension.get(dimension).options.
 assert.ok(questionByDimension.get("setting").options.every(option => !option.genres?.length), "Setting preferences must not duplicate genre scoring");
 assert.ok(questionByDimension.get("narrative_complexity").options.every(option => !option.genres?.length && !option.avoidGenres?.length), "Narrative complexity must not double-count the genre preference axis");
 assert.ok(questionByDimension.get("relationships").options.every(option => !option.genres?.includes("Romance") && !option.tags?.includes("Love Triangle")), "Non-romantic relationship preferences must remain separate from romance amount");
-assert.ok([...tagsFor("aftertaste")].every(tag => !tagsFor("emotional_intensity").has(tag)), "Viewing emotions and ending aftertaste must use distinct tag signals");
+assert.ok([...tagsFor("ending_preference")].every(tag => !tagsFor("emotional_intensity").has(tag)), "Viewing emotions and ending aftertaste must use distinct tag signals");
 assert.ok(questionByDimension.get("pacing").options.every(option => !option.genres?.length), "Pacing must not be scored as a genre preference");
 assert.ok(questionByDimension.get("story_structure").options.some(option => option.tagWeights?.Episodic > 0), "Story structure must use its own episodic signal");
 assert.ok(questionByDimension.get("tone_balance").options.some(option => option.genreWeights?.Comedy > 0) && questionByDimension.get("tone_balance").options.some(option => option.genreWeights?.Drama > 0), "Comedy-serious balance must use dedicated weights");
