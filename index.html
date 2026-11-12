@@ -2247,7 +2247,7 @@ function getSearchAnimeOfficialUrl(anime){
   const site=String(link.site||'').normalize('NFKC').toLowerCase();
   const type=String(link.type||'').toUpperCase();
   if(type==='STREAMING')return null;
-  const explicitOfficial=/(official|公式|homepage|home page|ホームページ|公式ページ|公式サイト)/i.test(site);
+  const explicitOfficial=/(official|公式|オフィシャル|homepage|home page|ホームページ|公式ページ|公式サイト)/i.test(site);
   const homeLabel=/(website|web site|homepage|home page|ホームページ|公式ページ)/i.test(site);
   let score=explicitOfficial?120:homeLabel?90:0;
   if(type==='INFO')score+=25;
