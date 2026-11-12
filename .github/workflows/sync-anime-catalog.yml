@@ -15,12 +15,11 @@ on:
 permissions:
   contents: write
 
-concurrency:
-  group: aqw-shared-anime-catalogue-incremental
-  cancel-in-progress: false
-
 jobs:
   sync:
+    concurrency:
+      group: aqw-shared-anime-catalogue-incremental
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     outputs:
       catalog_changed: ${{ steps.change.outputs.changed }}
