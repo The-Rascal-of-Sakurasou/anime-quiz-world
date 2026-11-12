@@ -533,7 +533,7 @@ function runRecommendationSelfTests(){
  const allowedFormats=['TV','TV_SHORT','MOVIE','ONA','OVA','SPECIAL'];
  check('対象形式6種類は推薦候補として扱う',allowedFormats.every(format=>isRecommendationCandidate({...candidateBase,format})));
  check('対象形式外は推薦候補に含めない',!isRecommendationCandidate({...candidateBase,format:'MUSIC'}));
- check('日本原作・日本発以外は推薦候補に含めない',!isRecommendationCandidate({...candidateBase,countryOfOrigin:'US',format:'TV'}));
+ check('日本語タイトルと知名度基準を満たす海外作品は推薦候補に含める',isRecommendationCandidate({...candidateBase,countryOfOrigin:'US',popularity:10000,synonyms:['海外作品の日本語題'],format:'TV'}));
  check('日本語以外と明示された原作は除外する',!isRecommendationCandidate({...candidateBase,originLanguage:'en',format:'TV'}));
  check('日本語タイトルを持つ有名な海外作品は採用する',isRecommendationCandidate({...candidateBase,countryOfOrigin:'US',popularity:10000,synonyms:['海外作品の日本語題'],format:'TV'}));
  check('日本語タイトルがない海外作品は除外する',!isRecommendationCandidate({...candidateBase,countryOfOrigin:'US',popularity:50000,synonyms:['Foreign title'],format:'TV'}));
@@ -1008,9 +1008,10 @@ async function getRecommendations(profile){
   const tagNames={'Conspiracy':'陰謀・謎','Survival':'サバイバル','Psychological':'心理描写','Mystery':'謎解き','Tragedy':'悲劇','Coming of Age':'成長','Super Power':'特殊能力','Martial Arts':'格闘','Revenge':'復讐','Parody':'パロディ','Gag Humor':'ギャグ','Fast-Paced':'テンポの速い展開','Time Manipulation':'時間操作','World Building':'世界観の構築','Character Development':'人物の成長','Episodic':'各話完結','Magic':'魔法','Isekai':'異世界','Space':'宇宙','Cyberpunk':'サイバーパンク','Mythology':'神話','Samurai':'侍','Ensemble Cast':'群像劇','Found Family':'疑似家族・仲間','Philosophy':'哲学','Leadership':'リーダーシップ','Battle Royale':'バトルロイヤル','Quest':'冒険の目的・探求','Politics':'政治','Crime':'犯罪','Travel':'旅・移動','Slow Burn':'じっくり進む展開','Escape':'脱出・逃走','Sports':'スポーツ','Training':'訓練・修行','Detective':'探偵・捜査','Mentor':'師弟関係','Teacher-Student Relationship':'師弟・指導関係','Surprise Ending':'意外な結末','Bittersweet Ending':'ほろ苦い結末','Satisfying Ending':'納得感のある結末','Happy Ending':'幸福な結末','Open Ending':'解釈の余地がある結末','Sad Ending':'悲しい結末','School':'学校','Urban':'都市・現代社会','Unusual Characters':'個性的な人物','Genius':'頭脳派','Strategic':'戦略的な人物','Friendship':'友情','Rivalry':'ライバル関係','Family':'家族','Family Life':'家族の日常','Iyashikei':'癒やし'};
   const matchedGenreKeys=genreEntries.filter(([g])=>animeGenres.includes(g)).map(([g])=>g);
   const matchedGenres=matchedGenreKeys.map(g=>genreNames[g]||g);
-  const genrePoints=genreEntries.filter(([g])=>animeGenres.includes(g)).reduce((n,[,w])=>n+w*5.5,0);score+=genrePoints;if(genrePoints)scoreBreakdown.push({label:'選択ジャンル',points:genrePoints});
+  const genrePoints=genreEntries.filter(([g])=>animeGenres.includes(g)).reduce((n,[,w])=>n+w*3,0);score+=genrePoints;if(genrePoints)scoreBreakdown.push({label:'選択ジャンル',points:genrePoints});
+  // ジャンル一致の加点をタグ一致と同程度に調整し、1つのジャンル回答だけで順位が過度に決まらないようにする。
   const avoidedGenreEntries=Object.entries(profile.avoidGenres||{}).filter(([g])=>animeGenres.includes(g));
-  const avoidedGenrePoints=avoidedGenreEntries.reduce((sum,[,weight])=>sum+Math.min(2.2,weight)*4.2,0);
+  const avoidedGenrePoints=avoidedGenreEntries.reduce((sum,[,weight])=>sum+Math.min(2.2,weight)*2.5,0);
   score-=avoidedGenrePoints;if(avoidedGenrePoints)scoreBreakdown.push({label:'避けたいジャンル',points:-avoidedGenrePoints});
   const matchedTagKeys=[];let tagPoints=0;
   for(const [t,w] of tagEntries){
