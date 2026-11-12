@@ -9,7 +9,7 @@ const TIMEOUT_MS = 15000;
 const USER_AGENT = 'AnimeQuizWorld-image-audit/1.0';
 
 export function isPlaceholderImageUrl(value) {
-  return /(?:no[-_ ]?image|placeholder|default[-_ ]?image|(?:^|\\/)default(?:\\.[a-z0-9]+)?(?:[?#]|$))/i.test(String(value || ''));
+  return /(?:no[-_ ]?image|placeholder|default[-_ ]?image|(?:^|\/)default(?:\.[a-z0-9]+)?(?:[?#]|$))/i.test(String(value || ''));
 }
 
 export function isHttpImageUrl(value) {
