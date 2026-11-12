@@ -147,12 +147,12 @@ const characterStats = (() => {
   let totalRecords = 0;
   let animeWithAny = 0;
   let animeWithAtLeast4 = 0;
-  let animeWithAtLeast8 = 0;
+  let animeWithAtLeast5 = 0;
   for (const anime of items) {
     const nodes = Array.isArray(anime?.characters?.nodes) ? anime.characters.nodes : [];
     if (nodes.length) animeWithAny++;
     if (nodes.length >= 4) animeWithAtLeast4++;
-    if (nodes.length >= 8) animeWithAtLeast8++;
+    if (nodes.length >= 5) animeWithAtLeast5++;
     for (const character of nodes) {
       totalRecords++;
       const id = Number(character?.id);
@@ -170,7 +170,8 @@ const characterStats = (() => {
     namesUniqueToOneAnime: [...namesByAnime.values()].filter(ownerIds => ownerIds.size === 1).length,
     animeWithAnyCharacter: animeWithAny,
     animeWithAtLeast4Characters: animeWithAtLeast4,
-    animeWithAtLeast8Characters: animeWithAtLeast8,
+    animeWithAtLeast5Characters: animeWithAtLeast5,
+    maxCharactersRequestedPerAnime: 5,
   };
 })();
 const catalogueBytes = Buffer.byteLength(JSON.stringify(payload), "utf8");
