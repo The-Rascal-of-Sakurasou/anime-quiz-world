@@ -220,9 +220,12 @@ def test_all_question_modes(browser):
         )
         page = context.new_page()
         errors = []
+        console_errors = []
         image_failures = []
         image_responses = []
         page.on("pageerror", lambda error: errors.append(str(error)))
+        page.on("console", lambda message: console_errors.append(message.text)
+                 if message.type == "error" else None)
         page.on("requestfailed", lambda request: image_failures.append({
             "url": request.url, "failure": request.failure
         }) if "example.test" in request.url else None)
@@ -304,7 +307,7 @@ def test_all_question_modes(browser):
                 }""")
                 raise AssertionError(
                     "Image question did not load its cover: "
-                    + json.dumps({"initialState": initial_image_state, "state": image_state, "responses": image_responses, "requestFailures": image_failures, "pageErrors": errors}, ensure_ascii=False)
+                    + json.dumps({"initialState": initial_image_state, "state": image_state, "responses": image_responses, "requestFailures": image_failures, "pageErrors": errors, "consoleErrors": console_errors}, ensure_ascii=False)
                 ) from error
         answers.first.click()
         page.locator("#result:not(.hidden)").wait_for(state="visible", timeout=20000)
