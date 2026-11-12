@@ -394,6 +394,22 @@ def test_live_quiz_preparation_performance(browser):
     page = context.new_page()
     page.add_init_script("""(() => {
       window.__aqwLongTasks = [];
+      window.__aqwIndexedDBPutSamples = [];
+      if (typeof IDBObjectStore !== 'undefined') {
+        const originalPut = IDBObjectStore.prototype.put;
+        IDBObjectStore.prototype.put = function(...args) {
+          const started = performance.now();
+          try { return originalPut.apply(this, args); }
+          finally {
+            const duration = performance.now() - started;
+            window.__aqwIndexedDBPutSamples.push({
+              store: this.name,
+              key: args.length > 1 ? String(args[1]) : 'inline',
+              durationMs: Math.round(duration * 10) / 10
+            });
+          }
+        };
+      }
       if ('PerformanceObserver' in window) {
         try {
           new PerformanceObserver(list => {
@@ -401,7 +417,12 @@ def test_live_quiz_preparation_performance(browser):
               window.__aqwLongTasks.push({
                 startTime: Math.round(entry.startTime * 10) / 10,
                 duration: Math.round(entry.duration * 10) / 10,
-                name: entry.name
+                name: entry.name,
+                attribution: (entry.attribution || []).map(item => ({
+                  name: item.name,
+                  containerType: item.containerType,
+                  containerName: item.containerName
+                }))
               });
             }
           }).observe({entryTypes: ['longtask']});
@@ -509,7 +530,8 @@ def test_live_quiz_preparation_performance(browser):
             .filter(entry => /anime-catalog|title-image-exclusions/.test(entry.name))
             .map(entry => ({name: entry.name.split('/').pop(), durationMs: Math.round(entry.duration * 10) / 10,
               transferSize: entry.transferSize || null})),
-          longTasks: (window.__aqwLongTasks || []).slice(-20)
+          longTasks: (window.__aqwLongTasks || []).slice(-20),
+          indexedDBPutSamples: (window.__aqwIndexedDBPutSamples || []).slice(-30)
         })""")
         profile_samples = metrics["profileLoadSamples"][profile_start:]
         log_text = performance_logs[log_start:]
@@ -521,6 +543,7 @@ def test_live_quiz_preparation_performance(browser):
             "questionRenderMs": metrics["questionRenderMs"],
             "questionRenderInternalMs": metrics["questionRenderInternalMs"],
             "longTasks": metrics["longTasks"],
+            "indexedDBPutSamples": metrics["indexedDBPutSamples"],
             "preparationStages": metrics["preparationStages"],
             "profileLoadMs": profile_samples[-1] if profile_samples else None,
             "performanceLog": log_text[-1] if log_text else None,
