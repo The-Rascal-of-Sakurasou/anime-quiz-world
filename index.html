@@ -3071,6 +3071,15 @@ async function searchUsers(e){
    };
    if(isFriend)action.onclick=()=>openFriendConversation(p.id,(p.display_name||p.username)+' @'+p.username);
    row.append(action);
+   const reportUser=document.createElement('button');reportUser.type='button';reportUser.textContent=localJa()?'通報':'Report';
+   reportUser.onclick=()=>openReportPanel(p.id,null,null);row.append(reportUser);
+   if(blockedUserIds.has(p.id)){
+    const unblock=document.createElement('button');unblock.type='button';unblock.textContent=localJa()?'ブロック解除':'Unblock';
+    unblock.onclick=()=>unblockUser(p.id);row.append(unblock);
+   }else{
+    const block=document.createElement('button');block.type='button';block.className='danger-button';block.textContent=localJa()?'ブロック':'Block';
+    block.onclick=()=>blockUser(p.id,(p.display_name||p.username)+' @'+p.username);row.append(block);
+   }
   }
   box.append(row);
  }
@@ -3184,8 +3193,9 @@ async function loadBlockedUsers(){
  const box=$s('aqwBlockedUsers');if(!box||!currentUser)return;
  const {data:rows,error}=await sb.from('user_blocks').select('blocked_id,created_at').eq('blocker_id',currentUser.id).order('created_at',{ascending:false});
  if(error){box.textContent=errText(error);return}
+ blockedUserIds=new Set((rows||[]).map(row=>row.blocked_id));
  if(!rows?.length){box.textContent=localJa()?'ブロック中のユーザーはいません。':'No blocked users.';return}
- const ids=rows.map(row=>row.blocked_id);blockedUserIds=new Set(ids);
+ const ids=rows.map(row=>row.blocked_id);
  const {data:profiles,error:profileError}=await sb.from('profiles').select('id,username,display_name').in('id',ids);
  if(profileError){box.textContent=errText(profileError);return}
  const byId=new Map((profiles||[]).map(profile=>[profile.id,profile]));
