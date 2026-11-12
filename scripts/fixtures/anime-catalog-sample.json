@@ -28,28 +28,6 @@
         "Test Alias",
         "Another Alias"
       ],
-      "characters": {
-        "nodes": [
-          {
-            "id": 101,
-            "name": {
-              "full": "Test Character"
-            },
-            "image": {
-              "large": "https://s4.anilist.co/file/character/101.jpg"
-            }
-          },
-          {
-            "id": 102,
-            "name": {
-              "full": "Another Character"
-            },
-            "image": {
-              "large": "https://s4.anilist.co/file/character/102.jpg"
-            }
-          }
-        ]
-      }
     },
     {
       "id": 2,
