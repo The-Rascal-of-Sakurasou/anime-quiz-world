@@ -58,4 +58,4 @@ rejects("duplicate normalized synonyms", (sample) => { sample.items[0].synonyms 
 rejects("duplicate character IDs within one anime", (sample) => { sample.items[0].characters.nodes[1].id = sample.items[0].characters.nodes[0].id; });
 rejects("duplicate character fallback records", (sample) => { sample.items[0].characters.nodes[1] = { name: { full: "Fallback Character" }, image: { large: "https://example.com/character.jpg" } }; sample.items[0].characters.nodes[0] = { name: { full: "Fallback Character" }, image: { large: "https://example.com/character.jpg" } }; });
 
-console.log("Anime catalogue validator tests passed: 1 valid compact-schema fixture and 12 rejected invalid cases.");
+console.log("Anime catalogue validator tests passed: 1 valid compact-schema fixture and 13 rejected invalid cases.");
