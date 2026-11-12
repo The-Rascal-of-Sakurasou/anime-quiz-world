@@ -1059,6 +1059,8 @@ async function fetchAnime(vars={}){
     try{await new Promise(resolve=>{const req=indexedDB.open('aqw-catalogue',1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('catalogues'))req.result.createObjectStore('catalogues')};req.onsuccess=()=>{try{const tx=req.result.transaction('catalogues','readwrite'),store=tx.objectStore('catalogues');store.put({savedAt:Date.now(),items},cacheKey);store.put({tasks,taskIndex:nextIndex,failures,updatedAt:Date.now()},cacheKey+'-progress');tx.oncomplete=()=>resolve();tx.onerror=()=>resolve()}catch(e){resolve()}};req.onerror=()=>resolve()})}catch(e){}
    };
    for(;taskIndex<tasks.length;){
+    // A late shared-catalogue response supersedes the expensive AniList fallback crawl.
+    if(sharedCatalogActive)break;
     const [sort,page,taskType,format,yearStart,yearEnd]=tasks[taskIndex];
     
     // Bundle up to three adjacent pages into one GraphQL request. This cuts round trips while keeping each response to at most 150 anime records.
