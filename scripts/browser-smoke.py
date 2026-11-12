@@ -511,12 +511,28 @@ def test_live_quiz_preparation_performance(browser):
         page.locator("#result:not(.hidden)").wait_for(state="visible", timeout=30000)
         if round_index < 2:
             page.locator("#restart").wait_for(state="visible", timeout=30000)
-            page.wait_for_function(
-                """() => typeof questionChoiceSummaryCache !== 'undefined'
-                  && questionChoiceSummaryCache
-                  && questionChoiceSummaryCache.pool === pool""",
-                timeout=15000,
-            )
+            try:
+                page.wait_for_function(
+                    """() => typeof questionChoiceSummaryCache !== 'undefined'
+                      && questionChoiceSummaryCache
+                      && questionChoiceSummaryCache.pool === pool""",
+                    timeout=15000,
+                )
+            except Exception as error:
+                cache_state = page.evaluate("""() => ({
+                  quizFinished: typeof quizFinished === 'undefined' ? null : quizFinished,
+                  poolCount: typeof pool === 'undefined' ? null : pool.length,
+                  cacheExists: typeof questionChoiceSummaryCache !== 'undefined' && !!questionChoiceSummaryCache,
+                  cachePoolCount: typeof questionChoiceSummaryCache === 'undefined' ? null : questionChoiceSummaryCache?.pool?.length ?? null,
+                  buildExists: typeof questionChoiceSummaryBuild !== 'undefined' && !!questionChoiceSummaryBuild,
+                  buildPoolCount: typeof questionChoiceSummaryBuild === 'undefined' ? null : questionChoiceSummaryBuild?.pool?.length ?? null,
+                  quizActive: document.body.classList.contains('quiz-active'),
+                  resultVisible: !document.querySelector('#result')?.classList.contains('hidden')
+                })""")
+                raise AssertionError(
+                    "Restart question index did not become ready: "
+                    + json.dumps(cache_state, ensure_ascii=False)
+                ) from error
 
     assert not page_errors, "Live quiz raised JavaScript errors: " + " | ".join(page_errors)
     print("PERFORMANCE: " + json.dumps({
