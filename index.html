@@ -894,7 +894,8 @@ async function fetchAnime(vars={}){
   const searchKey=normalizeAnswer(vars.search);
   let localMatches=[];
   try{
-   const localSource=pool.length?mergeAnimeCollection([...(sharedSearchCatalogCache||[]),...pool]):await fetchSharedAnimeCatalog();
+   const sharedItems=await fetchSharedAnimeCatalog();
+   const localSource=mergeAnimeCollection([...sharedItems,...pool]);
    if(searchKey&&localSource.length){
     localMatches=localSource.filter(anime=>titleAnswerVariants(anime).some(value=>normalizeAnswer(value).includes(searchKey)));
    }
