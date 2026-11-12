@@ -46,8 +46,19 @@ BEGIN
     NULL;
   END;
 
+  -- Preserve values for owner-level assertions after leaving the authenticated role.
   PERFORM set_config('aqw_test.run_id', v_run_id::text, false);
+  PERFORM set_config('aqw_test.elapsed_ms', v_elapsed_ms::text, false);
+END
+$test$;
 
+-- Inspect table contents as the database owner; authenticated users should
+-- not gain direct table access merely to make this test pass.
+RESET ROLE;
+DO $score_check$
+DECLARE
+  v_elapsed_ms integer := current_setting('aqw_test.elapsed_ms')::integer;
+BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM public.aqw_speed_rush_scores
      WHERE user_id = '11111111-1111-4111-8111-111111111111'
@@ -57,10 +68,8 @@ BEGIN
     RAISE EXCEPTION 'leaderboard score did not store the server elapsed time';
   END IF;
 END
-$test$;
+$score_check$;
 
--- Inspect private attempt storage only after returning to the database owner.
-RESET ROLE;
 DO $attempt_check$
 DECLARE
   v_attempt_count integer;
