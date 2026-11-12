@@ -10,7 +10,7 @@ function requireMatch(source, pattern, message) {
 
 function extractFunction(source, qualifiedName) {
   const escaped = qualifiedName.replaceAll('.', '\\.');
-  const pattern = 'create or replace function ' + escaped + '\\([\\s\\S]*?\\$function\\$;?';
+  const pattern = 'create or replace function ' + escaped + '\\([\\s\\S]*?\\n\\$function\\$;';
   const match = source.match(new RegExp(pattern, 'i'));
   assert.ok(match, 'Missing function definition: ' + qualifiedName);
   return match[0];
