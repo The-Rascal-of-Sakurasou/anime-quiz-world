@@ -21,7 +21,7 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;min-height:100vh;line-height:1.6}
 button,input,select{font:inherit}
-button{cursor:pointer;border:1px solid var(--line);border-radius:6px;min-height:44px;padding:10px 16px;font-weight:600;background:#fff;color:var(--text);transition:background-color .15s,border-color .15s}
+button{cursor:pointer;border:1px solid var(--line);border-radius:6px;min-height:44px;padding:10px 16px;font-weight:600;background:#fff;color:var(--text);transition:background-color .08s,border-color .08s;touch-action:manipulation;-webkit-tap-highlight-color:transparent}button:active:not(:disabled){transform:translateY(1px);filter:brightness(.97);transition-duration:.04s}
 button:hover{background:#f0f4fa;border-color:#b7c5d9}
 button:disabled{cursor:default;opacity:.55}
 .wrap{width:min(1040px,calc(100% - 40px));margin:0 auto}
@@ -191,8 +191,8 @@ body{background:#f6f7f9;color:#202936;letter-spacing:.005em}
 .featured-caption{margin:4px 0 0;color:var(--muted);font-size:.88rem}
 .featured-refresh{flex:0 0 auto;min-height:38px;padding:7px 12px;font-size:.88rem}
 .featured-rail{display:grid;gap:12px;overflow:hidden}
-.featured-track{display:flex;width:max-content;gap:12px;animation:featured-scroll 100s linear infinite}
-.featured-track.reverse{animation-name:featured-scroll-reverse;animation-duration:110s}
+.featured-track{display:flex;width:max-content;gap:12px;animation:featured-scroll 75s linear infinite}
+.featured-track.reverse{animation-name:featured-scroll-reverse;animation-duration:82s}
 .featured-card{display:block;flex:0 0 146px;width:146px;color:var(--text);text-decoration:none;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff;transition:transform .18s,border-color .18s}
 .featured-card:hover{transform:translateY(-3px);border-color:#9eb3ce}
 .featured-card img{display:block;width:100%;height:190px;object-fit:cover;background:#edf0f4}
@@ -1639,7 +1639,7 @@ async function begin(){
  aqwPreparationStageLog=[];
  window.__aqwQuizPreparationStages=[];
  try{
-  clearInterval(questionTimer);clearInterval(clockTimer);isPaused=false;pausedAt=0;totalPausedMs=0;pausedQuestionSeconds=0;skippedQuestionCount=0;$('#quizArea').inert=false;$('#pauseButton').classList.remove('hidden');$('#quitQuizButton').classList.remove('hidden');$('#pauseNotice').classList.add('hidden');$('#pauseButton').textContent=pauseButtonLabel(false);$('#setupControls').classList.add('hidden');$('#result').classList.add('hidden');reviewMode=false;missedQuestions=[];questionAttemptResults=[];roundFailed=false;playMode=$('#playMode').value;mixedModeCounts={};adaptiveDifficultyOverride=null;if(typeof window.aqwEnsureSupabaseFeatures==='function'){try{await window.aqwEnsureSupabaseFeatures()}catch(error){console.warn('Optional AQW services could not be initialized:',error)}}if(typeof window.aqwLoadPersonalDifficultyProfile==='function'){try{await aqwMeasurePreparationStage('個人別難易度データ読み込み',()=>window.aqwLoadPersonalDifficultyProfile())}catch(error){console.warn('Personal difficulty profile could not be refreshed:',error)}}await aqwMeasurePreparationStage('個人別難易度計算',async()=>{adaptiveDifficultyOverride=calculatePersonalDifficultyOverride()});await aqwMeasurePreparationStage('問題候補データ構築',()=>ensureQuestionChoiceSummaryAsync());await aqwMeasurePreparationStage('難易度データ準備',async()=>{prepareDifficultyTiers(pool)});
+  clearInterval(questionTimer);clearInterval(clockTimer);isPaused=false;pausedAt=0;totalPausedMs=0;pausedQuestionSeconds=0;skippedQuestionCount=0;$('#quizArea').inert=false;$('#pauseButton').classList.remove('hidden');$('#quitQuizButton').classList.remove('hidden');$('#pauseNotice').classList.add('hidden');$('#pauseButton').textContent=pauseButtonLabel(false);$('#setupControls').classList.add('hidden');$('#result').classList.add('hidden');reviewMode=false;missedQuestions=[];questionAttemptResults=[];roundFailed=false;playMode=$('#playMode').value;mixedModeCounts={};adaptiveDifficultyOverride=calculatePersonalDifficultyOverride();if(typeof window.aqwEnsureSupabaseFeatures==='function'){Promise.resolve().then(()=>window.aqwEnsureSupabaseFeatures()).then(async()=>{if(typeof window.aqwLoadPersonalDifficultyProfile==='function')await window.aqwLoadPersonalDifficultyProfile()}).catch(error=>console.warn('Optional AQW services could not be initialized:',error))}await Promise.all([aqwMeasurePreparationStage('問題候補データ構築',()=>ensureQuestionChoiceSummaryAsync()),aqwMeasurePreparationStage('難易度データ準備',async()=>{prepareDifficultyTiers(pool)})]);adaptiveDifficultyOverride=calculatePersonalDifficultyOverride();
   let mode=$('#modeSelect').value;const format=(playMode==='daily'||playMode==='rush')?'choices':$('#answerFormatSelect').value;
   requestedQuestionCount=playMode==='endless'?Infinity:(playMode==='daily'||playMode==='rush')?10:Math.max(1,Math.floor(Number($('#questionCount').value)||10));
   const target=playMode==='endless'?Infinity:requestedQuestionCount;
