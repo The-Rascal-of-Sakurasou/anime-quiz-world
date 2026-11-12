@@ -654,6 +654,18 @@ def test_main_navigation_and_search(browser):
         "Search deduplication must remove exact duplicates without hiding sequels, "
         "different titles sharing an alias, or distinct formats: " + str(dedupe_ids)
     )
+    sequel_alias = page.evaluate("""() => {
+      const item = {
+        id: 991, countryOfOrigin: "JP", isAdult: false, format: "TV", seasonYear: 2020,
+        title: { native: "暗殺教室 第2期", english: "Assassination Classroom Second Season", romaji: "Ansatsu Kyoushitsu 2nd Season" },
+        synonyms: [], genres: []
+      };
+      return aliasCandidates(item);
+    }""")
+    assert "暗教" in sequel_alias, (
+        "Curated Japanese abbreviations must also match season-title variants: "
+        + str(sequel_alias)
+    )
     sequel_synopsis = page.evaluate("""() => descriptionOf({
       title: { native: "進撃の巨人 The Final Season Part 2", english: "Attack on Titan: The Final Season Part 2" }
     })""")
