@@ -32,6 +32,14 @@ assert.match(matchPrepare, /admin\.rpc\("aqw_match_prepare_questions"/, "Questio
 const supabaseConfig = fs.readFileSync("supabase/config.toml", "utf8");
 assert.match(supabaseConfig, /\[functions\.aqw-match-prepare\][\s\S]*?verify_jwt = true/, "The active match-preparation Edge Function must require JWT verification");
 
+const synopsisOverrideEntries = ["Fate/stay night", "GTO", "幽☆遊☆白書", "偽物語", "魔女の旅々", "見える子ちゃん", "オーバーロードⅣ", "BTOOOM!"];
+const synopsisSource = source.get("index.html");
+for (const title of synopsisOverrideEntries) {
+  const entryStart = synopsisSource.indexOf("'" + title + "':'");
+  const entryEnd = synopsisSource.indexOf("',", entryStart);
+  assert.ok(entryStart >= 0 && entryEnd - entryStart > 80, "A substantial Japanese synopsis override must exist for " + title);
+}
+
 const aqwHtml = source.get("index.html");
 assert.match(aqwHtml, /id="aqwBlockFriend"/, "The chat must expose a block action");
 assert.match(aqwHtml, /id="aqwReportFriend"/, "The chat must expose a user-report action");
