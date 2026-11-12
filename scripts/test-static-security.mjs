@@ -440,7 +440,7 @@ assert.match(index, /function isUsableAnime\(a\)\{[^\n]*isJapaneseOriginAnime\(a
 assert.match(index, /function isUsableAnime\(a\)\{[^\n]*a\.isAdult!==true/, "Adult-flagged records must be excluded from live and cached quiz data");
 assert.match(index, /function hasUsableImageUrl\(value\)\{[^\n]*no\[-_ \]\?image/i, "NO IMAGE placeholders must be excluded from all image displays");
 assert.match(index, /function isUsableAnime\(a\)\{[^\n]*hasUsableImageUrl\(titleImage\)/, "Anime without a usable cover image must be excluded from image-backed displays and quiz data");
-assert.match(index, /function titleImageIsSafe\(anime\)\{[^\n]*titleImageAuditedIds\.has\(id\)[^\n]*!titleImageExcludedIds\.has\(id\)/, "Artwork restored for display must still require OCR approval before entering title-identification image questions");
+assert.match(index, /function titleImageIsSafe\(anime\)\{[^\n]*return hasUsableImageUrl\(image\)/, "Valid non-placeholder cover images must be eligible for title-identification image questions without an OCR audit");
 assert.match(index, /const candidates=shuffle\(uniqueAnimeById\(source\)\.filter\(a=>isUsableAnime\(a\)\)\)\.slice\(0,8\)/, "Featured artwork must restore usable images, exclude placeholders and cap the animated rail at eight cards");
 assert.match(index, /animation:featured-scroll 80s linear infinite/, "Featured anime images must scroll 25 percent faster than the previous 100-second cycle");
 assert.match(index, /animation-duration:88s/, "Reverse featured anime image rail must preserve the same 25-percent speed increase");
@@ -453,10 +453,9 @@ assert.equal(hasUsableImageUrl('https://example.test/placeholder.png'),false,"Pl
 assert.equal(hasUsableImageUrl('https://example.test/cover.jpg'),true,"Valid artwork URL must remain usable");
 const titleImageSafetySource=index.match(/function titleImageIsSafe\(anime\)\{[^\n]*\}/)?.[0];
 assert.ok(titleImageSafetySource, "Title-identification image safety validator must exist");
-const titleImageIsSafe=vm.runInNewContext('('+titleImageSafetySource+')',{titleImageAuditedIds:new Set([1,2]),titleImageExcludedIds:new Set([2]),hasUsableImageUrl});
-assert.equal(titleImageIsSafe({id:1,coverImage:{large:'https://example.test/cover.jpg'}}),true,"OCR-approved title-free artwork must be allowed");
-assert.equal(titleImageIsSafe({id:2,coverImage:{large:'https://example.test/cover.jpg'}}),false,"OCR-excluded artwork must be blocked");
-assert.equal(titleImageIsSafe({id:3,coverImage:{large:'https://example.test/cover.jpg'}}),false,"Unaudited artwork must not enter title-identification questions");
+const titleImageIsSafe=vm.runInNewContext('('+titleImageSafetySource+')',{hasUsableImageUrl});
+assert.equal(titleImageIsSafe({coverImage:{large:'https://example.test/cover.jpg'}}),true,"Valid artwork must be allowed without OCR approval");
+assert.equal(titleImageIsSafe({coverImage:{large:'https://example.test/no-image.jpg'}}),false,"NO IMAGE placeholders must remain excluded from title-identification questions");
 
 
 assert.match(index, /source\(version:2\) relations \{ edges \{ relationType node \{ id type countryOfOrigin format \} \} \}/, "Featured seasonal queries must include source and related-origin metadata");
