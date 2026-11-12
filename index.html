@@ -2942,7 +2942,7 @@ async function loadFeed(){
  if(currentUser){
   const {data:blockedRows,error:blockError}=await sb.from('user_blocks').select('blocked_id').eq('blocker_id',currentUser.id);
   if(blockError){feed.textContent=rt('feedError')+errText(blockError);return}
-  blockedIds=new Set((blockedRows||[]).map(row=>row.blocked_id));
+  blockedIds=new Set((blockedRows||[]).map(row=>row.blocked_id));blockedUserIds=blockedIds;
  }
  const {data:posts,error}=await sb.from('posts').select('id,user_id,body,image_path,parent_post_id,quiz_result,created_at,profiles(username,display_name,avatar_path)').is('parent_post_id',null).order('created_at',{ascending:false}).limit(50);
  if(error){feed.textContent=rt('feedError')+errText(error);return}
@@ -2991,8 +2991,10 @@ async function renderPost(post,initialLikeCount){
    replies.dataset.loaded='1';
    const {data,error}=await sb.from('posts').select('id,user_id,body,created_at,profiles(username,display_name,avatar_path)').eq('parent_post_id',post.id).order('created_at');
    if(error){replies.textContent=errText(error)}
-   else if(!data.length){replies.textContent=localJa()?'返信はまだありません。':'No replies yet.'}
-   else data.forEach(r=>{
+   else {
+    const visibleReplies=(data||[]).filter(reply=>!blockedUserIds.has(reply.user_id));
+    if(!visibleReplies.length){replies.textContent=localJa()?'表示できる返信はありません。':'No visible replies.'}
+    else visibleReplies.forEach(r=>{
     const row=document.createElement('div');row.className='aqw-reply-row';
     const p=document.createElement('p');p.textContent=(r.profiles?.display_name||r.profiles?.username||rt('genericUser'))+rt('replyColon')+r.body+' ('+stamp(r.created_at)+')';row.append(p);
     if(currentUser&&r.user_id!==currentUser.id){
@@ -3002,7 +3004,8 @@ async function renderPost(post,initialLikeCount){
      replyActions.append(reportReply,blockReply);row.append(replyActions);
     }
     replies.append(row);
-   });
+    });
+   }
   }
  };
  if(currentUser){
@@ -3127,7 +3130,7 @@ async function enableBrowserNotifications(){
   message(authMsg,permission==='granted'?(localJa()?'ブラウザ通知を有効にしました。':'Browser notifications enabled.'):(localJa()?'通知は許可されませんでした。':'Notification permission was not granted.'))}catch(e){message(authMsg,errText(e))}
 }
 let selectedFriendId=null,selectedFriendName='',friendMessageChannel=null;
-let reportTargetUserId=null,reportTargetMessageId=null,reportTargetPostId=null;
+let reportTargetUserId=null,reportTargetMessageId=null,reportTargetPostId=null,blockedUserIds=new Set();
 let followRealtimeChannel=null,followRealtimeUserId=null,notificationRealtimeChannel=null,notificationRealtimeUserId=null;
 async function syncFollowRealtime(){
  const uid=currentUser?.id||null;
@@ -3182,7 +3185,7 @@ async function loadBlockedUsers(){
  const {data:rows,error}=await sb.from('user_blocks').select('blocked_id,created_at').eq('blocker_id',currentUser.id).order('created_at',{ascending:false});
  if(error){box.textContent=errText(error);return}
  if(!rows?.length){box.textContent=localJa()?'ブロック中のユーザーはいません。':'No blocked users.';return}
- const ids=rows.map(row=>row.blocked_id);
+ const ids=rows.map(row=>row.blocked_id);blockedUserIds=new Set(ids);
  const {data:profiles,error:profileError}=await sb.from('profiles').select('id,username,display_name').in('id',ids);
  if(profileError){box.textContent=errText(profileError);return}
  const byId=new Map((profiles||[]).map(profile=>[profile.id,profile]));
