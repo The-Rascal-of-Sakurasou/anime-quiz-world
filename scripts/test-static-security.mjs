@@ -32,6 +32,28 @@ assert.match(matchPrepare, /admin\.rpc\("aqw_match_prepare_questions"/, "Questio
 const supabaseConfig = fs.readFileSync("supabase/config.toml", "utf8");
 assert.match(supabaseConfig, /\[functions\.aqw-match-prepare\][\s\S]*?verify_jwt = true/, "The active match-preparation Edge Function must require JWT verification");
 
+const aqwHtml = source.get("index.html");
+assert.match(aqwHtml, /id="aqwBlockFriend"/, "The chat must expose a block action");
+assert.match(aqwHtml, /id="aqwReportFriend"/, "The chat must expose a user-report action");
+assert.match(aqwHtml, /id="aqwBlockedUsers"/, "Users must be able to review and undo their own blocks");
+assert.match(aqwHtml, /function blockUser\(/, "Blocking must be shared by chat and community-post controls");
+assert.match(aqwHtml, /function submitUserReport\(/, "The client must submit moderation reports");
+assert.match(aqwHtml, /post_id:reportTargetPostId/, "Post and reply reports must retain their target post id");
+assert.match(aqwHtml, /blockedUserIds\.has\(reply\.user_id\)/, "Blocked users' replies must be hidden from the current user's feed");
+
+const moderationMigrationPath = "supabase/migrations/20261112180000_aqw_friend_chat_blocks_and_reports.sql";
+assert.ok(fs.existsSync(moderationMigrationPath), "Chat block/report migration is missing");
+const moderationMigration = fs.readFileSync(moderationMigrationPath, "utf8");
+assert.match(moderationMigration, /ALTER TABLE public\.user_blocks ENABLE ROW LEVEL SECURITY/i, "Block records must have RLS enabled");
+assert.match(moderationMigration, /ALTER TABLE public\.user_reports ENABLE ROW LEVEL SECURITY/i, "Report records must have RLS enabled");
+assert.match(moderationMigration, /REVOKE ALL ON TABLE public\.user_reports FROM public, anon, authenticated/i, "Report-table access must be explicitly restricted before grants");
+assert.match(moderationMigration, /private\.is_user_blocked_between/, "Message and follow policies must enforce blocks in both directions");
+assert.match(moderationMigration, /MFA owner can review reports/, "Only an MFA-verified site owner may review reports");
+
+assert.match(source.get("privacy.html"), /通報記録/, "The privacy policy must disclose moderation report data");
+assert.match(source.get("terms.html"), /虚偽通報/, "The terms must prohibit abusive or false reports");
+assert.match(source.get("guide.html"), /ブロック・通報/, "The guide must explain the community safety controls");
+
 let checkedScripts = 0;
 for (const [file, html] of source) {
   const scripts = html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi);
