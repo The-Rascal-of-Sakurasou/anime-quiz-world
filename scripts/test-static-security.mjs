@@ -550,7 +550,7 @@ assert.ok(studioChoiceBuilder, "Bounded studio-choice builder must exist");
 assert.match(studioChoiceBuilder, /distractors\.length<3/, "Studio distractor selection must stop after three alternatives");
 assert.doesNotMatch(studioChoiceBuilder, /shuffle\(difficultyDistractors\(/, "Studio distractor selection must not shuffle the entire catalogue per candidate");
 assert.match(index, /function yearChoiceRecordsForAnime\(a\)\{[^\n]*records\.length>=4/, "Year distractor selection must stop after four choices");
-const synopsisChoiceBuilder = index.match(/function synopsisChoiceRecords\(a,answerIsTitle=false\)\{[^\n]*\}/)?.[0];
+const synopsisChoiceBuilder = index.match(/function synopsisChoiceRecords\(a,answerIsTitle=false\)\{[\s\S]*?\n\}/)?.[0];
 assert.ok(synopsisChoiceBuilder, "Synopsis choice builder must exist");
 assert.match(synopsisChoiceBuilder, /offset<candidates\.length&&options\.size<4/, "Synopsis distractor selection must stop after four choices");
 assert.match(index, /if\(mode==='image'\)return[^;]+;if\(mode==='titleStudio'\)return[^;]+;const summary=questionChoiceSummary\(\)/, "Image and studio questions must avoid constructing unrelated global choice indexes");
