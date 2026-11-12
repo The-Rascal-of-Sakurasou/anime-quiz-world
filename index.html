@@ -1570,7 +1570,13 @@ const CURATED_JA_ALIASES=[
 {titles:['東京喰種トーキョーグール','東京喰種','Tokyo Ghoul'],alias:'東京喰種'},
 {titles:['五等分の花嫁','Go-Toubun no Hanayome'],alias:'五等分'},
 {titles:['かぐや様は告らせたい','Kaguya-sama wa Kokurasetai'],alias:'かぐや様'},
-{titles:['ぼっち・ざ・ろっく！','ぼっち・ざ・ろっく!','Bocchi the Rock!'],alias:'ぼざろ'}
+{titles:['ぼっち・ざ・ろっく！','ぼっち・ざ・ろっく!','Bocchi the Rock!'],alias:'ぼざろ'},
+{titles:['ブラッククローバー','Black Clover'],alias:'ブラクロ'},
+{titles:['ヴィンランド・サガ','Vinland Saga'],alias:'ヴィンサガ'},
+{titles:['炎炎ノ消防隊','Enen no Shouboutai','Fire Force'],alias:'炎炎'},
+{titles:['カウボーイビバップ','Cowboy Bebop'],alias:'ビバップ'},
+{titles:['デス・パレード','Death Parade'],alias:'デスパレ'},
+{titles:['青の祓魔師','Ao no Exorcist','Blue Exorcist'],alias:'青エク'}
 ];
 function aliasCandidates(a){const titles=[a.title?.romaji,a.title?.english,a.title?.native].filter(Boolean).map(t=>String(t).trim());const titleKeys=new Set(titles.map(normalizeAnswer));const result=[];if(lang==='ja'){const curated=CURATED_JA_ALIASES.find(entry=>entry.titles.some(t=>titleKeys.has(normalizeAnswer(t))));if(curated)result.push(curated.alias)}for(const title of [a.title?.romaji,a.title?.english].filter(Boolean)){const words=String(title).normalize('NFKC').match(/[A-Za-z0-9]+/g)||[];if(words.length>=2){const initials=words.map(word=>word[0]).join('').toUpperCase();if(initials.length>=2&&initials.length<=8&&!titleKeys.has(normalizeAnswer(initials)))result.push(initials)}}for(const raw of a.synonyms||[]){if(typeof raw!=='string')continue;const value=raw.trim(),key=normalizeAnswer(value);if([...value].length<2||!key||titleKeys.has(key))continue;if(lang==='ja'&&!/[ぁ-んァ-ヶ]/.test(value)&&!(/^[A-Za-z0-9]{2,8}$/.test(value)))continue;result.push(value)}return [...new Set(result.filter(Boolean))]}function uniqueAliasCandidates(a,summary=questionChoiceSummary()){const id=Number(a?.id);return aliasCandidates(a).filter(alias=>{const key=normalizeAnswer(alias),owners=summary.aliasAnimeOwners.get(key);return key&&owners?.size===1&&owners.has(id)})}function validAlias(a,s){return uniqueAliasCandidates(a).some(x=>normalizeAnswer(x)===normalizeAnswer(s))}
 
