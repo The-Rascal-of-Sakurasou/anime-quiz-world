@@ -23,6 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       catalog_changed: ${{ steps.change.outputs.changed }}
+      images_changed: ${{ steps.images.outputs.changed }}
     timeout-minutes: 50
     steps:
       - name: Checkout repository
@@ -33,6 +34,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Capture image references before sync
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFile, writeFile } from 'node:fs/promises';
+          const catalog = JSON.parse(await readFile('data/anime-catalog.json', 'utf8'));
+          const images = catalog.items.map(item => [
+            Number(item.id),
+            item.coverImage?.large || '',
+            item.coverImage?.medium || '',
+            item.coverImage?.extraLarge || ''
+          ]).sort((a, b) => a[0] - b[0]);
+          await writeFile(process.env.RUNNER_TEMP + '/aqw-image-references.json', JSON.stringify(images));
+          NODE
       - name: Check catalogue sync script syntax
         run: node --check scripts/sync-anime-catalog.mjs
       - name: Build shared Japanese-origin anime catalogue
@@ -47,6 +61,23 @@ jobs:
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
+      - name: Detect image reference changes
+        id: images
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFile, appendFile } from 'node:fs/promises';
+          const catalog = JSON.parse(await readFile('data/anime-catalog.json', 'utf8'));
+          const images = catalog.items.map(item => [
+            Number(item.id),
+            item.coverImage?.large || '',
+            item.coverImage?.medium || '',
+            item.coverImage?.extraLarge || ''
+          ]).sort((a, b) => a[0] - b[0]);
+          const before = await readFile(process.env.RUNNER_TEMP + '/aqw-image-references.json', 'utf8');
+          const changed = before !== JSON.stringify(images);
+          await appendFile(process.env.GITHUB_OUTPUT, 'changed=' + changed + '\\n');
+          console.log('Image references changed: ' + changed);
+          NODE
       - name: Commit catalogue when changed
         run: |
           git config user.name "github-actions[bot]"
@@ -60,54 +91,9 @@ jobs:
           git pull --rebase origin main
           git push
 
-  title-image-audit:
-    needs: sync
-    if: needs.sync.outputs.catalog_changed == 'true'
-    concurrency:
-      group: aqw-title-image-ocr
-      cancel-in-progress: false
-    runs-on: ubuntu-latest
-    timeout-minutes: 120
-    steps:
-      - name: Checkout latest main
-        uses: actions/checkout@v4
-        with:
-          ref: main
-      - name: Install Japanese and English OCR engine
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y tesseract-ocr tesseract-ocr-jpn tesseract-ocr-eng
-      - name: Verify OCR engine and script
-        run: |
-          tesseract --list-langs
-          python3 -m py_compile scripts/detect-title-image-text.py
-          python3 scripts/detect-title-image-text.py --self-test
-      - name: Detect titles in cover images
-        run: python3 scripts/detect-title-image-text.py
-      - name: Upload title-image audit report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: aqw-title-image-audit
-          path: artifacts/title-image-audit/report.json
-          if-no-files-found: warn
-          retention-days: 30
-      - name: Commit title-image exclusions when changed
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/title-image-exclusions.json
-          if git diff --cached --quiet; then
-            echo "Title-image exclusion list has no changes."
-            exit 0
-          fi
-          git commit -m "Update title-image OCR exclusions"
-          git pull --rebase origin main
-          git push
-
   image-url-audit:
     needs: sync
-    if: needs.sync.outputs.catalog_changed == 'true'
+    if: needs.sync.outputs.images_changed == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
