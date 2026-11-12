@@ -54,5 +54,8 @@ requireMatch(migration, /p_elapsed_ms is intentionally ignored/i, 'Client elapse
 requireMatch(migration, /correct count remains client-reported/i, 'Do not claim the answer count is server-authoritative.');
 requireMatch(migration, /grant execute on function public\.submit_aqw_speed_rush\(integer, integer, uuid\) to authenticated/i, 'Only authenticated users should receive submit RPC execute permission.');
 requireMatch(migration, /revoke all on function public\.submit_aqw_speed_rush\(integer, integer, uuid\) from public, anon/i, 'Submit RPC must revoke public and anon execution.');
+requireMatch(migration, /revoke all on function private\.submit_aqw_speed_rush\(integer, integer, uuid\) from public, anon/i, 'Private submit function must revoke public and anon execution.');
+requireMatch(migration, /grant execute on function private\.submit_aqw_speed_rush\(integer, integer, uuid\) to authenticated/i, 'Private submit function must explicitly grant authenticated execution.');
+requireMatch(migration, /started_at < clock_timestamp\(\) - interval '1 day'/i, 'Run cleanup must remove old completed and expired records.');
 
 console.log('Speed Rush server timing contract checks passed.');
