@@ -186,7 +186,7 @@ function compactDescription(value) {
     .replace(/&#39;/g, "'")
     .replace(/\s+/g, ' ')
     .trim();
-  return cleaned.length > 260 ? cleaned.slice(0, 257).trimEnd() + '…' : cleaned;
+  return cleaned;
 }
 
 function compactOfficialExternalLinks(links) {
@@ -248,7 +248,8 @@ for (const format of FORMATS) {
 
 const items = [...records.values()].map((anime) => {
   const { source, relations, ...compact } = dedupeAnimeMetadata(anime);
-  compact.description = compactDescription(compact.description);\n  compact.externalLinks = compactOfficialExternalLinks(compact.externalLinks);
+  compact.description = compactDescription(compact.description);
+  compact.externalLinks = compactOfficialExternalLinks(compact.externalLinks);
   return { ...compact, originVerified: true };
 }).sort((a, b) =>
   (Number(b.popularity) || 0) - (Number(a.popularity) || 0) || Number(a.id) - Number(b.id)
