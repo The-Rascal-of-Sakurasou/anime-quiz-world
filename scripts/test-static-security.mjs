@@ -71,6 +71,20 @@ assert.equal(
 );
 
 const aqwHtml = source.get("index.html");
+assert.match(aqwHtml, /id="aqwInviteFriendToMatch"/, "The friend chat must expose a match invitation action");
+const inviteStart = aqwHtml.indexOf("async function inviteSelectedFriendToMatch()");
+const inviteEnd = aqwHtml.indexOf("\\nfunction officialAnimeLink", inviteStart);
+assert.ok(inviteStart >= 0 && inviteEnd > inviteStart, "The friend match invitation handler must exist");
+const inviteSource = aqwHtml.slice(inviteStart, inviteEnd);
+assert.ok(inviteSource.includes("aqw_match_create_room"), "Inviting a friend must create a 1v1 room");
+assert.ok(inviteSource.includes("friend_messages"), "The invite must be delivered through the existing friend chat");
+assert.ok(inviteSource.includes("aqw_match_leave_room"), "A room must be cancelled if sending the invite fails");
+assert.ok(inviteSource.includes("multiplayer.html?room="), "The invitation must open the matching room");
+const messageRendererStart = aqwHtml.indexOf("async function loadMessages()");
+const messageRendererEnd = aqwHtml.indexOf("\\nasync function sendFriendMessage", messageRendererStart);
+const messageRenderer = aqwHtml.slice(messageRendererStart, messageRendererEnd);
+assert.ok(messageRenderer.includes("AQW_MATCH_INVITE:"), "Friend chat must render structured match invitations");
+assert.doesNotMatch(messageRenderer, /innerHTML/, "Friend messages and invitations must be rendered safely");
 assert.match(aqwHtml, /id="aqwMatchProfilePanel"/, "The signed-in profile must include a 1v1 match record panel");
 assert.match(aqwHtml, /id="aqwMatchProfileStats"/, "The match profile must display summary statistics");
 assert.match(aqwHtml, /id="aqwMatchProfileHistory"/, "The match profile must display recent match history");
