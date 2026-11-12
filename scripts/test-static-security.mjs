@@ -525,7 +525,7 @@ assert.match(index, /await new Promise\(resolve=>setTimeout\(resolve,0\)\)/, "Ca
 assert.match(index, /pending\.pool===sourcePool&&pending\.length===sourceLength&&pending\.revision===sourceRevision/, "In-flight candidate work must not be reused after catalogue or difficulty changes");
 assert.match(index, /function scheduleEligibleCandidatePrewarm\(\)/, "Idle-time candidate prewarming must be available");
 assert.match(index, /requestIdleCallback\(run,\{timeout:\d+\}\)/, "Candidate prewarming must use browser idle time with a bounded timeout when available");
-assert.match(index, /const candidates=\[\.\.\.\(await getEligibleCandidatePoolAsync\(mode,format,ignoreDifficulty\)\)\]/, "Quiz start must await the chunked candidate builder");
+assert.match(index, /const candidates=\[\.\.\.\(await aqwMeasurePreparationStage\('候補プール取得',\(\)=>getEligibleCandidatePoolAsync\(mode,format,ignoreDifficulty\)\)\)\]/, "Quiz start must await the shared chunked candidate builder through the preparation-stage profiler");
 assert.match(index, /\$\('#answerFormatSelect'\)\.addEventListener\('change',refreshCandidatePrewarm\)/, "Changing answer format must refresh candidate prewarming");
 
 console.log(`Static security checks passed. Checked ${checkedScripts} inline script(s) across ${frontendFiles.length} pages.`);
