@@ -171,6 +171,30 @@ def install_routes(page):
     page.route(re.compile(r"^https://example\.test/.*"), image)
 
 
+def test_quiz_translation_question_text(browser):
+    """Ensure question text and core UI translations work in every supported locale."""
+    context = browser.new_context(locale="ja-JP")
+    page = context.new_page()
+    install_routes(page)
+    page.goto(f"{BASE_URL}/index.html", wait_until="domcontentloaded")
+    page.wait_for_function("typeof qText === 'function'", timeout=20000)
+    translations = page.evaluate("""() => {
+      const previous = lang;
+      const output = {};
+      for (const locale of ['ja', 'en', 'ko', 'zh', 'es', 'fr', 'pt', 'de']) {
+        lang = locale;
+        output[locale] = {question: qText('image'), countLabel: tr('countLabel')};
+      }
+      lang = previous;
+      return output;
+    }""")
+    for locale, values in translations.items():
+        assert values["question"].strip(), f"Question prompt is empty for {locale}"
+        assert values["countLabel"].strip(), f"Core translation is empty for {locale}"
+    assert translations["ja"]["question"] != translations["en"]["question"]
+    assert translations["ko"]["countLabel"] != translations["en"]["countLabel"]
+    context.close()
+
 def test_quiz_start_answer_finish(browser):
     context = browser.new_context(viewport={"width": 1280, "height": 900}, locale="ja-JP")
     page = context.new_page()
@@ -300,7 +324,6 @@ def test_all_question_modes(browser):
                     questionMode: typeof currentQuestionMode === 'undefined' ? null : currentQuestionMode,
                     questionIndex: typeof index === 'undefined' ? null : index,
                     questionCount: typeof questions === 'undefined' ? null : questions.length,
-                    lastRender: window.__aqwLastQuestionRender || null,
                     currentQuestion: typeof questions === 'undefined' ? null : (() => {
                       const q = questions[index];
                       return q ? {
@@ -721,6 +744,8 @@ def main():
         try:
             # Run the core quiz journey first so network-heavy checks cannot
             # delay detection of a broken start -> answer -> finish flow.
+            test_quiz_translation_question_text(browser)
+            print("PASS: question text translations (8 locales)")
             test_quiz_start_answer_finish(browser)
             print("PASS: quiz start -> answer -> finish")
             test_all_question_modes(browser)
