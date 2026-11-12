@@ -15,6 +15,8 @@ on:
       - "scripts/sync-anime-catalog.mjs"
       - "scripts/audit-anime-image-urls.mjs"
       - "scripts/detect-title-image-text.py"
+      - "scripts/audit-japanese-synopses.mjs"
+      - ".github/workflows/japanese-synopsis-audit.yml"
       - ".github/workflows/detect-title-image-text.yml"
       - ".github/workflows/image-url-audit.yml"
       - ".github/workflows/sync-anime-catalog.yml"
@@ -33,6 +35,8 @@ on:
       - "terms.html"
       - "scripts/test-static-security.mjs"
       - "scripts/sync-anime-catalog.mjs"
+      - "scripts/audit-japanese-synopses.mjs"
+      - ".github/workflows/japanese-synopsis-audit.yml"
       - ".github/workflows/sync-anime-catalog.yml"
       - "supabase/migrations/**"
       - ".github/workflows/aqw-static-security.yml"
@@ -57,5 +61,6 @@ jobs:
           node scripts/test-static-security.mjs
           node --check scripts/audit-anime-image-urls.mjs
           node scripts/audit-anime-image-urls.mjs --self-test
+          node --check scripts/audit-japanese-synopses.mjs
           python3 -m py_compile scripts/detect-title-image-text.py
           python3 scripts/detect-title-image-text.py --self-test
