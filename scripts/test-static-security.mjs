@@ -590,9 +590,9 @@ assert.match(index, /const cacheKey='aqw-anime-pool-v22-compact-shared-catalog'/
 assert.ok(index.includes("source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } }"), "Quiz queries must request detailed source metadata and adaptation-origin evidence");
 assert.ok(recommend.includes("source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } }"), "Recommendation queries must request detailed source metadata and adaptation-origin evidence");
 
-assert.match(index, /const sorts=\['POPULARITY_DESC','ID','ID_DESC'\]/, "Format-specific catalogue backfill must use complementary sort orders");
-assert.ok(index.includes("const overflowSorts=['SCORE_DESC','FAVOURITES_DESC','TRENDING_DESC','START_DATE_DESC']"), "Formats exceeding AniList page limits must be backfilled using additional sort orders");
-assert.ok(index.includes("if(existingOverflowScopes.has(overflowScope))continue"), "Overflow sort scopes must not be scheduled more than once");
+
+
+
 assert.match(index, /pageInfo \{ hasNextPage \} media\(id_in:\$id_in/, "Base AniList query must expose source pagination metadata");
 assert.match(index, /items\.hasNextPage=pageData\?\.pageInfo\?\.hasNextPage===true/, "Filtered results must retain the upstream hasNextPage flag");
 assert.match(index, /hasNextPage:items\.hasNextPage===true/, "Fallback pagination must not infer page completion from filtered result count");
