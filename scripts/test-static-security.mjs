@@ -524,7 +524,7 @@ assert.doesNotMatch(beginBlock, /await window\.aqwEnsureSupabaseFeatures|await a
 assert.match(beginBlock, /Promise\.resolve\(\)\.then\(\(\)=>window\.aqwEnsureSupabaseFeatures\(\)\)/, "Optional Supabase initialization must continue in the background");
 
 assert.match(index, /aliasAnimeOwners=new Map\(\)/, "Alias ownership must be tracked across the complete eligible anime pool");
-assert.ok(index.includes("if(primaryKey){const aliasKeys=new Set([...titleAnswerVariants(item),...aliasCandidates(item)].map(normalizeAnswer).filter(Boolean));aliasKeys.add(primaryKey);if(!titleChoiceRecords.has(primaryKey))titleChoiceRecords.set(primaryKey,{id:Number(item.id),aliasKeys});for(const alias of aliasKeys)"), "Every anime record must contribute alias ownership, even when another record has the same primary title");
+assert.match(index, /if\(primaryKey\)\{[\s\S]*?for\(const alias of aliasKeys\)\{[\s\S]*?aliasAnimeOwners\.get\(alias\)\.add\(Number\(item\.id\)\)/, "Every anime record must contribute alias ownership, even when another record has the same primary title");
 assert.match(index, /function uniqueAliasCandidates\(a,summary=questionChoiceSummary\(\)\)/, "Synonym questions must use globally unique aliases");
 assert.match(index, /if\(mode===.synonym.\)return !!titleKey&&hasFourDistinctTitleChoices\(a,summary\)&&uniqueAliasCandidates\(a,summary\)\.length>0/, "Synonym question eligibility must reject aliases shared by multiple works");
 assert.match(index, /const syn=shuffle\(uniqueAliasCandidates\(a\)\)\[0\]/, "Synonym question generation must choose from the same globally unique alias candidates");
