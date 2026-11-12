@@ -885,7 +885,7 @@ async function fetchAnime(vars={}){
   throw lastError||new Error('データをまとめて取得できませんでした。');
  };
  if(vars.search){const pages=await Promise.all([1,2].map(page=>request({page,perPage:25,search:vars.search})));const raw=mergeAnimeCollection(pages.flat()).filter(isUsableAnime);const unique=deduplicateSearchResults(raw),duplicateCount=Math.max(0,raw.length-unique.length),limited=unique.slice(0,30);limited.duplicateCount=duplicateCount;return limited;}
- const cacheKey='aqw-anime-pool-v21-compact-shared-catalog';
+ const cacheKey='aqw-anime-pool-v22-compact-shared-catalog';
  // Merge every older local catalogue cache; the application no longer imposes an item-count target.
  let initial=[],cacheSavedAt=0,savedProgress=null;
  try{
