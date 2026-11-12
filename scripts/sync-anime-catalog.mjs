@@ -1,8 +1,10 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
+import { gzipSync } from 'node:zlib';
 
 const API = 'https://graphql.anilist.co';
 const OUTPUT = 'data/anime-catalog.json';
+const OUTPUT_GZIP = 'data/anime-catalog.json.gz';
 const FORMATS = ['TV', 'TV_SHORT', 'MOVIE', 'OVA', 'ONA', 'SPECIAL'];
 const BASE_SORTS = ['POPULARITY_DESC', 'ID', 'ID_DESC'];
 const OVERFLOW_SORTS = ['SCORE_DESC', 'FAVOURITES_DESC', 'TRENDING_DESC', 'START_DATE_DESC'];
@@ -263,8 +265,11 @@ const output = {
 await mkdir(dirname(OUTPUT), { recursive: true });
 const serialized = JSON.stringify(output);
 await writeFile(OUTPUT, serialized + '\n');
+const compressed = gzipSync(Buffer.from(serialized + '\n', 'utf8'), { level: 9, mtime: 0 });
+await writeFile(OUTPUT_GZIP, compressed);
 console.log('Catalogue mode: ' + (incremental ? 'append-only incremental' : 'full initial/rebuild') + '.');
 console.log('Newly added records: ' + accepted + '.');
 console.log('Catalogue complete: ' + items.length + ' unique usable anime.');
 console.log('AniList requests: ' + requests + '; accepted records: ' + accepted + '; filtered records: ' + filtered + '.');
 console.log('Output bytes: ' + Buffer.byteLength(serialized));
+console.log('Gzip output bytes: ' + compressed.byteLength + ' (' + (100 * compressed.byteLength / Buffer.byteLength(serialized)).toFixed(1) + '% of JSON).');
