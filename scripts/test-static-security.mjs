@@ -113,12 +113,11 @@ const reportSubmit = aqwHtml.match(/async function submitUserReport\(\)\{[\s\S]*
 assert.ok(reportSubmit, "User-report submit handler must exist");
 assert.match(reportSubmit, /catch\(error\)\{[\s\S]*?button\.disabled=false/, "The report button must recover after network failures");
 const reportOpenStart = aqwHtml.indexOf("function openReportPanel(");
-const reportOpenEnd = aqwHtml.indexOf("\\n}", reportOpenStart);
-assert.ok(reportOpenStart >= 0 && reportOpenEnd > reportOpenStart, "Report panel open handler must exist");
-const reportOpen = aqwHtml.slice(reportOpenStart, reportOpenEnd);
+const reportCloseStart = aqwHtml.indexOf("function closeReportPanel(", reportOpenStart);
+assert.ok(reportOpenStart >= 0 && reportCloseStart > reportOpenStart, "Report panel open handler must exist");
+const reportOpen = aqwHtml.slice(reportOpenStart, reportCloseStart);
 assert.ok(reportOpen.includes("submitButton.disabled=false"), "Opening a new report must re-enable its submit button");
-const reportCloseStart = aqwHtml.indexOf("function closeReportPanel(");
-const reportCloseEnd = aqwHtml.indexOf("\\n}", reportCloseStart);
+const reportCloseEnd = aqwHtml.indexOf("async function submitUserReport(", reportCloseStart);
 assert.ok(reportCloseStart >= 0 && reportCloseEnd > reportCloseStart, "Report panel close handler must exist");
 const reportClose = aqwHtml.slice(reportCloseStart, reportCloseEnd);
 assert.ok(reportClose.includes("submitButton.disabled=false"), "Closing a report must reset its submit button");
