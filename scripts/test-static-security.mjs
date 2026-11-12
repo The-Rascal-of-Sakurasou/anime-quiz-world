@@ -426,6 +426,8 @@ assert.equal(JSON.stringify(originResults), JSON.stringify([true, true, true, fa
 assert.match(syncScript, /startDate_greater/, "The shared catalogue must split oversized format scopes by release decade");
 
 assert.match(syncScript, /if \(anime\.countryOfOrigin !== 'JP'\) return Number\(anime\.popularity\) >= 10000 && hasJapaneseTitle\(anime\)/, "Foreign catalogue entries must pass both the popularity and Japanese-title requirements");
+assert.match(syncScript, /const API_REQUEST_INTERVAL_MS = 2100/, "Manual AniList requests must stay below the current 30 requests/minute limit");
+assert.match(syncScript, /await sleep\(API_REQUEST_INTERVAL_MS\)/, "Every catalogue request must use the documented rate-limit pacing");
 assert.match(syncScript, /isAdult:false/, "Shared catalogue sync must exclude adult catalogue entries");
 assert.match(syncScript, /const OVERFLOW_SORTS = \['SCORE_DESC', 'FAVOURITES_DESC', 'TRENDING_DESC', 'START_DATE_DESC'\]/, "Shared catalogue sync must cover AniList pagination overflow");
 assert.ok(syncWorkflow.includes("# Manual-only while AniList bulk-data usage terms are reviewed."), "Bulk catalogue sync must remain manual until API terms are reviewed");
