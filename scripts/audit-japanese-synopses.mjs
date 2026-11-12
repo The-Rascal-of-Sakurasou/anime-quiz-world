@@ -44,9 +44,9 @@ function titleVariants(item) {
 
 async function fetchAniListPage(page) {
   const query = `query {
-    Page(page: ${page}, perPage: 50) {
-      media(type: ANIME, sort: POPULARITY_DESC, countryOfOrigin: "JP", isAdult: false) {
-        title { native romaji english }
+    Page(page: ${page}, perPage: 25) {
+      media(type: ANIME, sort: POPULARITY_DESC, isAdult: false) {
+        countryOfOrigin\n        title { native romaji english }
         synonyms
         popularity
         format
@@ -65,10 +65,11 @@ async function fetchAniListPage(page) {
   return data.data.Page.media;
 }
 
-const media = [...await fetchAniListPage(1), ...await fetchAniListPage(2)];
+const media = (await Promise.all([1, 2, 3, 4].map(fetchAniListPage))).flat();
 const supportedFormats = new Set(['TV', 'TV_SHORT', 'MOVIE', 'OVA', 'ONA', 'SPECIAL']);
 const missing = media.filter(item => {
   if (!supportedFormats.has(item.format)) return false;
+  if (item.countryOfOrigin !== 'JP' && (!(Number(item.popularity) >= 10000) || ![item.title?.native, item.title?.english, item.title?.romaji, ...(item.synonyms || [])].some(value => typeof value === 'string' && /[ぁ-んァ-ヶ]/.test(value)))) return false;
   return ![...titleVariants(item)].some(alias => covered.has(alias));
 }).sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
 
@@ -78,7 +79,7 @@ const body = missing.length
   ? [
       `## 未登録の人気作品候補（${date}）`,
       '',
-      'AniListの日本制作アニメ人気順上位100作品を確認し、日本語あらすじの登録キーと照合しました。',
+      'AniListの人気上位100作品（日本制作作品と、日本語タイトルがあり人気条件を満たす海外作品）を確認し、日本語あらすじの登録キーと照合しました。',
       '以下は**追加候補の検出結果**です。登録前に公式サイト等の日本語一次情報を確認し、作品・シーズンの取り違えがないことを人手で確認してください。',
       '',
       '| 作品名（日本語原題） | 形式 | 年 | Popularity |',
