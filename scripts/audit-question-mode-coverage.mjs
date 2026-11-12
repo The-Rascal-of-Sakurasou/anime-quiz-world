@@ -139,6 +139,8 @@ const eligible = {
   titleStudio: items.filter(a => (a.studios?.nodes || []).some(n => String(n?.name || "").trim()) && studioSet.size >= 4),
 };
 const total = items.length;
+const japaneseOriginCount = items.filter(a => a.countryOfOrigin === "JP").length;
+const famousForeignCount = total - japaneseOriginCount;
 const characterStats = (() => {
   const ids = new Set();
   const namesByAnime = new Map();
@@ -187,7 +189,9 @@ const summarize = (key, label, ready) => ({
 const report = {
   generatedAt: new Date().toISOString(),
   catalogueGeneratedAt: payload.generatedAt,
-  catalogueCount: payload.count,
+  catalogueCount: payload.count ?? payload.itemCount,
+  japaneseOriginCount,
+  famousForeignCount,
   catalogueBytes,
   averageBytesPerRecord: total ? Math.round(catalogueBytes / total) : 0,
   largestFields,
@@ -213,6 +217,7 @@ await mkdir("artifacts/question-mode-coverage", { recursive: true });
 await writeFile(REPORT, JSON.stringify(report,null,2)+"\n");
 console.log("Question-mode coverage audit");
 console.log("Catalogue: "+total+" records (generated "+payload.generatedAt+")");
+console.log("Japanese-origin: "+japaneseOriginCount+"; famous foreign with Japanese titles: "+famousForeignCount);
 console.log("JSON size: "+catalogueBytes+" bytes; average "+report.averageBytesPerRecord+" bytes per record");
 console.log("Largest fields: "+largestFields.map(row=>row.field+" "+row.bytes+" bytes ("+row.percent+"%)").join("; "));
 for (const row of report.modes) console.log(row.label+": "+row.eligible+"/"+row.total+" ("+row.coveragePercent+"%); missing "+row.missing);
