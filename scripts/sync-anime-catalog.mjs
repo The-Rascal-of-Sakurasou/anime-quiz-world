@@ -173,6 +173,20 @@ export function dedupeAnimeMetadata(anime) {
     ...(anime?.characters ? { characters: { ...anime.characters, nodes: characters } } : {}),
   };
 }
+function compactDescription(value) {
+  const cleaned = String(value || '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\\[[^\\]]*\\]\\([^)]*\\)/g, ' ')
+    .replace(/\\\\[nrt]/gi, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\\s+/g, ' ')
+    .trim();
+  return cleaned.length > 260 ? cleaned.slice(0, 257).trimEnd() + '…' : cleaned;
+}
+
 function compactOfficialExternalLinks(links) {
   return (Array.isArray(links) ? links : []).filter((link) => {
     if (!link || link.isDisabled || typeof link.url !== 'string' || !/^https?:\/\//i.test(link.url)) return false;
@@ -232,7 +246,7 @@ for (const format of FORMATS) {
 
 const items = [...records.values()].map((anime) => {
   const { source, relations, ...compact } = dedupeAnimeMetadata(anime);
-  compact.externalLinks = compactOfficialExternalLinks(compact.externalLinks);
+  compact.description = compactDescription(compact.description);\n  compact.externalLinks = compactOfficialExternalLinks(compact.externalLinks);
   return { ...compact, originVerified: true };
 }).sort((a, b) =>
   (Number(b.popularity) || 0) - (Number(a.popularity) || 0) || Number(a.id) - Number(b.id)
