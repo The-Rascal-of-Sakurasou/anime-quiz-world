@@ -418,8 +418,9 @@ assert.match(index, /shuffle\(characterRecordsWithFourTitleChoicesForAnime\(a\)\
 // The shared builder's eligible distractor source is asserted above.
 assert.match(index, /if\(actualMode===\'titleCharacter\'\)\{const characterRecord=shuffle\(characterRecordsWithFourTitleChoicesForAnime\(a\)\)/, "Character-name question generation must choose a character with three unique distractors");
 // The shared builder's eligible distractor source is asserted above.
-assert.ok(index.slice(index.indexOf("async function fetchSharedAnimeCatalog"),index.indexOf("async function fetchAnime")).includes("cache:'default'"), "The shared catalogue should use the browser HTTP cache to avoid repeatedly downloading the large JSON file");
-assert.ok(!index.slice(index.indexOf("async function fetchSharedAnimeCatalog"),index.indexOf("async function fetchAnime")).includes("cache:'no-cache'"), "Shared catalogue requests must not force revalidation on every visit");
+const sharedCatalogLoader=index.slice(index.indexOf("async function fetchSharedAnimeCatalog"),index.indexOf("async function fetchAnime"));
+assert.ok(sharedCatalogLoader.includes("cache:'no-cache'"), "The shared catalogue should revalidate cached responses so new catalogue versions become visible after deployment");
+assert.ok(!sharedCatalogLoader.includes("cache:'reload'")&&!sharedCatalogLoader.includes("cache:'no-store'"), "Shared catalogue requests should retain conditional HTTP caching rather than bypassing the cache");
 assert.match(index, /payload\?\.schemaVersion!==2/, "The quiz must require the compact shared-catalogue schema");
 assert.ok(syncScript.includes("const { source, relations, ...compact } = dedupeAnimeMetadata(anime)"), "The published catalogue must deduplicate metadata and omit bulky source-relation details after verification");
 assert.ok(syncScript.includes("export function dedupeAnimeMetadata(anime)"), "Catalogue synchronization must deduplicate synonym and character metadata");
