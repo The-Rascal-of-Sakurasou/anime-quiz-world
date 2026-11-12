@@ -55,12 +55,18 @@ def make_anime(index):
             "english": f"Verification Anime {suffix}",
             "romaji": f"Verification Anime {suffix}",
         },
-        "description": "これはブラウザ自動検査用の架空作品データです。物語と登場人物の情報を含みます。",
+        "description": (
+            f"An original synthetic synopsis for verification entry {suffix}: "
+            f"the explorer {index + 1} discovers a hidden city beneath a frozen ocean, "
+            f"where ancient machines preserve forgotten memories and every expedition "
+            f"reveals a different mystery, conflict, and unexpected alliance."
+        ),
+        "synonyms": [f"検証略称{suffix}"],
         "coverImage": {"large": cover, "medium": cover, "extraLarge": cover},
         "episodes": 12,
         "season": CURRENT_SEASON,
-        "seasonYear": NOW_JST.year,
-        "startDate": {"year": NOW_JST.year, "month": SEASON_START_MONTH, "day": 1},
+        "seasonYear": 2010 + index,
+        "startDate": {"year": 2010 + index, "month": 1, "day": 1},
         "averageScore": 70 + (index % 20),
         "popularity": 50000 - index * 1000,
         "genres": GENRES[index % len(GENRES)],
@@ -69,7 +75,13 @@ def make_anime(index):
             for tag in TAGS[index % len(TAGS)]
         ],
         "studios": {"nodes": [{"name": f"検証スタジオ{index % 5 + 1}"}]},
-        "characters": {"nodes": []},
+        "characters": {
+            "nodes": [{
+                "id": 20000 + index,
+                "name": {"native": f"検証キャラクター{suffix}", "full": f"Verification Character {suffix}"},
+                "image": {"large": f"https://example.test/character-{index + 1}.svg"},
+            }]
+        },
         "relations": {"edges": []},
         "siteUrl": f"https://anilist.co/anime/{anime_id}",
         "externalLinks": [
@@ -192,6 +204,48 @@ def test_quiz_start_answer_finish(browser):
 
 
 
+
+
+def test_all_question_modes(browser):
+    """Verify every selectable question mode can prepare, answer, and finish."""
+    modes = [
+        "image", "synonym", "titleYear", "titleStudio",
+        "character", "characterImage", "synopsis",
+    ]
+    for mode in modes:
+        context = browser.new_context(
+            viewport={"width": 1280, "height": 900},
+            locale="ja-JP",
+            service_workers="block",
+        )
+        page = context.new_page()
+        errors = []
+        page.on("pageerror", lambda error: errors.append(str(error)))
+        install_routes(page)
+        page.goto(f"{BASE_URL}/index.html", wait_until="domcontentloaded")
+        page.wait_for_function(
+            "() => { const button = document.querySelector('#start'); return button && !button.classList.contains('hidden') && !button.disabled; }",
+            timeout=60000,
+        )
+        page.locator("#modeSelect").select_option(mode)
+        page.locator("#answerFormatSelect").select_option("choices")
+        page.locator("#difficultySelect").select_option("easy")
+        page.locator("#questionCount").fill("1")
+        page.locator("#start").click()
+        answers = page.locator("#answers button.answer")
+        try:
+            answers.first.wait_for(state="visible", timeout=20000)
+        except Exception as error:
+            status = page.locator("#quizStatus").inner_text() if page.locator("#quizStatus").count() else ""
+            raise AssertionError(f"Question mode {mode} did not produce a question: {status}") from error
+        assert answers.count() == 4, f"Question mode {mode} must provide exactly four choices"
+        prompt = page.locator("#answerPrompt").inner_text().strip()
+        assert prompt, f"Question mode {mode} must display a prompt"
+        answers.first.click()
+        page.locator("#result:not(.hidden)").wait_for(state="visible", timeout=20000)
+        assert not errors, f"Question mode {mode} raised JavaScript errors: " + " | ".join(errors)
+        context.close()
+        print(f"PASS: question mode {mode}")
 
 
 def test_live_quiz_preparation_performance(browser):
@@ -592,6 +646,8 @@ def main():
             # delay detection of a broken start -> answer -> finish flow.
             test_quiz_start_answer_finish(browser)
             print("PASS: quiz start -> answer -> finish")
+            test_all_question_modes(browser)
+            print("PASS: all selectable question modes")
             test_main_navigation_and_search(browser)
             print("PASS: primary navigation and anime search")
             test_quiz_pause_and_quit(browser)
