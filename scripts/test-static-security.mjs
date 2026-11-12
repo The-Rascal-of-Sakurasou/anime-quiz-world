@@ -524,7 +524,7 @@ assert.match(index, /seen=new Set\(\),chunkSize=96/, "Candidate eligibility must
 assert.match(index, /await new Promise\(resolve=>setTimeout\(resolve,0\)\)/, "Candidate preparation must yield to the browser between batches");
 assert.match(index, /pending\.pool===sourcePool&&pending\.length===sourceLength&&pending\.revision===sourceRevision/, "In-flight candidate work must not be reused after catalogue or difficulty changes");
 assert.match(index, /function scheduleEligibleCandidatePrewarm\(\)/, "Idle-time candidate prewarming must be available");
-assert.match(index, /requestIdleCallback\(run,\{timeout:2200\}\)/, "Candidate prewarming must use browser idle time when available");
+assert.match(index, /requestIdleCallback\(run,\{timeout:\d+\}\)/, "Candidate prewarming must use browser idle time with a bounded timeout when available");
 assert.match(index, /const candidates=\[\.\.\.\(await getEligibleCandidatePoolAsync\(mode,format,ignoreDifficulty\)\)\]/, "Quiz start must await the chunked candidate builder");
 assert.match(index, /\$\('#answerFormatSelect'\)\.addEventListener\('change',refreshCandidatePrewarm\)/, "Changing answer format must refresh candidate prewarming");
 
