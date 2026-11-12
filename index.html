@@ -990,7 +990,7 @@ async function fetchAnime(vars={}){
    const makeTasks=()=>{
     const list=[];
     const missingPopularity=[...all.values()].filter(a=>!Number.isFinite(Number(a.popularity))||Number(a.popularity)<=0).map(a=>Number(a.id)).filter(Number.isFinite);
-    for(let i=0;i<missingPopularity.length;i+=50)list.push(['ID_IN',missingPopularity.slice(i,i+50),'enrich']);
+    for(let i=0;i<missingPopularity.length;i+=25)list.push(['ID_IN',missingPopularity.slice(i,i+25),'enrich']);
     // Query all pages available to the public AniList API across complementary sort orders.
     // AniList limits page depth; use its full accessible range for each sort, with no app-level item cap.
     // Start at page 1 so older catalogues are fully backfilled.
