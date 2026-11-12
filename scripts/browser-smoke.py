@@ -290,6 +290,66 @@ def test_live_quiz_preparation_performance(browser):
     }, ensure_ascii=False))
     context.close()
 
+def test_main_navigation_and_search(browser):
+    """Verify every primary tab and the title-search form remains interactive."""
+    context = browser.new_context(viewport={"width": 1280, "height": 900}, locale="ja-JP")
+    page = context.new_page()
+    errors = []
+    page.on("pageerror", lambda error: errors.append(str(error)))
+    page.route("**/supabase-js@2*", lambda route: route.abort())
+    install_routes(page)
+    page.goto(f"${BASE_URL}/index.html", wait_until="domcontentloaded")
+    page.locator("#start").wait_for(state="visible", timeout=60000)
+
+    page.locator("#searchTab").click()
+    assert page.locator("#search").is_visible(), "Search tab must open the search panel"
+    page.locator("#query").fill("作品A")
+    page.locator("#searchButton").click()
+    page.locator("#results .anime").first.wait_for(state="visible", timeout=20000)
+    assert page.locator("#results .anime").count() > 0, "Search must render matching anime cards"
+
+    page.locator("#progressTab").click()
+    assert page.locator("#progressPanel").is_visible(), "Progress tab must open the achievements panel"
+    page.locator("#socialTab").click()
+    assert page.locator("#social").is_visible(), "Community tab must open even when Supabase is unavailable"
+    page.locator("#rankingTab").click()
+    assert page.locator("#ranking").is_visible(), "Ranking tab must open even when Supabase is unavailable"
+    page.locator("#quizTab").click()
+    assert page.locator("#quiz").is_visible(), "Quiz tab must return to the quiz panel"
+    assert not errors, "Primary navigation/search raised JavaScript errors: " + " | ".join(errors)
+    context.close()
+
+
+def test_quiz_pause_and_quit(browser):
+    """Verify pause/resume and quit controls respond during an active quiz."""
+    context = browser.new_context(viewport={"width": 1280, "height": 900}, locale="ja-JP")
+    page = context.new_page()
+    errors = []
+    page.on("pageerror", lambda error: errors.append(str(error)))
+    page.on("dialog", lambda dialog: dialog.accept())
+    install_routes(page)
+    page.goto(f"${BASE_URL}/index.html", wait_until="domcontentloaded")
+    page.locator("#start").wait_for(state="visible", timeout=60000)
+    page.locator("#modeSelect").select_option("image")
+    page.locator("#answerFormatSelect").select_option("choices")
+    page.locator("#difficultySelect").select_option("easy")
+    page.locator("#questionCount").fill("1")
+    page.locator("#start").click()
+    page.locator("#answers button.answer").first.wait_for(state="visible", timeout=20000)
+
+    page.locator("#pauseButton").click()
+    assert page.locator("#pauseNotice").is_visible(), "Pause must display the pause notice"
+    page.locator("#pauseButton").click()
+    assert not page.locator("#pauseNotice").is_visible(), "Resume must hide the pause notice"
+    page.locator("#quitQuizButton").click()
+    page.wait_for_function(
+        "() => document.querySelector('#quizArea')?.classList.contains('hidden') && !document.querySelector('#setupControls')?.classList.contains('hidden')",
+        timeout=10000,
+    )
+    assert not errors, "Pause/resume/quit raised JavaScript errors: " + " | ".join(errors)
+    context.close()
+
+
 
 def test_mobile_quiz_layout(browser):
     """Check that the quiz controls and four choices fit a narrow mobile viewport."""
@@ -359,7 +419,7 @@ def test_recommendation_diagnosis(browser):
     match = re.search(r"/\s*(\d+)", step_text)
     assert match, f"Could not read diagnosis question count: {step_text}"
     question_count = int(match.group(1))
-    assert 1 <= question_count <= 20, f"Diagnosis exceeds its 20-question cap: {question_count}"
+    assert question_count == 18, f"Diagnosis must contain exactly 18 questions: {question_count}"
 
     for step in range(question_count):
         choices = page.locator("#choices button.choice")
@@ -517,6 +577,10 @@ def main():
             # delay detection of a broken start -> answer -> finish flow.
             test_quiz_start_answer_finish(browser)
             print("PASS: quiz start -> answer -> finish")
+            test_main_navigation_and_search(browser)
+            print("PASS: primary navigation and anime search")
+            test_quiz_pause_and_quit(browser)
+            print("PASS: quiz pause -> resume -> quit")
             test_recommendation_diagnosis(browser)
             print("PASS: recommendation diagnosis -> results")
             test_mobile_quiz_layout(browser)
