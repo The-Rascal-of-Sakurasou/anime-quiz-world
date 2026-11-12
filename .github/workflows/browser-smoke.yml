@@ -7,6 +7,7 @@ on:
       - index.html
       - recommend.html
       - scripts/browser-smoke.py
+      - scripts/test-official-site-links.mjs
       - data/anime-catalog.json
       - data/anime-catalog.json.gz
   push:
@@ -66,6 +67,14 @@ jobs:
           done
           echo "Published Anime Quiz World page is unavailable." >&2
           exit 1
+
+      - name: Set up Node.js for official-site link checks
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Test official-site link resolution and mobile navigation
+        run: node scripts/test-official-site-links.mjs
 
       - name: Set up Python
         uses: actions/setup-python@v5
