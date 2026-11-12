@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const html = await readFile("index.html", "utf8");
+const catalog = JSON.parse(await readFile("data/anime-catalog.json", "utf8"));
+assert.ok(Array.isArray(catalog.items) && catalog.items.length >= 100, "Shared anime catalogue must contain at least 100 works");
 const mapMatch = html.match(/const OFFICIAL_SITE_OVERRIDES=new Map\(\[([\s\S]*?)\]\);/);
 assert.ok(mapMatch, "Official-site override map must exist");
 const overrides = new Map(
@@ -100,4 +102,15 @@ assert.ok(
   "Featured rail must delegate to the shared official-site resolver"
 );
 
-console.log("Official anime-site link tests passed: overrides, Japanese and English labels, social filtering, disabled/streaming links, and featured rail.");
+const catalogIds = new Set(catalog.items.map((anime) => Number(anime.id)));
+for (const id of overrides.keys()) {
+  assert.ok(catalogIds.has(id), "Official-site override must reference an existing catalogue record: " + id);
+}
+const hasOfficial = (anime) => !getSearchAnimeOfficialUrl(anime).startsWith(fallback);
+const top100Missing = catalog.items.slice(0, 100).filter((anime) => !hasOfficial(anime));
+assert.equal(top100Missing.length, 0, "All top 100 popular works must have a verified official link or curated override");
+const top250Missing = catalog.items.slice(0, 250).filter((anime) => !hasOfficial(anime)).length;
+const top500Missing = catalog.items.slice(0, 500).filter((anime) => !hasOfficial(anime)).length;
+
+console.log("Official anime-site link tests passed: overrides, Japanese and English labels, social filtering, disabled/streaming links, featured rail, and catalogue coverage.");
+console.log("Official-link coverage: top 100 = 100%; top 250 unresolved = " + top250Missing + "; top 500 unresolved = " + top500Missing + ".");
