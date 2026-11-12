@@ -800,11 +800,37 @@ def test_main_navigation_and_search(browser):
     page.on("pageerror", lambda error: errors.append(str(error)))
     page.route("**/supabase-js@2*", lambda route: route.abort())
     install_routes(page)
+
+    def empty_anilist_search(route):
+        payload = route.request.post_data_json or {}
+        if (payload.get("variables") or {}).get("search"):
+            route.fulfill(
+                status=200,
+                headers={**CORS_HEADERS, "Content-Type": "application/json"},
+                body=json.dumps({"data": {"Page": {
+                    "pageInfo": {"hasNextPage": False, "totalPages": 1},
+                    "media": [],
+                }}}, ensure_ascii=False),
+            )
+        else:
+            route.fallback()
+
+    # Prove the local shared catalogue powers search when AniList has no matches.
+    page.route("https://graphql.anilist.co", empty_anilist_search)
     page.goto(f"{BASE_URL}/index.html", wait_until="domcontentloaded")
     page.locator("#start").wait_for(state="visible", timeout=60000)
 
     page.locator("#searchTab").click()
     assert page.locator("#search").is_visible(), "Search tab must open the search panel"
+    page.evaluate("""() => {
+      sharedSearchCatalogCache = [{
+        id: 990001, countryOfOrigin: "JP", source: "ORIGINAL", originVerified: true,
+        isAdult: false, format: "TV", popularity: 100,
+        title: { native: "共有カタログ専用検索作品", english: "Local Catalogue Search Fixture", romaji: "Local Catalogue Search Fixture" },
+        synonyms: ["共有カタログ略称"],
+        coverImage: { large: "https://example.test/cover.jpg" }, genres: []
+      }];
+    }""")
     dedupe_ids = page.evaluate("""() => {
       const make = (id, native, english, year, format, popularity) => ({
         id, countryOfOrigin: "JP", source: "ORIGINAL", originVerified: true,
@@ -851,10 +877,13 @@ def test_main_navigation_and_search(browser):
         "Japanese synopsis overrides must also resolve supported sequel/part title variants: "
         + sequel_synopsis
     )
-    page.locator("#query").fill("作品A")
+    page.locator("#query").fill("共有カタログ専用検索作品")
     page.locator("#searchButton").click()
     page.locator("#results .anime").first.wait_for(state="visible", timeout=20000)
     assert page.locator("#results .anime").count() > 0, "Search must render matching anime cards"
+    assert page.locator("#results .anime strong").first.inner_text() == "共有カタログ専用検索作品", (
+        "Search must find a title that exists only in the shared catalogue when AniList returns no matches"
+    )
 
     page.locator("#progressTab").click()
     assert page.locator("#progressPanel").is_visible(), "Progress tab must open the achievements panel"
