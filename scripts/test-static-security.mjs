@@ -75,14 +75,13 @@ assert.match(aqwHtml, /id="aqwMatchProfilePanel"/, "The signed-in profile must i
 assert.match(aqwHtml, /id="aqwMatchProfileStats"/, "The match profile must display summary statistics");
 assert.match(aqwHtml, /id="aqwMatchProfileHistory"/, "The match profile must display recent match history");
 const matchProfileStart = aqwHtml.indexOf("async function loadMyMatchProfile()");
-const matchProfileEnd = aqwHtml.indexOf("\\nfunction avatarPublicUrl", matchProfileStart);
+const matchProfileEnd = aqwHtml.indexOf("\nfunction avatarPublicUrl", matchProfileStart);
 assert.ok(matchProfileStart >= 0 && matchProfileEnd > matchProfileStart, "The match profile loader must exist");
 const matchProfileSource = aqwHtml.slice(matchProfileStart, matchProfileEnd);
-assert.match(matchProfileSource, /sb\\.rpc\\('aqw_match_history',\\{p_limit:10\\}\\)/, "The profile must load the authenticated user's match history RPC");
+assert.ok(matchProfileSource.includes("sb.rpc('aqw_match_history',{p_limit:10})"), "The profile must load the authenticated user's match history RPC");
 assert.doesNotMatch(matchProfileSource, /innerHTML/, "Match history must be rendered with safe DOM text APIs");
-assert.match(aqwHtml, /loadFriends\\(\\),updateNotificationCount\\(\\),loadMyMatchProfile\\(\\)/, "The match profile must load when the user signs in");
-assert.match(aqwHtml, /aqwRefreshMatchProfile'\\)\\.addEventListener\\('click',loadMyMatchProfile\\)/, "The match profile must support manual refresh");
-
+assert.ok(aqwHtml.includes("loadFriends(),updateNotificationCount(),loadMyMatchProfile()"), "The match profile must load when the user signs in");
+assert.ok(aqwHtml.includes("$s('aqwRefreshMatchProfile').addEventListener('click',loadMyMatchProfile)"), "The match profile must support manual refresh");
 
 assert.match(aqwHtml, /id="aqwBlockFriend"/, "The chat must expose a block action");
 assert.match(aqwHtml, /id="aqwReportFriend"/, "The chat must expose a user-report action");
