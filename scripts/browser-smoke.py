@@ -270,7 +270,8 @@ def test_live_quiz_preparation_performance(browser):
     page.wait_for_function(
         """() => {
           const button = document.querySelector('#start');
-          return button && !button.classList.contains('hidden') && !button.disabled;
+          return button && !button.classList.contains('hidden') && !button.disabled
+            && button.textContent.includes('クイズを開始');
         }""",
         timeout=120000,
     )
