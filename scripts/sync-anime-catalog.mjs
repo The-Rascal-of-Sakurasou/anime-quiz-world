@@ -58,7 +58,7 @@ function isUsableAnime(anime) {
     anime.isAdult !== true &&
     isJapaneseOriginAnime(anime) &&
     /^https?:\/\//i.test(String(image)) &&
-    !/(?:no[-_ ]?image|placeholder|default[-_ ]?image)/i.test(String(image)) &&
+    !/(?:no[-_ ]?image|placeholder|default[-_ ]?image|(?:^|\\/)default(?:\\.[a-z0-9]+)?(?:[?#]|$))/i.test(String(image)) &&
     (anime.title?.native || anime.title?.english || anime.title?.romaji) &&
     FORMATS.includes(anime.format) &&
     !(anime.genres || []).includes('Hentai')
