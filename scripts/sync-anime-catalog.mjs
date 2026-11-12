@@ -241,7 +241,7 @@ async function scanDateRanges(format, sort) {
 
 if (CURATED_ANIME_IDS.length) {
   const ids = CURATED_ANIME_IDS.join(',');
-  const query = 'query { Media(id_in:[' + ids + '], type:ANIME, isAdult:false) { ' + FIELDS + ' } }';
+  const query = 'query { Page(page:1,perPage:10) { media(id_in:[' + ids + '], type:ANIME, isAdult:false) { ' + FIELDS + ' } } }';
   await sleep(1200);
   const response = await fetch(API, {
     method: 'POST',
@@ -252,7 +252,7 @@ if (CURATED_ANIME_IDS.length) {
   if (!response.ok) throw new Error('AniList curated-record HTTP ' + response.status);
   const json = await response.json();
   if (json.errors?.length) throw new Error(json.errors.map((item) => item.message).join('; '));
-  const curated = normalize(json.data?.Media || []);
+  const curated = normalize(json.data?.Page?.media || []);
   for (const anime of curated) {
     // Japanese origin is independently confirmed by the publisher's official anime page.
     // The regular image, title, format, and adult-content checks still apply.
