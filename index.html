@@ -1746,7 +1746,46 @@ function titleCharacterChoiceRecordsForAnime(anime,correctRecord){
 }function characterChoiceOptions(correctRecord,imageAnswers){const anime=pool.find(item=>Number(item.id)===Number(correctRecord?.animeId));return shuffle(characterChoiceRecordsForAnime(anime,correctRecord,imageAnswers))}
 function typedTitleMaxLength(){return ({ja:25,en:60,ko:30,zh:20,es:60,fr:60,pt:60,de:60}[lang]||60)}function typedTitleEligible(a){return [...String(titleOf(a)||'').trim()].length<=typedTitleMaxLength()}
 let questionChoiceSummaryCache=null;
-function questionChoiceSummary(){const key=lang+'|'+pool.length+'|'+(pool[0]?.id||'');if(questionChoiceSummaryCache?.key===key&&questionChoiceSummaryCache.pool===pool)return questionChoiceSummaryCache.value;const tierPool=pool.filter(item=>titleUsable(item)),titleKeys=new Set(tierPool.map(item=>normalizeAnswer(titleOf(item))).filter(Boolean)),titleChoiceRecords=new Map(),titleAliasOwners=new Map(),aliasAnimeOwners=new Map(),tierStudioKeys=new Set(tierPool.flatMap(item=>item.studios?.nodes?.map(n=>n.name)||[]).map(normalizeAnswer).filter(Boolean)),studioKeys=tierStudioKeys,yearKeys=new Set(tierPool.map(animeYear).filter(year=>Number.isInteger(year)&&year>1900).map(String)),characterNameKeys=new Set(),characterNamesByAnime=new Map(),characterRecordList=characterRecords(tierPool),synopsisKeys=new Set();for(const item of tierPool){const primaryKey=normalizeAnswer(titleOf(item));if(primaryKey){const aliasKeys=new Set([...titleAnswerVariants(item),...aliasCandidates(item)].map(normalizeAnswer).filter(Boolean));aliasKeys.add(primaryKey);if(!titleChoiceRecords.has(primaryKey))titleChoiceRecords.set(primaryKey,{id:Number(item.id),aliasKeys});for(const alias of aliasKeys){if(!titleAliasOwners.has(alias))titleAliasOwners.set(alias,new Set());titleAliasOwners.get(alias).add(primaryKey);if(!aliasAnimeOwners.has(alias))aliasAnimeOwners.set(alias,new Set());aliasAnimeOwners.get(alias).add(Number(item.id))}}for(const name of characterNames(item)){const k=normalizeAnswer(name);if(k)characterNameKeys.add(k)}if(hasUsableSynopsis(item)){const k=normalizeAnswer(synopsisText(item));if(k)synopsisKeys.add(k)}}for(const record of characterRecordList){const animeIds=record.animeIds?.size?[...record.animeIds]:[Number(record.animeId)||0];for(const animeId of animeIds){if(!characterNamesByAnime.has(animeId))characterNamesByAnime.set(animeId,new Set());characterNamesByAnime.get(animeId).add(normalizeAnswer(record.name))}}const characterNameAnimeCounts=new Map();for(const names of characterNamesByAnime.values())for(const name of names)if(name)characterNameAnimeCounts.set(name,(characterNameAnimeCounts.get(name)||0)+1);const characterNameCounts=new Map();for(const record of characterRecordList){const nameKey=normalizeAnswer(record.name);if(nameKey)characterNameCounts.set(nameKey,(characterNameCounts.get(nameKey)||0)+1)}const uniqueCharacterNameKeys=new Set([...characterNameCounts].filter(([,count])=>count===1).map(([name])=>name));const uniqueCharacterRecords=characterRecordList.filter(record=>uniqueCharacterNameKeys.has(normalizeAnswer(record.name)));const synopsisCandidates=tierPool.filter(hasUsableSynopsis);const value={titleKeys,titleChoiceRecords,titleAliasOwners,aliasAnimeOwners,tierStudioKeys,studioKeys,yearKeys,characterNameKeys,characterNamesByAnime,characterNameAnimeCounts,characterNameCounts,uniqueCharacterNameKeys,uniqueCharacterRecords,synopsisCandidates,synopsisKeys};questionChoiceSummaryCache={key,pool,value};return value}
+function questionChoiceSummary(){
+ const key=lang+'|'+pool.length+'|'+(pool[0]?.id||'');
+ if(questionChoiceSummaryCache?.key===key&&questionChoiceSummaryCache.pool===pool)return questionChoiceSummaryCache.value;
+ const tierPool=pool.filter(item=>titleUsable(item));
+ const titleKeys=new Set(tierPool.map(item=>normalizeAnswer(titleOf(item))).filter(Boolean));
+ const titleChoiceRecords=new Map(),titleAliasOwners=new Map(),aliasAnimeOwners=new Map();
+ const tierStudioKeys=new Set(tierPool.flatMap(item=>item.studios?.nodes?.map(node=>node.name)||[]).map(normalizeAnswer).filter(Boolean));
+ const yearKeys=new Set(tierPool.map(animeYear).filter(year=>Number.isInteger(year)&&year>1900).map(String));
+ const synopsisKeys=new Set();
+ for(const item of tierPool){
+  const primaryKey=normalizeAnswer(titleOf(item));
+  if(primaryKey){
+   const aliasKeys=new Set([...titleAnswerVariants(item),...aliasCandidates(item)].map(normalizeAnswer).filter(Boolean));
+   aliasKeys.add(primaryKey);
+   if(!titleChoiceRecords.has(primaryKey))titleChoiceRecords.set(primaryKey,{id:Number(item.id),aliasKeys});
+   for(const alias of aliasKeys){
+    if(!titleAliasOwners.has(alias))titleAliasOwners.set(alias,new Set());
+    titleAliasOwners.get(alias).add(primaryKey);
+    if(!aliasAnimeOwners.has(alias))aliasAnimeOwners.set(alias,new Set());
+    aliasAnimeOwners.get(alias).add(Number(item.id));
+   }
+  }
+  if(hasUsableSynopsis(item)){
+   const key=normalizeAnswer(synopsisText(item));
+   if(key)synopsisKeys.add(key);
+  }
+ }
+ // Legacy character helpers remain harmlessly empty; the active quiz menu
+ // uses only synopsis, title-year, alias and title-studio questions.
+ const value={
+  titleKeys,titleChoiceRecords,titleAliasOwners,aliasAnimeOwners,
+  tierStudioKeys,studioKeys:tierStudioKeys,yearKeys,
+  characterNameKeys:new Set(),characterNamesByAnime:new Map(),
+  characterNameAnimeCounts:new Map(),characterNameCounts:new Map(),
+  uniqueCharacterNameKeys:new Set(),uniqueCharacterRecords:[],
+  synopsisCandidates:tierPool.filter(hasUsableSynopsis),synopsisKeys
+ };
+ questionChoiceSummaryCache={key,pool,value};
+ return value;
+}
 
 // Build the shared choice index in bounded chunks so a large catalogue cannot
 // monopolize the main thread while the page is opening or a quiz is starting.
@@ -1759,8 +1798,7 @@ async function ensureQuestionChoiceSummaryAsync(){
   const tierPool=sourcePool.filter(item=>titleUsable(item));
   const titleKeys=new Set(tierPool.map(item=>normalizeAnswer(titleOf(item))).filter(Boolean));
   const titleChoiceRecords=new Map(),titleAliasOwners=new Map(),aliasAnimeOwners=new Map();
-  const tierStudioKeys=new Set(),yearKeys=new Set(),characterNameKeys=new Set(),characterNamesByAnime=new Map(),synopsisKeys=new Set();
-  const characterRecordMap=new Map(),synopsisCandidates=[];
+  const tierStudioKeys=new Set(),yearKeys=new Set(),synopsisKeys=new Set(),synopsisCandidates=[];
   for(let i=0;i<tierPool.length;i++){
    const item=tierPool[i],primaryKey=normalizeAnswer(titleOf(item));
    if(primaryKey){
@@ -1774,34 +1812,27 @@ async function ensureQuestionChoiceSummaryAsync(){
      aliasAnimeOwners.get(alias).add(Number(item.id));
     }
    }
-   for(const node of item?.studios?.nodes||[]){const name=String(node?.name||'').trim(),key=normalizeAnswer(name);if(key)tierStudioKeys.add(key)}
-   const year=animeYear(item);if(Number.isInteger(year)&&year>1900)yearKeys.add(String(year));
-   for(const name of characterNames(item)){const key=normalizeAnswer(name);if(key)characterNameKeys.add(key)}
-   for(const character of item?.characters?.nodes||[]){
-    const name=characterDisplayName(character),image=character?.image?.large||'',id=Number(character?.id)||0,animeId=Number(item.id)||0;
-    if(!name||!hasUsableImageUrl(image))continue;
-    const recordKey=id?'id:'+id:'name:'+normalizeAnswer(name)+'|'+image;
-    if(!characterRecordMap.has(recordKey))characterRecordMap.set(recordKey,{id,name,image,animeId,animeIds:new Set(animeId?[animeId]:[])});
-    else if(animeId)characterRecordMap.get(recordKey).animeIds.add(animeId);
+   for(const node of item?.studios?.nodes||[]){
+    const name=String(node?.name||'').trim(),studioKey=normalizeAnswer(name);
+    if(studioKey)tierStudioKeys.add(studioKey);
    }
-   if(hasUsableSynopsis(item)){const key=normalizeAnswer(synopsisText(item));if(key)synopsisKeys.add(key);synopsisCandidates.push(item)}
+   const year=animeYear(item);
+   if(Number.isInteger(year)&&year>1900)yearKeys.add(String(year));
+   if(hasUsableSynopsis(item)){
+    const synopsisKey=normalizeAnswer(synopsisText(item));
+    if(synopsisKey)synopsisKeys.add(synopsisKey);
+    synopsisCandidates.push(item);
+   }
    if((i+1)%64===0&&i+1<tierPool.length)await new Promise(resolve=>setTimeout(resolve,0));
   }
-  const characterRecordList=[...characterRecordMap.values()];
-  for(const record of characterRecordList){
-   const animeIds=record.animeIds?.size?[...record.animeIds]:[Number(record.animeId)||0];
-   for(const animeId of animeIds){
-    if(!characterNamesByAnime.has(animeId))characterNamesByAnime.set(animeId,new Set());
-    characterNamesByAnime.get(animeId).add(normalizeAnswer(record.name));
-   }
-  }
-  const characterNameAnimeCounts=new Map();
-  for(const names of characterNamesByAnime.values())for(const name of names)if(name)characterNameAnimeCounts.set(name,(characterNameAnimeCounts.get(name)||0)+1);
-  const characterNameCounts=new Map();
-  for(const record of characterRecordList){const key=normalizeAnswer(record.name);if(key)characterNameCounts.set(key,(characterNameCounts.get(key)||0)+1)}
-  const uniqueCharacterNameKeys=new Set([...characterNameCounts].filter(([,count])=>count===1).map(([name])=>name));
-  const uniqueCharacterRecords=characterRecordList.filter(record=>uniqueCharacterNameKeys.has(normalizeAnswer(record.name)));
-  const value={titleKeys,titleChoiceRecords,titleAliasOwners,aliasAnimeOwners,tierStudioKeys,studioKeys:tierStudioKeys,yearKeys,characterNameKeys,characterNamesByAnime,characterNameAnimeCounts,characterNameCounts,uniqueCharacterNameKeys,uniqueCharacterRecords,synopsisCandidates,synopsisKeys};
+  const value={
+   titleKeys,titleChoiceRecords,titleAliasOwners,aliasAnimeOwners,
+   tierStudioKeys,studioKeys:tierStudioKeys,yearKeys,
+   characterNameKeys:new Set(),characterNamesByAnime:new Map(),
+   characterNameAnimeCounts:new Map(),characterNameCounts:new Map(),
+   uniqueCharacterNameKeys:new Set(),uniqueCharacterRecords:[],
+   synopsisCandidates,synopsisKeys
+  };
   if(pool===sourcePool)questionChoiceSummaryCache={key,pool:sourcePool,value};
   return value;
  })();
