@@ -17,7 +17,7 @@ for (const match of html.matchAll(/actualMode\s*=\s*['"]([A-Za-z]+)['"]/g)) {
 assert.ok(emitted.size > 0, 'No question modes were found in index.html');
 
 // Extract the SQL allowlist from the validation expression.
-const allowlistMatch = migration.match(/questionMode'\)\s+NOT IN\s*\(([\s\S]*?)\)/);
+const allowlistMatch = migration.match(/v_attempt->>'questionMode'\s+NOT IN\s*\(([\s\S]*?)\)/);
 assert.ok(allowlistMatch, 'Could not find the questionMode allowlist in the migration.');
 const accepted = new Set(
   [...allowlistMatch[1].matchAll(/'([A-Za-z]+)'/g)].map((match) => match[1]),
