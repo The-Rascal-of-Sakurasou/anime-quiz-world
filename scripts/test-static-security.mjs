@@ -525,7 +525,12 @@ assert.match(index, /await new Promise\(resolve=>setTimeout\(resolve,0\)\)/, "Ca
 assert.match(index, /pending\.pool===sourcePool&&pending\.length===sourceLength&&pending\.revision===sourceRevision/, "In-flight candidate work must not be reused after catalogue or difficulty changes");
 assert.match(index, /function scheduleEligibleCandidatePrewarm\(\)/, "Idle-time candidate prewarming must be available");
 assert.match(index, /requestIdleCallback\(run,\{timeout:\d+\}\)/, "Candidate prewarming must use browser idle time with a bounded timeout when available");
-assert.match(index, /const candidates=\[\.\.\.\(await aqwMeasurePreparationStage\('候補プール取得',\(\)=>getEligibleCandidatePoolAsync\(mode,format,ignoreDifficulty\)\)\)\]/, "Quiz start must await the shared chunked candidate builder through the preparation-stage profiler");
+assert.match(index, /async function hasAnyQuestionMode\(a,format=/, "Mixed mode must short-circuit once an eligible question type is found");
+assert.match(index, /const candidates=\[\.\.\.\(cached\|\|sourcePool\)\]/, "Quiz start must sample from the ready cache or source catalogue without waiting for a full filtered catalogue");
+assert.match(index, /for\(let i=0;i<candidates\.length&&eligible\.length<target;i\+\+\)/, "Initial quiz selection must stop as soon as the requested question count is reached");
+assert.match(index, /const hasQuestion=mode==='mixed'\?hasAnyQuestionMode\(anime,format\)/, "Mixed-mode candidate selection must use the short-circuit eligibility helper");
+assert.match(index, /eligibleCandidatePrewarmToken\+\+/, "Starting a quiz must cancel idle candidate prewarming");
+assert.match(index, /if\(document\.body\.classList\.contains\('quiz-active'\)\)return \[\]/, "Background candidate prewarming must yield to an active quiz");
 
 const titleChoiceBuilder = index.match(/function titleChoiceRecordsForAnime\(a\)\{[^\n]*\}/)?.[0];
 assert.ok(titleChoiceBuilder, "Bounded title-choice builder must exist");
