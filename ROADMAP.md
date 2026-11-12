@@ -33,6 +33,14 @@ Tracking issue: https://github.com/The-Rascal-of-Sakurasou/anime-quiz-world/issu
 - [x] Separate 1v1 leaderboard (respects the existing profile visibility setting; wins, win rate, and match count)
 - [ ] Full match test with two or more real accounts
 
+## P0 — Solo and Speed Rush leaderboard integrity
+- [ ] Replace client-trusted solo quiz scores with server-issued run sessions and server-verified answer submissions.
+- [ ] Calculate XP and correctness on the server; do not trust client-supplied `correctCount`, `xpMultiplier`, or `questionResults`.
+- [ ] Derive Speed Rush elapsed time from a server-side session instead of trusting client-supplied `elapsed_ms`.
+- [ ] Reject incomplete or empty per-question result payloads for leaderboard submissions.
+- [ ] Keep browser-local progress separate from verified online ranking records.
+- Current limitation: the existing RPCs validate input ranges and some internal consistency, but a signed-in client can still fabricate the reported results. This is not a fully cheat-resistant leaderboard.
+
 ## P1 — Social integration
 - [ ] Invite existing friends (reuse mutual follows)
 - [ ] Match invitation and reconnect notifications
