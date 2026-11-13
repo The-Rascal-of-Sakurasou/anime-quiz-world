@@ -18,7 +18,8 @@ button,a,input,select,textarea{touch-action:manipulation}
   button{min-height:44px;padding:10px 13px}
   table{max-width:100%}
   .table-wrap{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .quiz-layout,.social-columns,.grid,.steps{grid-template-columns:minmax(0,1fr)}
+  .quiz-layout,.social-columns,.steps{grid-template-columns:minmax(0,1fr)}
+  .grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))}
   .metrics,.aqw-match-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
   .tabs,.jump,.page-nav,.footer-links,.doc-footer nav{max-width:100%;overflow-x:auto;flex-wrap:nowrap;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;padding-bottom:4px}
   .tabs>* ,.jump>* ,.page-nav>*{flex:0 0 auto;white-space:nowrap}
