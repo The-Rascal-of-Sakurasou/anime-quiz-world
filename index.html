@@ -3,7 +3,6 @@
 <head>
 <meta name="aqw-build-marker" content="aqw-public-smoke-2026-11-12-v1">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="stylesheet" href="./responsive.css">
 <meta name="referrer" content="no-referrer">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://graphql.anilist.co; form-action 'self' https://*.supabase.co; upgrade-insecure-requests">
 <meta name="theme-color" content="#f5f6f8">
@@ -657,6 +656,7 @@ body.quiz-preparing #quizStatus:before{content:"";display:inline-block;width:22p
 @media(max-width:700px){body.quiz-active #quiz{padding:12px!important;padding-top:max(12px,env(safe-area-inset-top))!important;padding-bottom:max(12px,env(safe-area-inset-bottom))!important}body.quiz-active #quizArea{grid-template-columns:minmax(0,1fr)!important;gap:12px;min-height:0;margin-top:10px}body.quiz-active #cover{width:100%;max-width:100%;height:auto;max-height:min(65dvh,720px);min-height:160px;object-fit:contain;object-position:center;margin-inline:auto}body.quiz-active #answerPrompt{margin:10px 0;font-size:1rem}body.quiz-active #answers{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px}body.quiz-active #answers .answer{min-height:54px;padding:10px 8px;font-size:.94rem}body.quiz-active .game-tools{margin:8px 0}}
 @media(max-width:380px){body.quiz-active #answers{grid-template-columns:minmax(0,1fr)!important}}
 </style>
+ <link rel="stylesheet" href="./responsive.css">
 </head>
 <body><a class="skip-link" href="#quiz">クイズへ移動</a><div id="app" class="wrap">
 <header class="top"><div class="brand-area"><button type="button" class="brand-home" id="homeLogo" aria-label="AQW Home" title="AQW Home"><svg class="aqw-logo" viewBox="0 0 100 100" role="img" aria-label="AQW"><rect x="2" y="2" width="96" height="96" fill="#064675"/><text x="50" y="64" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="34" font-weight="800" font-style="italic" letter-spacing="-1" textLength="80" lengthAdjust="spacingAndGlyphs" fill="#fff">AQW</text></svg></button><div><div class="brand">Anime Quiz <span>World</span></div><div class="tag" id="tagline">アニメ好きのためのクイズ</div></div></div><div class="top-actions"><label class="language-picker" for="languageSelect"><span id="languageLabel">Language</span> <select id="languageSelect" aria-label="Display language" onchange="selectLanguage(this.value)"><option value="ja">日本語</option><option value="en">English</option><option value="ko">한국어</option><option value="zh">简体中文</option><option value="es">Español</option><option value="fr">Français</option><option value="pt">Português</option><option value="de">Deutsch</option></select></label></div></header>
