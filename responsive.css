@@ -1,0 +1,72 @@
+/* Shared responsive layer for every Anime Quiz World page.
+   Kept separate so mobile fixes stay consistent without changing page logic. */
+:root{scroll-behavior:smooth}
+html{max-width:100%;overflow-x:clip;-webkit-text-size-adjust:100%;text-size-adjust:100%;scroll-padding-top:16px}
+body{max-width:100%;overflow-x:clip}
+img,video,canvas,svg{max-width:100%}
+button,a,input,select,textarea{-webkit-tap-highlight-color:transparent}
+button,a,input,select,textarea{touch-action:manipulation}
+:focus-visible{outline:3px solid #7da4dc;outline-offset:2px}
+@media(max-width:768px){
+  .wrap{width:calc(100% - 28px);max-width:100%}
+  main{min-width:0}
+  header{gap:10px}
+  .card,.panel,.social-box,.auth-panel,.step,.metric,.post{min-width:0}
+  .row,.head,.room-head,.post-head{min-width:0}
+  .row>*{max-width:100%}
+  input,select,textarea{max-width:100%;font-size:16px}
+  button{min-height:44px;padding:10px 13px}
+  table{max-width:100%}
+  .table-wrap{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .quiz-layout,.social-columns,.grid,.steps{grid-template-columns:minmax(0,1fr)}
+  .metrics,.aqw-match-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .tabs,.jump,.page-nav,.footer-links,.doc-footer nav{max-width:100%;overflow-x:auto;flex-wrap:nowrap;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;padding-bottom:4px}
+  .tabs>* ,.jump>* ,.page-nav>*{flex:0 0 auto;white-space:nowrap}
+  .searchbar{min-width:0}
+  .searchbar input{min-width:0;width:100%}
+  .auth-grid{grid-template-columns:minmax(0,1fr)}
+  .game-tools,.share-actions,.auth-actions,.form-actions,.actions{gap:8px}
+  .game-tools>button,.share-actions>button,.auth-actions>button,.form-actions>button,.actions>button{flex:1 1 135px}
+  .answer{width:100%;min-height:48px}
+  .cover{width:100%;max-width:100%;max-height:min(48vh,360px);object-fit:contain}
+  .anime img{height:clamp(150px,52vw,230px)}
+  .aqw-post-image{max-width:100%;height:auto}
+  .aqw-player-cell{min-width:0}
+  .aqw-notification span{min-width:0}
+  .aqw-reply-form{min-width:0}
+  .room-code{font-size:clamp(1.4rem,8vw,2.2rem);letter-spacing:.1em;overflow-wrap:anywhere}
+  .doc-footer{gap:10px}
+  .toc ol{columns:1}
+  footer{padding-bottom:calc(28px + env(safe-area-inset-bottom))}
+}
+@media(max-width:480px){
+  .wrap{width:calc(100% - 22px)}
+  .hero{padding-top:18px}
+  .hero h1,h1{font-size:clamp(1.4rem,7vw,1.85rem);line-height:1.35}
+  h2{font-size:1.12rem}
+  .card,.panel{padding:14px 12px}
+  .language-box{padding:20px 16px}
+  .language-options{display:grid;grid-template-columns:1fr}
+  .language-options button{width:100%}
+  .top{align-items:center;flex-wrap:wrap}
+  .top-actions{max-width:100%;flex-wrap:wrap}
+  .language-picker{max-width:100%}
+  .language-picker select{max-width:42vw}
+  .aqw-match-stat{padding:10px}
+  .aqw-match-stat strong{font-size:1.25rem}
+  .anime div{padding:9px}
+  .anime strong{font-size:.86rem}
+  .social-box{padding:12px}
+  .aqw-avatar-editor{align-items:flex-start}
+  .aqw-avatar-controls{flex-basis:100%}
+  .post-head,.aqw-post-head{align-items:flex-start}
+  .doc-footer{flex-direction:column}
+}
+@media(orientation:landscape) and (max-height:520px) and (max-width:900px){
+  .cover{max-height:55vh}
+  .hero{padding-top:12px}
+}
+@media(prefers-reduced-motion:reduce){
+  :root{scroll-behavior:auto}
+  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
