@@ -495,8 +495,10 @@ const modeSelectMarkup = index.match(/<select id="modeSelect">([\s\S]*?)<\/selec
 for (const mode of ["synopsis", "titleYear", "synonym", "titleStudio"]) {
   assert.ok(modeSelectMarkup.includes('value="' + mode + '"'), "The four requested question formats must remain selectable: " + mode);
 }
-assert.doesNotMatch(modeSelectMarkup, /value="(?:image|character|characterImage|characterNameImage|titleCharacter)"/, "Unrequested legacy question formats must not appear in the selector");
-assert.match(index, /const modes=\[\];\s*if\(titleUsable\(a\)&&a\?\.studios\?\.nodes\?\.\[0\]\?\.name\)modes\.push\('titleStudio'\)/, "Mixed mode must use only the four requested question formats");
+assert.ok(modeSelectMarkup.includes('value="image"'), "Artwork-to-title questions must be selectable");
+assert.doesNotMatch(modeSelectMarkup, /value="(?:character|characterImage|characterNameImage|titleCharacter)"/, "Unrequested character question formats must not appear in the selector");
+assert.match(index, /const modes=\[\];\s*if\(titleUsable\(a\)&&titleImageIsSafe\(a\)\)modes\.push\('image'\)/, "Mixed mode must include safe artwork-to-title questions");
+assert.match(index, /modes\.push\('titleStudio'\)/, "Mixed mode must retain title-to-studio questions");
 assert.match(index, /const hasQuestion=mode===\'mixed\'\s*\?availableQuestionModes\(anime,format\)\.length>0/, "Cached candidate building must accept mixed-mode anime with at least one valid question type");
 assert.match(index, /mode===\'mixed\'\?items\.filter\(a=>isUsableAnime\(a\)&&titleUsable\(a\)&&availableQuestionModes\(a,format\)\.length>0\)/, "Background loading in mixed mode must use the same per-anime question-type eligibility");
 assert.ok(index.includes("let modesForFormat=availableQuestionModes(a,$('#answerFormatSelect').value)"), "Question rendering must use the same available-mode calculation");
