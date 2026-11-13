@@ -112,6 +112,12 @@ footer{color:var(--muted);font-size:.85rem;padding:10px 0 30px}
 
 .site-brand-title,.site-brand-tagline{color:#fff}
 .report-content{white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;margin-top:8px;border:1px solid #c7d0db;border-radius:8px;background:#f7f9fc}.report-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.report-meta select{font:inherit;padding:7px;border:1px solid #c7d0db;border-radius:7px}.report-detail{white-space:pre-wrap;overflow-wrap:anywhere}.report-card{display:grid;gap:8px}
+
+.password-field{display:flex;align-items:stretch;gap:8px}
+.password-field input{flex:1;min-width:0}
+.password-toggle{flex:0 0 auto;min-width:72px;padding:8px 12px;border:1px solid #c7d0db;border-radius:8px;background:#f5f7fa;color:#18324b;font:inherit;cursor:pointer}
+.password-toggle:focus-visible{outline:3px solid #3978c8;outline-offset:2px}
+
 </style>
 </head>
 <body>
@@ -124,7 +130,11 @@ footer{color:var(--muted);font-size:.85rem;padding:10px 0 30px}
 <h2>管理者ログイン</h2>
 <form id="loginForm">
 <label>メールアドレス<input id="email" type="email" autocomplete="username" required maxlength="254"></label>
-<label>パスワード<input id="password" type="password" autocomplete="current-password" required maxlength="128"></label>
+<label for="password">パスワード</label>
+<div class="password-field">
+ <input id="password" type="password" autocomplete="current-password" required maxlength="128">
+ <button id="togglePassword" class="password-toggle" type="button" aria-controls="password" aria-pressed="false">表示</button>
+</div>
 <button class="primary" id="loginButton" type="submit">ログイン</button>
 </form>
 </section>
@@ -465,6 +475,13 @@ async function loadProfiles(){
   root.append(row);
  }
 }
+$('togglePassword').addEventListener('click',()=>{
+ const input=$('password');
+ const reveal=input.type==='password';
+ input.type=reveal?'text':'password';
+ $('togglePassword').textContent=reveal?'隠す':'表示';
+ $('togglePassword').setAttribute('aria-pressed',String(reveal));
+});
 $('loginForm').addEventListener('submit',async event=>{
  event.preventDefault();$('loginButton').disabled=true;say('ログインしています…');
  try{const {data,error}=await client.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;await startSession(data.session)}
