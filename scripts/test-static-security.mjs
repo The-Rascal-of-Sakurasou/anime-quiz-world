@@ -131,7 +131,7 @@ assert.match(moderationMigration, /ALTER TABLE public\.user_blocks ENABLE ROW LE
 assert.match(moderationMigration, /ALTER TABLE public\.user_reports ENABLE ROW LEVEL SECURITY/i, "Report records must have RLS enabled");
 assert.match(moderationMigration, /REVOKE ALL ON TABLE public\.user_reports FROM public, anon, authenticated/i, "Report-table access must be explicitly restricted before grants");
 assert.match(moderationMigration, /private\.is_user_blocked_between/, "Message and follow policies must enforce blocks in both directions");
-assert.match(moderationMigration, /MFA owner can review reports/, "Only an MFA-verified site owner may review reports");
+assert.match(moderationMigration, /Site owner can review reports/, "Only the registered site owner may review reports");
 
 assert.match(source.get("privacy.html"), /通報記録/, "The privacy policy must disclose moderation report data");
 assert.match(source.get("terms.html"), /虚偽通報/, "The terms must prohibit abusive or false reports");
@@ -223,8 +223,8 @@ const admin = source.get("admin.html");
 assert.match(admin, /persistSession\s*:\s*false/, "Admin session persistence must stay disabled");
 assert.match(admin, /autoRefreshToken\s*:\s*true/, "Admin token auto-refresh must stay enabled for active in-memory sessions");
 assert.match(admin, /detectSessionInUrl\s*:\s*false/, "Admin URL session detection must stay disabled");
-assert.match(admin, /aal2/, "Admin MFA assurance-level enforcement missing");
-assert.match(admin, /mfa\.verify/, "Admin TOTP verification flow missing");
+assert.doesNotMatch(admin, /aal2|mfa\.verify|mfa\.enroll|mfa\.challenge|mfaQr|mfaCard/, "Admin login must not require TOTP or QR-code enrollment");
+assert.match(admin, /signInWithPassword/, "Admin must authenticate with email and password");
 assert.match(admin, /aqw-admin-control/, "Protected admin Edge Function call missing");
 
 const multiplayer = source.get("multiplayer.html");
