@@ -29,8 +29,6 @@ Deno.serve(async (req: Request) => {
     if (userError || !userData.user) throw new Error("ログイン状態を確認できません。");
     const { data: owner, error: ownerError } = await userClient.rpc("is_site_owner");
     if (ownerError || owner !== true) throw new Error("管理者権限がありません。");
-    const { data: assurance, error: assuranceError } = await userClient.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (assuranceError || assurance.currentLevel !== "aal2") throw new Error("管理操作には認証アプリによる多要素認証が必要です。");
     const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
     const body = await req.json();
 
