@@ -131,7 +131,7 @@ assert.match(moderationMigration, /ALTER TABLE public\.user_blocks ENABLE ROW LE
 assert.match(moderationMigration, /ALTER TABLE public\.user_reports ENABLE ROW LEVEL SECURITY/i, "Report records must have RLS enabled");
 assert.match(moderationMigration, /REVOKE ALL ON TABLE public\.user_reports FROM public, anon, authenticated/i, "Report-table access must be explicitly restricted before grants");
 assert.match(moderationMigration, /private\.is_user_blocked_between/, "Message and follow policies must enforce blocks in both directions");
-assert.match(moderationMigration, /Site owner can review reports/, "Only the registered site owner may review reports");
+assert.match(moderationMigration, /MFA owner can review reports/, "The report-review policy must remain restricted to the registered owner helper");
 
 assert.match(source.get("privacy.html"), /通報記録/, "The privacy policy must disclose moderation report data");
 assert.match(source.get("terms.html"), /虚偽通報/, "The terms must prohibit abusive or false reports");
@@ -225,6 +225,11 @@ assert.match(admin, /autoRefreshToken\s*:\s*true/, "Admin token auto-refresh mus
 assert.match(admin, /detectSessionInUrl\s*:\s*false/, "Admin URL session detection must stay disabled");
 assert.doesNotMatch(admin, /aal2|mfa\.verify|mfa\.enroll|mfa\.challenge|mfaQr|mfaCard/, "Admin login must not require TOTP or QR-code enrollment");
 assert.match(admin, /signInWithPassword/, "Admin must authenticate with email and password");
+const adminAuthMigration = fs.readFileSync("supabase/migrations/20261113190000_allow_password_only_site_admin.sql", "utf8");
+assert.match(adminAuthMigration, /select private\\.is_site_owner\\(\\)/, "Admin RLS must authorize only the registered site owner");
+assert.match(adminAuthMigration, /create policy "Site owner can review reports"/, "Report review policy must reflect registered-owner authorization");
+assert.doesNotMatch(adminAuthMigration, /aal2/, "Admin database authorization must not require AAL2");
+
 assert.match(admin, /aqw-admin-control/, "Protected admin Edge Function call missing");
 
 const multiplayer = source.get("multiplayer.html");
