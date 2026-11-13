@@ -225,6 +225,9 @@ assert.match(admin, /autoRefreshToken\s*:\s*true/, "Admin token auto-refresh mus
 assert.match(admin, /detectSessionInUrl\s*:\s*false/, "Admin URL session detection must stay disabled");
 assert.doesNotMatch(admin, /aal2|mfa\.verify|mfa\.enroll|mfa\.challenge|mfaQr|mfaCard/, "Admin login must not require TOTP or QR-code enrollment");
 assert.match(admin, /signInWithPassword/, "Admin must authenticate with email and password");
+assert.match(admin, /id="togglePassword"/, "Admin password visibility control missing");
+assert.match(admin, /input\.type=reveal\?'text':'password'/, "Admin password visibility toggle must switch input type");
+assert.match(admin, /aria-pressed/, "Admin password visibility toggle must expose its state accessibly");
 const adminAuthMigration = fs.readFileSync("supabase/migrations/20261113190000_allow_password_only_site_admin.sql", "utf8");
 assert.match(adminAuthMigration, /select private\\.is_site_owner\\(\\)/, "Admin RLS must authorize only the registered site owner");
 assert.match(adminAuthMigration, /create policy "Site owner can review reports"/, "Report review policy must reflect registered-owner authorization");
