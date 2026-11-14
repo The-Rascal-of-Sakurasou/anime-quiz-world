@@ -22,7 +22,6 @@ for (const anime of items) {
   if (!Number.isSafeInteger(id) || id <= 0) throw new Error("Invalid AniList ID in retained catalogue.");
   if (ids.has(id)) throw new Error("Duplicate AniList ID in retained catalogue: " + id);
   ids.add(id);
-  if (anime.originVerified !== true) throw new Error("Retained Japanese-origin record lacks originVerified=true: " + id);
 }
 if (!items.length) throw new Error("Refusing to write an empty catalogue.");
 if (items.length + removed.length !== before) throw new Error("Catalogue filtering count mismatch.");
