@@ -1270,7 +1270,18 @@ def test_recommendation_diagnosis(browser):
     for step in range(question_count):
         choices = page.locator("#choices button.choice")
         choices.first.wait_for(state="visible", timeout=10000)
-        assert choices.count() == 4, f"Question {step + 1} must have four choices"
+        assert choices.count() == 6, f"Question {step + 1} must have four answers plus unknown and free-text options"
+        if step == 0:
+            choices.nth(4).click()
+            assert page.locator("#next").is_enabled(), "Unknown answer must not require free text"
+            choices.nth(5).click()
+            assert page.locator("#questionOtherWrap").is_visible(), "Other answer must reveal its free-text field"
+            page.locator("#questionOtherText").fill("SFとミステリー")
+            assert page.locator("#next").is_enabled(), "Other answer must accept non-empty free text"
+            choices.nth(5).click()
+            assert page.locator("#questionOtherText").input_value() == "SFとミステリー", "Free-text answer must persist when revisiting the option"
+            choices.nth(4).click()
+            assert not page.locator("#questionOtherWrap").is_visible(), "Unknown answer must hide the free-text field"
         choices.first.click()
         page.locator("#next").click()
         if step + 1 < question_count:
