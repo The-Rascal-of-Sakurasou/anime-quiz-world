@@ -738,6 +738,7 @@ body.quiz-preparing #quizStatus:before{content:"";display:inline-block;width:22p
 </div>
 
 <script src="./anime-origin-policy.js"></script>
+<script src="./anime-text-utils.js"></script>
 <script>
 const isJapaneseOriginAnime = window.AQWAnimePolicy.isJapaneseOriginAnime;
 const safeStorage={
@@ -1898,7 +1899,7 @@ $('#difficultySelect')?.addEventListener('change',updateDifficultyUI);
 $('#playMode')?.addEventListener('change',updateQuestionCountUI);
 $('#questionCount')?.addEventListener('change',()=>{const input=$('#questionCount');const value=Number(input.value);input.value=String(Number.isFinite(value)?Math.min(10000,Math.max(1,Math.floor(value))):10);const preset=$('#questionCountPreset');if(preset)preset.value=['5','10','20','50','100','200','500','1000','5000','10000'].includes(input.value)?input.value:'custom'});
 updateQuestionCountUI();
-function synopsisText(a){const s=descriptionOf(a);return s.length>260?s.slice(0,257).trimEnd()+'…':s}
+function synopsisText(a){return window.AQWAnimeText.truncateSynopsisText(descriptionOf(a))}
 function hasUsableSynopsis(a){
  const s=descriptionOf(a);
  if(s.length<45||/^(no synopsis|no description|not available|tba|unknown|未定|あらすじなし|情報なし)\.?$/i.test(s.trim()))return false;
