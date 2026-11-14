@@ -19,6 +19,8 @@ for (const file of frontendFiles) {
 }
 
 const adminFunctionPath = "supabase/functions/aqw-admin-control/index.ts";
+const adminConfig = fs.readFileSync("supabase/config.toml", "utf8");
+assert.match(adminConfig, /\[functions\.aqw-admin-control\][\s\S]*?verify_jwt = true/, "Admin-control Edge Function must explicitly require JWT verification");
 assert.ok(fs.existsSync(adminFunctionPath), "Admin-control Edge Function source is missing");
 const adminFunction = fs.readFileSync(adminFunctionPath, "utf8");
 assert.match(adminFunction, /userClient\.auth\.getUser\(token\)/, "Admin-control must validate the bearer token with Supabase Auth");
