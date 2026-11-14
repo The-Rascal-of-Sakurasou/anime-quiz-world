@@ -1146,7 +1146,9 @@ def test_recommendation_diagnosis(browser):
     context = browser.new_context(viewport={"width": 1280, "height": 900}, locale="ja-JP")
     page = context.new_page()
     errors = []
+    console_errors = []
     page.on("pageerror", lambda error: errors.append(str(error)))
+    page.on("console", lambda message: console_errors.append(message.text) if message.type == "error" else None)
     install_routes(page)
 
     page.goto(f"{BASE_URL}/recommend.html", wait_until="domcontentloaded")
@@ -1159,7 +1161,23 @@ def test_recommendation_diagnosis(browser):
 
     for step in range(question_count):
         choices = page.locator("#choices button.choice")
-        choices.first.wait_for(state="visible", timeout=10000)
+        try:
+            choices.first.wait_for(state="visible", timeout=10000)
+        except Exception as error:
+            state = page.evaluate("""() => ({
+              stepLabel: document.querySelector('#stepLabel')?.textContent,
+              diagnosisHidden: document.querySelector('#diagnosis')?.classList.contains('hidden'),
+              choicesCount: document.querySelectorAll('#choices button.choice').length,
+              choicesDisplay: getComputedStyle(document.querySelector('#choices')).display,
+              errorText: document.querySelector('#error')?.textContent,
+              loadedScripts: [...document.scripts].map(script => script.src).filter(Boolean)
+            })""")
+            raise AssertionError(
+                f"Recommendation question {step + 1} did not render: "
+                + json.dumps(state, ensure_ascii=False)
+                + "; page errors: " + " | ".join(errors)
+                + "; console errors: " + " | ".join(console_errors)
+            ) from error
         assert choices.count() == 4, f"Question {step + 1} must have four choices"
         choices.first.click()
         page.locator("#next").click()
