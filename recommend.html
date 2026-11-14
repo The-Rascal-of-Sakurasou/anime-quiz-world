@@ -133,17 +133,21 @@ body{background:#f6f7f9;color:#202936;letter-spacing:.005em}
 <section class="hero"><div class="eyebrow">ANIME RECOMMENDATION ANALYSIS</div><h1>あなたに合うアニメを分析</h1><p>好きなジャンルだけでなく、物語の展開・雰囲気・作品の長さなどから好みの傾向を分析し、次に見る候補を提案します。20問の質問に回答すると、好みに合う作品を提案します。好きな作品・苦手な作品も任意で入力できます。</p></section>
 <main class="panel" id="mainContent" tabindex="-1">
 <div id="diagnosis">
+<div id="questionStep">
 <div class="progress" aria-label="診断の進行状況"><div id="progressBar"></div></div>
 <div class="question"><div class="eyebrow" id="stepLabel">QUESTION 1 / 20</div><h2 id="questionTitle">どんなジャンルのアニメが見たい？</h2><p id="questionHelp">今見たいジャンルを1つ選んでください。</p></div>
 <div class="choices" id="choices" aria-label="回答の選択肢"></div>
-<details class="free-text-details"><summary>追加の自由記述・好きな作品の入力（任意）</summary><div class="free-text-inner"><section class="free-text-topics" aria-labelledby="freeTextHeading"><h3 id="freeTextHeading">トピック別に好みを伝える</h3><p>20問への回答とは別に、自由な文章で好みを伝えられます。入力は任意で、空欄でも診断できます。</p><div class="free-topic-grid"><label>見たい作品・要素<textarea id="wantText" maxlength="500" rows="3" placeholder="例：伏線が多く、先の読めない展開。SFや時間を扱う物語。"></textarea></label><label>避けたい作品・要素<textarea id="avoidText" maxlength="500" rows="3" placeholder="例：恋愛が中心の作品、日常描写が長く続く作品。"></textarea></label><label>作品の好み・補足<textarea id="preferenceText" maxlength="700" rows="4" placeholder="例：好きな作品のどこが好きか、重視する演出、希望する雰囲気など。"></textarea></label></div><p class="save-note">作品データのジャンル・タグと照合できた表現を反映します。意味を正確に読み取れない表現は推測で加点・減点しません。</p></section><div class="preference-inputs" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:22px">
+</div>
+<section id="additionalPreferences" class="free-text-details hidden" aria-labelledby="additionalPreferencesTitle">
+<h2 id="additionalPreferencesTitle">追加の希望を伝える（任意）</h2>
+<p>20問への回答が終わりました。ここでは質問の選択肢とは別に、自由な文章で好みを伝えられます。入力せずに診断することもできます。</p><div class="free-text-inner"><section class="free-text-topics" aria-labelledby="freeTextHeading"><h3 id="freeTextHeading">トピック別に好みを伝える</h3><p>20問への回答とは別に、自由な文章で好みを伝えられます。入力は任意で、空欄でも診断できます。</p><div class="free-topic-grid"><label>見たい作品・要素<textarea id="wantText" maxlength="500" rows="3" placeholder="例：伏線が多く、先の読めない展開。SFや時間を扱う物語。"></textarea></label><label>避けたい作品・要素<textarea id="avoidText" maxlength="500" rows="3" placeholder="例：恋愛が中心の作品、日常描写が長く続く作品。"></textarea></label><label>作品の好み・補足<textarea id="preferenceText" maxlength="700" rows="4" placeholder="例：好きな作品のどこが好きか、重視する演出、希望する雰囲気など。"></textarea></label></div><p class="save-note">作品データのジャンル・タグと照合できた表現を反映します。意味を正確に読み取れない表現は推測で加点・減点しません。</p></section><div class="preference-inputs" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:22px">
 <label style="display:block;font-weight:700;font-size:.92rem">好きなアニメ（任意）
 <input id="favoriteTitles" type="text" maxlength="180" placeholder="例：作品A、作品B" style="display:block;width:100%;margin-top:6px;padding:11px;border:1px solid var(--line);border-radius:8px;font:inherit;font-weight:400">
 <small style="color:var(--muted);font-weight:400">最大3作品。作品名は「、」またはカンマで区切ってください。</small></label>
 <label style="display:block;font-weight:700;font-size:.92rem">苦手なアニメ（任意）
 <input id="dislikedTitles" type="text" maxlength="180" placeholder="例：作品A、作品B" style="display:block;width:100%;margin-top:6px;padding:11px;border:1px solid var(--line);border-radius:8px;font:inherit;font-weight:400">
 <small style="color:var(--muted);font-weight:400">最大3作品。入力した作品自体を推薦候補から除外し、共通するジャンル・物語要素も推薦順位の調整に使います。</small></label>
-</div></div></details>
+</div></section>
 <div class="actions"><button id="back" type="button" disabled>戻る</button><button id="next" class="primary" type="button" disabled>次へ</button></div>
 <p class="save-note">診断の回答と結果は、このブラウザに自動保存されます。別の端末とは共有されません。</p>
 <div class="actions"><button id="clearSaved" type="button">保存データを削除</button></div>
@@ -822,7 +826,7 @@ function restoreSavedDiagnosis(){
   $('favoriteTitles').value=data.favorite.slice(0,180);
   $('dislikedTitles').value=data.disliked.slice(0,180);
   step=Math.max(0,answers.findIndex(n=>n===null));
-  if(!answers.includes(null))step=questions.length-1;
+  if(!answers.includes(null))step=questions.length;
   if(!legacy&&data.result&&Array.isArray(data.result.closeMatches)&&Array.isArray(data.result.discoveries)&&!answers.includes(null)){
    const profile=profileFromAnswers();buildProfile(profile);renderCards(data.result);saveDiagnosis(latestResult);$('resultIntro').textContent='保存された前回の診断結果です。';$('diagnosis').classList.add('hidden');$('results').classList.remove('hidden');return true;
   }
@@ -837,9 +841,16 @@ function clearSavedDiagnosis(){
 }
 const $=id=>document.getElementById(id);
 function render(){
- const q=questions[step];$('stepLabel').textContent='QUESTION '+(step+1)+' / '+questions.length;$('questionTitle').textContent=q.title;$('questionHelp').textContent=q.help;$('progressBar').style.width=(step/questions.length*100)+'%';$('choices').replaceChildren();
- q.options.forEach((option,i)=>{const b=document.createElement('button');b.type='button';b.className='choice'+(answers[step]===i?' selected':'');const n=document.createElement('span');n.className='n';n.textContent=i<4?String.fromCharCode(65+i):'・';const label=document.createElement('span');label.textContent=option.label;b.append(n,label);b.setAttribute('aria-pressed',String(answers[step]===i));b.addEventListener('click',()=>{answers[step]=i;saveDiagnosis();render()});$('choices').append(b)});
- $('back').disabled=step===0;$('next').disabled=answers[step]===null;$('next').textContent=step===questions.length-1?'診断する':'次へ';$('next').setAttribute('aria-label',step===questions.length-1?'20問の回答をもとに診断する':'質問 '+(step+1)+' の回答を保存して次へ進む');
+ const additionalStep=step===questions.length;
+ $('questionStep').classList.toggle('hidden',additionalStep);
+ $('additionalPreferences').classList.toggle('hidden',!additionalStep);
+ if(!additionalStep){
+  const q=questions[step];$('stepLabel').textContent='QUESTION '+(step+1)+' / '+questions.length;$('questionTitle').textContent=q.title;$('questionHelp').textContent=q.help;$('progressBar').style.width=(step/questions.length*100)+'%';$('choices').replaceChildren();
+  q.options.forEach((option,i)=>{const b=document.createElement('button');b.type='button';b.className='choice'+(answers[step]===i?' selected':'');const n=document.createElement('span');n.className='n';n.textContent=i<4?String.fromCharCode(65+i):'・';const label=document.createElement('span');label.textContent=option.label;b.append(n,label);b.setAttribute('aria-pressed',String(answers[step]===i));b.addEventListener('click',()=>{answers[step]=i;saveDiagnosis();render()});$('choices').append(b)});
+ }else{
+  $('progressBar').style.width='100%';
+ }
+ $('back').disabled=step===0;$('next').disabled=!additionalStep&&answers[step]===null;$('next').textContent=additionalStep?'診断する':'次へ';$('next').setAttribute('aria-label',additionalStep?'20問の回答と追加の希望をもとに診断する':(step===questions.length-1?'20問の回答後、追加の希望入力へ進む':'質問 '+(step+1)+' の回答を保存して次へ進む'));
 }
 function extractTextSignals(raw,target,weight=.65){
  const value=String(raw||'').toLocaleLowerCase().normalize('NFKC');
@@ -1379,7 +1390,7 @@ function restoreShareState(){
   
   $('wantText').value=String(state.w||'').slice(0,500);$('avoidText').value=String(state.x||'').slice(0,500);$('preferenceText').value=String(state.p||'').slice(0,700);
   $('favoriteTitles').value=state.f;$('dislikedTitles').value=state.d;
-  step=answers.includes(null)?answers.findIndex(n=>n===null):questions.length-1;render();
+  step=answers.includes(null)?answers.findIndex(n=>n===null):questions.length;render();
   return true;
  }catch(_){return false}
 }
@@ -1698,7 +1709,7 @@ async function finish(){
 ['wantText','avoidText','preferenceText','favoriteTitles','dislikedTitles'].forEach(id=>$(id).addEventListener('input',()=>saveDiagnosis()));
 $('clearSaved').addEventListener('click',clearSavedDiagnosis);
 $('back').addEventListener('click',()=>{if(step>0){step--;render()}});
-$('next').addEventListener('click',()=>{if(answers[step]===null)return;if(step<questions.length-1){step++;render()}else finish()});
+$('next').addEventListener('click',()=>{if(step<questions.length){if(answers[step]===null)return;step++ ;render()}else finish()});
 $('retry').addEventListener('click',()=>{step=0;answers.fill(null);$('wantText').value='';$('avoidText').value='';$('preferenceText').value='';$('results').classList.add('hidden');$('diagnosis').classList.remove('hidden');$('progressBar').style.width='0%';history.replaceState(null,'',location.pathname+location.search);saveDiagnosis();render();window.scrollTo({top:0,behavior:'smooth'})});
 $('shareX').addEventListener('click',shareOnX);
 $('copyResultLink').addEventListener('click',copyResultLink);
