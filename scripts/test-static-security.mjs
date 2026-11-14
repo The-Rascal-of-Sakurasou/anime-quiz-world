@@ -240,12 +240,17 @@ assert.match(admin, /signInWithPassword/, "Admin must authenticate with email an
 assert.match(admin, /id="togglePassword"/, "Admin password visibility control missing");
 assert.match(admin, /input\.type=reveal\?'text':'password'/, "Admin password visibility toggle must switch input type");
 assert.match(admin, /aria-pressed/, "Admin password visibility toggle must expose its state accessibly");
-const adminAuthMigration = fs.readFileSync("supabase/migrations/20261113190000_allow_password_only_site_admin.sql", "utf8");
-assert.match(adminAuthMigration, /select private\.is_site_owner\(\)/, "Admin RLS must authorize only the registered site owner");
-assert.match(adminAuthMigration, /create policy "Site owner can review reports"/, "Report review policy must reflect registered-owner authorization");
-assert.doesNotMatch(adminAuthMigration, /aal2/, "Admin database authorization must not require AAL2");
-
-assert.match(admin, /aqw-admin-control/, "Protected admin Edge Function call missing");
+const removedPasswordOnlyMigration = "supabase/migrations/20261113190000_allow_password_only_site_admin.sql";
+assert.equal(fs.existsSync(removedPasswordOnlyMigration), false, "Password-only admin login must not weaken the AAL2 helper used by existing RLS policies");
+assert.match(admin, /adminAction\('get_dashboard'\)/, "Admin authorization must be checked through the protected Edge Function");
+assert.match(admin, /client\.functions\.invoke\('aqw-admin-control'/, "Admin operations must use the protected Edge Function");
+assert.doesNotMatch(admin, /client\.from\(|client\.rpc\(|client\.storage/, "Admin console must not access privileged tables or storage directly");
+const adminEdge = fs.readFileSync("supabase/functions/aqw-admin-control/index.ts", "utf8");
+for (const action of ["get_dashboard", "list_reports", "get_report_context", "update_report", "list_posts", "update_post", "delete_post", "list_profiles", "update_profile", "list_data_records", "delete_data_record", "list_users", "set_ban"]) {
+  assert.ok(adminEdge.includes('action === "' + action + '"'), "Admin Edge Function action missing: " + action);
+}
+assert.match(adminEdge, /const DATA_TABLES = new Set\(/, "Generic data management must use a fixed table allowlist");
+assert.match(adminEdge, /const REPORT_STATUSES = new Set\(/, "Report status updates must use a fixed status allowlist");
 
 const multiplayer = source.get("multiplayer.html");
 assert.match(multiplayer, /let matchmakingTimer=null,matchmakingBusy=false,matchmakingPrefs=null,matchmakingPollPromise=null;/, "Random matchmaking must track an in-flight poll");
