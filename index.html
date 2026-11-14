@@ -2133,7 +2133,7 @@ function availableQuestionModes(a,format=$('#answerFormatSelect')?.value||'choic
  if(titleUsable(a)&&uniqueAliasCandidates(a).length)modes.push('synonym');
  if(titleUsable(a)&&Number.isInteger(animeYear(a))&&animeYear(a)>1900){modes.push('year');modes.push('titleYear')}
  if(titleUsable(a)&&hasUsableSynopsis(a)){modes.push('synopsis');if(format!=='typed')modes.push('titleSynopsis')}
- if(titleUsable(a)&&Number.isInteger(Number(a?.episodes))&&Number(a.episodes)>0)modes.push('titleEpisodes');
+ if(titleUsable(a)&&a?.format!=='MOVIE'&&Number.isInteger(Number(a?.episodes))&&Number(a.episodes)>0)modes.push('titleEpisodes');
  if(titleUsable(a)&&Array.isArray(a?.genres)&&a.genres.length)modes.push('titleGenre');
  if(titleUsable(a)&&a?.format)modes.push('titleFormat');
  if(titleUsable(a)&&a?.source)modes.push('titleSource');
@@ -2312,7 +2312,7 @@ function isEligibleBaseAnime(a,mode,format){
  if(['titleYear','year'].includes(mode)&&(!Number.isInteger(animeYear(a))||animeYear(a)<=1900))return false;
  if(mode==='synonym'&&!uniqueAliasCandidates(a).length)return false;
  if(['synopsis','titleSynopsis'].includes(mode)&&!hasUsableSynopsis(a))return false;
- if(mode==='titleEpisodes'&&(!Number.isInteger(Number(a?.episodes))||Number(a.episodes)<=0))return false;
+ if(mode==='titleEpisodes'&&(a?.format==='MOVIE'||!Number.isInteger(Number(a?.episodes))||Number(a.episodes)<=0))return false;
  if(mode==='titleGenre'&&(!Array.isArray(a?.genres)||!a.genres.length))return false;
  if(mode==='titleFormat'&&!a?.format)return false;
  if(mode==='titleSource'&&!a?.source)return false;
