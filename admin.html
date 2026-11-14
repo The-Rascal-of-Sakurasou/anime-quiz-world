@@ -329,7 +329,7 @@ async function loadQuestions(){
  if(error)throw error;
  root.replaceChildren();
  if(!data?.length){root.textContent='質問はまだ届いていません。';return}
- const labels={new:'未対応',reviewing:'確認中',answered:'回答済み',closed:'対応終了'};
+ const labels={new:'未対応',reviewing:'確認中',answered:'対応済み',closed:'対応終了'};
  for(const question of data){
   const card=document.createElement('article');card.className='post report-card';
   const head=document.createElement('div');head.className='post-head';
