@@ -33,7 +33,7 @@ for (const [name, sourceText] of [["match preparation", matchPrepare], ["admin c
   assert.ok(sourceText.includes("const json = createJsonResponder(corsHeaders)"), name + " must use the shared JSON responder");
   assert.doesNotMatch(sourceText, /new Response\(JSON\.stringify\(body\)/, name + " must not duplicate JSON response construction");
 }
-assert.match(matchPrepare, /const ALLOWED_ORIGIN = "https:\/\/the-rascal-of-sakurasou\.github\.io"/, "Match preparation must restrict its browser origin");
+assert.match(matchPrepare, /const ALLOWED_ORIGIN = AQW_ALLOWED_ORIGIN/, "Match preparation must use the shared allowlisted browser origin");
 assert.match(matchPrepare, /userClient\.auth\.getUser\(token\)/, "Match preparation must validate the bearer token with Supabase Auth");
 assert.match(matchPrepare, /room\.host_id !== userData\.user\.id/, "Only the authenticated room host may prepare questions");
 assert.match(matchPrepare, /room\.players\.length !== 2/, "Match preparation must require exactly two players");
