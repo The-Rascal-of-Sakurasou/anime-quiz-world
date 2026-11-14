@@ -520,11 +520,14 @@ assert.match(index, /shuffle\(characterRecordsWithFourChoicesForAnime\(a,questio
 
 assert.match(index, /function availableQuestionModes\(a,format=/, "Mixed mode must derive the available question types for each anime");
 const modeSelectMarkup = index.match(/<select id="modeSelect">([\s\S]*?)<\/select>/)?.[1] || "";
-for (const mode of ["synopsis", "titleYear", "synonym", "titleStudio"]) {
-  assert.ok(modeSelectMarkup.includes('value="' + mode + '"'), "The four requested question formats must remain selectable: " + mode);
+const supportedModes = ["image", "synopsis", "synonym", "studio", "year", "titleYear", "titleStudio", "titleSynopsis", "titleEpisodes", "titleGenre", "titleFormat", "titleSource"];
+for (const mode of supportedModes) {
+  assert.ok(modeSelectMarkup.includes('value="' + mode + '"'), "Every data-backed question format must be selectable: " + mode);
 }
-assert.doesNotMatch(modeSelectMarkup, /value="(?:image|character|characterImage|characterNameImage|titleCharacter)"/, "Unrequested legacy question formats must not appear in the selector");
-assert.match(index, /const modes=\[\];\s*if\(titleUsable\(a\)&&a\?\.studios\?\.nodes\?\.\[0\]\?\.name\)modes\.push\('titleStudio'\)/, "Mixed mode must use only the four requested question formats");
+assert.doesNotMatch(modeSelectMarkup, /value="(?:character|characterImage|characterNameImage|titleCharacter)"/, "Character formats without character data must not appear in the selector");
+for (const mode of ["image", "studio", "year", "titleSynopsis", "titleEpisodes", "titleGenre", "titleFormat", "titleSource"]) {
+  assert.ok(index.includes("modes.push('" + mode + "')"), "Mixed mode must include supported format " + mode);
+}
 assert.match(index, /const hasQuestion=mode===\'mixed\'\s*\?availableQuestionModes\(anime,format\)\.length>0/, "Cached candidate building must accept mixed-mode anime with at least one valid question type");
 assert.match(index, /mode===\'mixed\'\?items\.filter\(a=>isUsableAnime\(a\)&&titleUsable\(a\)&&availableQuestionModes\(a,format\)\.length>0\)/, "Background loading in mixed mode must use the same per-anime question-type eligibility");
 assert.ok(index.includes("let modesForFormat=availableQuestionModes(a,$('#answerFormatSelect').value)"), "Question rendering must use the same available-mode calculation");
