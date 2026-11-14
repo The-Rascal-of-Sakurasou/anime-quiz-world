@@ -46,34 +46,8 @@ def norm(value: str) -> str:
 
 
 def japanese_origin(item: dict) -> bool:
-    country = item.get("countryOfOrigin")
-    if not isinstance(country, str) or not country:
-        return False
-    title = item.get("title") or {}
-    names = [title.get("native"), title.get("english"), title.get("romaji")]
-    names.extend(item.get("synonyms") or [])
-    has_japanese_title = any(
-        isinstance(name, str) and re.search(r"[ぁ-んァ-ヶ]", name)
-        for name in names
-    )
-    popularity = int(item.get("popularity") or 0)
-    if country != "JP":
-        return popularity >= 10000 and has_japanese_title
-    if item.get("originVerified") is True or item.get("source") == "ORIGINAL":
-        return True
-    rule = SOURCE_RULES.get(item.get("source"))
-    if not rule:
-        return False
-    node_type, formats = rule
-    relation_verified = any(
-        edge.get("relationType") in {"SOURCE", "ADAPTATION"}
-        and isinstance(edge.get("node"), dict)
-        and edge["node"].get("type") == node_type
-        and edge["node"].get("countryOfOrigin") == "JP"
-        and edge["node"].get("format") in formats
-        for edge in (item.get("relations") or {}).get("edges", [])
-    )
-    return relation_verified or (popularity >= 10000 and has_japanese_title)
+    # Match the site, sync script, and validator: country of origin only.
+    return item.get("countryOfOrigin") == "JP"
 
 def title_variants(item: dict) -> set[str]:
     title = item.get("title") or {}
