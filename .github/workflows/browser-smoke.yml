@@ -13,6 +13,7 @@ on:
       - terms.html
       - responsive.css
       - scripts/browser-smoke.py
+      - assets/js/recommend-app-20261114.js
       - scripts/test-official-site-links.mjs
       - scripts/audit-anime-image-urls.mjs
       - scripts/validate-anime-catalog.mjs
@@ -33,6 +34,7 @@ on:
       - terms.html
       - responsive.css
       - scripts/browser-smoke.py
+      - assets/js/recommend-app-20261114.js
       - scripts/test-official-site-links.mjs
       - scripts/audit-anime-image-urls.mjs
       - scripts/validate-anime-catalog.mjs
