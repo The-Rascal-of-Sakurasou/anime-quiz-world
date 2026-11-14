@@ -43,6 +43,8 @@ on:
       - "supabase/migrations/**"
       - "supabase/config.toml"
       - "supabase/functions/aqw-match-prepare/**"
+      - "supabase/functions/aqw-admin-control/**"
+      - "supabase/functions/_shared/**"
       - ".github/workflows/aqw-static-security.yml"
   pull_request:
     paths:
