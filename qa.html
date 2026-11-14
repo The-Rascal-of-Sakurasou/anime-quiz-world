@@ -68,36 +68,58 @@ small{font-size:.84rem;color:var(--muted);font-weight:400}
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-(()=> {
-'use strict';
-const URL='https://ksyfhscjfqzenifcttiu.supabase.co';
-const KEY='sb_publishable_eL_Da06cmHz3W58jpcBIBQ_YzTThTL4';
-const $=id=>document.getElementById(id);
-const form=$('questionForm'),button=$('submitQuestion'),status=$('formStatus');
-const say=(text,kind='')=>{status.textContent=text;status.className='status'+(kind?' '+kind)};
-const lastKey='aqw-question-last-submit';
-form.addEventListener('submit',async event=>{
- event.preventDefault();
- if($('website').value.trim())return;
- const displayName=$('displayName').value.trim();
- const title=$('questionTitle').value.trim();
- const body=$('questionBody').value.trim();
- if(title.length<1||title.length>100||body.length<5||body.length>3000){say('入力内容を確認してください。','error');return}
- let last=0;try{last=Number(sessionStorage.getItem(lastKey)||0)}catch(_){}
- if(Date.now()-last<30000){say('連続送信を防ぐため、30秒ほど待ってから再送信してください。','error');return}
- button.disabled=true;say('送信しています…');
- try{
-  if(!window.supabase?.createClient)throw new Error('送信機能を読み込めませんでした。ページを再読み込みしてください。');
-  const client=window.supabase.createClient(URL,KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
-  const {error}=await client.from('qa_questions').insert({display_name:displayName,title,body});
-  if(error)throw error;
-  try{sessionStorage.setItem(lastKey,String(Date.now()))}catch(_){}
-  form.reset();say('質問を送信しました。内容を確認のうえ、必要に応じて対応します。','success');
- }catch(error){
-  console.error('AQW Q&A submission failed:',error);
-  say('送信できませんでした。通信状態を確認して、時間をおいて再度お試しください。','error');
- }finally{button.disabled=false}
-});
+(function () {
+  'use strict';
+  var supabaseUrl = 'https://ksyfhscjfqzenifcttiu.supabase.co';
+  var supabaseKey = 'sb_publishable_eL_Da06cmHz3W58jpcBIBQ_YzTThTL4';
+  var form = document.getElementById('questionForm');
+  var button = document.getElementById('submitQuestion');
+  var status = document.getElementById('formStatus');
+  function showStatus(message, kind) {
+    status.textContent = message;
+    status.className = 'status' + (kind ? ' ' + kind : '');
+  }
+  form.addEventListener('submit', async function (event) {
+    event.preventDefault();
+    if (document.getElementById('website').value.trim()) return;
+    var displayName = document.getElementById('displayName').value.trim();
+    var title = document.getElementById('questionTitle').value.trim();
+    var body = document.getElementById('questionBody').value.trim();
+    if (title.length < 1 || title.length > 100 || body.length < 5 || body.length > 3000) {
+      showStatus('入力内容を確認してください。', 'error');
+      return;
+    }
+    var last = 0;
+    try { last = Number(sessionStorage.getItem('aqw-question-last-submit') || 0); } catch (error) {}
+    if (Date.now() - last < 30000) {
+      showStatus('連続送信を防ぐため、30秒ほど待ってから再送信してください。', 'error');
+      return;
+    }
+    button.disabled = true;
+    showStatus('送信しています。', '');
+    try {
+      if (!window.supabase || !window.supabase.createClient) {
+        throw new Error('Supabase SDK unavailable');
+      }
+      var client = window.supabase.createClient(supabaseUrl, supabaseKey, {
+        auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+      });
+      var result = await client.from('qa_questions').insert({
+        display_name: displayName,
+        title: title,
+        body: body
+      });
+      if (result.error) throw result.error;
+      try { sessionStorage.setItem('aqw-question-last-submit', String(Date.now())); } catch (error) {}
+      form.reset();
+      showStatus('質問を送信しました。内容を確認のうえ、必要に応じて対応します。', 'success');
+    } catch (error) {
+      console.error('AQW Q&A submission failed:', error);
+      showStatus('送信できませんでした。通信状態を確認して、時間をおいて再度お試しください。', 'error');
+    } finally {
+      button.disabled = false;
+    }
+  });
 })();
 </script>
 </body></html>
