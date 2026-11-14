@@ -130,9 +130,6 @@ async function scanScope(format, sort, yearStart, yearEnd, appendOnly = false, i
   return false;
 }
 
-function metadataKey(value) {
-  return String(value || '').normalize('NFKC').toLocaleLowerCase().replace(/\s+/g, '');
-}
 
 export function dedupeAnimeMetadata(anime) {
   const synonyms = [];
