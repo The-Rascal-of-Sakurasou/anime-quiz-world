@@ -1273,14 +1273,9 @@ def test_recommendation_diagnosis(browser):
         assert choices.count() == 5, f"Question {step + 1} must have four answers plus unknown"
         if step == 0:
             assert page.locator("#questionOtherWrap").count() == 0, "Per-question free-text controls must not exist"
-            page.locator("summary").filter(has_text="追加の自由記述").click()
-            page.locator("#wantText").fill("SFとミステリー、伏線の多い物語")
-            page.locator("#avoidText").fill("恋愛中心の作品")
-            page.locator("#preferenceText").fill("物語の展開が速い作品が好き")
-            assert choices.count() == 5, "Separate free-text fields must not alter question choices"
+            assert page.locator("#additionalPreferences").is_hidden(), "Separate free-text section must remain hidden during the 20 questions"
             choices.nth(4).click()
             assert page.locator("#next").is_enabled(), "Unknown answer must not require free text"
-            assert page.locator("#wantText").input_value() == "SFとミステリー、伏線の多い物語", "Separate free text must remain available during question answering"
         choices.first.click()
         page.locator("#next").click()
         if step + 1 < question_count:
@@ -1290,6 +1285,16 @@ def test_recommendation_diagnosis(browser):
                 timeout=10000,
             )
 
+    page.locator("#additionalPreferences").wait_for(state="visible", timeout=10000)
+    assert page.locator("#questionStep").is_hidden(), "The question form must be separate from the additional-preferences step"
+    page.locator("#wantText").fill("SFとミステリー、伏線の多い物語")
+    page.locator("#avoidText").fill("恋愛中心の作品")
+    page.locator("#preferenceText").fill("物語の展開が速い作品が好き")
+    page.locator("#favoriteTitles").fill("作品A、作品B")
+    page.locator("#dislikedTitles").fill("作品C")
+    assert page.locator("#next").is_enabled(), "Additional free-text fields are optional and must not block diagnosis"
+    assert page.locator("#wantText").input_value() == "SFとミステリー、伏線の多い物語", "Separate free-text input must retain its value"
+    page.locator("#next").click()
     page.locator("#results:not(.hidden)").wait_for(state="visible", timeout=60000)
     card_count = page.locator("#animeCards .anime").count() + page.locator("#discoveryCards .anime").count()
     assert card_count > 0, "Diagnosis completed but returned no recommendation cards"
