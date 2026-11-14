@@ -160,10 +160,30 @@ def install_routes(page):
                 for alias in aliases
             }
         else:
+            # The featured rail requests the current Japanese season. Its
+            # fixtures must match the requested season/year, not the older
+            # static quiz fixtures, or the production filter correctly drops
+            # every test item.
+            if "season:" in query and "seasonYear:" in query:
+                featured_fixtures = []
+                for index in range(4):
+                    anime = make_anime(index)
+                    anime["format"] = "TV"
+                    anime["season"] = CURRENT_SEASON
+                    anime["seasonYear"] = NOW_JST.year
+                    anime["startDate"] = {
+                        "year": NOW_JST.year,
+                        "month": SEASON_START_MONTH,
+                        "day": 1,
+                    }
+                    featured_fixtures.append(anime)
+                media = featured_fixtures
+            else:
+                media = RECOMMENDATION_FIXTURES
             data = {
                 "Page": {
                     "pageInfo": {"hasNextPage": False, "totalPages": 1},
-                    "media": RECOMMENDATION_FIXTURES,
+                    "media": media,
                 }
             }
         route.fulfill(
