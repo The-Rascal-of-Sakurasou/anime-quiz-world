@@ -56,33 +56,15 @@ for all to anon, authenticated
 using (false)
 with check (false);
 
+
 -- Production-only legacy RPC signatures are not represented in the tracked
 -- migration history. These inert local placeholders let the privilege-hardening
 -- migration replay against a disposable database; they are never deployed.
 create or replace function public.reset_aqw_player_records()
-returns void language plpgsql as $$
-begin
-  return;
-end;
-$$;
+returns jsonb language sql as $$ select '{}'::jsonb $$;
 
 create or replace function public.set_aqw_leaderboard_enabled(boolean)
-returns void language plpgsql as $$
-begin
-  return;
-end;
-$$;
+returns boolean language sql as $$ select false $$;
 
-create or replace function public.submit_aqw_player_run(uuid, integer, integer, integer)
-returns void language plpgsql as $$
-begin
-  return;
-end;
-$$;
-
-create or replace function public.submit_aqw_speed_rush(uuid, integer, integer)
-returns void language plpgsql as $$
-begin
-  return;
-end;
-$$;
+create or replace function public.submit_aqw_player_run(uuid, integer, integer, integer, jsonb)
+returns jsonb language sql as $$ select '{}'::jsonb $$;
