@@ -1178,7 +1178,20 @@ def test_recommendation_diagnosis(browser):
                 + "; page errors: " + " | ".join(errors)
                 + "; console errors: " + " | ".join(console_errors)
             ) from error
-        assert choices.count() == 4, f"Question {step + 1} must have four choices"
+        choice_count = choices.count()
+        if choice_count != 4:
+            state = page.evaluate("""() => ({
+              stepLabel: document.querySelector('#stepLabel')?.textContent,
+              choicesHTML: document.querySelector('#choices')?.innerHTML,
+              diagnosisHidden: document.querySelector('#diagnosis')?.classList.contains('hidden'),
+              errorText: document.querySelector('#error')?.textContent
+            })""")
+            raise AssertionError(
+                f"Question {step + 1} must have four choices; got {choice_count}: "
+                + json.dumps(state, ensure_ascii=False)
+                + "; page errors: " + " | ".join(errors)
+                + "; console errors: " + " | ".join(console_errors)
+            )
         choices.first.click()
         page.locator("#next").click()
         if step + 1 < question_count:
