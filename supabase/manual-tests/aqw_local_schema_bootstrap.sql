@@ -72,7 +72,7 @@ returns boolean language sql as $$ select false $$;
 -- tracked feature migration recreates its real implementation. This inert
 -- placeholder exists only in the disposable CI database.
 create or replace function public.submit_aqw_player_run(uuid, integer, integer, integer, jsonb)
-returns jsonb language sql as $ select '{}'::jsonb $;
+returns jsonb language sql as 'select ''{}''::jsonb';
 
 -- Matching private helper signatures are also present in the hosted project,
 -- but their original definitions are not tracked in the migration history.
