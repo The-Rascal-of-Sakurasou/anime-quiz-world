@@ -541,7 +541,7 @@ function calculateSelectionAdjustment(candidate,selected,discovery=false,maxPopu
   const tagUnion=new Set([...tags,...chosenTags]).size;
   const genreSimilarity=genreUnion?sharedGenres/genreUnion:0;
   const tagSimilarity=tagUnion?sharedTags/tagUnion:0;
-  maxSimilarity=Math.max(maxSimilarity,genreSimilarity*0.5+tagSimilarity*0.5);
+  maxSimilarity=Math.max(maxSimilarity,genreSimilarity,tagSimilarity);
  }
  for(const genre of genres){
   const occurrences=(selected||[]).filter(chosen=>(chosen.genres||[]).includes(genre)).length;
@@ -622,6 +622,8 @@ function runRecommendationSelfTests(){
  const varied=calculateSelectionAdjustment({genres:['Drama'],tags:[{name:'Family',rank:80,isMediaSpoiler:false}],_popularity:20},[repeated]);
  check('ジャンル・物語タグが異なる候補を優先する',varied.total>similar.total);
  check('類似度上限を超える候補を除外する',!passesRecommendationDiversityThreshold({genres:['Fantasy'],tags:[{name:'Magic',rank:80,isMediaSpoiler:false}]},[repeated]));
+ check('ジャンルだけが一致する候補も類似作品として除外する',!passesRecommendationDiversityThreshold({genres:['Fantasy'],tags:[{name:'Mystery',rank:80,isMediaSpoiler:false}]},[{genres:['Fantasy'],tags:[{name:'Magic',rank:80,isMediaSpoiler:false}]}]));
+ check('タグだけが一致する候補も類似作品として除外する',!passesRecommendationDiversityThreshold({genres:['Drama'],tags:[{name:'Magic',rank:80,isMediaSpoiler:false}]},[{genres:['Fantasy'],tags:[{name:'Magic',rank:80,isMediaSpoiler:false}]}]));
  check('十分に異なる候補は多様性判定を通過する',passesRecommendationDiversityThreshold({genres:['Drama'],tags:[{name:'Family',rank:80,isMediaSpoiler:false}]},[repeated]));
  const qualitySample=summarizeRecommendationQuality([
   {id:1,genres:['Fantasy','Adventure'],tags:[{name:'Magic',rank:80,isMediaSpoiler:false}],_popularity:100},
