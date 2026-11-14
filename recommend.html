@@ -1405,16 +1405,30 @@ async function getRecommendations(profile,externalSignal=null){
  return {closeMatches,discoveries,seedReport};
 }
 function buildProfile(profile){
- const top=Object.entries(profile.genres).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]);
- const names={Fantasy:'ファンタジー',Adventure:'冒険',Action:'アクション','Sci-Fi':'SF',Mystery:'ミステリー',Thriller:'サスペンス',Drama:'ドラマ',Comedy:'コメディ',Romance:'恋愛', 'Slice of Life':'日常',Psychological:'心理',Historical:'歴史',Mecha:'メカ'};
- $('profileTitle').textContent=top.length?top.map(g=>names[g]||g).join(' × ')+'タイプ':'幅広く楽しむタイプ';
- const tagNames={'Conspiracy':'陰謀・謎','Survival':'サバイバル','Psychological':'心理描写','Mystery':'謎解き','Tragedy':'悲劇','Coming of Age':'成長','Super Power':'特殊能力','Martial Arts':'格闘','Revenge':'復讐','Parody':'パロディ','Gag Humor':'ギャグ','Fast-Paced':'テンポの速い展開','Time Manipulation':'時間操作','World Building':'世界観の構築','Character Development':'人物の成長','Episodic':'各話完結','Magic':'魔法','Isekai':'異世界','Space':'宇宙','Cyberpunk':'サイバーパンク','Mythology':'神話','Samurai':'侍','Ensemble Cast':'群像劇','Found Family':'疑似家族・仲間','Philosophy':'哲学','Leadership':'リーダーシップ','Battle Royale':'バトルロイヤル','Quest':'冒険の目的・探求','Politics':'政治','Crime':'犯罪','Travel':'旅・移動','Slow Burn':'じっくり進む展開','Escape':'脱出・逃走','Sports':'スポーツ','Training':'訓練・修行','Detective':'探偵・捜査','Mentor':'師弟関係','Teacher-Student Relationship':'師弟・指導関係','Surprise Ending':'意外な結末','Bittersweet Ending':'ほろ苦い結末','Satisfying Ending':'納得感のある結末','Happy Ending':'幸福な結末','Open Ending':'解釈の余地がある結末','Sad Ending':'悲しい結末','School':'学校','Urban':'都市・現代社会','Unusual Characters':'個性的な人物','Genius':'頭脳派','Strategic':'戦略的な人物','Friendship':'友情','Rivalry':'ライバル関係','Family':'家族','Family Life':'家族の日常','Iyashikei':'癒やし'};
- const traits=Object.entries(profile.tags).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([tag])=>tagNames[tag]||tag);
- $('profileDescription').textContent='ジャンルの傾向に加え、物語の展開や雰囲気の好みを反映しています。';
+ const genreNames={Fantasy:'ファンタジー',Adventure:'冒険',Action:'アクション','Sci-Fi':'SF',Mystery:'ミステリー',Thriller:'サスペンス',Drama:'ドラマ',Comedy:'コメディ',Romance:'恋愛','Slice of Life':'日常',Psychological:'心理',Historical:'歴史',Mecha:'メカ',Horror:'ホラー',Sports:'スポーツ',Music:'音楽',Supernatural:'超常現象'};
+ const tagNames={'Conspiracy':'伏線・謎','Survival':'サバイバル','Psychological':'心理描写','Mystery':'謎解き','Tragedy':'悲劇','Coming of Age':'成長','Super Power':'特殊能力','Martial Arts':'格闘','Revenge':'復讐','Parody':'パロディ','Gag Humor':'ギャグ','Fast-Paced':'テンポの速い展開','Time Manipulation':'時間操作','World Building':'世界観の構築','Character Development':'人物の成長','Episodic':'各話完結','Magic':'魔法','Isekai':'異世界','Space':'宇宙','Cyberpunk':'サイバーパンク','Mythology':'神話','Samurai':'侍','Ensemble Cast':'群像劇','Found Family':'疑似家族・仲間','Philosophy':'哲学','Leadership':'リーダーシップ','Battle Royale':'バトルロイヤル','Quest':'冒険の目的・探求','Politics':'政治','Crime':'犯罪','Travel':'旅・移動','Slow Burn':'じっくり進む展開','Escape':'脱出・逃走','Sports':'スポーツ','Training':'訓練・修行','Detective':'探偵・捜査','Mentor':'師弟関係','Teacher-Student Relationship':'師弟・指導関係','Surprise Ending':'意外な結末','Bittersweet Ending':'ほろ苦い結末','Satisfying Ending':'納得感のある結末','Happy Ending':'幸福な結末','Open Ending':'解釈の余地がある結末','Sad Ending':'悲しい結末','School':'学校','Urban':'都市・現代社会','Unusual Characters':'個性的な人物','Genius':'頭脳戦・知略','Strategic':'戦略的な人物','Friendship':'友情','Family':'家族','Family Life':'家族の日常','Iyashikei':'癒やし','Technology':'科学技術','Competition':'競争・ライバル','War':'戦争・軍事'};
+ const labelFor=(key,isGenre)=>((isGenre?genreNames[key]:tagNames[key])||key);
+ const topGenres=Object.entries(profile.genres).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([key])=>key);
+ const topTags=Object.entries(profile.tags).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([key])=>key);
+ $('profileTitle').textContent=topGenres.length?topGenres.map(key=>labelFor(key,true)).join(' × ')+'タイプ':'幅広く楽しむタイプ';
+ const positiveSignals=[...new Map((profile.textSignals||[]).filter(item=>item.polarity==='positive').map(item=>[item.kind+':'+item.key,item])).values()];
+ const negativeSignals=[...new Map((profile.textSignals||[]).filter(item=>item.polarity==='negative').map(item=>[item.kind+':'+item.key,item])).values()];
+ const positiveLabels=positiveSignals.map(item=>item.label);
+ const negativeLabels=negativeSignals.map(item=>item.label);
+ const descriptionParts=[];
+ if(positiveLabels.length)descriptionParts.push('自由記述から読み取った希望：'+positiveLabels.join('、'));
+ if(negativeLabels.length)descriptionParts.push('避けたい傾向：'+negativeLabels.join('、'));
+ $('profileDescription').textContent=descriptionParts.length?descriptionParts.join('。')+'。ジャンル・物語要素の一致度を推薦順位に反映しています。':'ジャンル・物語要素の傾向を分析し、推薦順位に反映しています。';
  $('profileChips').replaceChildren();
- [...top.map(g=>names[g]||g),...traits].forEach(t=>{const span=document.createElement('span');span.className='chip';span.textContent=t;$('profileChips').append(span)});
- const avoidLabels={Romance:'恋愛少なめ',Comedy:'コメディ少なめ'};
- Object.keys(profile.avoidGenres||{}).forEach(g=>{const span=document.createElement('span');span.className='chip';span.textContent=(avoidLabels[g]||((names[g]||g)+'少なめ希望'));$('profileChips').append(span)});
+ [...topGenres.map(key=>labelFor(key,true)),...topTags.map(key=>labelFor(key,false))].forEach(label=>{
+  const span=document.createElement('span');span.className='chip';span.textContent=label;$('profileChips').append(span);
+ });
+ Object.entries(profile.avoidGenres||{}).sort((a,b)=>b[1]-a[1]).slice(0,3).forEach(([key])=>{
+  const span=document.createElement('span');span.className='chip';span.textContent=(genreNames[key]||key)+'少なめ希望';$('profileChips').append(span);
+ });
+ Object.entries(profile.avoidTags||{}).sort((a,b)=>b[1]-a[1]).slice(0,3).forEach(([key])=>{
+  const span=document.createElement('span');span.className='chip';span.textContent='避けたい：'+labelFor(key,false);$('profileChips').append(span);
+ });
 }
 function renderCardList(containerId,items){
  const container=$(containerId);container.replaceChildren();
