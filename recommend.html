@@ -115,6 +115,7 @@ body{background:#f6f7f9;color:#202936;letter-spacing:.005em}
 </style>
  <link rel="stylesheet" href="./responsive.css">
 <script src="./anime-origin-policy.js"></script>
+<script src="./aqw-text-utils.js"></script>
 </head>
 <body>
 <a class="skip-link" href="#mainContent">診断コンテンツへ移動</a>
@@ -806,7 +807,7 @@ function profileFromAnswers(answerValues=answers){
  answerValues.forEach((choice,i)=>{if(!Number.isInteger(choice)||!questions[i]?.options?.[choice])return;const option=questions[i].options[choice];(option.genres||[]).forEach(g=>genres[g]=(genres[g]||0)+1);(option.tags||[]).forEach(t=>tags[t]=(tags[t]||0)+1);addWeights(genres,option.genreWeights);addWeights(tags,option.tagWeights);(option.avoidGenres||[]).forEach(g=>avoidGenres[g]=(avoidGenres[g]||0)+1);(option.avoidTags||[]).forEach(t=>avoidTags[t]=(avoidTags[t]||0)+1);addWeights(avoidGenres,option.avoidGenreWeights);addWeights(avoidTags,option.avoidTagWeights);if(option.length)length=option.length;if(Number.isFinite(option.startYearMin))startYearMin=option.startYearMin;if(Number.isFinite(option.startYearMax))startYearMax=option.startYearMax});
  return {genres,tags,avoidGenres,avoidTags,length,startYearMin,startYearMax};
 }
-function escapeHTML(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+const escapeHTML = window.AQWTextUtils.escapeHTML;
 function parseTitleInput(id){
  const seen=new Set();
  return $(id).value.split(/[、,，;；]/).map(x=>x.trim()).filter(value=>{
