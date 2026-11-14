@@ -339,6 +339,12 @@ def test_public_catalogue_all_modes(browser):
         )
         prompt = page.locator("#answerPrompt").inner_text().strip()
         assert prompt, f"Public {mode} mode did not render a question prompt"
+        if mode == "titleYear":
+            year_prompt_suffix = page.evaluate("() => qText('titleYear')")
+            assert "公開・放送年" in year_prompt_suffix, (
+                "Year questions must cover both film release and TV broadcast years: "
+                + year_prompt_suffix
+            )
         if mode == "synopsis":
             assert re.search(r"[ぁ-んァ-ヶ一-龯]", prompt), (
                 "Public synopsis mode did not render Japanese synopsis text: " + prompt
