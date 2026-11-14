@@ -609,7 +609,7 @@ function runRecommendationSelfTests(){
   const profile=profileFromAnswers(answerSet);
   return eligibilitySamples.filter(anime=>isRecommendationCandidate(anime,profile)).map(anime=>anime.id).join(',')===eligibilityBaseline;
  });
- check('72選択肢のどれを選んでも候補作品の適格判定は変わらない',profileIndependentEligibility);
+ check('80選択肢のどれを選んでも候補作品の適格判定は変わらない',profileIndependentEligibility);
  const allCandidates=[{id:1,_score:100,_popularity:100},{id:2,_score:-80,_popularity:5},{id:3,_score:0,_popularity:20}];
  const openPool=buildDiscoveryPool(allCandidates,new Set([1]));
  check('相性スコアが低い作品も意外なおすすめ候補に残る',openPool.some(a=>a.id===2));
@@ -800,7 +800,7 @@ function restoreSavedDiagnosis(){
    try{data=JSON.parse(candidate.raw)}catch(_){continue}
    const normalized=normalizeSavedAnswers(data);
    if(!normalized||typeof data.favorite!=='string'||typeof data.disliked!=='string')continue;
-   restored={data,answers:normalized,legacy:candidate.legacy||data.v!==5};
+   restored={data,answers:normalized,legacy:candidate.legacy||data.v!==9};
    break;
   }
   if(!restored)return false;
