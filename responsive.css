@@ -166,3 +166,19 @@ dialog,[role="dialog"],.modal,.modal-content,.overlay-content{max-width:min(100v
   .top-actions>* ,.actions>* ,.game-tools>* ,.share-actions>* ,.auth-actions>* ,.form-actions>*{flex-basis:100%}
   .table-wrap table{min-width:500px}
 }
+
+
+/* Consistent footer navigation on every public page. */
+.site-footer{
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
+  gap:12px;max-width:1040px;width:calc(100% - 32px);margin:24px auto 0;
+  padding:18px 4px calc(24px + env(safe-area-inset-bottom));
+  color:#64758a;font-size:.84rem;line-height:1.6;
+}
+.site-footer nav{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.site-footer a{color:#14558b;text-underline-offset:3px}
+@media(max-width:700px){
+  .site-footer{display:grid;gap:10px;width:calc(100% - 22px);margin-top:18px}
+  .site-footer nav{gap:10px 14px}
+}
+@media(max-width:380px){.site-footer{width:calc(100% - 16px)}}
