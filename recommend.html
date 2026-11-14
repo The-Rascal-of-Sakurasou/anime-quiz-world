@@ -135,8 +135,8 @@ body{background:#f6f7f9;color:#202936;letter-spacing:.005em}
 <div id="diagnosis">
 <div class="progress" aria-label="診断の進行状況"><div id="progressBar"></div></div>
 <div class="question"><div class="eyebrow" id="stepLabel">QUESTION 1 / 20</div><h2 id="questionTitle">どんなジャンルのアニメが見たい？</h2><p id="questionHelp">今見たいジャンルを1つ選んでください。</p></div>
-<div class="choices" id="choices" aria-label="回答の選択肢"></div><div id="questionOtherWrap" class="question-other hidden"><label for="questionOtherText">選択肢にない内容を具体的に教えてください</label><textarea id="questionOtherText" maxlength="240" rows="3" placeholder="例：宇宙を舞台にした、伏線の多い作品が見たい"></textarea></div>
-<details class="free-text-details"><summary>自由記述・好きな作品の入力（任意）</summary><div class="free-text-inner"><section class="free-text-topics" aria-labelledby="freeTextHeading"><h3 id="freeTextHeading">トピック別に好みを伝える</h3><p>選択肢だけでは表現しにくい好みを、話題ごとに記入できます。空欄でも診断できます。</p><div class="free-topic-grid"><label>見たい作品・要素<textarea id="wantText" maxlength="500" rows="3" placeholder="例：伏線が多く、先の読めない展開。SFや時間を扱う物語。"></textarea></label><label>避けたい作品・要素<textarea id="avoidText" maxlength="500" rows="3" placeholder="例：恋愛が中心の作品、日常描写が長く続く作品。"></textarea></label><label>作品の好み・補足<textarea id="preferenceText" maxlength="700" rows="4" placeholder="例：好きな作品のどこが好きか、重視する演出、希望する雰囲気など。"></textarea></label></div><p class="save-note">作品データのジャンル・タグと照合できた表現を反映します。意味を正確に読み取れない表現は推測で加点・減点しません。</p></section><div class="preference-inputs" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:22px">
+<div class="choices" id="choices" aria-label="回答の選択肢"></div>
+<details class="free-text-details"><summary>追加の自由記述・好きな作品の入力（任意）</summary><div class="free-text-inner"><section class="free-text-topics" aria-labelledby="freeTextHeading"><h3 id="freeTextHeading">トピック別に好みを伝える</h3><p>20問への回答とは別に、自由な文章で好みを伝えられます。入力は任意で、空欄でも診断できます。</p><div class="free-topic-grid"><label>見たい作品・要素<textarea id="wantText" maxlength="500" rows="3" placeholder="例：伏線が多く、先の読めない展開。SFや時間を扱う物語。"></textarea></label><label>避けたい作品・要素<textarea id="avoidText" maxlength="500" rows="3" placeholder="例：恋愛が中心の作品、日常描写が長く続く作品。"></textarea></label><label>作品の好み・補足<textarea id="preferenceText" maxlength="700" rows="4" placeholder="例：好きな作品のどこが好きか、重視する演出、希望する雰囲気など。"></textarea></label></div><p class="save-note">作品データのジャンル・タグと照合できた表現を反映します。意味を正確に読み取れない表現は推測で加点・減点しません。</p></section><div class="preference-inputs" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:22px">
 <label style="display:block;font-weight:700;font-size:.92rem">好きなアニメ（任意）
 <input id="favoriteTitles" type="text" maxlength="180" placeholder="例：作品A、作品B" style="display:block;width:100%;margin-top:6px;padding:11px;border:1px solid var(--line);border-radius:8px;font:inherit;font-weight:400">
 <small style="color:var(--muted);font-weight:400">最大3作品。作品名は「、」またはカンマで区切ってください。</small></label>
@@ -316,7 +316,7 @@ const questions=[
 ];
 const allQuestionTitles=questions.map(q=>q.title.trim());
 const allQuestionDimensions=questions.map(q=>q.dimension);
-questions.forEach(q=>q.options.push({label:'わからない',neutral:true},{label:'選択肢にない（自由記述）',other:true}));
+questions.forEach(q=>q.options.push({label:'わからない',neutral:true}));
 const allQuestionLabels=questions.flatMap(q=>q.options.filter(o=>!o.neutral&&!o.other).map(option=>option.label.trim()));
 if(new Set(allQuestionTitles).size!==questions.length||new Set(allQuestionDimensions).size!==questions.length||new Set(allQuestionLabels).size!==allQuestionLabels.length)throw new Error('診断の質問または選択肢に重複があります。');
 const questionTitles=questions.map(q=>q.title.trim());
@@ -328,8 +328,8 @@ if(new Set(questionTitles).size!==questionTitles.length||new Set(questionDimensi
 const FIXED_QUESTION_COUNT=20;
 if(questions.length!==FIXED_QUESTION_COUNT)throw new Error('診断の質問数は20問固定です。')
 let step=0;const answers=Array(questions.length).fill(null);const questionTextAnswers=Array(questions.length).fill('');
-const SAVE_KEY='aqw-recommendation-v10';
-const PREVIOUS_SAVE_KEY='aqw-recommendation-v9';
+const SAVE_KEY='aqw-recommendation-v11';
+const PREVIOUS_SAVE_KEY='aqw-recommendation-v10';
 const LEGACY_SAVE_KEY='aqw-recommendation-v2';
 const FEEDBACK_KEY='aqw-recommendation-feedback-v1';
 const EVALUATION_HISTORY_KEY='aqw-recommendation-evaluation-history-v1';
@@ -671,7 +671,8 @@ function runRecommendationSelfTests(){
    return JSON.stringify(actual)===JSON.stringify(expected);
   }));
   check('通常の80選択肢の回答が推薦profileへ正しく反映される',profileProbeOk);
-  check('全20問の選択肢に中立回答と自由記述がある',!duplicateChoiceLabels&&questions.every(q=>q.options.length===6&&q.options[4].neutral&&q.options[5].other));
+  check('全20問は4つの回答と「わからない」の5択で統一されている',!duplicateChoiceLabels&&questions.every(q=>q.options.length===5&&q.options[4].neutral));
+ check('自由記述欄は20問の各質問とは独立して配置されている',Boolean($('wantText')&&$('avoidText')&&$('preferenceText'))&&!$('questionOtherWrap')&&!$('questionOtherText'));
   check('結末の好みを1問に統合し、余韻質問を重ねない',!questionByDimension.has('aftertaste')&&questionByDimension.has('ending_preference'));
   check('舞台と作品テーマを別々の観点にする',questionByDimension.get('theme_focus').title.includes('テーマ')&&questionByDimension.get('setting').title.includes('舞台'));
   check('旧18問版の意味が変わった回答は未回答に戻す',(()=>{const old=Array(18).fill(0);old[8]=1;old[15]=2;old[17]=3;const migrated=[...old];[8,15,17].forEach(i=>migrated[i]=null);return migrated[8]===null&&migrated[15]===null&&migrated[17]===null})());
@@ -793,7 +794,7 @@ function runRecommendationSelfTests(){
 }
 
 function saveDiagnosis(result=null){
- try{const data={v:10,savedAt:new Date().toISOString(),answers:[...answers],questionTextAnswers:[...questionTextAnswers],want:$('wantText').value.slice(0,500),avoid:$('avoidText').value.slice(0,500),preference:$('preferenceText').value.slice(0,700),favorite:$('favoriteTitles').value.slice(0,180),disliked:$('dislikedTitles').value.slice(0,180),result};safeStorage.setItem(SAVE_KEY,JSON.stringify(data));}
+ try{const data={v:11,savedAt:new Date().toISOString(),answers:[...answers],want:$('wantText').value.slice(0,500),avoid:$('avoidText').value.slice(0,500),preference:$('preferenceText').value.slice(0,700),favorite:$('favoriteTitles').value.slice(0,180),disliked:$('dislikedTitles').value.slice(0,180),result};safeStorage.setItem(SAVE_KEY,JSON.stringify(data));}
  catch(e){$('shareStatus').textContent='保存できませんでした。ブラウザの保存容量や設定を確認してください。';}
 }
 function restoreSavedDiagnosis(){
@@ -816,7 +817,7 @@ function restoreSavedDiagnosis(){
   if(!restored)return false;
   const {data,answers:restoredAnswers,legacy}=restored;
   answers.splice(0,answers.length,...restoredAnswers);
-  if(Array.isArray(data.questionTextAnswers))questionTextAnswers.splice(0,questionTextAnswers.length,...questions.map((_,i)=>String(data.questionTextAnswers[i]||'').slice(0,240)));
+  
   $('wantText').value=String(data.want||'').slice(0,500);$('avoidText').value=String(data.avoid||'').slice(0,500);$('preferenceText').value=String(data.preference||'').slice(0,700);
   $('favoriteTitles').value=data.favorite.slice(0,180);
   $('dislikedTitles').value=data.disliked.slice(0,180);
@@ -831,15 +832,14 @@ function restoreSavedDiagnosis(){
  }catch(_){return false}
 }
 function clearSavedDiagnosis(){
- try{safeStorage.removeItem(SAVE_KEY);safeStorage.removeItem(PREVIOUS_SAVE_KEY);safeStorage.removeItem(LEGACY_SAVE_KEY);answers.fill(null);questionTextAnswers.fill('');step=0;$('wantText').value='';$('avoidText').value='';$('preferenceText').value='';$('favoriteTitles').value='';$('dislikedTitles').value='';$('results').classList.add('hidden');$('diagnosis').classList.remove('hidden');$('error').classList.add('hidden');$('progressBar').style.width='0%';history.replaceState(null,'',location.pathname+location.search);render();$('shareStatus').textContent='このブラウザに保存された診断データを削除しました。';}
+ try{safeStorage.removeItem(SAVE_KEY);safeStorage.removeItem(PREVIOUS_SAVE_KEY);safeStorage.removeItem(LEGACY_SAVE_KEY);answers.fill(null);step=0;$('wantText').value='';$('avoidText').value='';$('preferenceText').value='';$('favoriteTitles').value='';$('dislikedTitles').value='';$('results').classList.add('hidden');$('diagnosis').classList.remove('hidden');$('error').classList.add('hidden');$('progressBar').style.width='0%';history.replaceState(null,'',location.pathname+location.search);render();$('shareStatus').textContent='このブラウザに保存された診断データを削除しました。';}
  catch(_){$('shareStatus').textContent='保存データを削除できませんでした。';}
 }
 const $=id=>document.getElementById(id);
 function render(){
  const q=questions[step];$('stepLabel').textContent='QUESTION '+(step+1)+' / '+questions.length;$('questionTitle').textContent=q.title;$('questionHelp').textContent=q.help;$('progressBar').style.width=(step/questions.length*100)+'%';$('choices').replaceChildren();
  q.options.forEach((option,i)=>{const b=document.createElement('button');b.type='button';b.className='choice'+(answers[step]===i?' selected':'');const n=document.createElement('span');n.className='n';n.textContent=i<4?String.fromCharCode(65+i):'・';const label=document.createElement('span');label.textContent=option.label;b.append(n,label);b.setAttribute('aria-pressed',String(answers[step]===i));b.addEventListener('click',()=>{answers[step]=i;saveDiagnosis();render()});$('choices').append(b)});
- const other=Boolean(q.options[answers[step]]?.other);$('questionOtherWrap').classList.toggle('hidden',!other);$('questionOtherWrap').setAttribute('aria-live','polite');$('questionOtherText').value=questionTextAnswers[step]||'';$('questionOtherText').oninput=()=>{questionTextAnswers[step]=$('questionOtherText').value.slice(0,240);$('next').disabled=!questionTextAnswers[step].trim();saveDiagnosis()};
- $('back').disabled=step===0;$('next').disabled=answers[step]===null||(other&&!questionTextAnswers[step].trim());$('next').textContent=step===questions.length-1?'診断する':'次へ';$('next').setAttribute('aria-label',step===questions.length-1?'20問の回答をもとに診断する':'質問 '+(step+1)+' の回答を保存して次へ進む');
+ $('back').disabled=step===0;$('next').disabled=answers[step]===null;$('next').textContent=step===questions.length-1?'診断する':'次へ';$('next').setAttribute('aria-label',step===questions.length-1?'20問の回答をもとに診断する':'質問 '+(step+1)+' の回答を保存して次へ進む');
 }
 function extractTextSignals(raw,target,weight=.65){
  const value=String(raw||'').toLocaleLowerCase().normalize('NFKC');
@@ -875,7 +875,7 @@ function extractTextSignals(raw,target,weight=.65){
   if(destination)destination[key]=(destination[key]||0)+weight;
  }
 }
-function profileFromAnswers(answerValues=answers,textAnswers=questionTextAnswers){const genres={},tags={},avoidGenres={},avoidTags={},formats={},sources={};let length='any',startYearMin=null,startYearMax=null;const addWeights=(target,values)=>{for(const [name,weight] of Object.entries(values||{})){const amount=Number(weight);if(Number.isFinite(amount)&&amount>0)target[name]=(target[name]||0)+amount}};answerValues.forEach((choice,i)=>{if(!Number.isInteger(choice)||!questions[i]?.options?.[choice])return;const option=questions[i].options[choice];if(option.neutral)return;if(option.other){extractTextSignals(textAnswers[i],{genres,tags,avoidGenres,avoidTags},.85);return}(option.genres||[]).forEach(g=>genres[g]=(genres[g]||0)+1);(option.tags||[]).forEach(t=>tags[t]=(tags[t]||0)+1);addWeights(genres,option.genreWeights);addWeights(tags,option.tagWeights);(option.avoidGenres||[]).forEach(g=>avoidGenres[g]=(avoidGenres[g]||0)+1);(option.avoidTags||[]).forEach(t=>avoidTags[t]=(avoidTags[t]||0)+1);addWeights(avoidGenres,option.avoidGenreWeights);addWeights(avoidTags,option.avoidTagWeights);addWeights(formats,option.formatWeights);addWeights(sources,option.sourceWeights);if(option.length)length=option.length;if(Number.isFinite(option.startYearMin))startYearMin=option.startYearMin;if(Number.isFinite(option.startYearMax))startYearMax=option.startYearMax});extractTextSignals($('wantText')?.value,{genres,tags,avoidGenres,avoidTags},.85);extractTextSignals($('preferenceText')?.value,{genres,tags,avoidGenres,avoidTags},.45);extractTextSignals($('avoidText')?.value,{genres:avoidGenres,tags:avoidTags},.85);return {genres,tags,avoidGenres,avoidTags,formats,sources,length,startYearMin,startYearMax};}
+function profileFromAnswers(answerValues=answers){const genres={},tags={},avoidGenres={},avoidTags={},formats={},sources={};let length='any',startYearMin=null,startYearMax=null;const addWeights=(target,values)=>{for(const [name,weight] of Object.entries(values||{})){const amount=Number(weight);if(Number.isFinite(amount)&&amount>0)target[name]=(target[name]||0)+amount}};answerValues.forEach((choice,i)=>{if(!Number.isInteger(choice)||!questions[i]?.options?.[choice])return;const option=questions[i].options[choice];if(option.neutral)return;(option.genres||[]).forEach(g=>genres[g]=(genres[g]||0)+1);(option.tags||[]).forEach(t=>tags[t]=(tags[t]||0)+1);addWeights(genres,option.genreWeights);addWeights(tags,option.tagWeights);(option.avoidGenres||[]).forEach(g=>avoidGenres[g]=(avoidGenres[g]||0)+1);(option.avoidTags||[]).forEach(t=>avoidTags[t]=(avoidTags[t]||0)+1);addWeights(avoidGenres,option.avoidGenreWeights);addWeights(avoidTags,option.avoidTagWeights);addWeights(formats,option.formatWeights);addWeights(sources,option.sourceWeights);if(option.length)length=option.length;if(Number.isFinite(option.startYearMin))startYearMin=option.startYearMin;if(Number.isFinite(option.startYearMax))startYearMax=option.startYearMax});extractTextSignals($('wantText')?.value,{genres,tags,avoidGenres,avoidTags},.85);extractTextSignals($('preferenceText')?.value,{genres,tags,avoidGenres,avoidTags},.45);extractTextSignals($('avoidText')?.value,{genres:avoidGenres,tags:avoidTags},.85);return {genres,tags,avoidGenres,avoidTags,formats,sources,length,startYearMin,startYearMax};}
 function escapeHTML(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function parseTitleInput(id){
  const seen=new Set();
@@ -1281,7 +1281,7 @@ function renderCardList(containerId,items){
 }
 let latestResult=null;
 function encodeShareState(){
- const state={v:10,a:answers,q:questionTextAnswers,w:$('wantText').value.slice(0,500),x:$('avoidText').value.slice(0,500),p:$('preferenceText').value.slice(0,700),f:$('favoriteTitles').value.slice(0,180),d:$('dislikedTitles').value.slice(0,180)};
+ const state={v:11,a:answers,w:$('wantText').value.slice(0,500),x:$('avoidText').value.slice(0,500),p:$('preferenceText').value.slice(0,700),f:$('favoriteTitles').value.slice(0,180),d:$('dislikedTitles').value.slice(0,180)};
  const bytes=new TextEncoder().encode(JSON.stringify(state));
  let binary='';bytes.forEach(byte=>binary+=String.fromCharCode(byte));
  return btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
@@ -1322,9 +1322,9 @@ function mapVersionFourAnswersToThirteen(values){
 function normalizeSharedAnswers(state){
  if(!Array.isArray(state?.a))return null;
  let values;
- if(state.v===10||state.v===9){
+ if(state.v===11||state.v===10||state.v===9){
   if(state.a.length!==questions.length)return null;
-  values=state.a;
+  values=state.a.map(value=>value===5?null:value);
  }else if(state.v===8||state.v===7||state.v===6){
   if(state.a.length!==18||!areValidLegacyAnswers(state.a))return null;
   values=[...state.a,null,null];[8,15,17].forEach(i=>values[i]=null);
@@ -1344,9 +1344,9 @@ function normalizeSharedAnswers(state){
 function normalizeSavedAnswers(data){
  if(!Array.isArray(data?.answers))return null;
  let values;
- if(data.v===10||data.v===9){
+ if(data.v===11||data.v===10||data.v===9){
   if(data.answers.length!==questions.length)return null;
-  values=data.answers;
+  values=data.answers.map(value=>value===5?null:value);
  }else if(data.v===8||data.v===7||data.v===6){
   if(data.answers.length!==18||!areValidLegacyAnswers(data.answers))return null;
   values=[...data.answers,null,null];[8,15,17].forEach(i=>values[i]=null);
@@ -1376,7 +1376,7 @@ function restoreShareState(){
   if(!normalizedAnswers)return false;
   if(typeof state.f!=='string'||typeof state.d!=='string'||state.f.length>180||state.d.length>180)return false;
   answers.splice(0,answers.length,...normalizedAnswers);
-  if(Array.isArray(state.q))questionTextAnswers.splice(0,questionTextAnswers.length,...questions.map((_,i)=>String(state.q[i]||'').slice(0,240)));
+  
   $('wantText').value=String(state.w||'').slice(0,500);$('avoidText').value=String(state.x||'').slice(0,500);$('preferenceText').value=String(state.p||'').slice(0,700);
   $('favoriteTitles').value=state.f;$('dislikedTitles').value=state.d;
   step=answers.includes(null)?answers.findIndex(n=>n===null):questions.length-1;render();
