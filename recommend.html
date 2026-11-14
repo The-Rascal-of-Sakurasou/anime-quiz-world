@@ -526,6 +526,8 @@ function buildDiscoveryPool(scored,selectedIds){
   .sort((a,b)=>(a._popularity||0)-(b._popularity||0)||(b._score||0)-(a._score||0)||(b._quality||0)-(a._quality||0));
 }
 
+const RECOMMENDATION_MAX_SIMILARITY=0.68;
+function passesRecommendationDiversityThreshold(candidate,selected,threshold=RECOMMENDATION_MAX_SIMILARITY){return calculateSelectionAdjustment(candidate,selected).maxSimilarity<threshold;}
 function calculateSelectionAdjustment(candidate,selected,discovery=false,maxPopularity=2){
  const genres=new Set(candidate.genres||[]);
  const tags=new Set((candidate.tags||[]).filter(t=>!t.isMediaSpoiler&&t.rank>=40).map(t=>t.name));
@@ -619,6 +621,8 @@ function runRecommendationSelfTests(){
  const similar=calculateSelectionAdjustment({genres:['Fantasy'],tags:[{name:'Magic',rank:80,isMediaSpoiler:false}],_popularity:20},[repeated]);
  const varied=calculateSelectionAdjustment({genres:['Drama'],tags:[{name:'Family',rank:80,isMediaSpoiler:false}],_popularity:20},[repeated]);
  check('ジャンル・物語タグが異なる候補を優先する',varied.total>similar.total);
+ check('類似度上限を超える候補を除外する',!passesRecommendationDiversityThreshold({genres:['Fantasy'],tags:[{name:'Magic',rank:80,isMediaSpoiler:false}]},[repeated]));
+ check('十分に異なる候補は多様性判定を通過する',passesRecommendationDiversityThreshold({genres:['Drama'],tags:[{name:'Family',rank:80,isMediaSpoiler:false}]},[repeated]));
  const qualitySample=summarizeRecommendationQuality([
   {id:1,genres:['Fantasy','Adventure'],tags:[{name:'Magic',rank:80,isMediaSpoiler:false}],_popularity:100},
   {id:2,genres:['Drama'],tags:[{name:'Family',rank:80,isMediaSpoiler:false}],_popularity:10}
@@ -1167,15 +1171,15 @@ async function getRecommendations(profile){
  seedReport.retrievalStats.seriesDeduplicatedCount=scoredBeforeSeriesDedup-scored.length;
  seedReport.retrievalStats.eligibleAfterSeriesDedup=scored.length;
  // 一致度を保ちながら、同じジャンル・タグに偏りすぎないよう逐次選択する。
- const selectDiverse=(candidates,count,discovery=false)=>{
-  const pool=[...candidates],selected=[];
+ const selectDiverse=(candidates,count,discovery=false,previouslySelected=[])=>{
+  const pool=[...candidates],selected=[...previouslySelected],selectedHere=[];
   const maxPopularity=Math.max(2,...pool.map(x=>(Number(x._popularity)||0)+1));
-  while(pool.length&&selected.length<count){
+  while(pool.length&&selectedHere.length<count){
    let bestIndex=-1,bestValue=-Infinity,bestAdjustment=null;
    const adjustments=pool.map(candidate=>calculateSelectionAdjustment(candidate,selected,discovery,maxPopularity));
-   // 既出候補とジャンル・主要タグが極端に重なる作品は、代替候補がある限り選ばない。
-   const diverseIndexes=adjustments.map((adjustment,index)=>({adjustment,index})).filter(item=>item.adjustment.maxSimilarity<0.78).map(item=>item.index);
-   const candidateIndexes=diverseIndexes.length?diverseIndexes:pool.map((_,index)=>index);
+   // 類似度の上限を超える候補は採用しない。多様性を守れない場合は枠を空ける。
+   const candidateIndexes=adjustments.map((adjustment,index)=>({adjustment,index})).filter(item=>item.adjustment.maxSimilarity<RECOMMENDATION_MAX_SIMILARITY).map(item=>item.index);
+   if(!candidateIndexes.length)break;
    for(const i of candidateIndexes){
     const candidate=pool[i],adjustment=adjustments[i];
     const value=candidate._score+adjustment.total;
@@ -1183,26 +1187,27 @@ async function getRecommendations(profile){
    }
    if(bestIndex<0)break;
    const chosen=pool.splice(bestIndex,1)[0];
-   chosen._selectionAdjustment=bestAdjustment||{similarityPenalty:0,genreConcentrationPenalty:0,noveltyBonus:0,total:0};
+   chosen._selectionAdjustment=bestAdjustment||{similarityPenalty:0,genreConcentrationPenalty:0,tagConcentrationPenalty:0,noveltyBonus:0,total:0};
    chosen._selectionBreakdown=[
     {label:'既出作品との類似度による調整',points:-chosen._selectionAdjustment.similarityPenalty},
     {label:'ジャンルの偏りによる調整',points:-chosen._selectionAdjustment.genreConcentrationPenalty},
     {label:'物語タグの偏りによる調整',points:-chosen._selectionAdjustment.tagConcentrationPenalty},
     {label:'意外性（AniList上の人気度）',points:chosen._selectionAdjustment.noveltyBonus}
    ].filter(item=>Math.abs(item.points)>0.001);
-   selected.push(chosen);
+   selected.push(chosen);selectedHere.push(chosen);
   }
-  return selected;
+  return selectedHere;
  };
  const closeMatches=selectDiverse(scored,4);
  const selectedIds=new Set(closeMatches.map(a=>a.id));
  // 回答スコアによる足切りは行わない。取得済みの全候補を意外なおすすめの対象にする。
  const discoveryPool=buildDiscoveryPool(scored,selectedIds);
- const discoveries=selectDiverse(discoveryPool,4,true);
+ const discoveries=selectDiverse(discoveryPool,4,true,closeMatches);
  seedReport.retrievalStats.recommendationQuality={
   closeMatches:summarizeRecommendationQuality(closeMatches,scored),
   discoveries:summarizeRecommendationQuality(discoveries,scored)
  };
+ seedReport.retrievalStats.diversitySelection={closeSelected:closeMatches.length,discoverySelected:discoveries.length,similarityThreshold:RECOMMENDATION_MAX_SIMILARITY};
  const learnedValidation=evaluateLearnedFeedback(recommendationFeedback);
  seedReport.learnedValidation={tested:learnedValidation.tested,decided:learnedValidation.decided,correct:learnedValidation.correct,accuracy:learnedValidation.decided?learnedValidation.correct/learnedValidation.decided:null};
  return {closeMatches,discoveries,seedReport};
@@ -1641,6 +1646,8 @@ function renderCards(result){
  const notices=[];
  if(report.dataWarnings?.length)notices.push(...report.dataWarnings);
   if(report.retrievalStats){
+   const diversity=report.retrievalStats.diversitySelection;
+   if(diversity&&(diversity.closeSelected<4||diversity.discoverySelected<4))notices.push('ジャンル・物語タグの類似度が高い候補を除外したため、推薦枠を満たしていません。類似作品で数を埋めることは避けています。');
    const stats=report.retrievalStats;
    const sortNames={POPULARITY_DESC:'人気順',SCORE_DESC:'評価順',TRENDING_DESC:'トレンド順',START_DATE_DESC:'放送開始日順'};
    const coverage=Object.entries(stats.sortCoverage||{}).map(([sort,count])=>(sortNames[sort]||sort)+' '+count+'作品').join('・');
