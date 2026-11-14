@@ -334,6 +334,7 @@ if(questions.length!==FIXED_QUESTION_COUNT)throw new Error('診断の質問数�
 let step=0;const answers=Array(questions.length).fill(null);
 const SAVE_KEY='aqw-recommendation-v12';
 const PREVIOUS_SAVE_KEY='aqw-recommendation-v11';
+const OLDER_SAVE_KEY='aqw-recommendation-v10';
 const LEGACY_SAVE_KEY='aqw-recommendation-v2';
 const FEEDBACK_KEY='aqw-recommendation-feedback-v1';
 const EVALUATION_HISTORY_KEY='aqw-recommendation-evaluation-history-v1';
@@ -799,7 +800,7 @@ function runRecommendationSelfTests(){
 }
 
 function saveDiagnosis(result=null){
- try{const data={v:11,savedAt:new Date().toISOString(),answers:[...answers],want:$('wantText').value.slice(0,500),avoid:$('avoidText').value.slice(0,500),preference:$('preferenceText').value.slice(0,700),favorite:$('favoriteTitles').value.slice(0,180),disliked:$('dislikedTitles').value.slice(0,180),result};safeStorage.setItem(SAVE_KEY,JSON.stringify(data));}
+ try{const data={v:12,savedAt:new Date().toISOString(),answers:[...answers],want:$('wantText').value.slice(0,500),avoid:$('avoidText').value.slice(0,500),preference:$('preferenceText').value.slice(0,700),favorite:$('favoriteTitles').value.slice(0,180),disliked:$('dislikedTitles').value.slice(0,180),result};safeStorage.setItem(SAVE_KEY,JSON.stringify(data));}
  catch(e){$('shareStatus').textContent='保存できませんでした。ブラウザの保存容量や設定を確認してください。';}
 }
 function restoreSavedDiagnosis(){
@@ -807,6 +808,7 @@ function restoreSavedDiagnosis(){
   const candidates=[
    {raw:safeStorage.getItem(SAVE_KEY),legacy:false},
    {raw:safeStorage.getItem(PREVIOUS_SAVE_KEY),legacy:true},
+   {raw:safeStorage.getItem(OLDER_SAVE_KEY),legacy:true},
    {raw:safeStorage.getItem(LEGACY_SAVE_KEY),legacy:true}
   ];
   let restored=null;
@@ -816,7 +818,7 @@ function restoreSavedDiagnosis(){
    try{data=JSON.parse(candidate.raw)}catch(_){continue}
    const normalized=normalizeSavedAnswers(data);
    if(!normalized||typeof data.favorite!=='string'||typeof data.disliked!=='string')continue;
-   restored={data,answers:normalized,legacy:candidate.legacy||data.v!==11};
+   restored={data,answers:normalized,legacy:candidate.legacy||data.v!==12};
    break;
   }
   if(!restored)return false;
@@ -837,7 +839,7 @@ function restoreSavedDiagnosis(){
  }catch(_){return false}
 }
 function clearSavedDiagnosis(){
- try{safeStorage.removeItem(SAVE_KEY);safeStorage.removeItem(PREVIOUS_SAVE_KEY);safeStorage.removeItem(LEGACY_SAVE_KEY);answers.fill(null);step=0;$('wantText').value='';$('avoidText').value='';$('preferenceText').value='';$('favoriteTitles').value='';$('dislikedTitles').value='';$('results').classList.add('hidden');$('diagnosis').classList.remove('hidden');$('error').classList.add('hidden');$('progressBar').style.width='0%';history.replaceState(null,'',location.pathname+location.search);render();$('shareStatus').textContent='このブラウザに保存された診断データを削除しました。';}
+ try{safeStorage.removeItem(SAVE_KEY);safeStorage.removeItem(PREVIOUS_SAVE_KEY);safeStorage.removeItem(OLDER_SAVE_KEY);safeStorage.removeItem(LEGACY_SAVE_KEY);answers.fill(null);step=0;$('wantText').value='';$('avoidText').value='';$('preferenceText').value='';$('favoriteTitles').value='';$('dislikedTitles').value='';$('results').classList.add('hidden');$('diagnosis').classList.remove('hidden');$('error').classList.add('hidden');$('progressBar').style.width='0%';history.replaceState(null,'',location.pathname+location.search);render();$('shareStatus').textContent='このブラウザに保存された診断データを削除しました。';}
  catch(_){$('shareStatus').textContent='保存データを削除できませんでした。';}
 }
 const $=id=>document.getElementById(id);
