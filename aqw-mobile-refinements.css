@@ -1,6 +1,5 @@
 /* Mobile refinement: prevent clipping and improve touch/accessibility */
 @media(max-width:700px){
-  html{scroll-padding-top:14px}
   body{overflow-wrap:anywhere}
   img,video,canvas{max-width:100%;height:auto}
   iframe{max-width:100%}
