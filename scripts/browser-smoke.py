@@ -1256,8 +1256,8 @@ def test_recommendation_diagnosis(browser):
         assert choices.count() == expected_choice_count, f"Question {step + 1} must have four substantive choices plus unknown and none-of-the-above"
         if step == 0:
             assert page.locator("#additionalPreferences").is_hidden(), "The separate free-text section must not appear inside the question flow"
-            assert choices.nth(4).inner_text().strip() == "わからない", "The fifth answer must be unknown"
-            assert choices.nth(5).inner_text().strip() == "選択肢にない", "The sixth answer must be none-of-the-above"
+            assert choices.nth(4).locator("span").nth(1).inner_text().strip() == "わからない", "The fifth answer must be unknown"
+            assert choices.nth(5).locator("span").nth(1).inner_text().strip() == "選択肢にない", "The sixth answer must be none-of-the-above"
             choices.nth(4).click()
             assert page.locator("#next").is_enabled(), "Unknown must be a valid answer without free text"
             choices.nth(5).click()
