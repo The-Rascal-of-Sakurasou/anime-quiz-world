@@ -4,3 +4,6 @@ verify_jwt = true
 
 [functions.aqw-match-prepare]
 verify_jwt = true
+
+[functions.aqw-admin-control]
+verify_jwt = true
