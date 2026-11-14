@@ -1646,6 +1646,8 @@ function renderCards(result){
  const notices=[];
  if(report.dataWarnings?.length)notices.push(...report.dataWarnings);
   if(report.retrievalStats){
+   const diversity=report.retrievalStats.diversitySelection;
+   if(diversity&&(diversity.closeSelected<4||diversity.discoverySelected<4))notices.push('ジャンル・物語タグの類似度が高い候補を除外したため、推薦枠を満たしていません。類似作品で数を埋めることは避けています。');
    const stats=report.retrievalStats;
    const sortNames={POPULARITY_DESC:'人気順',SCORE_DESC:'評価順',TRENDING_DESC:'トレンド順',START_DATE_DESC:'放送開始日順'};
    const coverage=Object.entries(stats.sortCoverage||{}).map(([sort,count])=>(sortNames[sort]||sort)+' '+count+'作品').join('・');
