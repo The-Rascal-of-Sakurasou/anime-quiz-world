@@ -2,9 +2,11 @@ name: Filter anime catalogue to Japanese origin only
 
 on:
   push:
-    branches: [main]
+    branches: [main, refactor/aqw-shared-code-20261114]
     paths:
       - "data/anime-catalog.json"
+      - "scripts/filter-anime-catalog-japan-only.mjs"
+      - ".github/workflows/filter-anime-catalog-japan-only.yml"
   workflow_dispatch:
 
 permissions:
@@ -32,8 +34,10 @@ jobs:
           node --check anime-origin-policy.js
           node --check scripts/filter-anime-catalog-japan-only.mjs
           node --check scripts/sync-anime-catalog.mjs
+          node --check scripts/validate-anime-catalog.mjs
           node scripts/test-anime-origin-policy.mjs
           node scripts/test-anime-catalog-validator.mjs
+          node scripts/test-static-security.mjs
       - name: Remove every non-Japanese-origin catalogue entry
         run: node scripts/filter-anime-catalog-japan-only.mjs
       - name: Verify compressed and uncompressed catalogue match
