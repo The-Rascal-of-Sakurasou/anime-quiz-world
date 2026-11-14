@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const pageHtml = await readFile("index.html", "utf8");
-const linkedScripts = [...pageHtml.matchAll(/<script\\b[^>]*src=["']\\.\\/([^"']+)["']/g)];
-const html = pageHtml + "\\n" + await Promise.all(
+const linkedScripts = [...pageHtml.matchAll(/<script\b[^>]*src=["']\.\/([^"']+)["']/g)];
+const html = pageHtml + "\n" + await Promise.all(
   linkedScripts.map((match) => readFile(match[1], "utf8"))
 ).then((scripts) => scripts.join("\\n"));
 const catalog = JSON.parse(await readFile("data/anime-catalog.json", "utf8"));
