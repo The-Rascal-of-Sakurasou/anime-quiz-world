@@ -143,8 +143,7 @@ const declaredCount = payload.count ?? payload.itemCount;
 if (payload.schemaVersion !== 2 || !Array.isArray(payload.items) || payload.items.length !== declaredCount) throw new Error("Catalogue schema/count validation failed.");
 const embeddedCharacterRecords = payload.items.filter(item => Object.prototype.hasOwnProperty.call(item || {}, "characters")).length;
 if (embeddedCharacterRecords > 0) throw new Error("Unused character records must not be embedded in the shared catalogue: " + embeddedCharacterRecords);
-const hasJapaneseTitle = (a) => [a?.title?.native,a?.title?.english,a?.title?.romaji,...(Array.isArray(a?.synonyms)?a.synonyms:[])].some(value => typeof value === "string" && /[ぁ-んァ-ヶ]/.test(value));
-const eligibleOrigin = (a) => a?.countryOfOrigin === "JP" || (typeof a?.countryOfOrigin === "string" && a.countryOfOrigin.length > 0 && Number(a?.popularity) >= 10000 && hasJapaneseTitle(a));
+const eligibleOrigin = (a) => a?.countryOfOrigin === "JP";
 const items = payload.items.filter(a => a && a.id && a.isAdult !== true && eligibleOrigin(a) && !((a.genres || []).includes("Hentai")) && ["TV","TV_SHORT","MOVIE","OVA","ONA","SPECIAL"].includes(a.format) && title(a));
 const yearSet = new Set(items.map(year).filter(y => Number.isInteger(y) && y > 1900));
 const studioSet = new Set(items.flatMap(a => (a.studios?.nodes || []).map(n => norm(n?.name)).filter(Boolean)));
@@ -183,8 +182,7 @@ const eligible = {
   titleSource: items.filter(a => String(a.source || "").trim() && sourceSet.size >= 4),
 };
 const total = items.length;
-const japaneseOriginCount = items.filter(a => a.countryOfOrigin === "JP").length;
-const famousForeignCount = total - japaneseOriginCount;
+const japaneseOriginCount = items.length;
 const catalogueBytes = Buffer.byteLength(JSON.stringify(payload), "utf8");
 const catalogueGzipBytes = await readFile(CATALOG + ".gz").then(buffer => buffer.byteLength).catch(() => null);
 const fieldBytes = {};
@@ -204,7 +202,6 @@ const report = {
   catalogueGeneratedAt: payload.generatedAt,
   catalogueCount: payload.count ?? payload.itemCount,
   japaneseOriginCount,
-  famousForeignCount,
   catalogueBytes,
   catalogueGzipBytes,
   embeddedCharacterRecords,
@@ -243,7 +240,7 @@ await mkdir("artifacts/question-mode-coverage", { recursive: true });
 await writeFile(REPORT, JSON.stringify(report,null,2)+"\n");
 console.log("Question-mode coverage audit");
 console.log("Catalogue: "+total+" records (generated "+payload.generatedAt+")");
-console.log("Japanese-origin: "+japaneseOriginCount+"; famous foreign with Japanese titles: "+famousForeignCount);
+console.log("Japanese-origin-only records: "+japaneseOriginCount);
 console.log("JSON size: "+catalogueBytes+" bytes; average "+report.averageBytesPerRecord+" bytes per record");
 console.log("Embedded character-data records: "+embeddedCharacterRecords);
 console.log("Largest fields: "+largestFields.map(row=>row.field+" "+row.bytes+" bytes ("+row.percent+"%)").join("; "));

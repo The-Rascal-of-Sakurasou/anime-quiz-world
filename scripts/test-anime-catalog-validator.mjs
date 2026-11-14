@@ -21,12 +21,16 @@ const foreignFixture = structuredClone(fixture);
 const foreignAnime = structuredClone(fixture.items[0]);
 foreignAnime.id = 3;
 foreignAnime.countryOfOrigin = "US";
-foreignAnime.popularity = 10000;
+foreignAnime.popularity = 100000;
 foreignAnime.title.native = "海外作品の日本語タイトル";
 delete foreignAnime.originVerified;
 foreignFixture.items.push(foreignAnime);
 foreignFixture.count = foreignFixture.items.length;
-assert.equal(validateCatalog(foreignFixture).count, 3, "Famous foreign anime with a Japanese title should pass");
+assert.throws(
+  () => validateCatalog(foreignFixture),
+  /Japanese origin/,
+  "Foreign-origin anime must be rejected even when popular and given a Japanese title"
+);
 
 const rejects = (label, mutate) => {
   const sample = structuredClone(fixture);
@@ -42,9 +46,9 @@ rejects("foreign anime without a Japanese title", (sample) => {
   sample.items[0].title.native = "English Only";
   delete sample.items[0].originVerified;
 });
-rejects("foreign anime below popularity threshold", (sample) => {
+rejects("foreign anime with a Japanese title", (sample) => {
   sample.items[0].countryOfOrigin = "US";
-  sample.items[0].popularity = 9999;
+  sample.items[0].popularity = 100000;
   sample.items[0].title.native = "海外作品の日本語タイトル";
   delete sample.items[0].originVerified;
 });
@@ -57,4 +61,4 @@ rejects("missing title", (sample) => { sample.items[0].title = {}; });
 rejects("duplicate normalized synonyms", (sample) => { sample.items[0].synonyms = ["Test Alias", "test alias"]; });
 rejects("embedded character data is excluded from the shared catalogue", (sample) => { sample.items[0].characters = { nodes: [] }; });
 
-console.log("Anime catalogue validator tests passed: 1 valid compact-schema fixture and 12 rejected invalid cases.");
+console.log("Anime catalogue validator tests passed: 1 valid compact-schema fixture; foreign-origin regression and 12 invalid cases rejected.");

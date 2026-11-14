@@ -59,10 +59,12 @@ function titleVariants(item) {
   return variants;
 }
 
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
 async function fetchAniListPage(page) {
   const query = `query {
     Page(page: ${page}, perPage: 25) {
-      media(type: ANIME, sort: POPULARITY_DESC, isAdult: false) {
+      media(type: ANIME, countryOfOrigin: JP, sort: POPULARITY_DESC, isAdult: false) {
         countryOfOrigin\n        title { native romaji english }
         synonyms
         description(asHtml: false)
@@ -72,29 +74,44 @@ async function fetchAniListPage(page) {
       }
     }
   }`;
-  const response = await fetch('https://graphql.anilist.co', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', accept: 'application/json' },
-    body: JSON.stringify({ query })
-  });
-  if (!response.ok) throw new Error(`AniList page ${page} failed: HTTP ${response.status}`);
-  const data = await response.json();
-  if (data.errors?.length) throw new Error(`AniList GraphQL error: ${JSON.stringify(data.errors)}`);
-  return data.data.Page.media;
+  let lastError;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      const response = await fetch('https://graphql.anilist.co', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({ query })
+      });
+      if (response.status === 429) {
+        const retryAfter = Number(response.headers.get('Retry-After'));
+        await sleep((Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : 60) * 1000);
+        continue;
+      }
+      if (response.status >= 500 && attempt < 3) {
+        await sleep(1500 * (2 ** attempt));
+        continue;
+      }
+      if (!response.ok) throw new Error(`AniList page ${page} failed: HTTP ${response.status}`);
+      const data = await response.json();
+      if (data.errors?.length) throw new Error(`AniList GraphQL error: ${JSON.stringify(data.errors)}`);
+      return data.data.Page.media;
+    } catch (error) {
+      lastError = error;
+      if (attempt < 3) await sleep(1500 * (2 ** attempt));
+    }
+  }
+  throw lastError || new Error(`AniList page ${page} failed after retries.`);
 }
 
 const media = [];
-for (let firstPage = 1; firstPage <= 20; firstPage += 4) {
-  const batch = await Promise.all(
-    [0, 1, 2, 3].map(offset => fetchAniListPage(firstPage + offset))
-  );
-  media.push(...batch.flat());
-  if (firstPage < 20) await new Promise(resolve => setTimeout(resolve, 750));
+for (let page = 1; page <= 20; page++) {
+  media.push(...await fetchAniListPage(page));
+  if (page < 20) await sleep(2100);
 }
 const supportedFormats = new Set(['TV', 'TV_SHORT', 'MOVIE', 'OVA', 'ONA', 'SPECIAL']);
 const missing = media.filter(item => {
   if (!supportedFormats.has(item.format)) return false;
-  if (item.countryOfOrigin !== 'JP' && (!(Number(item.popularity) >= 10000) || ![item.title?.native, item.title?.english, item.title?.romaji, ...(item.synonyms || [])].some(value => typeof value === 'string' && /[ぁ-んァ-ヶ]/.test(value)))) return false;
+  if (item.countryOfOrigin !== 'JP') return false;
   if (hasUsableJapaneseSynopsis(item.description)) return false;
   return ![...titleVariants(item)].some(alias => covered.has(alias));
 }).sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
@@ -105,7 +122,7 @@ const body = missing.length
   ? [
       `## 未登録の人気作品候補（${date}）`,
       '',
-      'AniListの人気上位500作品（日本制作作品と、日本語タイトルがあり人気条件を満たす海外作品）を確認し、日本語あらすじの登録キーと照合しました。',
+      'AniListの人気上位500作品（日本原産作品）を確認し、日本語あらすじの登録キーと照合しました。',
       '以下は**追加候補の検出結果**です。登録前に公式サイト等の日本語一次情報を確認し、作品・シーズンの取り違えがないことを人手で確認してください。',
       '',
       '| 作品名（日本語原題） | 形式 | 年 | Popularity |',
@@ -116,7 +133,7 @@ const body = missing.length
       '',
       'このIssueはGitHub Actionsが週1回更新します。自動生成・機械翻訳のあらすじを本番データへ直接追加することはありません。'
     ].join('\n')
-  : `## 監査結果（${date}）\n\nAniListの人気上位500作品（日本制作作品と、日本語タイトルがあり人気条件を満たす海外作品）について、未登録候補は検出されませんでした。\n\n次回の週次監査までこのIssueを閉じます。`;
+  : `## 監査結果（${date}）\n\nAniListの人気上位500作品（日本原産作品）について、未登録候補は検出されませんでした。\n\n次回の週次監査までこのIssueを閉じます。`;
 
 const headers = {
   authorization: `Bearer ${token}`,
