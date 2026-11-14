@@ -64,7 +64,6 @@ Deno.serve(async (req: Request) => {
     });
     const ipHash = await hashClientIp(ip, serviceKey);
     const { data: allowed, error: limitError } = await admin
-      .schema("private")
       .rpc("consume_qa_submission_rate_limit", { p_ip_hash: ipHash });
     if (limitError) {
       console.error("AQW Q&A rate-limit check failed:", limitError.message);

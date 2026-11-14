@@ -20,8 +20,8 @@ assert.match(migration, /revoke insert on table public\.qa_questions from anon, 
 assert.match(migration, /interval '10 minutes'/i);
 assert.match(migration, /return v_count <= 5/i);
 assert.match(migration, /interval '30 days'/i);
-assert.match(migration, /revoke all on function private\.consume_qa_submission_rate_limit\(text\) from public, anon, authenticated/i);
-assert.match(migration, /grant execute on function private\.consume_qa_submission_rate_limit\(text\) to service_role/i);
+assert.match(migration, /revoke all on function public\.consume_qa_submission_rate_limit\(text\) from public, anon, authenticated/i);
+assert.match(migration, /grant execute on function public\.consume_qa_submission_rate_limit\(text\) to service_role/i);
 assert.match(privacy, /HMAC-SHA-256/);
 assert.match(privacy, /最大30日/);
 assert.match(config, /\[functions\.aqw-qa-submit\]\s*verify_jwt = false/);

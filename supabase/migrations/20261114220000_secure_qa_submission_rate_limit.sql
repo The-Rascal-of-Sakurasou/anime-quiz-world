@@ -12,10 +12,9 @@ create index if not exists qa_submission_rate_limits_updated_at_idx
   on private.qa_submission_rate_limits (updated_at);
 alter table private.qa_submission_rate_limits enable row level security;
 revoke all on table private.qa_submission_rate_limits from public, anon, authenticated;
-grant usage on schema private to service_role;
 grant all on table private.qa_submission_rate_limits to service_role;
 
-create or replace function private.consume_qa_submission_rate_limit(p_ip_hash text)
+create or replace function public.consume_qa_submission_rate_limit(p_ip_hash text)
 returns boolean
 language plpgsql
 security definer
@@ -50,5 +49,5 @@ begin
 end;
 $function$;
 
-revoke all on function private.consume_qa_submission_rate_limit(text) from public, anon, authenticated;
-grant execute on function private.consume_qa_submission_rate_limit(text) to service_role;
+revoke all on function public.consume_qa_submission_rate_limit(text) from public, anon, authenticated;
+grant execute on function public.consume_qa_submission_rate_limit(text) to service_role;
