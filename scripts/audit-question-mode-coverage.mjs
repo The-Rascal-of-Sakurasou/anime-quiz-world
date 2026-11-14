@@ -148,6 +148,10 @@ const eligibleOrigin = (a) => a?.countryOfOrigin === "JP" || (typeof a?.countryO
 const items = payload.items.filter(a => a && a.id && a.isAdult !== true && eligibleOrigin(a) && !((a.genres || []).includes("Hentai")) && ["TV","TV_SHORT","MOVIE","OVA","ONA","SPECIAL"].includes(a.format) && title(a));
 const yearSet = new Set(items.map(year).filter(y => Number.isInteger(y) && y > 1900));
 const studioSet = new Set(items.flatMap(a => (a.studios?.nodes || []).map(n => norm(n?.name)).filter(Boolean)));
+const episodeSet = new Set(items.filter(a => a.format !== "MOVIE").map(a => Number(a.episodes)).filter(value => Number.isInteger(value) && value > 0).map(String));
+const formatSet = new Set(items.map(a => String(a.format || "").trim()).filter(Boolean));
+const sourceSet = new Set(items.map(a => String(a.source || "").trim()).filter(Boolean));
+const genreSet = new Set(items.flatMap(a => Array.isArray(a.genres) ? a.genres : []).map(value => String(value || "").trim()).filter(Boolean));
 const aliasOwners = new Map();
 for (const a of items) for (const key of new Set([...titleVariants(a), ...aliases(a).map(norm)])) {
   if (!aliasOwners.has(key)) aliasOwners.set(key, new Set());
@@ -159,13 +163,24 @@ for (const a of items) if (usableSynopsis(a)) {
   if (key && !synopsisByKey.has(key)) synopsisByKey.set(key, a);
 }
 const synopsisCandidateCount = synopsisByKey.size;
+const hasCover = a => [a?.coverImage?.large,a?.coverImage?.medium,a?.coverImage?.extraLarge].some(value => typeof value === "string" && /^https:\/\//i.test(value));
+const ownStudios = a => new Set((a?.studios?.nodes || []).map(n => norm(n?.name)).filter(Boolean));
+const ownGenres = a => new Set((Array.isArray(a?.genres) ? a.genres : []).map(value => String(value || "").trim()).filter(Boolean));
 const eligible = {
+  image: items.filter(a => title(a) && hasCover(a)),
   synopsis: items.filter(a => usableSynopsis(a) && title(a) && synopsisCandidateCount >= 4),
   titleYear: items.filter(a => Number.isInteger(year(a)) && year(a) > 1900 && yearSet.size >= 4),
   synonym: items.filter(a => aliases(a).some(x => {
     const owners = aliasOwners.get(norm(x)); return owners?.size === 1 && owners.has(Number(a.id));
   })),
   titleStudio: items.filter(a => (a.studios?.nodes || []).some(n => String(n?.name || "").trim()) && studioSet.size >= 4),
+  studio: items.filter(a => ownStudios(a).size > 0 && studioSet.size - ownStudios(a).size >= 3),
+  year: items.filter(a => Number.isInteger(year(a)) && year(a) > 1900 && items.length >= 4),
+  titleSynopsis: items.filter(a => usableSynopsis(a) && title(a) && synopsisCandidateCount >= 4),
+  titleEpisodes: items.filter(a => a.format !== "MOVIE" && Number.isInteger(Number(a.episodes)) && Number(a.episodes) > 0 && episodeSet.size >= 4),
+  titleGenre: items.filter(a => ownGenres(a).size > 0 && [...genreSet].filter(value => !ownGenres(a).has(value)).length >= 3),
+  titleFormat: items.filter(a => String(a.format || "").trim() && formatSet.size >= 4),
+  titleSource: items.filter(a => String(a.source || "").trim() && sourceSet.size >= 4),
 };
 const total = items.length;
 const japaneseOriginCount = items.filter(a => a.countryOfOrigin === "JP").length;
@@ -199,11 +214,23 @@ const report = {
   uniqueBroadcastYears: yearSet.size,
   uniqueProductionStudios: studioSet.size,
   uniqueSynopsisTexts: synopsisCandidateCount,
+  uniqueEpisodeCounts: episodeSet.size,
+  uniqueFormats: formatSet.size,
+  uniqueSources: sourceSet.size,
+  uniqueGenres: genreSet.size,
   modes: [
+    summarize("image","作品画像 → 作品名",eligible.image),
     summarize("synopsis","あらすじ → 作品名",eligible.synopsis),
-    summarize("titleYear","作品名 → 公開・放送年",eligible.titleYear),
-    summarize("synonym","略称 → 作品名",eligible.synonym),
+    summarize("synonym","略称・別名 → 作品名",eligible.synonym),
+    summarize("studio","制作スタジオ → 作品名",eligible.studio),
+    summarize("year","公開・放送年 → 作品名",eligible.year),
+    summarize("titleYear","作品名 → 公開・放送開始年",eligible.titleYear),
     summarize("titleStudio","作品名 → 制作スタジオ",eligible.titleStudio),
+    summarize("titleSynopsis","作品名 → あらすじ",eligible.titleSynopsis),
+    summarize("titleEpisodes","作品名 → 話数",eligible.titleEpisodes),
+    summarize("titleGenre","作品名 → ジャンル",eligible.titleGenre),
+    summarize("titleFormat","作品名 → 作品形式",eligible.titleFormat),
+    summarize("titleSource","作品名 → 原作・制作区分",eligible.titleSource),
   ],
   caveats: [
     "Japanese locale coverage is audited.",
@@ -221,5 +248,5 @@ console.log("JSON size: "+catalogueBytes+" bytes; average "+report.averageBytesP
 console.log("Embedded character-data records: "+embeddedCharacterRecords);
 console.log("Largest fields: "+largestFields.map(row=>row.field+" "+row.bytes+" bytes ("+row.percent+"%)").join("; "));
 for (const row of report.modes) console.log(row.label+": "+row.eligible+"/"+row.total+" ("+row.coveragePercent+"%); missing "+row.missing);
-console.log("Unique years: "+yearSet.size+"; studios: "+studioSet.size+"; synopsis texts: "+synopsisCandidateCount);
+console.log("Unique years: "+yearSet.size+"; studios: "+studioSet.size+"; episodes: "+episodeSet.size+"; formats: "+formatSet.size+"; sources: "+sourceSet.size+"; genres: "+genreSet.size+"; synopsis texts: "+synopsisCandidateCount);
 console.log("Detailed report: "+REPORT);

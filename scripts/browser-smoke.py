@@ -1237,7 +1237,7 @@ def test_recommendation_diagnosis(browser):
     match = re.search(r"/\s*(\d+)", step_text)
     assert match, f"Could not read diagnosis question count: {step_text}"
     question_count = int(match.group(1))
-    assert question_count == 18, f"Diagnosis must contain exactly 18 questions: {question_count}"
+    assert question_count == 20, f"Diagnosis must contain exactly 20 questions: {question_count}"
 
     for step in range(question_count):
         choices = page.locator("#choices button.choice")
@@ -1265,7 +1265,7 @@ def test_recommendation_diagnosis(browser):
         timeout=10000,
     )
     # Run the page's complete recommendation self-test suite, including the
-    # 18-question structure, non-overlapping dimensions, scoring, exclusions,
+    # 20-question structure, non-overlapping dimensions, scoring, exclusions,
     # duplicate prevention, and foreign-title eligibility rules.
     self_test_button = page.get_by_role("button", name="推薦ロジックを自己点検")
     self_test_button.wait_for(state="visible", timeout=10000)
