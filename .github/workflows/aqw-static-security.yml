@@ -105,7 +105,7 @@ jobs:
           marker = "create table private.aqw_speed_rush_attempts"
           if marker not in original:
               raise SystemExit("Expected migration anchor was not found; refusing to modify files.")
-          migration.write_text(fixture + "\\n" + original)
+          migration.write_text(fixture + "\n" + original)
           PY
       - name: Start disposable local Supabase
         run: supabase start --debug
