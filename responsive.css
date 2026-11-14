@@ -183,3 +183,11 @@ dialog,[role="dialog"],.modal,.modal-content,.overlay-content{max-width:min(100v
   .site-footer nav{gap:10px 14px}
 }
 @media(max-width:380px){.site-footer{width:calc(100% - 16px)}}
+
+/* Quiz setup: stack question-count controls on narrow screens. */
+@media(max-width:520px){
+  .setup-controls label[for="questionCount"]>div{grid-template-columns:minmax(0,1fr)!important;gap:8px!important}
+  #questionCountPreset,#questionCount{width:100%!important;min-width:0!important}
+  #questionCount{font-size:16px;}
+  #questionCountHelp{display:block;line-height:1.55}
+}
