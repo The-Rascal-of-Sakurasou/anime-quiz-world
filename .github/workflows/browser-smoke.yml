@@ -17,6 +17,7 @@ on:
       - aqw-brand-logo.css
       - aqw-brand-base.css
       - aqw-document-pages.css
+      - aqw-safe-storage.js
       - scripts/browser-smoke.py
       - scripts/test-official-site-links.mjs
       - scripts/audit-anime-image-urls.mjs
