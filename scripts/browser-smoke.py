@@ -1247,14 +1247,23 @@ def test_recommendation_diagnosis(browser):
     question_count = int(match.group(1))
     assert question_count == 20, f"Diagnosis must contain exactly 20 questions: {question_count}"
 
-    # Four substantive choices plus neutral and free-text options.
+    # Four substantive choices plus distinct neutral answers.
     expected_choice_count = 6
 
     for step in range(question_count):
         choices = page.locator("#choices button.choice")
         choices.first.wait_for(state="visible", timeout=10000)
-        assert choices.count() == expected_choice_count, f"Question {step + 1} must have four substantive choices plus two optional choices"
-        choices.first.click()
+        assert choices.count() == expected_choice_count, f"Question {step + 1} must have four substantive choices plus unknown and none-of-the-above"
+        if step == 0:
+            assert page.locator("#additionalPreferences").is_hidden(), "The separate free-text section must not appear inside the question flow"
+            assert choices.nth(4).inner_text().strip() == "わからない", "The fifth answer must be unknown"
+            assert choices.nth(5).inner_text().strip() == "選択肢にない", "The sixth answer must be none-of-the-above"
+            choices.nth(4).click()
+            assert page.locator("#next").is_enabled(), "Unknown must be a valid answer without free text"
+            choices.nth(5).click()
+            assert page.locator("#next").is_enabled(), "None-of-the-above must be a valid answer without inline free text"
+        else:
+            choices.first.click()
         page.locator("#next").click()
         if step + 1 < question_count:
             page.wait_for_function(
@@ -1263,9 +1272,29 @@ def test_recommendation_diagnosis(browser):
                 timeout=10000,
             )
 
+    page.locator("#additionalPreferences").wait_for(state="visible", timeout=10000)
+    assert page.locator("#questionStep").is_hidden(), "Free text must be on a separate step after all twenty questions"
+    page.locator("#wantText").fill("SFとミステリー、伏線の多い物語")
+    page.locator("#avoidText").fill("恋愛中心の作品")
+    page.locator("#preferenceText").fill("物語の展開が速い作品が好き")
+    page.locator("#favoriteTitles").fill("作品A、作品B")
+    page.locator("#dislikedTitles").fill("作品C")
+    page.locator("#back").click()
+    assert page.locator("#questionStep").is_visible(), "Back from free text must return to question 20"
+    assert page.locator("#stepLabel").inner_text().endswith("20 / 20"), "Back must return to the final question"
+    page.locator("#next").click()
+    page.locator("#additionalPreferences").wait_for(state="visible", timeout=10000)
+    assert page.locator("#wantText").input_value() == "SFとミステリー、伏線の多い物語", "Free text must persist when navigating back to the final question"
+    assert page.locator("#next").inner_text() == "診断結果を見る", "The separate free-text step must have an explicit results action"
+    page.locator("#next").click()
+
     page.locator("#results:not(.hidden)").wait_for(state="visible", timeout=60000)
     card_count = page.locator("#animeCards .anime").count() + page.locator("#discoveryCards .anime").count()
     assert card_count > 0, "Diagnosis completed but returned no recommendation cards"
+
+    profile_description = page.locator("#profileDescription").inner_text()
+    for signal in ("SF", "ミステリー", "恋愛", "テンポの速い展開"):
+        assert signal in profile_description, f"Free-text signal {signal} was not reflected in the visible analysis: {profile_description}"
 
     # Record one recommendation rating first. The analytics panel (which
     # contains the self-test control) is intentionally hidden until feedback exists.
