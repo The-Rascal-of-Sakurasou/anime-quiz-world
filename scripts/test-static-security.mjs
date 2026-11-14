@@ -148,7 +148,7 @@ assert.match(source.get("guide.html"), /ブロック・通報/, "The guide must 
 
 let checkedScripts = 0;
 for (const [file, html] of source) {
-  const linkedScripts = [...html.matchAll(/<script\b[^>]*src=["']\.\/([^"']+)["']/g)]
+  const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)];
   for (const match of scripts) {
     const attrs = match[1] || "";
     const body = match[2] || "";

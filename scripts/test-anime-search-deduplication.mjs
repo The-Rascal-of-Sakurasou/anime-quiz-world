@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-const html = await readFile("index.html", "utf8");
+const pageHtml = await readFile("index.html", "utf8");
+const linkedScripts = [...pageHtml.matchAll(/<script\b[^>]*src=["']\.\/([^"']+)["']/g)];
+const html = pageHtml + "\n" + await Promise.all(
+  linkedScripts.map((match) => readFile(match[1], "utf8"))
+).then((contents) => contents.join("\n"));
 const start = html.indexOf("function deduplicateSearchResults(");
 const end = html.indexOf("\nfunction mergeAnimeRecords", start);
 assert.notEqual(start, -1, "Search-result deduplication function must exist");
