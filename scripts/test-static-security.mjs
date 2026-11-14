@@ -395,6 +395,9 @@ assert.match(recommend, /独立したサイドストーリーは親作品と別�
 const syncScript = fs.readFileSync("scripts/sync-anime-catalog.mjs", "utf8");
 const syncWorkflow = fs.readFileSync(".github/workflows/sync-anime-catalog.yml", "utf8");
 assert.ok(syncScript.includes('import "../anime-origin-policy.js";'), "Catalogue sync must use the shared origin policy");
+const browserSmoke = fs.readFileSync("scripts/browser-smoke.py", "utf8");
+assert.match(browserSmoke, /def japanese_origin\(item\):\s*return item\.get\("countryOfOrigin"\) == "JP"/, "Browser smoke seasonal filter must use the strict Japanese-only country rule");
+assert.doesNotMatch(browserSmoke, /rules\s*=\s*\{|relations\s*\{\s*edges/, "Browser smoke must not require source-relation evidence after country-only filtering");
 const originResults = [
   isRecommendedOriginJapanese({ countryOfOrigin: "JP" }),
   isRecommendedOriginJapanese({ countryOfOrigin: "US", popularity: 100000, title: { native: "日本語タイトル" } }),
