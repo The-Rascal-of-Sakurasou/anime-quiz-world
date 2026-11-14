@@ -1274,9 +1274,12 @@ def test_recommendation_diagnosis(browser):
         if step == 0:
             assert page.locator("#questionOtherWrap").count() == 0, "Per-question free-text controls must not exist"
             assert page.locator("#additionalPreferences").is_hidden(), "Separate free-text section must remain hidden during the 20 questions"
+            assert "わからない・選択肢にない" in choices.nth(4).inner_text(), "The fifth choice must combine unknown and none-of-the-above"
             choices.nth(4).click()
-            assert page.locator("#next").is_enabled(), "Unknown answer must not require free text"
-        choices.first.click()
+            assert page.locator("#next").is_enabled(), "Unknown/none-of-the-above answer must not require free text"
+            assert choices.nth(4).get_attribute("aria-pressed") == "true", "The fifth choice must be selected"
+        else:
+            choices.first.click()
         page.locator("#next").click()
         if step + 1 < question_count:
             page.wait_for_function(
@@ -1294,10 +1297,14 @@ def test_recommendation_diagnosis(browser):
     page.locator("#dislikedTitles").fill("作品C")
     assert page.locator("#next").is_enabled(), "Additional free-text fields are optional and must not block diagnosis"
     assert page.locator("#wantText").input_value() == "SFとミステリー、伏線の多い物語", "Separate free-text input must retain its value"
+    assert page.locator("#next").inner_text() == "診断結果を見る", "The separate free-text step must have an explicit results action"
     page.locator("#next").click()
     page.locator("#results:not(.hidden)").wait_for(state="visible", timeout=60000)
     card_count = page.locator("#animeCards .anime").count() + page.locator("#discoveryCards .anime").count()
     assert card_count > 0, "Diagnosis completed but returned no recommendation cards"
+    profile_description = page.locator("#profileDescription").inner_text()
+    for signal in ("SF", "ミステリー", "恋愛", "テンポの速い展開"):
+        assert signal in profile_description, f"Free-text signal {signal} was not reflected in the visible analysis: {profile_description}"
 
     # Record one recommendation rating first. The analytics panel (which
     # contains the self-test control) is intentionally hidden until feedback exists.
@@ -1324,6 +1331,46 @@ def test_recommendation_diagnosis(browser):
     context.close()
 
 
+
+
+def test_recommendation_failure_still_shows_results(browser):
+    """A completed diagnosis must reach a visible result state even if AniList is unavailable."""
+    context = browser.new_context(viewport={"width": 1280, "height": 900}, locale="ja-JP")
+    page = context.new_page()
+    errors = []
+    page.on("pageerror", lambda error: errors.append(str(error)))
+    install_routes(page)
+
+    def fail_graphql(route):
+        if route.request.method == "OPTIONS":
+            route.fulfill(status=204, headers=CORS_HEADERS)
+            return
+        route.fulfill(
+            status=503,
+            headers={**CORS_HEADERS, "Content-Type": "application/json"},
+            body=json.dumps({"errors": [{"message": "temporary smoke-test outage"}]}),
+        )
+
+    # Register after the normal fixtures so this route deliberately overrides
+    # only the recommendation API for this failure-path test.
+    page.route("**/graphql.anilist.co", fail_graphql)
+    page.goto(f"{BASE_URL}/recommend.html", wait_until="domcontentloaded")
+    page.locator("#stepLabel").wait_for(state="visible", timeout=20000)
+
+    for _ in range(20):
+        page.locator("#choices button.choice").first.click()
+        page.locator("#next").click()
+
+    page.locator("#additionalPreferences").wait_for(state="visible", timeout=10000)
+    assert page.locator("#next").inner_text() == "診断結果を見る"
+    page.locator("#next").click()
+    page.locator("#results:not(.hidden)").wait_for(state="visible", timeout=20000)
+    assert "作品データを取得できませんでした" in page.locator("#resultStatus").inner_text(), (
+        "API failure must be explained in the visible result panel"
+    )
+    assert page.locator("#retry").is_visible(), "The result screen must provide a retry action"
+    assert not errors, "Recommendation API failure caused JavaScript errors: " + " | ".join(errors)
+    context.close()
 
 def test_live_seasonal_anilist():
     """Verify the real AniList seasonal query, Japanese-origin filter, and at least one image URL."""
@@ -1488,7 +1535,9 @@ def main():
             test_multiplayer_auth_gate(browser)
             print("PASS: multiplayer authentication gate")
             test_recommendation_diagnosis(browser)
-            print("PASS: recommendation diagnosis -> results")
+            print("PASS: recommendation diagnosis -> results and free-text interpretation")
+            test_recommendation_failure_still_shows_results(browser)
+            print("PASS: recommendation diagnosis -> visible fallback result on API failure")
             test_public_information_and_admin_pages(browser)
             print("PASS: guide/privacy/terms/admin authentication gate")
             test_mobile_quiz_layout(browser)
