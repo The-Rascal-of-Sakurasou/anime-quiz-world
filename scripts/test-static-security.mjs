@@ -223,9 +223,30 @@ const admin = source.get("admin.html");
 assert.match(admin, /persistSession\s*:\s*false/, "Admin session persistence must stay disabled");
 assert.match(admin, /autoRefreshToken\s*:\s*true/, "Admin token auto-refresh must stay enabled for active in-memory sessions");
 assert.match(admin, /detectSessionInUrl\s*:\s*false/, "Admin URL session detection must stay disabled");
-assert.match(admin, /aal2/, "Admin MFA assurance-level enforcement missing");
-assert.match(admin, /mfa\.verify/, "Admin TOTP verification flow missing");
-assert.match(admin, /aqw-admin-control/, "Protected admin Edge Function call missing");
+assert.doesNotMatch(admin, /aal2|mfa\.verify|mfa\.enroll|mfa\.challenge|mfaQr|mfaCard/, "Admin login must not require TOTP or QR-code enrollment");
+assert.match(admin, /signInWithPassword/, "Admin must authenticate with email and password");
+assert.match(admin, /id="togglePassword"/, "Admin password visibility control missing");
+assert.match(admin, /input\.type=reveal\?'text':'password'/, "Admin password visibility toggle must switch input type");
+assert.match(admin, /aria-pressed/, "Admin password visibility toggle must expose its state accessibly");
+assert.match(admin, /adminAction\('get_dashboard'\)/, "Admin authorization must be checked through the protected Edge Function");
+assert.match(admin, /client\.functions\.invoke\('aqw-admin-control'/, "Admin operations must use the protected Edge Function");
+assert.doesNotMatch(admin, /client\.from\(|client\.rpc\(|client\.storage/, "Admin console must not access privileged tables or storage directly");
+assert.match(admin, /サーバー側で認証・権限確認・入力検証/, "Admin footer must describe the server-side security boundary");
+for (const id of ["qaCount", "reloadQuestions", "qaQuestions"]) assert.ok(admin.includes('id="' + id + '"'), "Q&A admin UI missing: " + id);
+assert.match(admin, /adminAction\('list_qa_questions'\)/, "Q&A list must use the protected admin Edge Function");
+assert.match(admin, /adminAction\('update_qa_question'/, "Q&A updates must use the protected admin Edge Function");
+const adminEdge = fs.readFileSync("supabase/functions/aqw-admin-control/index.ts", "utf8");
+for (const action of ["get_dashboard", "list_reports", "get_report_context", "update_report", "list_posts", "update_post", "delete_post", "list_profiles", "update_profile", "list_data_records", "delete_data_record", "list_users", "set_ban", "list_qa_questions", "update_qa_question"]) {
+  assert.ok(adminEdge.includes('action === "' + action + '"'), "Admin Edge Function action missing: " + action);
+}
+assert.match(adminEdge, /userClient\.auth\.getUser\(token\)/, "Admin Edge Function must validate the authenticated user");
+assert.match(adminEdge, /userClient\.rpc\("is_site_owner"\)/, "Admin Edge Function must check site-owner authorization");
+assert.doesNotMatch(adminEdge, /mfa\.getAuthenticatorAssuranceLevel/, "Password-only admin function must not require MFA");
+assert.match(adminEdge, /const DATA_TABLES = new Set\(/, "Generic data management must use a fixed table allowlist");
+assert.match(adminEdge, /const REPORT_STATUSES = new Set\(/, "Report status updates must use a fixed status allowlist");
+assert.match(adminEdge, /const QA_STATUSES = new Set\(/, "Q&A status updates must use a fixed status allowlist");
+assert.match(adminEdge, /requireText\(body\.body, "投稿本文", 2000\)/, "Admin post editing must respect the production posts.body 2000-character constraint");
+assert.match(admin, /next\.trim\(\)\.length>2000/, "Admin post editor must enforce the database 2000-character limit before submitting");
 
 const multiplayer = source.get("multiplayer.html");
 assert.match(multiplayer, /let matchmakingTimer=null,matchmakingBusy=false,matchmakingPrefs=null,matchmakingPollPromise=null;/, "Random matchmaking must track an in-flight poll");
