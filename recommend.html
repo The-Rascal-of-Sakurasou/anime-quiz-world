@@ -327,7 +327,7 @@ if(new Set(questionTitles).size!==questionTitles.length||new Set(questionDimensi
 }
 const FIXED_QUESTION_COUNT=20;
 if(questions.length!==FIXED_QUESTION_COUNT)throw new Error('診断の質問数は20問固定です。')
-let step=0;const answers=Array(questions.length).fill(null);const questionTextAnswers=Array(questions.length).fill('');
+let step=0;const answers=Array(questions.length).fill(null);
 const SAVE_KEY='aqw-recommendation-v11';
 const PREVIOUS_SAVE_KEY='aqw-recommendation-v10';
 const LEGACY_SAVE_KEY='aqw-recommendation-v2';
@@ -595,7 +595,7 @@ function runRecommendationSelfTests(){
  check('原作情報が不明な翻案作品は除外する',!isRecommendationCandidate({...candidateBase,source:'MANGA',relations:{edges:[]},format:'TV'}));
  check('日本原産の原作メディアを確認できる翻案作品は通過する',isRecommendationCandidate({...candidateBase,source:'MANGA',relations:{edges:[{relationType:'SOURCE',node:{type:'MANGA',countryOfOrigin:'JP',format:'MANGA'}}]},format:'TV'}));
  check('タイトル画像がない作品は推薦候補に含めない',!isRecommendationCandidate({...candidateBase,coverImage:{},format:'TV'}));
- // 通常80選択肢と追加2回答を含む120選択肢それぞれを単独で選んだprofileでも、候補の適格判定結果が変わらないことを確認する。
+ // 全100選択肢それぞれを単独で選んだprofileでも、候補の適格判定結果が変わらないことを確認する。
  const eligibilitySamples=[
   {...candidateBase,id:101,format:'TV'},
   {...candidateBase,id:102,format:'MOVIE'},
@@ -1691,15 +1691,15 @@ async function finish(){
  isFinishingDiagnosis=true;
  $('next').disabled=true;
  $('diagnosis').classList.add('hidden');$('error').classList.add('hidden');$('loading').classList.remove('hidden');
- try{const profile=profileFromAnswers();buildProfile(profile);const result=await getRecommendations(profile);renderCards(result);const favCount=parseTitleInput('favoriteTitles').length,disCount=parseTitleInput('dislikedTitles').length;const textCount=['wantText','avoidText','preferenceText'].filter(id=>$(id).value.trim()).length+questionTextAnswers.filter(value=>value.trim()).length;$('resultIntro').textContent=questions.length+'問の回答'+(favCount||disCount?'と、入力された好き・苦手な作品':'')+(textCount?'、自由記述 '+textCount+'項目':'')+'をもとに分析しました。各作品の推薦理由も確認できます。';$('loading').classList.add('hidden');$('results').classList.remove('hidden');saveDiagnosis(latestResult||result);window.scrollTo({top:0,behavior:'smooth'})}
+ try{const profile=profileFromAnswers();buildProfile(profile);const result=await getRecommendations(profile);renderCards(result);const favCount=parseTitleInput('favoriteTitles').length,disCount=parseTitleInput('dislikedTitles').length;const textCount=['wantText','avoidText','preferenceText'].filter(id=>$(id).value.trim()).length;$('resultIntro').textContent=questions.length+'問の回答'+(favCount||disCount?'と、入力された好き・苦手な作品':'')+(textCount?'、自由記述 '+textCount+'項目':'')+'をもとに分析しました。各作品の推薦理由も確認できます。';$('loading').classList.add('hidden');$('results').classList.remove('hidden');saveDiagnosis(latestResult||result);window.scrollTo({top:0,behavior:'smooth'})}
  catch(e){$('loading').classList.add('hidden');$('diagnosis').classList.remove('hidden');$('error').textContent=e.message||'予期しないエラーが発生しました。';$('error').classList.remove('hidden')}
  finally{isFinishingDiagnosis=false;$('next').disabled=false;}
 }
 ['wantText','avoidText','preferenceText','favoriteTitles','dislikedTitles'].forEach(id=>$(id).addEventListener('input',()=>saveDiagnosis()));
 $('clearSaved').addEventListener('click',clearSavedDiagnosis);
 $('back').addEventListener('click',()=>{if(step>0){step--;render()}});
-$('next').addEventListener('click',()=>{const selected=questions[step].options[answers[step]];if(answers[step]===null||(selected?.other&&!questionTextAnswers[step].trim()))return;if(step<questions.length-1){step++;render()}else finish()});
-$('retry').addEventListener('click',()=>{step=0;answers.fill(null);questionTextAnswers.fill('');$('wantText').value='';$('avoidText').value='';$('preferenceText').value='';$('results').classList.add('hidden');$('diagnosis').classList.remove('hidden');$('progressBar').style.width='0%';history.replaceState(null,'',location.pathname+location.search);saveDiagnosis();render();window.scrollTo({top:0,behavior:'smooth'})});
+$('next').addEventListener('click',()=>{if(answers[step]===null)return;if(step<questions.length-1){step++;render()}else finish()});
+$('retry').addEventListener('click',()=>{step=0;answers.fill(null);$('wantText').value='';$('avoidText').value='';$('preferenceText').value='';$('results').classList.add('hidden');$('diagnosis').classList.remove('hidden');$('progressBar').style.width='0%';history.replaceState(null,'',location.pathname+location.search);saveDiagnosis();render();window.scrollTo({top:0,behavior:'smooth'})});
 $('shareX').addEventListener('click',shareOnX);
 $('copyResultLink').addEventListener('click',copyResultLink);
 $('copyShare').addEventListener('click',copyShareText);
