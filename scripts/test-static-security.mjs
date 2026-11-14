@@ -262,6 +262,16 @@ const privacy = source.get("privacy.html");
 assert.doesNotMatch(privacy, /コレクション/, "Privacy policy must not describe the removed anime collection feature");
 
 const recommend = source.get("recommend.html");
+const sharedStorage = fs.readFileSync("aqw-safe-storage.js", "utf8");
+assert.ok(index.includes('src="./aqw-safe-storage.js"'), "Quiz page must load the shared safe-storage helper before its inline application script");
+assert.ok(recommend.includes('src="./aqw-safe-storage.js"'), "Recommendation page must load the shared safe-storage helper before its inline application script");
+assert.ok(index.includes("const safeStorage = window.AQWSafeStorage") && recommend.includes("const safeStorage = window.AQWSafeStorage"), "Both pages must use the same safe-storage implementation");
+assert.match(sharedStorage, /getItem\(key\)[\s\S]*?global\.localStorage\.getItem/);
+assert.match(sharedStorage, /setItem\(key, value\)[\s\S]*?global\.localStorage\.setItem/);
+assert.doesNotMatch(index + recommend, /window\.localStorage\.(?:getItem|setItem|removeItem)\(key/);
+for (const page of ["guide.html", "privacy.html", "terms.html"]) {
+  assert.ok(fs.readFileSync(page, "utf8").includes('href="./aqw-document-pages.css"'), page + " must load shared document-page styles");
+}
 assert.ok(recommend.includes("media(search:$search,type:ANIME,isAdult:false"), "Favorite-work search must retrieve candidates before applying verified origin eligibility");
 assert.ok(recommend.includes("media(type:ANIME,sort:$sort,isAdult:false)"), "Recommendation catalog query must retrieve candidates before applying verified origin eligibility");
 const animeOriginPolicy = fs.readFileSync("anime-origin-policy.js", "utf8");
