@@ -252,9 +252,7 @@ input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{ou
  <p id="oneVsOneLeaderboardStatus" class="status" role="status" aria-live="polite">ランキングを読み込んでいます…</p>
  <ol id="oneVsOneLeaderboard" class="onevone-leaderboard"></ol>
 </section>
-<div class="note">
-<strong>開発状況：</strong>1対1のルーム作成・参加・ランダムマッチに加え、5〜20問の同期クイズ、各問20秒の制限時間、サーバー側の正誤判定・得点・勝敗表示に対応しています。累計戦績・直近20件の対戦履歴・双方の承認が必要な同一相手との再戦に対応しています。3〜4人対戦は開発中です。1対1ランキングは勝利数・勝率・対戦数で集計し、ランキング表示を許可したユーザーのみ掲載します。複数アカウントによる実戦確認は未完了です。
-</div>
+<div class="note"><strong>現在利用できる機能：</strong>1対1のルーム作成・参加・ランダムマッチ、5〜20問の同期クイズ、各問20秒の制限時間、サーバー側の正誤判定・得点・勝敗表示、対戦履歴、双方の承認が必要な再戦、1対1ランキングに対応しています。3〜4人での対戦には対応していません。</div>
 </div>
 </main>
 </div>
@@ -765,5 +763,6 @@ async function init(){
 init().catch(e=>status($('pageStatus'),errorText(e),'error'));
 })();
 </script>
+<footer class="site-footer"><span>© Anime Quiz World / 非公式ファンサイト</span><nav aria-label="フッターナビゲーション"><a href="./index.html">ホーム</a><a href="./guide.html">遊び方・お知らせ</a><a href="./terms.html">利用規約</a><a href="./privacy.html">プライバシーポリシー</a><a href="./admin.html">管理者ログイン</a><a href="https://x.com/anime_love_p" target="_blank" rel="noopener noreferrer">連絡先：@anime_love_p（X）</a></nav></footer>
 </body>
 </html>
