@@ -37,7 +37,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const value = (binding, key) => binding?.[key]?.value || '';
 const normalizeDate = (raw) => {
   if (!raw) return null;
-  const match = String(raw).match(/^(\\d{4})/);
+  const match = String(raw).match(/^(\d{4})/);
   return match ? Number(match[1]) : null;
 };
 
@@ -45,7 +45,7 @@ export function normalizeBindings(bindings) {
   const byId = new Map();
   for (const row of Array.isArray(bindings) ? bindings : []) {
     const uri = value(row, 'item');
-    const match = uri.match(/entity\/(Q\\d+)$/);
+    const match = uri.match(/entity\/(Q\d+)$/);
     if (!match) continue;
     const qid = match[1];
     const label = value(row, 'itemLabel').trim();
@@ -141,8 +141,8 @@ async function main() {
   };
   const serialized = JSON.stringify(output);
   await mkdir('data', { recursive: true });
-  await writeFile(OUTPUT, serialized + '\\n');
-  await writeFile(OUTPUT_GZIP, gzipSync(Buffer.from(serialized + '\\n', 'utf8'), { level: 9, mtime: 0 }));
+  await writeFile(OUTPUT, serialized + '\n');
+  await writeFile(OUTPUT_GZIP, gzipSync(Buffer.from(serialized + '\n', 'utf8'), { level: 9, mtime: 0 }));
   console.log('Wikidata discovery candidates: ' + items.length + ' (previous snapshot: ' + (Number(previous?.count) || 0) + ').');
 }
 
