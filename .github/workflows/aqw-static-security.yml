@@ -30,6 +30,7 @@ on:
       - "supabase/config.toml"
       - "supabase/functions/aqw-match-prepare/**"
       - "supabase/functions/aqw-admin-control/**"
+      - "supabase/manual-tests/**"
       - ".github/workflows/aqw-static-security.yml"
   pull_request:
     paths:
@@ -81,3 +82,35 @@ jobs:
           node --check scripts/audit-japanese-synopses.mjs
           python3 -m py_compile scripts/detect-title-image-text.py
           python3 scripts/detect-title-image-text.py --self-test
+
+  local-admin-database-security:
+    name: Local Supabase database security regression
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Start disposable local Supabase
+        run: supabase start
+      - name: Apply migrations to the local database
+        run: supabase db reset --local
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Create disposable local admin identity
+        run: |
+          psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
+            --set ON_ERROR_STOP=1 \
+            --file supabase/manual-tests/aqw_local_admin_seed.sql
+      - name: Run database security regression tests
+        run: |
+          psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
+            --set ON_ERROR_STOP=1 \
+            --file supabase/manual-tests/aqw_security_smoke.sql
+      - name: Stop disposable local Supabase
+        if: always()
+        run: supabase stop --no-backup
