@@ -821,38 +821,8 @@ const ph=document.getElementById('query');if(ph)ph.placeholder=lang==='ja'?'例�
 }
 const query=`query ($page:Int,$perPage:Int,$search:String,$id_in:[Int],$format_in:[MediaFormat],$startDate_greater:FuzzyDateInt,$startDate_lesser:FuzzyDateInt) { Page(page:$page,perPage:$perPage) { pageInfo { hasNextPage } media(id_in:$id_in,format_in:$format_in,startDate_greater:$startDate_greater,startDate_lesser:$startDate_lesser,type:ANIME,sort:POPULARITY_DESC,search:$search,isAdult:false) { id countryOfOrigin source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } format popularity title { romaji english native } description(asHtml:false) synonyms coverImage { large medium extraLarge } episodes seasonYear averageScore genres studios { nodes { name } } startDate { year }  externalLinks { url site type isDisabled language } } } }`;
 function normalizeUnicode(value){if(typeof value==='string')return value.normalize('NFC');if(Array.isArray(value))return value.map(normalizeUnicode);if(value&&typeof value==='object'){const out={};for(const [key,item] of Object.entries(value))out[key]=normalizeUnicode(item);return out}return value}
-function hasFamousJapaneseTitle(a){
- const names=[a?.title?.native,a?.title?.english,a?.title?.romaji,...(Array.isArray(a?.synonyms)?a.synonyms:[])];
- return names.some(name=>typeof name==='string'&&/[ぁ-んァ-ヶ]/.test(name));
-}
 function isJapaneseOriginAnime(a){
- if(!a)return false;
- if(a.countryOfOrigin!=='JP')return Number(a.popularity)>=10000&&hasFamousJapaneseTitle(a);
- const isJapaneseLanguage=value=>['ja','ja-jp','japanese','日本語'].includes(String(value||'').trim().toLowerCase());
- const languageValues=[a.originLanguage,a.originalLanguage,a.sourceLanguage,a.language].filter(value=>typeof value==='string'&&value.trim());
- if(languageValues.some(value=>!isJapaneseLanguage(value)))return false;
- if(a.originVerified===true)return true;
- if(a.source==='ORIGINAL')return true;
- const sourceRules={
-  MANGA:{type:'MANGA',formats:['MANGA','ONE_SHOT']},
-  LIGHT_NOVEL:{type:'MANGA',formats:['NOVEL']},
-  NOVEL:{type:'MANGA',formats:['NOVEL']},
-  DOUJINSHI:{type:'MANGA',formats:['MANGA','ONE_SHOT','NOVEL']},
-  ANIME:{type:'ANIME',formats:['TV','TV_SHORT','MOVIE','OVA','ONA','SPECIAL']},
-  WEB_NOVEL:{type:'MANGA',formats:['NOVEL']},
-  VISUAL_NOVEL:{type:'MANGA',formats:['MANGA','ONE_SHOT','NOVEL']},
-  VIDEO_GAME:{type:'MANGA',formats:['MANGA','ONE_SHOT','NOVEL']},
-  OTHER:{type:'MANGA',formats:['MANGA','ONE_SHOT','NOVEL']}
- };
- const rule=sourceRules[a.source];
- const relationVerified=!!rule&&Array.isArray(a.relations?.edges)&&a.relations.edges.some(edge=>{
-  const node=edge?.node;
-  if(!['SOURCE','ADAPTATION'].includes(edge?.relationType)||!node||node.type!==rule.type||node.countryOfOrigin!=='JP'||!rule.formats.includes(node.format))return false;
-  const sourceLanguage=[node.originLanguage,node.originalLanguage,node.sourceLanguage,node.language].filter(value=>typeof value==='string'&&value.trim());
-  return !sourceLanguage.some(value=>!isJapaneseLanguage(value));
- });
- if(relationVerified)return true;
- return !!rule&&Number(a.popularity)>=10000&&hasFamousJapaneseTitle(a);
+ return Boolean(a&&a.countryOfOrigin==='JP');
 }
 const $=s=>document.querySelector(s);let pool=[],questions=[],index=0,points=0,skippedQuestionCount=0,locked=false,questionTimer=null,clockTimer=null,secondsLeft=15,questionDeadline=0,startedAt=0,elapsedSeconds=0,missedQuestions=[],questionAttemptResults=[],reviewMode=false,playMode='normal',roundFailed=false,lastResultData=null,combo=0,bestCombo=0,choiceHintUsed=false,typedHintUsed=false,backgroundLoadPromise=null,sharedCatalogActive=false,requestedQuestionCount=10,rateLimitedUntil=0,failedImageUrls=new Set(),lateSharedCatalogItems=[],autoNextTimer=null,questionAdvanceToken=0,sharedSearchCatalogCache=null,sharedSearchIndexCache=new Map();
 function titleImageIsSafe(anime){const image=anime?.coverImage?.large||anime?.coverImage?.medium||anime?.coverImage?.extraLarge||'';return hasUsableImageUrl(image)}
@@ -912,7 +882,7 @@ async function fetchAnime(vars={}){
  const requestPageBatch=async(pages,sort,format,yearStart,yearEnd)=>{
   const fields='id countryOfOrigin source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } format popularity title { romaji english native } description(asHtml:false) synonyms coverImage { large medium extraLarge } episodes seasonYear averageScore genres studios(isMain:true) { nodes { name } }  externalLinks { url site type isDisabled language }';
   const formatArg=(format?',format_in:['+format+']':'')+(yearStart?',startDate_greater:'+(yearStart*10000)+',startDate_lesser:'+((yearEnd+1)*10000):'');
-  const aliases=pages.map((page,index)=>'p'+index+': Page(page:'+page+',perPage:50) { pageInfo { hasNextPage } media(type:ANIME,sort:'+sort+',isAdult:false'+formatArg+') { '+fields+' } }').join(' ');
+  const aliases=pages.map((page,index)=>'p'+index+': Page(page:'+page+',perPage:50) { pageInfo { hasNextPage } media(type:ANIME,countryOfOrigin:JP,sort:'+sort+',isAdult:false'+formatArg+') { '+fields+' } }').join(' ');
   const batchQuery='query { '+aliases+' }';
   let lastError;
   for(let attempt=0;attempt<4;attempt++){
@@ -3932,7 +3902,7 @@ async function loadFeaturedRail(){
  try{
   // 今シーズンの作品だけを取得し、関連作品情報など表示に不要なデータは要求しない。
   const fields='id countryOfOrigin popularity source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } format season seasonYear startDate { year month day } title { romaji english native } synonyms coverImage { extraLarge large medium } externalLinks { url site type isDisabled language }';
-  const queryText='query { Page(page:1,perPage:24) { media(type:ANIME,season:'+current.season+',seasonYear:'+current.year+',format_in:[TV,ONA],isAdult:false,sort:POPULARITY_DESC) { '+fields+' } } }';
+  const queryText='query { Page(page:1,perPage:24) { media(type:ANIME,countryOfOrigin:JP,season:'+current.season+',seasonYear:'+current.year+',format_in:[TV,ONA],isAdult:false,sort:POPULARITY_DESC) { '+fields+' } } }';
   const response=await fetch(API,{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query:queryText}),signal:controller.signal});
   if(!response.ok)throw new Error('HTTP '+response.status);
   const json=await response.json();
