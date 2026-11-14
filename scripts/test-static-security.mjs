@@ -266,6 +266,7 @@ assert.ok(recommend.includes("media(search:$search,type:ANIME,isAdult:false"), "
 assert.ok(recommend.includes("media(type:ANIME,sort:$sort,isAdult:false)"), "Recommendation catalog query must retrieve candidates before applying verified origin eligibility");
 const animeOriginPolicy = fs.readFileSync("anime-origin-policy.js", "utf8");
 assert.ok(recommend.includes("AQWAnimePolicy.isJapaneseOriginAnime"), "Recommendation diagnosis must use the shared Japanese-origin policy");
+assert.match(recommend, /const isJapaneseOriginAnime = window\.AQWAnimePolicy\.isJapaneseOriginAnime;/, "Recommendation page must bind the shared origin predicate before using it");
 assert.match(animeOriginPolicy, /countryOfOrigin === "JP"/, "Shared origin policy must accept only AniList Japanese-origin works");
 const animeOriginPolicyCode = animeOriginPolicy.replace(/\/\/[^\n]*/g, "");
 assert.doesNotMatch(animeOriginPolicyCode, /anime\.popularity|hasJapaneseTitle|SOURCE_RULES/, "Popularity, title language, and source heuristics must not override country of origin");
