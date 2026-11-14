@@ -27,17 +27,6 @@ ROOT = Path(__file__).resolve().parents[1]
 CATALOG = ROOT / "data" / "anime-catalog.json"
 EXCLUSIONS = ROOT / "data" / "title-image-exclusions.json"
 ALLOWED_FORMATS = {"TV", "TV_SHORT", "MOVIE", "OVA", "ONA", "SPECIAL"}
-SOURCE_RULES = {
-    "MANGA": ("MANGA", {"MANGA", "ONE_SHOT"}),
-    "LIGHT_NOVEL": ("MANGA", {"NOVEL"}),
-    "NOVEL": ("MANGA", {"NOVEL"}),
-    "WEB_NOVEL": ("MANGA", {"NOVEL"}),
-    "DOUJINSHI": ("MANGA", {"MANGA", "ONE_SHOT", "NOVEL"}),
-    "VISUAL_NOVEL": ("MANGA", {"MANGA", "ONE_SHOT", "NOVEL"}),
-    "VIDEO_GAME": ("MANGA", {"MANGA", "ONE_SHOT", "NOVEL"}),
-    "OTHER": ("MANGA", {"MANGA", "ONE_SHOT", "NOVEL"}),
-    "ANIME": ("ANIME", ALLOWED_FORMATS),
-}
 
 
 def norm(value: str) -> str:
