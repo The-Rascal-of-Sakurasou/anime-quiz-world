@@ -662,7 +662,7 @@ const aliasResults = uniqueAliasCandidates(fixtureAnime, aliasOwnerFixture, () =
 assert.deepEqual(aliasResults, ["Private Alias"], "Only aliases owned by exactly one anime may be used");
 
 
-const questionModes = ["titleStudio", "titleYear", "synonym", "synopsis"];
+const questionModes = ["image", "studio", "year", "titleStudio", "titleYear", "synonym", "synopsis", "titleSynopsis", "titleEpisodes", "titleGenre", "titleFormat", "titleSource"];
 const availabilityStart = index.indexOf("function availableQuestionModes(a,format=");
 const validationStart = index.indexOf("function questionModeHasFourChoices(a,mode)");
 const rendererStart = index.indexOf("function showQuestionInternal(preserveMode=false)");
