@@ -68,3 +68,15 @@ returns boolean language sql as $$ select false $$;
 
 create or replace function public.submit_aqw_player_run(uuid, integer, integer, integer, jsonb)
 returns jsonb language sql as $$ select '{}'::jsonb $$;
+
+-- Matching private helper signatures are also present in the hosted project,
+-- but their original definitions are not tracked in the migration history.
+-- These inert local stubs allow the later permission migration to replay.
+create or replace function private.reset_aqw_player_records()
+returns jsonb language sql as $$ select '{}'::jsonb $$;
+
+create or replace function private.set_aqw_leaderboard_enabled(boolean)
+returns boolean language sql as $$ select false $$;
+
+create or replace function private.submit_aqw_player_run(uuid, integer, integer, integer)
+returns jsonb language sql as $$ select '{}'::jsonb $$;
