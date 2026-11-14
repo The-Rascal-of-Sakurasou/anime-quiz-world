@@ -16,6 +16,10 @@ on:
       - "sitemap.xml"
       - "robots.txt"
       - "scripts/test-static-security.mjs"
+      - "scripts/test-pending-run-persistence.mjs"
+      - "assets/js/index-app-20261114.js"
+      - "scripts/test-pending-run-persistence.mjs"
+      - "assets/js/index-app-20261114.js"
       - "scripts/test-anime-search-deduplication.mjs"
       - "scripts/test-official-site-links.mjs"
       - "scripts/test-anime-search-deduplication.mjs"
@@ -68,6 +72,7 @@ jobs:
       - name: Run security checks
         run: |
           node scripts/test-static-security.mjs
+          node scripts/test-pending-run-persistence.mjs
           node scripts/test-official-site-links.mjs
           node scripts/test-anime-search-deduplication.mjs
           node --check scripts/audit-anime-image-urls.mjs

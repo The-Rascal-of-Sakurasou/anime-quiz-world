@@ -63,20 +63,56 @@ const aqwMatchProfileText={
 };
 const aqwMatchProfileT=key=>(aqwMatchProfileText[lang]||aqwMatchProfileText.en)[key]||aqwMatchProfileText.en[key]||key;
 aqwPlayerBoardText.en.noPeriodRank='No record in this period yet.';aqwPlayerBoardText.ja.noPeriodRank='この期間の記録はまだありません。';
-let pendingPlayerRuns=[],playerLeaderboardCache=[],leaderboardProfiles=new Map();
+function validPendingOwnerId(value){
+ return value===null||typeof value==="undefined"||typeof value==="string"&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+function loadPendingRunQueue(key,validator){
+ try{
+  const saved=JSON.parse(safeStorage.getItem(key)||"[]");
+  if(!Array.isArray(saved))return [];
+  return saved.filter(item=>item&&typeof item==="object"&&validPendingOwnerId(item.ownerUserId)&&validator(item)).slice(-25)
+   .map(item=>({...item,ownerUserId:item.ownerUserId||null}));
+ }catch(error){console.warn("Invalid pending AQW leaderboard queue was ignored:",error);return []}
+}
+let pendingPlayerRuns=loadPendingRunQueue("aqw-pending-player-runs",item=>
+ typeof item.runId==="string"&&item.runId.length>0&&item.runId.length<=100&&
+ Number.isInteger(item.correctCount)&&item.correctCount>=0&&
+ Number.isInteger(item.questionCount)&&item.questionCount>=1&&item.questionCount<=10000&&
+ [10,15].includes(item.xpMultiplier)&&Array.isArray(item.questionResults)&&item.questionResults.length<=10000
+),playerLeaderboardCache=[],leaderboardProfiles=new Map();
 let myMatchProfileCache=null;
-let pendingRushResults=[];
+let pendingRushResults=loadPendingRunQueue("aqw-pending-rush-results",item=>
+ typeof item.runId==="string"&&item.runId.length>0&&item.runId.length<=100&&
+ item.questionCount===10&&Number.isInteger(item.correctCount)&&item.correctCount>=0&&item.correctCount<=10&&
+ Number.isFinite(item.elapsedMs)&&item.elapsedMs>0
+);
+function persistPendingRunQueue(queue){
+ const key=queue===pendingRushResults?"aqw-pending-rush-results":"aqw-pending-player-runs";
+ safeStorage.setItem(key,JSON.stringify(queue.slice(-25)));
+}
 function queuePendingRun(queue,result){
  if(!result||!result.runId)return;
- const copy={...result};
+ const copy={...result,ownerUserId:result.ownerUserId??currentUser?.id??null};
  const existing=queue.findIndex(item=>item.runId===copy.runId);
- if(existing>=0)queue.splice(existing,1);
+ if(existing>=0){
+  if(copy.ownerUserId===null)copy.ownerUserId=queue[existing].ownerUserId??null;
+  queue.splice(existing,1);
+ }
  queue.push(copy);
  if(queue.length>25)queue.shift();
+ persistPendingRunQueue(queue);
 }
 function removePendingRun(queue,runId){
  const index=queue.findIndex(item=>item.runId===runId);
- if(index>=0)queue.splice(index,1);
+ if(index>=0){queue.splice(index,1);persistPendingRunQueue(queue)}
+}
+function clearPendingRunsForUser(userId){
+ for(const queue of [pendingPlayerRuns,pendingRushResults]){
+  for(let i=queue.length-1;i>=0;i--){
+   if(!queue[i].ownerUserId||queue[i].ownerUserId===userId)queue.splice(i,1);
+  }
+  persistPendingRunQueue(queue);
+ }
 }
 function applyRushLeaderboardLanguage(){
  const map={aqwRushBoardTitle:'title',aqwRushBoardDescription:'description',aqwRushBoardRefresh:'refresh',aqwRushBoardShare:'share',aqwRushBoardSave:'save',aqwRushRankHeading:'rank',aqwRushPlayerHeading:'player',aqwRushScoreHeading:'score',aqwRushTimeHeading:'time'};
@@ -188,6 +224,7 @@ async function resetOnlineLeaderboardRecords(){
  try{
   const {error}=await sb.rpc('reset_aqw_player_records');
   if(error)throw error;
+  clearPendingRunsForUser(currentUser.id);
   await Promise.all([loadRushLeaderboard(),loadPlayerLeaderboard()]);
   message($s('aqwLeaderboardAccountStatus'),'自分のランキング実績を削除し、ランキングを更新しました。他のユーザーの記録と作品データは保持されています。');
  }catch(error){message($s('aqwLeaderboardAccountStatus'),'実績をリセットできませんでした：'+errText(error))}
@@ -303,8 +340,10 @@ async function loadMyDifficultyProfile(){
 window.aqwLoadPersonalDifficultyProfile=loadMyDifficultyProfile;
 async function submitPlayerRun(result){
  if(!result||!result.runId||!Number.isInteger(result.correctCount)||!Number.isInteger(result.questionCount)||![10,15].includes(result.xpMultiplier))return;
- const pendingRun={runId:result.runId,correctCount:result.correctCount,questionCount:result.questionCount,xpMultiplier:result.xpMultiplier,questionResults:Array.isArray(result.questionResults)?result.questionResults:[]};
+ const pendingRun={runId:result.runId,correctCount:result.correctCount,questionCount:result.questionCount,xpMultiplier:result.xpMultiplier,questionResults:Array.isArray(result.questionResults)?result.questionResults:[],ownerUserId:result.ownerUserId??currentUser?.id??null};
  if(!currentUser){queuePendingRun(pendingPlayerRuns,pendingRun);message($s('aqwPlayerBoardStatus'),aqwPlayerT('needLogin'));return}
+ if(pendingRun.ownerUserId&&pendingRun.ownerUserId!==currentUser.id)return;
+ pendingRun.ownerUserId=currentUser.id;
  try{
   const {data,error}=await sb.rpc('submit_aqw_player_run',{p_run_id:result.runId,p_correct_count:result.correctCount,p_question_count:result.questionCount,p_xp_multiplier:result.xpMultiplier,p_question_results:pendingRun.questionResults});
   if(error){queuePendingRun(pendingPlayerRuns,pendingRun);message($s('aqwPlayerBoardStatus'),aqwPlayerT('submitError')+errText(error));return}
@@ -367,8 +406,10 @@ async function loadRushLeaderboard(force=false){
 }
 async function submitRushResult(result){
  if(!result||result.questionCount!==10||!Number.isInteger(result.correctCount)||result.correctCount<0||result.correctCount>10||!Number.isFinite(result.elapsedMs)){message($s('aqwRushBoardStatus'),aqwRushT('needTen'));return}
- result={...result,runId:result.runId||makeStatsRunId()};
+ result={...result,runId:result.runId||makeStatsRunId(),ownerUserId:result.ownerUserId??currentUser?.id??null};
  if(!currentUser){queuePendingRun(pendingRushResults,result);message($s('aqwRushBoardStatus'),aqwRushT('needLogin'));return}
+ if(result.ownerUserId&&result.ownerUserId!==currentUser.id)return;
+ result.ownerUserId=currentUser.id;
  try{
   const {data,error}=await sb.rpc('submit_aqw_speed_rush',{p_correct_count:result.correctCount,p_elapsed_ms:result.elapsedMs,p_run_id:result.runId});
   if(error){queuePendingRun(pendingRushResults,result);message($s('aqwRushBoardStatus'),aqwRushT('submitError')+errText(error));return}
@@ -465,8 +506,8 @@ async function refreshSession(session,{light=false}={}){
   setStatus((localJa()?'ログイン中：@':'Signed in as @')+data.username);
   await Promise.all([loadFriends(),updateNotificationCount(),loadMyMatchProfile()]);
   await loadMyDifficultyProfile();
-  for(const run of [...pendingRushResults])await submitRushResult(run);
-  for(const run of [...pendingPlayerRuns])await submitPlayerRun(run);
+  for(const run of [...pendingRushResults])if(!run.ownerUserId||run.ownerUserId===currentUser.id)await submitRushResult(run);
+  for(const run of [...pendingPlayerRuns])if(!run.ownerUserId||run.ownerUserId===currentUser.id)await submitPlayerRun(run);
  }catch(e){setStatus(rt('profileError')+errText(e))}
 }
 function renderMyMatchProfile(){
