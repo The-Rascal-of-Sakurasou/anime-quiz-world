@@ -49,6 +49,7 @@ on:
       - ".github/workflows/sync-anime-catalog.yml"
       - "supabase/migrations/**"
       - "supabase/functions/aqw-admin-control/**"
+      - "supabase/manual-tests/**"
       - ".github/workflows/aqw-static-security.yml"
   workflow_dispatch:
 
