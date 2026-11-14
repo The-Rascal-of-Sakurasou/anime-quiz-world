@@ -34,6 +34,32 @@ on:
       - ".github/workflows/aqw-static-security.yml"
   pull_request:
     paths:
+      - "multiplayer.html"
+      - "index.html"
+      - "data/anime-catalog.json"
+      - "admin.html"
+      - "recommend.html"
+      - "guide.html"
+      - "privacy.html"
+      - "terms.html"
+      - "responsive.css"
+      - "anime-origin-policy.js"
+      - "anime-text-utils.js"
+      - "scripts/test-static-security.mjs"
+      - "scripts/test-anime-search-deduplication.mjs"
+      - "scripts/test-official-site-links.mjs"
+      - "scripts/sync-anime-catalog.mjs"
+      - "scripts/audit-anime-image-urls.mjs"
+      - "scripts/detect-title-image-text.py"
+      - "scripts/audit-japanese-synopses.mjs"
+      - ".github/workflows/japanese-synopsis-audit.yml"
+      - ".github/workflows/detect-title-image-text.yml"
+      - ".github/workflows/image-url-audit.yml"
+      - ".github/workflows/sync-anime-catalog.yml"
+      - "supabase/migrations/**"
+      - "supabase/config.toml"
+      - "supabase/functions/aqw-match-prepare/**"
+      - ".github/workflows/aqw-static-security.yml"
   workflow_dispatch:
 
 permissions:
