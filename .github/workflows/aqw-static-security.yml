@@ -115,19 +115,6 @@ jobs:
               raise SystemExit("Unexpected [db] section; refusing to overwrite existing database settings.")
           config_path.write_text(config + "\n[db]\nport = 55432\nshadow_port = 55430\n")
 
-          # A later tracked migration replaces this wrapper with its real body.
-          # Drop only the disposable fixture placeholder in this CI checkout first.
-          feature_migration = Path("supabase/migrations/20261111114214_add_question_level_difficulty_feedback.sql")
-          feature_sql = feature_migration.read_text()
-          create_marker = "CREATE FUNCTION public.submit_aqw_player_run("
-          if create_marker not in feature_sql:
-              raise SystemExit("Expected public RPC creation was not found; refusing to modify migration.")
-          feature_sql = feature_sql.replace(
-              create_marker,
-              "DROP FUNCTION IF EXISTS public.submit_aqw_player_run(uuid, integer, integer, integer, jsonb);\n\n" + create_marker,
-              1,
-          )
-          feature_migration.write_text(feature_sql)
           PY
       - name: Start disposable local Supabase
         run: supabase start --debug
