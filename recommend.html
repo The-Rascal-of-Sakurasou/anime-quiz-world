@@ -691,7 +691,7 @@ function runRecommendationSelfTests(){
   check('笑いとシリアスの配分を独立して反映する',questionByDimension.get('tone_balance').options.some(o=>o.genreWeights?.Comedy>0)&&questionByDimension.get('tone_balance').options.some(o=>o.genreWeights?.Drama>0));
   const legacyRelationshipAnswers=Array(13).fill(0);legacyRelationshipAnswers[9]=3;
   check('旧13問版の恋愛関係回答は恋愛量と重複させず再回答を求める',mapLegacyThirteenAnswers(legacyRelationshipAnswers)?.[9]===null);
-  check('わからない・選択肢にない回答は加点・減点しない',(()=>{const a=Array(questions.length).fill(null);a[0]=4;const p=profileFromAnswers(a,{want:'',avoid:'',preference:''});return !Object.keys(p.genres).length&&!Object.keys(p.tags).length})());
+  check('わからない・選択肢にない回答は加点・減点しない',(()=>{for(const choice of [4,5]){const a=Array(questions.length).fill(null);a[0]=choice;const p=profileFromAnswers(a,{want:'',avoid:'',preference:''});if(Object.keys(p.genres).length||Object.keys(p.tags).length||Object.keys(p.avoidGenres).length||Object.keys(p.avoidTags).length)return false}return true})());
  check('自由記述の希望・回避・補足をそれぞれ推薦profileへ反映',(()=>{const a=Array(questions.length).fill(4);const p=profileFromAnswers(a,{want:'SFとミステリー、伏線が多い',avoid:'恋愛中心の作品',preference:'テンポが速く、頭脳戦が好き'});return p.genres['Sci-Fi']>0&&p.genres.Mystery>0&&p.tags.Conspiracy>0&&p.avoidGenres.Romance>0&&p.tags['Fast-Paced']>0&&p.tags.Genius>0})());
  check('自由記述の否定表現を誤って好みとして加点しない',(()=>{const p=profileFromAnswers(Array(questions.length).fill(4),{want:'',avoid:'',preference:'恋愛が好きではない'});return p.avoidGenres.Romance>0&&!p.genres.Romance})());
  const previousV4Answers=Array(13).fill(0);
