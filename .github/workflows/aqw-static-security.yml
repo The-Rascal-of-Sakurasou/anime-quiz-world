@@ -30,6 +30,8 @@ on:
       - "supabase/migrations/**"
       - "supabase/config.toml"
       - "supabase/functions/aqw-match-prepare/**"
+      - "supabase/functions/aqw-qa-submit/**"
+      - "scripts/test-qa-submit-security.mjs"
       - ".github/workflows/aqw-static-security.yml"
   pull_request:
     paths:
@@ -48,6 +50,8 @@ on:
       - ".github/workflows/japanese-synopsis-audit.yml"
       - ".github/workflows/sync-anime-catalog.yml"
       - "supabase/migrations/**"
+      - "supabase/functions/aqw-qa-submit/**"
+      - "scripts/test-qa-submit-security.mjs"
       - ".github/workflows/aqw-static-security.yml"
   workflow_dispatch:
 
@@ -68,6 +72,7 @@ jobs:
       - name: Run security checks
         run: |
           node scripts/test-static-security.mjs
+          node scripts/test-qa-submit-security.mjs
           node scripts/test-official-site-links.mjs
           node scripts/test-anime-search-deduplication.mjs
           node --check scripts/audit-anime-image-urls.mjs
