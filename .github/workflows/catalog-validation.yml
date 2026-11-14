@@ -15,6 +15,7 @@ on:
   pull_request:
     paths:
       - "anime-origin-policy.js"
+      - "anime-text-utils.js"
       - "data/anime-catalog.json"
       - "data/anime-catalog.json.gz"
       - "scripts/validate-anime-catalog.mjs"
