@@ -20,47 +20,10 @@
   }
 
   function isJapaneseOriginAnime(anime) {
-    if (!anime || typeof anime.countryOfOrigin !== "string" || !anime.countryOfOrigin) return false;
-
-    if (anime.countryOfOrigin !== "JP") {
-      return Number(anime.popularity) >= 10000 && hasJapaneseTitle(anime);
-    }
-
-    const isJapaneseLanguage = (value) =>
-      ["ja", "ja-jp", "japanese", "日本語"].includes(String(value || "").trim().toLowerCase());
-    const languageValues = [
-      anime.originLanguage,
-      anime.originalLanguage,
-      anime.sourceLanguage,
-      anime.language,
-    ].filter((value) => typeof value === "string" && value.trim());
-
-    if (languageValues.some((value) => !isJapaneseLanguage(value))) return false;
-    if (anime.originVerified === true) return true;
-    if (anime.source === "ORIGINAL") return true;
-
-    const rule = SOURCE_RULES[anime.source];
-    const relationVerified = !!rule &&
-      Array.isArray(anime.relations?.edges) &&
-      anime.relations.edges.some((edge) => {
-        const node = edge?.node;
-        if (!["SOURCE", "ADAPTATION"].includes(edge?.relationType) ||
-            !node ||
-            node.type !== rule.type ||
-            node.countryOfOrigin !== "JP" ||
-            !rule.formats.includes(node.format)) return false;
-
-        const sourceLanguage = [
-          node.originLanguage,
-          node.originalLanguage,
-          node.sourceLanguage,
-          node.language,
-        ].filter((value) => typeof value === "string" && value.trim());
-        return !sourceLanguage.some((value) => !isJapaneseLanguage(value));
-      });
-
-    if (relationVerified) return true;
-    return !!rule && Number(anime.popularity) >= 10000 && hasJapaneseTitle(anime);
+    // AniList's countryOfOrigin is the sole inclusion criterion.
+    // Japanese titles, popularity, source relations, and language metadata
+    // must never make a non-Japanese or unknown-origin work eligible.
+    return anime?.countryOfOrigin === "JP";
   }
 
   function metadataKey(value) {
