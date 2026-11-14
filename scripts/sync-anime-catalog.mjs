@@ -40,11 +40,11 @@ function isUsableAnime(anime) {
   );
 }
 
-async function fetchBatch(pages, sort, format, yearStart, yearEnd, includeForeign = false) {
+async function fetchBatch(pages, sort, format, yearStart, yearEnd) {
   const dateFilter = Number.isInteger(yearStart) && Number.isInteger(yearEnd)
     ? ',startDate_greater:' + (yearStart * 10000) + ',startDate_lesser:' + ((yearEnd + 1) * 10000)
     : '';
-  const countryFilter = includeForeign ? '' : 'countryOfOrigin:JP,';
+  const countryFilter = 'countryOfOrigin:JP,';
   const aliases = pages.map((page, index) =>
     'p' + index + ': Page(page:' + page + ',perPage:50) { pageInfo { hasNextPage } media(type:ANIME,' + countryFilter + 'sort:' +
     sort + ',isAdult:false,format_in:[' + format + ']' + dateFilter + ') { ' + FIELDS + ' } }'
@@ -92,11 +92,11 @@ let requests = 0;
 let accepted = 0;
 let filtered = 0;
 
-async function scanScope(format, sort, yearStart, yearEnd, appendOnly = false, includeForeign = false, pageLimit = 100) {
+async function scanScope(format, sort, yearStart, yearEnd, appendOnly = false, pageLimit = 100) {
   for (let page = 1; page <= pageLimit; page += 3) {
     const pages = [page, page + 1, page + 2].filter((value) => value <= pageLimit);
     await sleep(API_REQUEST_INTERVAL_MS);
-    const results = await fetchBatch(pages, sort, format, yearStart, yearEnd, includeForeign);
+    const results = await fetchBatch(pages, sort, format, yearStart, yearEnd);
     requests++;
     let addedThisBatch = 0;
     for (const result of results) {
@@ -245,8 +245,6 @@ for (const format of FORMATS) {
     // Refresh the most popular Japanese-origin works on every sync, not only newly indexed IDs.
     // This backfills famous catalogue gaps while keeping the extra API work bounded.
     await scanScope(format, 'POPULARITY_DESC', undefined, undefined, false, false, 10);
-    // Add a bounded supplement of famous foreign works with Japanese titles.
-    await scanScope(format, 'POPULARITY_DESC', undefined, undefined, false, true, 20);
     continue;
   }
   let overflow = false;
@@ -262,8 +260,6 @@ for (const format of FORMATS) {
       if (reachedLimit) await scanDateRanges(format, sort);
     }
   }
-  // The foreign supplement is deliberately popularity-bounded to avoid a catalogue-size explosion.
-  await scanScope(format, 'POPULARITY_DESC', undefined, undefined, false, true, 20);
 }
 
 // Recheck the final merged set so legacy placeholder covers cannot survive an incremental refresh.
@@ -284,7 +280,7 @@ const output = {
   schemaVersion: 2,
   generatedAt: unchanged ? previousOutput.generatedAt : new Date().toISOString(),
   source: 'AniList GraphQL API',
-  originRule: 'Verified Japanese-origin works plus foreign works with a Japanese-language title and popularity >= 10000',
+  originRule: 'AniList countryOfOrigin must equal JP; foreign and unknown-origin works are excluded',
   count: items.length,
   items,
 };
