@@ -2,11 +2,19 @@ name: Question mode coverage audit
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'fix/leaderboard-result-contract-*']
     paths:
       - "data/anime-catalog.json"
       - "index.html"
       - "scripts/audit-question-mode-coverage.mjs"
+      - "scripts/test-quiz-result-mode-contract.mjs"
+      - "supabase/migrations/**"
+      - ".github/workflows/question-mode-coverage.yml"
+  pull_request:
+    paths:
+      - "index.html"
+      - "scripts/test-quiz-result-mode-contract.mjs"
+      - "supabase/migrations/**"
       - ".github/workflows/question-mode-coverage.yml"
   workflow_dispatch:
 
@@ -24,6 +32,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Verify browser and database result-mode contract
+        run: node scripts/test-quiz-result-mode-contract.mjs
       - name: Audit all catalogue records
         run: node scripts/audit-question-mode-coverage.mjs
       - name: Upload detailed coverage report
