@@ -122,7 +122,7 @@ async function main() {
   }
 
   const result = validateCatalog(catalog);
-  console.log("Catalogue validation passed: " + result.count + " unique eligible Japanese-origin and famous foreign anime.");
+  console.log("Catalogue validation passed: " + result.count + " unique eligible Japanese-origin anime.");
   console.log("Generated at: " + result.generatedAt);
   console.log("Compressed catalogue matches the JSON source.");
 }
