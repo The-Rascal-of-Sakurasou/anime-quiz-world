@@ -908,7 +908,7 @@ function extractTextSignals(raw,target,weight=.65,defaultPolarity='positive'){
   {terms:['暗い雰囲気','重い展開','重厚','シリアス','緊迫'],tag:'Drama',label:'シリアスな雰囲気'}
  ];
  const negativeCues=['好きではない','見たくない','求めない','好まない','中心ではない','多くない','少なめ','少ない','少なく','控えめ','苦手','嫌い','避けたい','避けて','避ける','不要','いらない','含まない','なし','無い','ない'];
- const positiveCues=['好き','見たい','欲しい','多い','多め','重視','中心','含む','ある','あり','楽しめる','求める','興味','大歓迎','好み','魅力','増やして'];
+ const positiveCues=['好き','見たい','欲しい','重視','楽しめる','求める','興味','大歓迎','好み','魅力','増やして'];
  const cueDistance=(windowText,termStart,termEnd,cues)=>{
   let best=Infinity;
   for(const cue of cues){
