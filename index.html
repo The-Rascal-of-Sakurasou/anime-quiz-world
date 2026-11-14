@@ -1813,7 +1813,7 @@ function difficultyModesForAnime(a){
  return availableQuestionModes(a,$('#answerFormatSelect')?.value||'choices');
 }
 function questionModeDifficultyScore(a,mode){
- const base={image:12,studio:38,year:34,synonym:42,titleStudio:42,titleYear:36,titleSynopsis:66,synopsis:62,titleEpisodes:32,titleGenre:48,titleFormat:28,titleSource:52};
+ const base={image:12,studio:38,year:34,synonym:42,titleStudio:42,titleYear:36,titleSynopsis:66,synopsis:62,titleEpisodes:32,titleGenre:48,titleFormat:28};
  let score=base[mode]??50;
  if(mode==='titleStudio'){
   const studios=[...new Set((a?.studios?.nodes||[]).map(node=>String(node?.name||'').trim()).filter(Boolean))];
@@ -2041,7 +2041,7 @@ async function ensureQuestionChoiceSummaryAsync(){
   const tierPool=sourcePool.filter(item=>titleUsable(item));
   const titleKeys=new Set(tierPool.map(item=>normalizeAnswer(titleOf(item))).filter(Boolean));
   const titleChoiceRecords=new Map(),titleAliasOwners=new Map(),aliasAnimeOwners=new Map();
-  const tierStudioKeys=new Set(),yearKeys=new Set(),episodeKeys=new Set(),formatKeys=new Set(),sourceKeys=new Set(),genreKeys=new Set(),synopsisKeys=new Set(),synopsisCandidates=[];
+  const tierStudioKeys=new Set(),yearKeys=new Set(),episodeKeys=new Set(),formatKeys=new Set(),genreKeys=new Set(),synopsisKeys=new Set(),synopsisCandidates=[];
   for(let i=0;i<tierPool.length;i++){
    const item=tierPool[i],primaryKey=normalizeAnswer(titleOf(item));
    if(primaryKey){
@@ -2073,7 +2073,7 @@ async function ensureQuestionChoiceSummaryAsync(){
   }
   const value={
    titleKeys,titleChoiceRecords,titleAliasOwners,aliasAnimeOwners,
-   tierStudioKeys,studioKeys:tierStudioKeys,yearKeys,episodeKeys,formatKeys,sourceKeys,genreKeys,
+   tierStudioKeys,studioKeys:tierStudioKeys,yearKeys,episodeKeys,formatKeys,genreKeys,
    characterNameKeys:new Set(),characterNamesByAnime:new Map(),
    characterNameAnimeCounts:new Map(),characterNameCounts:new Map(),
    uniqueCharacterNameKeys:new Set(),uniqueCharacterRecords:[],
@@ -2132,7 +2132,7 @@ function availableQuestionModes(a,format=$('#answerFormatSelect')?.value||'choic
  if(titleUsable(a)&&a?.format!=='MOVIE'&&Number.isInteger(Number(a?.episodes))&&Number(a.episodes)>0)modes.push('titleEpisodes');
  if(titleUsable(a)&&Array.isArray(a?.genres)&&a.genres.length)modes.push('titleGenre');
  if(titleUsable(a)&&a?.format)modes.push('titleFormat');
- if(titleUsable(a)&&a?.source)modes.push('titleSource');
+ 
  
  return modes.filter(mode=>questionModeHasFourChoices(a,mode));
 }
