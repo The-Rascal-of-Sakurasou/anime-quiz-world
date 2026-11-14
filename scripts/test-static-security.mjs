@@ -491,12 +491,12 @@ assert.match(index, /shuffle\(characterRecordsWithFourChoicesForAnime\(a,questio
 // The expanded, catalogue-backed question formats must remain selectable and share one eligibility calculation.
 assert.match(index, /function availableQuestionModes\(a,format=/, "Mixed mode must derive available question types for each anime");
 const modeSelectMarkup = index.match(/<select id="modeSelect">([\s\S]*?)<\/select>/)?.[1] || "";
-const supportedModes = ["image", "synopsis", "synonym", "studio", "year", "titleYear", "titleStudio", "titleSynopsis", "titleEpisodes", "titleGenre", "titleFormat", "titleSource"];
+const supportedModes = ["image", "synopsis", "synonym", "studio", "year", "titleYear", "titleStudio", "titleSynopsis", "titleEpisodes", "titleGenre", "titleFormat", ];
 for (const mode of supportedModes) {
   assert.ok(modeSelectMarkup.includes('value="' + mode + '"'), "Every data-backed question format must be selectable: " + mode);
 }
 assert.doesNotMatch(modeSelectMarkup, /value="(?:character|characterImage|characterNameImage|titleCharacter)"/, "Character formats without character data must not appear in the selector");
-for (const mode of ["image", "studio", "year", "titleSynopsis", "titleEpisodes", "titleGenre", "titleFormat", "titleSource"]) {
+for (const mode of ["image", "studio", "year", "titleSynopsis", "titleEpisodes", "titleGenre", "titleFormat", ]) {
   assert.ok(index.includes("modes.push('" + mode + "')"), "Mixed mode must include supported format " + mode);
 }
 assert.match(index, /const hasQuestion=mode===\'mixed\'\s*\?availableQuestionModes\(anime,format\)\.length>0/, "Cached candidate building must accept mixed-mode anime with at least one valid question type");
@@ -507,7 +507,7 @@ assert.match(index, /function yearTitleChoiceRecordsForAnime\(a\)/, "Year-to-tit
 assert.match(index, /function episodeChoiceRecordsForAnime\(a\)/, "Episode-count questions must use distinct counts");
 assert.match(index, /function genreChoiceRecordsForAnime\(a\)/, "Genre questions must exclude the title's other valid genres from distractors");
 assert.match(index, /function formatChoiceRecordsForAnime\(a\)/, "Format questions must use distinct format values");
-assert.match(index, /function sourceChoiceRecordsForAnime\(a\)/, "Source questions must use distinct source values");
+assert.doesNotMatch(modeSelectMarkup, /value="titleSource"/, "Source-material mode must remain hidden until the shared catalogue contains source values");
 
 assert.match(index, /function studioChoiceRecordsForAnime\(a\)/, "Studio question eligibility and generation must share the same studio candidate builder");
 assert.match(index, /function hasFourDistinctStudioChoices\(a\)\{return studioChoiceRecordsForAnime\(a\)\.length>=4\}/, "Studio question eligibility must validate the exact generated options");
