@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'index.html'
+      - 'aqw-text-utils.js'
       - 'scripts/audit-japanese-synopses.mjs'
       - 'scripts/test-japanese-synopsis-overrides.mjs'
       - '.github/workflows/japanese-synopsis-audit.yml'
@@ -33,6 +34,8 @@ jobs:
       - name: Validate registered Japanese synopsis overrides
         run: |
           node --check scripts/test-japanese-synopsis-overrides.mjs
+          node --check aqw-text-utils.js
+          node scripts/test-aqw-text-utils.mjs
           node scripts/test-japanese-synopsis-overrides.mjs
       - name: Find popular anime missing Japanese synopsis entries
         run: node scripts/audit-japanese-synopses.mjs
