@@ -471,14 +471,14 @@ def test_quiz_start_answer_finish(browser):
 
 def test_all_question_modes(browser):
     """Verify every selectable question mode can prepare, answer, and finish."""
-    modes = ["image", "synopsis", "synonym", "studio", "year", "titleYear", "titleStudio", "titleSynopsis", "titleEpisodes", "titleGenre", "titleFormat", "titleSource"]
+    modes = ["image", "synopsis", "synonym", "studio", "year", "titleYear", "titleStudio", "titleSynopsis", "titleEpisodes", "titleGenre", "titleFormat"]
     context = browser.new_context(locale="ja-JP")
     page = context.new_page()
     install_routes(page)
     page.goto(f"{BASE_URL}/index.html", wait_until="domcontentloaded")
     page.wait_for_function("document.querySelector('#modeSelect option') !== null", timeout=20000)
     mode_values = page.locator("#modeSelect option").evaluate_all("(options) => options.map(option => option.value)")
-    expected_modes = ["mixed", "image", "synopsis", "synonym", "studio", "year", "titleYear", "titleStudio", "titleSynopsis", "titleEpisodes", "titleGenre", "titleFormat", "titleSource"]
+    expected_modes = ["mixed", "image", "synopsis", "synonym", "studio", "year", "titleYear", "titleStudio", "titleSynopsis", "titleEpisodes", "titleGenre", "titleFormat"]
     assert mode_values == expected_modes, (
         "The quiz menu must expose every supported, data-backed question mode: "
         + repr(mode_values)

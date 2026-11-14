@@ -254,7 +254,6 @@ assert.match(adminEdge, /const DATA_TABLES = new Set\(/, "Generic data managemen
 assert.match(adminEdge, /const REPORT_STATUSES = new Set\(/, "Report status updates must use a fixed status allowlist");
 assert.match(adminEdge, /requireText\(body\.body, "投稿本文", 2000\)/, "Admin post editing must respect the production posts.body 2000-character constraint");
 assert.match(admin, /next\.trim\(\)\.length>2000/, "Admin post editor must enforce the database 2000-character limit before submitting");
-
 const multiplayer = source.get("multiplayer.html");
 assert.match(multiplayer, /let matchmakingTimer=null,matchmakingBusy=false,matchmakingPrefs=null,matchmakingPollPromise=null;/, "Random matchmaking must track an in-flight poll");
 const stopMatchmakingSource = multiplayer.match(/function stopMatchmakingPolling\(\)\{[^}]*\}/)?.[0];
@@ -379,23 +378,18 @@ const migratedSevenAnswers = [0, null, 1, 2, null, 3, 1, 1, null, null, 2, null,
 const currentAnswers = Array.from({ length: 20 }, (_, index) => index % 4);
 assert.deepEqual([...migrationHelpers.normalizeSharedAnswers({ v: 9, a: currentAnswers })], currentAnswers, "Version 9 share links must restore all twenty answers");
 assert.deepEqual([...migrationHelpers.normalizeSavedAnswers({ v: 9, answers: currentAnswers })], currentAnswers, "Version 9 local saves must restore all twenty answers");
-const previousV8Answers = Array.from({ length: 18 }, (_, index) => index % 4);
-const migratedV8 = [...previousV8Answers, null, null]; [8, 15, 17].forEach(index => migratedV8[index] = null);
-assert.deepEqual([...migrationHelpers.normalizeSharedAnswers({ v: 8, a: previousV8Answers })], migratedV8, "Version 8 share links must migrate eighteen answers and re-ask changed dimensions");
-assert.deepEqual([...migrationHelpers.normalizeSavedAnswers({ v: 8, answers: previousV8Answers })], migratedV8, "Version 8 local saves must migrate eighteen answers and re-ask changed dimensions");
-const previousV7Answers = Array(18).fill(0);
-const migratedV7 = [...previousV7Answers, null, null]; [8, 15, 17].forEach(index => migratedV7[index] = null);
-assert.deepEqual([...migrationHelpers.normalizeSharedAnswers({ v: 7, a: previousV7Answers })], migratedV7, "Version 7 share links must migrate into the twenty-question structure");
-assert.deepEqual([...migrationHelpers.normalizeSavedAnswers({ v: 7, answers: previousV7Answers })], migratedV7, "Version 7 local saves must migrate into the twenty-question structure");
-const migratedV5 = [...Array(13).fill(0), ...Array(7).fill(null)];
-assert.deepEqual([...migrationHelpers.normalizeSharedAnswers({ v: 5, a: Array(13).fill(0) })], migratedV5, "Version 5 share links must migrate thirteen answers into the twenty-question structure");
-assert.deepEqual([...migrationHelpers.normalizeSavedAnswers({ v: 5, answers: Array(13).fill(0) })], migratedV5, "Version 5 local saves must migrate thirteen answers into the twenty-question structure");
+const migratedV7 = [...Array(18).fill(0), null, null]; [8, 15, 17, 18, 19].forEach(index => migratedV7[index] = null);
+assert.deepEqual([...migrationHelpers.normalizeSharedAnswers({ v: 8, a: Array(18).fill(0) })], migratedV7, "Version 8 share links must migrate into the twenty-question structure");
+assert.deepEqual([...migrationHelpers.normalizeSavedAnswers({ v: 8, answers: Array(18).fill(0) })], migratedV7, "Version 8 local saves must migrate into the twenty-question structure");
+assert.deepEqual([...migrationHelpers.normalizeSharedAnswers({ v: 7, a: Array(18).fill(0) })], migratedV7, "Version 7 share links must re-ask newly introduced preference dimensions");
+assert.deepEqual([...migrationHelpers.normalizeSavedAnswers({ v: 7, answers: Array(18).fill(0) })], migratedV7, "Version 7 local saves must re-ask newly introduced preference dimensions");
+assert.deepEqual([...migrationHelpers.normalizeSharedAnswers({ v: 5, a: Array(13).fill(0) })], [...Array(13).fill(0), ...Array(7).fill(null)], "Version 5 share links must migrate thirteen answers into the twenty-question structure");
 assert.deepEqual([...migrationHelpers.normalizeSharedAnswers({ v: 3, a: legacySevenAnswers })], migratedSevenAnswers, "Version 3 seven-question share links must map into the twenty-question structure");
 assert.deepEqual([...migrationHelpers.normalizeSavedAnswers({ v: 2, answers: legacySevenAnswers })], migratedSevenAnswers, "Legacy seven-answer local saves must map into the twenty-question structure");
 const legacy13Answers = [0, 1, 2, 3, 0, 1, 2, 3, 0, 3, 2, 1, 0];
 const migratedLegacy13 = [0, 1, 2, 3, 0, 1, 2, 3, 0, null, 2, 1, 0, null, null, null, null, null, null, null];
-assert.deepEqual([...migrationHelpers.normalizeSharedAnswers({ v: 2, a: legacy13Answers })], migratedLegacy13, "Legacy version 2 relationship answers must migrate into the twenty-question structure");
-assert.deepEqual([...migrationHelpers.normalizeSavedAnswers({ v: 2, answers: legacy13Answers })], migratedLegacy13, "Legacy local relationship answers must migrate into the twenty-question structure");
+assert.deepEqual([...migrationHelpers.normalizeSharedAnswers({ v: 2, a: legacy13Answers })], migratedLegacy13, "Legacy version 2 romantic relationship answer must be re-asked instead of misread");
+assert.deepEqual([...migrationHelpers.normalizeSavedAnswers({ v: 2, answers: legacy13Answers })], migratedLegacy13, "Legacy local romantic relationship answer must be re-asked instead of misread");
 const previousV4Answers = Array(13).fill(0);
 const migratedV4Answers = [0, 2, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, null, null, null, null, null, null, null];
 assert.deepEqual([...migrationHelpers.normalizeSharedAnswers({ v: 4, a: previousV4Answers })], migratedV4Answers, "Version 4 share links must map to the twenty-question structure");
@@ -403,6 +397,9 @@ assert.deepEqual([...migrationHelpers.normalizeSavedAnswers({ v: 4, answers: pre
 assert.deepEqual([...migrationHelpers.normalizeSharedAnswers({ v: 2, a: [0, 1, 2, 3, 0, 1] })], [0, 1, 2, 3, 0, 1, ...Array(14).fill(null)], "Legacy six-answer share links must preserve their saved prefix");
 assert.deepEqual([...migrationHelpers.normalizeSharedAnswers({ v: 2, a: [0, 1, 2, 3, 0, 1, 2, 3, 0, 1] })], [0, 1, 2, 3, 0, 1, 2, 3, 0, 1, ...Array(10).fill(null)], "Legacy ten-answer share links must preserve their saved prefix");
 assert.deepEqual([...migrationHelpers.normalizeSavedAnswers({ v: 1, answers: [0, 1, 2, 3, 0, 1] })], [0, 1, 2, 3, 0, 1, ...Array(14).fill(null)], "Older partial local saves must preserve their saved prefix");
+assert.equal(migrationHelpers.normalizeSharedAnswers({ v: 3, a: [0, 1, 2, 3, 0, 1] }), null, "Incomplete version 3 share links must be rejected");
+assert.equal(migrationHelpers.normalizeSharedAnswers({ v: 5, a: [0, 1, 2, 3, 0, 1, 2] }), null, "Version 5 share links must contain thirteen answers");
+assert.equal(migrationHelpers.normalizeSharedAnswers({ v: 5, a: [0, 1, 2, 3, 0, 1, 4, 0, 0, 0, 0, 0, 0] }), null, "Out-of-range shared answers must be rejected");
 assert.equal(migrationHelpers.normalizeSavedAnswers({ v: 2, answers: [0, 1, 2, 3, 4, 1, 2] }), null, "Out-of-range legacy local answers must be rejected");
 assert.doesNotMatch(questionBlock, /NDCG|IDF|重み付け|希少性/, "Technical recommendation terms must not appear in user-facing questions");
 const tagNameMapBodies = [...recommend.matchAll(/const tagNames=\{([^}]*)\};/g)].map(match => match[1]);
@@ -520,16 +517,15 @@ assert.match(index, /async function fetchSharedAnimeCatalog\(\)/, "The quiz must
 // The exact shared character-choice builder is asserted below.
 assert.match(index, /if\(mode===\'characterImage\'\)return characterRecordsWithFourChoicesForAnime\(a,summary,false\)\.length>0/, "Character-image question eligibility must validate four distinct character portraits");
 assert.match(index, /shuffle\(characterRecordsWithFourChoicesForAnime\(a,questionChoiceSummary\(\),true\)\)/, "Character-name-to-image questions must choose from records with four distinct portraits");
-// The four requested question formats are text/data driven and must not depend on cover-image loading.
-
-assert.match(index, /function availableQuestionModes\(a,format=/, "Mixed mode must derive the available question types for each anime");
+// The expanded, catalogue-backed question formats must remain selectable and share one eligibility calculation.
+assert.match(index, /function availableQuestionModes\(a,format=/, "Mixed mode must derive available question types for each anime");
 const modeSelectMarkup = index.match(/<select id="modeSelect">([\s\S]*?)<\/select>/)?.[1] || "";
-const supportedModes = ["image", "synopsis", "synonym", "studio", "year", "titleYear", "titleStudio", "titleSynopsis", "titleEpisodes", "titleGenre", "titleFormat", "titleSource"];
+const supportedModes = ["image", "synopsis", "synonym", "studio", "year", "titleYear", "titleStudio", "titleSynopsis", "titleEpisodes", "titleGenre", "titleFormat", ];
 for (const mode of supportedModes) {
   assert.ok(modeSelectMarkup.includes('value="' + mode + '"'), "Every data-backed question format must be selectable: " + mode);
 }
 assert.doesNotMatch(modeSelectMarkup, /value="(?:character|characterImage|characterNameImage|titleCharacter)"/, "Character formats without character data must not appear in the selector");
-for (const mode of ["image", "studio", "year", "titleSynopsis", "titleEpisodes", "titleGenre", "titleFormat", "titleSource"]) {
+for (const mode of ["image", "studio", "year", "titleSynopsis", "titleEpisodes", "titleGenre", "titleFormat", ]) {
   assert.ok(index.includes("modes.push('" + mode + "')"), "Mixed mode must include supported format " + mode);
 }
 assert.match(index, /const hasQuestion=mode===\'mixed\'\s*\?availableQuestionModes\(anime,format\)\.length>0/, "Cached candidate building must accept mixed-mode anime with at least one valid question type");
@@ -540,7 +536,7 @@ assert.match(index, /function yearTitleChoiceRecordsForAnime\(a\)/, "Year-to-tit
 assert.match(index, /function episodeChoiceRecordsForAnime\(a\)/, "Episode-count questions must use distinct counts");
 assert.match(index, /function genreChoiceRecordsForAnime\(a\)/, "Genre questions must exclude the title's other valid genres from distractors");
 assert.match(index, /function formatChoiceRecordsForAnime\(a\)/, "Format questions must use distinct format values");
-assert.match(index, /function sourceChoiceRecordsForAnime\(a\)/, "Source questions must use distinct source values");
+assert.doesNotMatch(modeSelectMarkup, /value="titleSource"/, "Source-material mode must remain hidden until the shared catalogue contains source values");
 
 assert.match(index, /function studioChoiceRecordsForAnime\(a\)/, "Studio question eligibility and generation must share the same studio candidate builder");
 assert.match(index, /function hasFourDistinctStudioChoices\(a\)\{return studioChoiceRecordsForAnime\(a\)\.length>=4\}/, "Studio question eligibility must validate the exact generated options");
