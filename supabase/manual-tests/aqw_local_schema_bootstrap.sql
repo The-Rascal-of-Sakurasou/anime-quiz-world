@@ -18,11 +18,8 @@ create table if not exists private.aqw_player_stat_runs (
   question_count integer not null,
   xp_earned integer not null check (xp_earned >= 0),
   created_at timestamptz not null default now(),
-  question_results jsonb not null default '[]'::jsonb,
   constraint aqw_player_stat_runs_pkey primary key (user_id, run_id),
-  constraint aqw_player_stat_runs_check check (question_count >= correct_count and question_count > 0),
-  constraint aqw_player_stat_runs_question_results_check
-    check (jsonb_typeof(question_results) = 'array' and jsonb_array_length(question_results) <= 10000)
+  constraint aqw_player_stat_runs_check check (question_count >= correct_count and question_count > 0)
 );
 
 alter table private.aqw_player_stat_runs enable row level security;
