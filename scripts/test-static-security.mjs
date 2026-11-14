@@ -394,22 +394,17 @@ const syncScript = fs.readFileSync("scripts/sync-anime-catalog.mjs", "utf8");
 const syncWorkflow = fs.readFileSync(".github/workflows/sync-anime-catalog.yml", "utf8");
 assert.match(syncScript, /function isJapaneseOriginAnime\(anime\)/, "Shared catalogue sync must verify Japanese source origin");
 const syncOriginHelper = syncScript.match(/function isJapaneseOriginAnime\(anime\)\s*\{[\s\S]*?\n\}/)?.[0];
-const syncJapaneseTitleHelper = syncScript.match(/function hasJapaneseTitle\(anime\)\s*\{[\s\S]*?\n\}/)?.[0];
-assert.ok(syncOriginHelper && syncJapaneseTitleHelper, "Shared catalogue origin helpers must be extractable for regression tests");
-const originResults = vm.runInNewContext(`(()=>{${syncJapaneseTitleHelper};${syncOriginHelper};const check=isJapaneseOriginAnime;return [
+assert.ok(syncOriginHelper, "Shared catalogue origin helper must be extractable for regression tests");
+const originResults = vm.runInNewContext(`(()=>{${syncOriginHelper};const check=isJapaneseOriginAnime;return [
   check({ countryOfOrigin: "JP", source: "ORIGINAL" }),
-  check({ countryOfOrigin: "JP", originVerified: true }),
-  check({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "ANIME", countryOfOrigin: "JP", format: "TV" } }] } }),
-  check({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "ANIME", countryOfOrigin: "US", format: "TV" } }] } }),
-  check({ countryOfOrigin: "JP", source: "VIDEO_GAME", relations: [] }),
-  check({ countryOfOrigin: "US", popularity: 10000, title: { native: "日本語タイトル" } }),
-  check({ countryOfOrigin: "US", popularity: 9999, title: { native: "日本語タイトル" } }),
-  check({ countryOfOrigin: "US", popularity: 10000, title: { native: "English Only" } })
+  check({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [] } }),
+  check({ countryOfOrigin: "US", popularity: 100000, title: { native: "日本語タイトル" } }),
+  check({ countryOfOrigin: null, popularity: 100000, title: { native: "日本語タイトル" } })
 ]})()`);
-assert.equal(JSON.stringify(originResults), JSON.stringify([true, true, true, false, false, true, false, false]), "Shared catalogue origin eligibility must pass Japanese works and only popular foreign works with Japanese titles");
+assert.equal(JSON.stringify(originResults), JSON.stringify([true, true, false, false]), "Shared catalogue must accept only records explicitly marked as Japanese-origin");
+assert.match(syncScript, /countryOfOrigin:JP/, "AniList catalogue queries must filter to Japanese-origin records at the API");
+assert.doesNotMatch(syncScript, /hasJapaneseTitle|includeForeign|famous foreign/, "Shared catalogue sync must not retain a foreign-origin fallback");
 assert.match(syncScript, /startDate_greater/, "The shared catalogue must split oversized format scopes by release decade");
-
-assert.match(syncScript, /if \(anime\.countryOfOrigin !== 'JP'\) return Number\(anime\.popularity\) >= 10000 && hasJapaneseTitle\(anime\)/, "Foreign catalogue entries must pass both the popularity and Japanese-title requirements");
 assert.match(syncScript, /const API_REQUEST_INTERVAL_MS = 2100/, "Manual AniList requests must stay below the current 30 requests/minute limit");
 assert.match(syncScript, /await sleep\(API_REQUEST_INTERVAL_MS\)/, "Every catalogue request must use the documented rate-limit pacing");
 assert.match(syncScript, /isAdult:false/, "Shared catalogue sync must exclude adult catalogue entries");
