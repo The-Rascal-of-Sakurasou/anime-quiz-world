@@ -280,6 +280,11 @@ const isJapaneseOriginAnime = vm.runInNewContext(policyFunction + "\nisJapaneseO
 assert.equal(isJapaneseOriginAnime({ countryOfOrigin: "JP" }), true);
 assert.equal(isJapaneseOriginAnime({ countryOfOrigin: "US", popularity: 100000, title: { native: "日本語タイトル" } }), false);
 assert.equal(isJapaneseOriginAnime({ countryOfOrigin: null, originVerified: true }), false);
+const coverageAudit = fs.readFileSync("scripts/audit-question-mode-coverage.mjs", "utf8");
+assert.match(coverageAudit, /const eligibleOrigin = \(anime\) => anime\?\.countryOfOrigin === "JP"/, "Question-mode coverage audit must use the Japanese-only origin rule");
+assert.doesNotMatch(coverageAudit, /hasJapaneseTitle|popularity\) >= 10000/, "Question-mode coverage audit must not include foreign titles");
+const browserSmoke = fs.readFileSync("scripts/browser-smoke.py", "utf8");
+assert.match(browserSmoke, /def japanese_origin\(item\):\s*return item\.get\("countryOfOrigin"\) == "JP"/, "Browser smoke fixtures must use the Japanese-only origin rule");
 assert.match(syncScript, /startDate_greater/, "The shared catalogue must split oversized format scopes by release decade");
 assert.match(syncScript, /const API_REQUEST_INTERVAL_MS = 2100/, "Manual AniList requests must stay below the current 30 requests/minute limit");
 assert.match(syncScript, /await sleep\(API_REQUEST_INTERVAL_MS\)/, "Every catalogue request must use the documented rate-limit pacing");
