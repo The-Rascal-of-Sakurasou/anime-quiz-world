@@ -95,21 +95,26 @@ assert.equal(isJapaneseOriginAnime({
 
 assert.equal(isJapaneseOriginAnime({
   countryOfOrigin: "US",
-  popularity: 10000,
+  popularity: 100000,
   title: { native: "日本語タイトル" },
-}), true, "Famous foreign anime with a Japanese title should pass.");
+}), false, "Foreign anime must be excluded regardless of popularity or Japanese title.");
 
 assert.equal(isJapaneseOriginAnime({
-  countryOfOrigin: "US",
-  popularity: 9999,
+  countryOfOrigin: "CN",
+  popularity: 100000,
   title: { native: "日本語タイトル" },
-}), false, "Foreign anime below the popularity threshold should fail.");
+}), false, "All non-Japanese origins must be excluded.");
 
 assert.equal(isJapaneseOriginAnime({
-  countryOfOrigin: "US",
-  popularity: 50000,
-  title: { native: "English title" },
-}), false, "Foreign anime without a Japanese title should fail.");
+  countryOfOrigin: "",
+  popularity: 100000,
+  title: { native: "日本語タイトル" },
+}), false, "Unknown origin must fail closed.");
+
+assert.equal(isJapaneseOriginAnime({
+  popularity: 100000,
+  title: { native: "日本語タイトル" },
+}), false, "Missing origin metadata must fail closed.");
 
 assert.equal(isJapaneseOriginAnime({ popularity: 50000, title: { native: "日本語" } }), false);
 assert.equal(metadataKey(" Ｔｅｓｔ　 Name "), "testname");
