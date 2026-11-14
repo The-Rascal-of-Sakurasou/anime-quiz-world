@@ -179,7 +179,9 @@ body{background:#f6f7f9;color:#202936;letter-spacing:.005em}
 </main>
 <p class="foot">診断は回答内容と自由記述を作品データのジャンル・タグなどに照合する、ルールベースの娯楽向け推薦です。好きな作品のタグ一致度や候補群内でのタグの希少性も参考にするため、ジャンルが異なる作品が候補に入る場合があります。推薦理由は作品データとの一致を示すもので、作品の優劣や視聴体験を保証しません。入力した作品名は作品検索に使われます。回答内容はアカウントには保存しません。作品情報は作品データに基づきます。</p>
 </div>
+<script src="./anime-origin-policy.js"></script>
 <script>
+const isJapaneseOriginAnime = window.AQWAnimePolicy.isJapaneseOriginAnime;
 window.addEventListener("error",event=>{const box=document.getElementById("error");if(box){box.textContent="診断画面の初期化中にエラーが発生しました："+(event.message||"詳細不明")+"。ページを再読み込みしてください。";box.classList.remove("hidden");}});
 window.addEventListener("unhandledrejection",event=>{const box=document.getElementById("error");if(box){const reason=event.reason;box.textContent="診断処理でエラーが発生しました："+(reason&&reason.message?reason.message:String(reason||"詳細不明"));box.classList.remove("hidden");}});
 </script>
@@ -850,27 +852,6 @@ function parseTitleInput(id){
 function normalizeSeedTitle(value){
  return String(value||'').toLocaleLowerCase().normalize('NFKC')
   .replace(/[\s・：:!！?？。、,.'’"「」『』()（）［］【】_ｰ-]/g,'');
-}
-function hasFamousJapaneseTitle(media){
- const names=[media?.title?.native,media?.title?.english,media?.title?.romaji,...(Array.isArray(media?.synonyms)?media.synonyms:[])];
- return names.some(name=>typeof name==='string'&&/[ぁ-んァ-ヶ]/.test(name));
-}
-function isJapaneseOriginAnime(media){
- if(!media)return false;
- // 海外作品は、日本語の作品名が確認でき、AniList popularity が10,000以上の有名作品に限って採用する。
- if(media.countryOfOrigin!=='JP')return Number(media.popularity)>=10000&&hasFamousJapaneseTitle(media);
- const languageValues=[media.originLanguage,media.originalLanguage,media.sourceLanguage,media.language].filter(value=>typeof value==='string'&&value.trim());
- if(languageValues.some(value=>!['ja','ja-jp','japanese','日本語'].includes(value.trim().toLowerCase())))return false;
- if(media.source==='ORIGINAL')return true;
- const sourceRules={MANGA:{type:'MANGA',formats:['MANGA','ONE_SHOT']},LIGHT_NOVEL:{type:'MANGA',formats:['NOVEL']},NOVEL:{type:'MANGA',formats:['NOVEL']},DOUJINSHI:{type:'MANGA',formats:['MANGA','ONE_SHOT','NOVEL']},ANIME:{type:'ANIME',formats:['TV','TV_SHORT','MOVIE','OVA','ONA','SPECIAL']}};
- const rule=sourceRules[media.source];
- if(!rule||!Array.isArray(media.relations?.edges))return false;
- return media.relations.edges.some(edge=>{
-  const node=edge?.node;
-  if(!node||node.type!==rule.type||node.countryOfOrigin!=='JP'||!rule.formats.includes(node.format))return false;
-  const sourceLanguage=[node.originLanguage,node.originalLanguage,node.sourceLanguage,node.language].filter(value=>typeof value==='string'&&value.trim());
-  return !sourceLanguage.some(value=>!['ja','ja-jp','japanese','日本語'].includes(value.trim().toLowerCase()));
- });
 }
 function matchesSeedTitle(media,title){
  const wanted=normalizeSeedTitle(title);
