@@ -1270,14 +1270,18 @@ def test_recommendation_diagnosis(browser):
     for step in range(question_count):
         choices = page.locator("#choices button.choice")
         choices.first.wait_for(state="visible", timeout=10000)
-        assert choices.count() == 5, f"Question {step + 1} must have four answers plus unknown"
+        assert choices.count() == 6, f"Question {step + 1} must have four answers plus unknown and not-listed"
         if step == 0:
             assert page.locator("#questionOtherWrap").count() == 0, "Per-question free-text controls must not exist"
             assert page.locator("#additionalPreferences").is_hidden(), "Separate free-text section must remain hidden during the 20 questions"
-            assert "わからない・選択肢にない" in choices.nth(4).inner_text(), "The fifth choice must combine unknown and none-of-the-above"
+            assert choices.nth(4).inner_text().strip() == "わからない", "The fifth choice must be unknown"
+            assert choices.nth(5).inner_text().strip() == "選択肢にない", "The sixth choice must be none-of-the-above"
             choices.nth(4).click()
-            assert page.locator("#next").is_enabled(), "Unknown/none-of-the-above answer must not require free text"
-            assert choices.nth(4).get_attribute("aria-pressed") == "true", "The fifth choice must be selected"
+            assert page.locator("#next").is_enabled(), "Unknown answer must not require free text"
+            assert choices.nth(4).get_attribute("aria-pressed") == "true", "Unknown must be selectable"
+            choices.nth(5).click()
+            assert page.locator("#next").is_enabled(), "None-of-the-above must not require inline free text"
+            assert choices.nth(5).get_attribute("aria-pressed") == "true", "None-of-the-above must be independently selectable"
         else:
             choices.first.click()
         page.locator("#next").click()
