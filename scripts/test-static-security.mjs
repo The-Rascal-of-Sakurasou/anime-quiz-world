@@ -21,6 +21,18 @@ for (const file of frontendFiles) {
 const matchPreparePath = "supabase/functions/aqw-match-prepare/index.ts";
 assert.ok(fs.existsSync(matchPreparePath), "Active match-preparation Edge Function source is missing");
 const matchPrepare = fs.readFileSync(matchPreparePath, "utf8");
+const adminControlPath = "supabase/functions/aqw-admin-control/index.ts";
+assert.ok(fs.existsSync(adminControlPath), "Admin-control Edge Function source is missing");
+const adminControl = fs.readFileSync(adminControlPath, "utf8");
+const edgeHttp = fs.readFileSync("supabase/functions/_shared/http.ts", "utf8");
+assert.match(edgeHttp, /export const AQW_ALLOWED_ORIGIN/);
+assert.match(edgeHttp, /export const AQW_CORS_HEADERS/);
+assert.match(edgeHttp, /export function createJsonResponder/);
+for (const [name, sourceText] of [["match preparation", matchPrepare], ["admin control", adminControl]]) {
+  assert.ok(sourceText.includes('from "../_shared/http.ts"'), name + " must import shared Edge Function HTTP utilities");
+  assert.ok(sourceText.includes("const json = createJsonResponder(corsHeaders)"), name + " must use the shared JSON responder");
+  assert.doesNotMatch(sourceText, /new Response\(JSON\.stringify\(body\)/, name + " must not duplicate JSON response construction");
+}
 assert.match(matchPrepare, /const ALLOWED_ORIGIN = "https:\/\/the-rascal-of-sakurasou\.github\.io"/, "Match preparation must restrict its browser origin");
 assert.match(matchPrepare, /userClient\.auth\.getUser\(token\)/, "Match preparation must validate the bearer token with Supabase Auth");
 assert.match(matchPrepare, /room\.host_id !== userData\.user\.id/, "Only the authenticated room host may prepare questions");
