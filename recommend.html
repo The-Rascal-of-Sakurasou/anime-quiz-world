@@ -919,6 +919,8 @@ function isJapaneseOriginAnime(media){
  if(!media)return false;
  // 海外作品は、日本語の作品名が確認でき、AniList popularity が10,000以上の有名作品に限って採用する。
  if(media.countryOfOrigin!=='JP')return Number(media.popularity)>=10000&&hasFamousJapaneseTitle(media);
+ // 共有カタログはビルド時に日本原産を検証済み。原作・関係情報を軽量化で省略しても判定を維持する。
+ if(media.originVerified===true)return true;
  const languageValues=[media.originLanguage,media.originalLanguage,media.sourceLanguage,media.language].filter(value=>typeof value==='string'&&value.trim());
  if(languageValues.some(value=>!['ja','ja-jp','japanese','日本語'].includes(value.trim().toLowerCase())))return false;
  if(media.source==='ORIGINAL')return true;
@@ -1005,6 +1007,42 @@ function isRecommendationCandidate(anime){
  const allowedFormats=new Set(['TV','TV_SHORT','MOVIE','ONA','OVA','SPECIAL']);
  return Boolean(anime&&isJapaneseOriginAnime(anime)&&anime.coverImage?.large&&anime.title&&allowedFormats.has(anime.format));
 }
+const RECOMMENDATION_CATALOG_CACHE='aqw-anime-catalog-v1';
+let recommendationCatalogMemoryCache=null;
+async function loadRecommendationCatalog(externalSignal=null){
+ const url=new URL('./data/anime-catalog.json',location.href).href;
+ let cache=null;
+ try{if('caches' in window)cache=await caches.open(RECOMMENDATION_CATALOG_CACHE)}catch(error){console.warn('Recommendation catalogue cache unavailable:',error)}
+ try{
+  const response=await fetch(url,{cache:'no-cache',headers:{'Accept':'application/json'},signal:externalSignal?AbortSignal.any([AbortSignal.timeout(20000),externalSignal]):AbortSignal.timeout(20000)});
+  if(!response.ok)throw new Error('作品カタログ取得エラー（HTTP '+response.status+'）');
+  const catalog=await response.json();
+  if(!catalog||catalog.schemaVersion!==2||!Array.isArray(catalog.items)||!catalog.items.length||Number(catalog.count)!==catalog.items.length)throw new Error('作品カタログの形式または件数が不正です。');
+  const items=catalog.items.filter(anime=>anime&&anime.catalogueEligible!==false&&isJapaneseOriginAnime(anime));
+  if(!items.length)throw new Error('作品カタログに利用可能な作品がありません。');
+  recommendationCatalogMemoryCache={items,generatedAt:catalog.generatedAt||null};
+  if(cache){
+   try{await cache.put(url,new Response(JSON.stringify(catalog),{headers:{'Content-Type':'application/json','Cache-Control':'public, max-age=86400'}}))}catch(error){console.warn('Recommendation catalogue cache write failed:',error)}
+  }
+  return {items,source:'更新済みカタログ',generatedAt:catalog.generatedAt||null};
+ }catch(networkError){
+  if(externalSignal?.aborted)throw networkError;
+  if(recommendationCatalogMemoryCache?.items?.length)return {...recommendationCatalogMemoryCache,source:'メモリキャッシュ'};
+  if(cache){
+   try{
+    const cached=await cache.match(url);
+    if(cached){
+     const catalog=await cached.json();
+     if(catalog?.schemaVersion===2&&Array.isArray(catalog.items)&&catalog.items.length&&Number(catalog.count)===catalog.items.length){
+      const items=catalog.items.filter(anime=>anime&&anime.catalogueEligible!==false&&isJapaneseOriginAnime(anime));
+      if(items.length){recommendationCatalogMemoryCache={items,generatedAt:catalog.generatedAt||null};return {items,source:'保存済みカタログ',generatedAt:catalog.generatedAt||null}}
+     }
+    }
+   }catch(cacheError){console.warn('Recommendation catalogue cache read failed:',cacheError)}
+  }
+  throw networkError;
+ }
+}
 async function getRecommendations(profile,externalSignal=null){
  const query='query ($page:Int,$sort:[MediaSort]) { Page(page:$page,perPage:50) { pageInfo { totalPages } media(type:ANIME,sort:$sort,isAdult:false) { id countryOfOrigin source(version:2) format title { romaji english native } synonyms description(asHtml:false) coverImage { extraLarge large } episodes seasonYear averageScore popularity genres tags { name rank isMediaSpoiler } relations { edges { relationType node { id type countryOfOrigin format } } } siteUrl externalLinks { url site language isDisabled } } } }';
  const fetchPage=async (page,sort)=>{
@@ -1034,36 +1072,45 @@ async function getRecommendations(profile,externalSignal=null){
  const sortModes=['POPULARITY_DESC','SCORE_DESC','TRENDING_DESC','START_DATE_DESC'];
  const maxPagesPerSort=MAX_RECOMMENDATION_PAGES_PER_SORT;
  const pages=[];let failedPages=0;let totalPages=0;let cappedSorts=0;
- const firstResults=await Promise.allSettled(sortModes.map(sort=>fetchPage(1,sort)));
- const sortPlans=[];
- for(let i=0;i<sortModes.length;i++){
-  const result=firstResults[i];
-  if(result.status==='fulfilled'){
-   pages.push({sort:sortModes[i],media:result.value.media});
-   const available=result.value.totalPages;
-   const target=Math.min(available,maxPagesPerSort);
-   totalPages+=target;
-   if(available>maxPagesPerSort)cappedSorts++;
-   sortPlans.push({sort:sortModes[i],available,target,failed:false});
-  }else{
-   failedPages++;
-   // 1ページ目の失敗も試行ページ数に含め、失敗率の分母から漏らさない。
-   totalPages++;
-   console.warn('Recommendation first page failed:',sortModes[i],result.reason);
-   sortPlans.push({sort:sortModes[i],available:1,target:1,failed:true});
+ let catalogSource='AniList API';
+ // まずGitHub Pages上の検証済み作品カタログを利用する。API制限・一時障害に診断全体が左右されない。
+ try{
+  const catalog=await loadRecommendationCatalog(externalSignal);
+  pages.push({sort:'CATALOG',media:catalog.items});
+  totalPages=1;
+  catalogSource=catalog.source;
+  $('loading').textContent='保存済み作品カタログを読み込みました（'+catalog.items.length.toLocaleString()+'作品）。推薦内容を分析中…';
+ }catch(catalogError){
+  console.warn('Recommendation catalogue unavailable; falling back to AniList API:',catalogError);
+  const firstResults=await Promise.allSettled(sortModes.map(sort=>fetchPage(1,sort)));
+  const sortPlans=[];
+  for(let i=0;i<sortModes.length;i++){
+   const result=firstResults[i];
+   if(result.status==='fulfilled'){
+    pages.push({sort:sortModes[i],media:result.value.media});
+    const available=result.value.totalPages;
+    const target=Math.min(available,maxPagesPerSort);
+    totalPages+=target;
+    if(available>maxPagesPerSort)cappedSorts++;
+    sortPlans.push({sort:sortModes[i],available,target,failed:false});
+   }else{
+    failedPages++;totalPages++;
+    console.warn('Recommendation first page failed:',sortModes[i],result.reason);
+    sortPlans.push({sort:sortModes[i],available:1,target:1,failed:true});
+   }
+  }
+  const additionalTasks=sortPlans.flatMap(plan=>plan.failed?[]:Array.from({length:Math.max(0,plan.target-1)},(_,index)=>({sort:plan.sort,page:index+2})));
+  for(let start=0;start<additionalTasks.length;start+=4){
+   const batch=additionalTasks.slice(start,start+4);
+   const results=await Promise.allSettled(batch.map(task=>fetchPage(task.page,task.sort)));
+   results.forEach((result,index)=>{
+    if(result.status==='fulfilled')pages.push({sort:batch[index].sort,media:result.value.media});
+    else{failedPages++;console.warn('Recommendation page failed:',batch[index].sort,'page',batch[index].page,result.reason);}
+   });
+   $('loading').textContent='作品データを取得中… '+Math.min(start+batch.length,additionalTasks.length)+' / '+additionalTasks.length+' ページ（取得失敗 '+failedPages+' ページ）';
   }
  }
- const additionalTasks=sortPlans.flatMap(plan=>plan.failed?[]:Array.from({length:Math.max(0,plan.target-1)},(_,index)=>({sort:plan.sort,page:index+2})));
- for(let start=0;start<additionalTasks.length;start+=4){
-  const batch=additionalTasks.slice(start,start+4);
-  const results=await Promise.allSettled(batch.map(task=>fetchPage(task.page,task.sort)));
-  results.forEach((result,index)=>{
-   if(result.status==='fulfilled')pages.push({sort:batch[index].sort,media:result.value.media});
-   else{failedPages++;console.warn('Recommendation page failed:',batch[index].sort,'page',batch[index].page,result.reason);}
-  });
-  $('loading').textContent='作品データを取得中… '+Math.min(start+batch.length,additionalTasks.length)+' / '+additionalTasks.length+' ページ（取得失敗 '+failedPages+' ページ）';
- }
- if(!pages.length)throw new Error('作品データを取得できませんでした。通信状態を確認して、もう一度お試しください。');
+ if(!pages.length)throw new Error('作品カタログとAniList APIの両方から作品データを取得できませんでした。通信状態を確認して、もう一度お試しください。');
  const byId=new Map();
  for(const anime of pages.flatMap(page=>page.media)){
   if(anime?.id==null)continue;
@@ -1080,7 +1127,7 @@ async function getRecommendations(profile,externalSignal=null){
  const learnedPreferences=buildLearnedPreferences(recommendationFeedback);
  const learningReliability=calculateLearningStrength(recommendationFeedback);
  const favoriteSeeds=[],dislikedSeeds=[];
- const seedReport={unresolvedFavorites:[],unresolvedDislikes:[],conflicts:[],resolvedFavorites:[],resolvedDislikes:[],lookupErrors:[],dataWarnings:buildRecommendationDataWarnings(failedPages,totalPages,cappedSorts),retrievalStats:{rawRecordCount,uniqueIdCount:items.length,sortCoverage}};
+ const seedReport={unresolvedFavorites:[],unresolvedDislikes:[],conflicts:[],resolvedFavorites:[],resolvedDislikes:[],lookupErrors:[],dataWarnings:buildRecommendationDataWarnings(failedPages,totalPages,cappedSorts),retrievalStats:{source:catalogSource,rawRecordCount,uniqueIdCount:items.length,sortCoverage}};
  for(const name of favoriteNames){
   try{const found=await findSeedAnime(name,externalSignal);if(found){favoriteSeeds.push({...found,_requestedTitle:name});seedReport.resolvedFavorites.push({requested:name,resolved:found.title?.native||found.title?.english||found.title?.romaji||'タイトル不明'})}else seedReport.unresolvedFavorites.push(name)}
   catch(error){seedReport.lookupErrors.push({type:'好きな作品',title:name,message:error.message||'検索に失敗しました'})}
