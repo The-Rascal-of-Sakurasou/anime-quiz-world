@@ -939,7 +939,7 @@ function matchesSeedTitle(media,title){
 async function findSeedAnime(title,externalSignal=null){
  const query='query ($search:String) { Page(perPage:25) { media(search:$search,type:ANIME,isAdult:false,sort:SEARCH_MATCH) { id countryOfOrigin popularity source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } title { romaji english native } synonyms genres tags { name rank isMediaSpoiler } } } }';
  let lastError=null;
- for(let attempt=0;attempt<3;attempt++){
+ for(let attempt=0;attempt<2;attempt++){
   try{
    const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query,variables:{search:title}}),signal:externalSignal?AbortSignal.any([AbortSignal.timeout(10000),externalSignal]):AbortSignal.timeout(10000)});
    const json=await response.json().catch(()=>null);
@@ -1051,19 +1051,15 @@ async function getRecommendations(profile,externalSignal=null){
    sortPlans.push({sort:sortModes[i],available:1,target:1,failed:true});
   }
  }
- for(let i=0;i<sortPlans.length;i++){
-  const plan=sortPlans[i];
-  if(plan.failed||plan.target<=1)continue;
-  for(let start=2;start<=plan.target;start+=2){
-   const batchPages=Array.from({length:Math.min(2,plan.target-start+1)},(_,index)=>start+index);
-   const batch=await Promise.allSettled(batchPages.map(page=>fetchPage(page,plan.sort)));
-   for(const result of batch){
-    if(result.status==='fulfilled')pages.push({sort:plan.sort,media:result.value.media});
-    else{failedPages++;console.warn('Recommendation page failed:',plan.sort,result.reason);}
-   }
-   const completed=Math.min(plan.target,start+batchPages.length-1);
-   $('loading').textContent='作品データを取得中… '+(i+1)+' / '+sortPlans.length+' グループ・'+completed+' / '+plan.target+' ページ（取得失敗 '+failedPages+' ページ）';
-  }
+ const additionalTasks=sortPlans.flatMap(plan=>plan.failed?[]:Array.from({length:Math.max(0,plan.target-1)},(_,index)=>({sort:plan.sort,page:index+2})));
+ for(let start=0;start<additionalTasks.length;start+=4){
+  const batch=additionalTasks.slice(start,start+4);
+  const results=await Promise.allSettled(batch.map(task=>fetchPage(task.page,task.sort)));
+  results.forEach((result,index)=>{
+   if(result.status==='fulfilled')pages.push({sort:batch[index].sort,media:result.value.media});
+   else{failedPages++;console.warn('Recommendation page failed:',batch[index].sort,'page',batch[index].page,result.reason);}
+  });
+  $('loading').textContent='作品データを取得中… '+Math.min(start+batch.length,additionalTasks.length)+' / '+additionalTasks.length+' ページ（取得失敗 '+failedPages+' ページ）';
  }
  if(!pages.length)throw new Error('作品データを取得できませんでした。通信状態を確認して、もう一度お試しください。');
  const byId=new Map();
