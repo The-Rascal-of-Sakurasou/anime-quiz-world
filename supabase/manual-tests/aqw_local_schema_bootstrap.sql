@@ -29,3 +29,29 @@ on private.aqw_player_stat_runs
 for all to anon, authenticated
 using (false)
 with check (false);
+
+-- Public aggregate table present in production but absent from tracked migrations.
+create table if not exists public.aqw_player_stats (
+  user_id uuid primary key references public.profiles(id) on delete cascade,
+  total_xp bigint not null default 0 check (total_xp >= 0),
+  total_runs bigint not null default 0 check (total_runs >= 0),
+  total_correct bigint not null default 0 check (total_correct >= 0),
+  total_questions bigint not null default 0,
+  updated_at timestamptz not null default now(),
+  accuracy_rate numeric generated always as (
+    case
+      when total_questions > 0 then total_correct::numeric / total_questions::numeric
+      else 0::numeric
+    end
+  ) stored
+);
+
+alter table public.aqw_player_stats enable row level security;
+revoke all on table public.aqw_player_stats from public, anon, authenticated;
+
+drop policy if exists aqw_player_stats_deny_client_access on public.aqw_player_stats;
+create policy aqw_player_stats_deny_client_access
+on public.aqw_player_stats
+for all to anon, authenticated
+using (false)
+with check (false);
