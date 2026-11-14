@@ -15,7 +15,16 @@ const frontendFiles = [
 const source = new Map();
 for (const file of frontendFiles) {
   assert.ok(fs.existsSync(file), `Missing frontend file: ${file}`);
-  source.set(file, fs.readFileSync(file, "utf8"));
+  const html = fs.readFileSync(file, "utf8");
+  // Include first-party deferred bundles so source-level regression checks
+  // continue to cover the complete page after script extraction.
+  const linkedScripts = [...html.matchAll(/<script\b[^>]*src=["']\.\/([^"']+)["']/g)]
+    .map((match) => {
+      const scriptPath = match[1];
+      assert.ok(fs.existsSync(scriptPath), `Missing linked page script: ${scriptPath}`);
+      return fs.readFileSync(scriptPath, "utf8");
+    });
+  source.set(file, html + "\n" + linkedScripts.join("\n"));
 }
 
 const matchPreparePath = "supabase/functions/aqw-match-prepare/index.ts";
@@ -32,7 +41,7 @@ assert.match(matchPrepare, /admin\.rpc\("aqw_match_prepare_questions"/, "Questio
 const supabaseConfig = fs.readFileSync("supabase/config.toml", "utf8");
 assert.match(supabaseConfig, /\[functions\.aqw-match-prepare\][\s\S]*?verify_jwt = true/, "The active match-preparation Edge Function must require JWT verification");
 
-const synopsisOverrideEntries = ["Fate/stay night", "GTO", "幽☆遊☆白書", "偽物語", "魔女の旅々", "見える子ちゃん", "オーバーロードⅣ", "BTOOOM!", "アクダマドライブ", "虚構推理", "ゼロの使い魔", "クズの本懐", "蜘蛛ですが、なにか？", "学戦都市アスタリスク", "四畳半神話大系", "ポケットモンスター", "K", "マギ The kingdom of magic", "ゲーマーズ！", "ヒナまつり", "ワンパンマン３", "Ergo Proxy", "進撃の巨人 The Final Season完結編 後編", "わたしの幸せな結婚", "黄泉のツガイ", "らき☆すた", "かぐや様は告らせたい -ファーストキッスは終わらない-", "あそびあそばせ", "涼宮ハルヒの消失", "さよならの朝に約束の花をかざろう", "ヴァイオレット・エヴァーガーデン 外伝~永遠と自動手記人形~", "猫物語（黒）"];
+const synopsisOverrideEntries = ["Fate/stay night: Unlimited Blade Works", "GTO", "幽☆遊☆白書", "偽物語", "魔女の旅々", "見える子ちゃん", "オーバーロードⅣ", "BTOOOM!", "アクダマドライブ", "虚構推理", "ゼロの使い魔", "クズの本懐", "蜘蛛ですが、なにか？", "学戦都市アスタリスク", "四畳半神話大系", "ポケットモンスター", "K", "マギ The kingdom of magic", "ゲーマーズ！", "ヒナまつり", "ワンパンマン３", "Ergo Proxy", "進撃の巨人 The Final Season完結編 後編", "わたしの幸せな結婚", "黄泉のツガイ", "らき☆すた", "かぐや様は告らせたい -ファーストキッスは終わらない-", "あそびあそばせ", "涼宮ハルヒの消失", "さよならの朝に約束の花をかざろう", "ヴァイオレット・エヴァーガーデン 外伝~永遠と自動手記人形~", "猫物語（黒）"];
 const synopsisSource = source.get("index.html");
 for (const title of synopsisOverrideEntries) {
   const entryStart = synopsisSource.indexOf("'" + title + "':'");
@@ -139,7 +148,14 @@ assert.match(source.get("guide.html"), /ブロック・通報/, "The guide must 
 
 let checkedScripts = 0;
 for (const [file, html] of source) {
-  const scripts = html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi);
+  const linkedScripts = [...html.matchAll(/<script\b[^>]*src=["']\.\/([^"']+)["']/g)];
+  for (const match of linkedScripts) {
+    const scriptPath = match[1];
+    const scriptSource = fs.readFileSync(scriptPath, "utf8");
+    new vm.Script(scriptSource, { filename: scriptPath });
+    checkedScripts++;
+  }
+  const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)];
   for (const match of scripts) {
     const attrs = match[1] || "";
     const body = match[2] || "";
@@ -150,7 +166,7 @@ for (const [file, html] of source) {
     checkedScripts++;
   }
 }
-assert.ok(checkedScripts > 0, "No inline JavaScript was checked");
+assert.ok(checkedScripts > 0, "No page JavaScript was checked");
 
 const quizIndex = source.get("index.html");
 const resultStart = quizIndex.indexOf('<div id="result" class="hidden">');

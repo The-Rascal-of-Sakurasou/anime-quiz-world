@@ -1,0 +1,2 @@
+window.addEventListener("error",event=>{const box=document.getElementById("error");if(box){box.textContent="診断画面の初期化中にエラーが発生しました："+(event.message||"詳細不明")+"。ページを再読み込みしてください。";box.classList.remove("hidden");}});
+window.addEventListener("unhandledrejection",event=>{const box=document.getElementById("error");if(box){const reason=event.reason;box.textContent="診断処理でエラーが発生しました："+(reason&&reason.message?reason.message:String(reason||"詳細不明"));box.classList.remove("hidden");}});
