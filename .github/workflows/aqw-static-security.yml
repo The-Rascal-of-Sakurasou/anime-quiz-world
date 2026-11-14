@@ -95,6 +95,18 @@ jobs:
         uses: supabase/setup-cli@v1
         with:
           version: latest
+      - name: Prepare local-only schema baseline fixture
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          migration = Path("supabase/migrations/20261107143951_add_period_based_aqw_rankings.sql")
+          fixture = Path("supabase/manual-tests/aqw_local_schema_bootstrap.sql").read_text()
+          original = migration.read_text()
+          marker = "create table private.aqw_speed_rush_attempts"
+          if marker not in original:
+              raise SystemExit("Expected migration anchor was not found; refusing to modify files.")
+          migration.write_text(fixture + "\\n" + original)
+          PY
       - name: Start disposable local Supabase
         run: supabase start --debug
       - name: Apply migrations to the local database
