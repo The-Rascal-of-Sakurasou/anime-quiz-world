@@ -1467,7 +1467,7 @@ function renderCardList(containerId,items){
 }
 let latestResult=null;
 function encodeShareState(){
- const state={v:10,a:answers,q:questionTextAnswers,w:$('wantText').value.slice(0,500),x:$('avoidText').value.slice(0,500),p:$('preferenceText').value.slice(0,700),f:$('favoriteTitles').value.slice(0,180),d:$('dislikedTitles').value.slice(0,180)};
+ const state={v:12,a:answers,w:$('wantText').value.slice(0,500),x:$('avoidText').value.slice(0,500),p:$('preferenceText').value.slice(0,700),f:$('favoriteTitles').value.slice(0,180),d:$('dislikedTitles').value.slice(0,180)};
  const bytes=new TextEncoder().encode(JSON.stringify(state));
  let binary='';bytes.forEach(byte=>binary+=String.fromCharCode(byte));
  return btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
@@ -1568,10 +1568,10 @@ function restoreShareState(){
   if(!normalizedAnswers)return false;
   if(typeof state.f!=='string'||typeof state.d!=='string'||state.f.length>180||state.d.length>180)return false;
   answers.splice(0,answers.length,...normalizedAnswers);
-  if(Array.isArray(state.q))questionTextAnswers.splice(0,questionTextAnswers.length,...questions.map((_,i)=>String(state.q[i]||'').slice(0,240)));
+  
   $('wantText').value=String(state.w||'').slice(0,500);$('avoidText').value=String(state.x||'').slice(0,500);$('preferenceText').value=[String(state.p||''),...(Array.isArray(state.q)?state.q:[])].map(value=>String(value||'').trim()).filter(Boolean).join(' / ').slice(0,700);
   $('favoriteTitles').value=state.f;$('dislikedTitles').value=state.d;
-  step=answers.includes(null)?answers.findIndex(n=>n===null):questions.length-1;render();
+  step=answers.includes(null)?answers.findIndex(n=>n===null):questions.length;render();
   return true;
  }catch(_){return false}
 }
