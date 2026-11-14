@@ -316,7 +316,7 @@ const questions=[
 ];
 const allQuestionTitles=questions.map(q=>q.title.trim());
 const allQuestionDimensions=questions.map(q=>q.dimension);
-questions.forEach(q=>q.options.push({label:'わからない',neutral:true},{label:'選択肢にない（自由記述）',other:true},{label:'特にこだわらない',neutral:true}));
+questions.forEach(q=>q.options.push({label:'わからない／特にこだわらない',neutral:true},{label:'選択肢にない（自由記述）',other:true}));
 const allQuestionLabels=questions.flatMap(q=>q.options.filter(o=>!o.neutral&&!o.other).map(option=>option.label.trim()));
 if(new Set(allQuestionTitles).size!==questions.length||new Set(allQuestionDimensions).size!==questions.length||new Set(allQuestionLabels).size!==allQuestionLabels.length)throw new Error('診断の質問または選択肢に重複があります。');
 const questionTitles=questions.map(q=>q.title.trim());
