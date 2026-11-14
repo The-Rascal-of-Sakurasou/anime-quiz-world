@@ -560,15 +560,11 @@ function runRecommendationSelfTests(){
  const allowedFormats=['TV','TV_SHORT','MOVIE','ONA','OVA','SPECIAL'];
  check('対象形式6種類は推薦候補として扱う',allowedFormats.every(format=>isRecommendationCandidate({...candidateBase,format})));
  check('対象形式外は推薦候補に含めない',!isRecommendationCandidate({...candidateBase,format:'MUSIC'}));
- check('日本語タイトルと知名度基準を満たす海外作品は推薦候補に含める',isRecommendationCandidate({...candidateBase,countryOfOrigin:'US',popularity:10000,synonyms:['海外作品の日本語題'],format:'TV'}));
- check('日本語以外と明示された原作は除外する',!isRecommendationCandidate({...candidateBase,originLanguage:'en',format:'TV'}));
- check('日本語タイトルを持つ有名な海外作品は採用する',isRecommendationCandidate({...candidateBase,countryOfOrigin:'US',popularity:10000,synonyms:['海外作品の日本語題'],format:'TV'}));
- check('日本語タイトルがない海外作品は除外する',!isRecommendationCandidate({...candidateBase,countryOfOrigin:'US',popularity:50000,synonyms:['Foreign title'],format:'TV'}));
- check('漢字だけの外国語タイトルを日本語タイトルと誤認しない',!isRecommendationCandidate({...candidateBase,countryOfOrigin:'US',popularity:50000,synonyms:['三国演义'],format:'TV'}));
- check('知名度の基準に届かない海外作品は除外する',!isRecommendationCandidate({...candidateBase,countryOfOrigin:'US',popularity:9999,synonyms:['海外作品の日本語題'],format:'TV'}));
- check('日本語と明示された原作は適格性判定を通過する',isRecommendationCandidate({...candidateBase,originLanguage:'ja',format:'TV'}));
- check('原作情報が不明な翻案作品は除外する',!isRecommendationCandidate({...candidateBase,source:'MANGA',relations:{edges:[]},format:'TV'}));
- check('日本原産の原作メディアを確認できる翻案作品は通過する',isRecommendationCandidate({...candidateBase,source:'MANGA',relations:{edges:[{relationType:'SOURCE',node:{type:'MANGA',countryOfOrigin:'JP',format:'MANGA'}}]},format:'TV'}));
+ check('日本原産作品は原作種別や人気度にかかわらず候補になる',isRecommendationCandidate({...candidateBase,countryOfOrigin:'JP',source:'VIDEO_GAME',popularity:0,format:'TV'}));
+ check('海外原産作品は日本語タイトルがあっても除外する',!isRecommendationCandidate({...candidateBase,countryOfOrigin:'US',popularity:1000000,synonyms:['海外作品の日本語題'],format:'TV'}));
+ check('原産国不明の作品は除外する',!isRecommendationCandidate({...candidateBase,countryOfOrigin:undefined,popularity:1000000,format:'TV'}));
+ check('原産国が空欄の作品は除外する',!isRecommendationCandidate({...candidateBase,countryOfOrigin:'',format:'TV'}));
+ check('日本原産以外の国コードはすべて除外する',['US','CN','KR','TW','GB'].every(country=>!isRecommendationCandidate({...candidateBase,countryOfOrigin:country,format:'TV'})));
  check('タイトル画像がない作品は推薦候補に含めない',!isRecommendationCandidate({...candidateBase,coverImage:{},format:'TV'}));
  // 52選択肢それぞれを単独で選んだprofileでも、候補の適格判定結果が変わらないことを確認する。
  const eligibilitySamples=[
