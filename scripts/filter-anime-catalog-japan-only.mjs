@@ -34,7 +34,7 @@ const output = {
   count: items.length,
   items,
 };
-const serialized = JSON.stringify(output) + "\\n";
+const serialized = JSON.stringify(output) + "\n";
 const compressed = gzipSync(Buffer.from(serialized, "utf8"), { level: 9, mtime: 0 });
 await writeFile(INPUT, serialized);
 await writeFile(OUTPUT_GZIP, compressed);
