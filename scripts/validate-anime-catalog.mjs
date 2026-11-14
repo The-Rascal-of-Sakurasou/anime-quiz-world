@@ -49,7 +49,7 @@ export function validateCatalog(catalog) {
 
     if (anime?.countryOfOrigin === "JP" && anime?.originVerified !== true) failures.push(label + ": build-time Japanese-origin verification marker is missing");
     if (anime?.catalogueEligible === false) failures.push(label + ": catalogue eligibility is explicitly disabled");
-    if (!isJapaneseOriginAnime(anime)) failures.push(label + ": Japanese origin or famous Japanese-title eligibility could not be verified");
+    if (!isJapaneseOriginAnime(anime)) failures.push(label + ": countryOfOrigin must be exactly JP; non-Japanese and unknown origins are excluded");
     if (!FORMATS.has(anime?.format)) failures.push(label + ": unsupported anime format");
     if (anime?.isAdult === true) failures.push(label + ": adult content is not allowed");
     if ((anime?.genres || []).includes("Hentai")) failures.push(label + ": Hentai genre is not allowed");
@@ -127,7 +127,7 @@ async function main() {
   }
 
   const result = validateCatalog(catalog);
-  console.log("Catalogue validation passed: " + result.count + " unique eligible Japanese-origin and famous foreign anime.");
+  console.log("Catalogue validation passed: " + result.count + " unique eligible Japanese-origin anime.");
   console.log("Generated at: " + result.generatedAt);
   console.log("Compressed catalogue matches the JSON source.");
 }
