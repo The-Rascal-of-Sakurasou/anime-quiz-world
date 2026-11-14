@@ -667,8 +667,8 @@ def test_question_count_controls(browser):
         "Question modes must be grouped into clear categories: " + repr(group_labels)
     )
     difficulty_help = page.locator("#difficultyHelp").inner_text()
-    assert "60%" in difficulty_help and "40%" in difficulty_help, (
-        "Difficulty guidance must disclose the 60/40 weighting: " + difficulty_help
+    assert "45%" in difficulty_help and "55%" in difficulty_help, (
+        "Difficulty guidance must disclose the 45/55 weighting: " + difficulty_help
     )
     assert count.get_attribute("min") == "1" and count.get_attribute("max") == "10000", (
         "Custom question count must be limited to 1–10,000"
