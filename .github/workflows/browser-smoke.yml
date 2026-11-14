@@ -63,8 +63,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 18
     steps:
-      - name: Check out the test revision
+      - name: Check out the exact pull-request revision
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Start a local preview for deterministic browser tests
         run: |
