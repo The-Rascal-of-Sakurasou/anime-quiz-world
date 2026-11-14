@@ -351,7 +351,7 @@ const migratedSevenAnswers = [0, null, 1, 2, null, 3, 1, 1, null, null, 2, null,
 const currentAnswers = Array.from({ length: 20 }, (_, index) => index % 4);
 assert.deepEqual([...migrationHelpers.normalizeSharedAnswers({ v: 9, a: currentAnswers })], currentAnswers, "Version 9 share links must restore all twenty answers");
 assert.deepEqual([...migrationHelpers.normalizeSavedAnswers({ v: 9, answers: currentAnswers })], currentAnswers, "Version 9 local saves must restore all twenty answers");
-const migratedV7 = Array(20).fill(0); [8, 15, 17].forEach(index => migratedV7[index] = null);
+const migratedV7 = [...Array(18).fill(0), null, null]; [8, 15, 17].forEach(index => migratedV7[index] = null);
 assert.deepEqual([...migrationHelpers.normalizeSharedAnswers({ v: 7, a: Array(18).fill(0) })], migratedV7, "Version 7 share links must re-ask newly introduced preference dimensions");
 assert.deepEqual([...migrationHelpers.normalizeSavedAnswers({ v: 7, answers: Array(18).fill(0) })], migratedV7, "Version 7 local saves must re-ask newly introduced preference dimensions");
 assert.deepEqual([...migrationHelpers.normalizeSharedAnswers({ v: 5, a: Array(13).fill(0) })], [...Array(13).fill(0), ...Array(7).fill(null)], "Version 5 share links must migrate thirteen answers into the twenty-question structure");
