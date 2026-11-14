@@ -340,6 +340,18 @@ def test_public_catalogue_all_modes(browser):
         prompt = page.locator("#answerPrompt").inner_text().strip()
         assert prompt, f"Public {mode} mode did not render a question prompt"
         if mode == "titleYear":
+            selected_mode_label = page.locator("#modeSelect option:checked").inner_text()
+            assert "公開・放送年" in selected_mode_label, (
+                "The Japanese title-year mode label must cover release and broadcast years: "
+                + selected_mode_label
+            )
+            result_mode_label = page.evaluate(
+                "() => resultLabels({playMode: 'normal', questionMode: 'titleYear'}).mode"
+            )
+            assert "公開・放送年" in result_mode_label, (
+                "The Japanese result label must identify release and broadcast years: "
+                + result_mode_label
+            )
             year_prompt_suffix = page.evaluate("() => qText('titleYear')")
             assert "公開・放送年" in year_prompt_suffix, (
                 "Year questions must cover both film release and TV broadcast years: "
