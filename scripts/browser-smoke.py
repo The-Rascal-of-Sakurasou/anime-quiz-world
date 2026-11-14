@@ -159,6 +159,31 @@ def install_routes(page):
                 alias: {"pageInfo": {"hasNextPage": False}, "media": []}
                 for alias in aliases
             }
+        elif "season:" in query and "seasonYear:" in query:
+            # The featured rail uses current-season and Japanese-origin filters.
+            # Supply deterministic matching records instead of stale recommendation data.
+            seasonal_fixtures = []
+            for index in (0, 1):
+                item = dict(QUIZ_FIXTURES[index])
+                item.update({
+                    "source": "ORIGINAL",
+                    "format": "TV",
+                    "season": CURRENT_SEASON,
+                    "seasonYear": NOW_JST.year,
+                    "startDate": {
+                        "year": NOW_JST.year,
+                        "month": SEASON_START_MONTH,
+                        "day": index + 1,
+                    },
+                    "countryOfOrigin": "JP",
+                })
+                seasonal_fixtures.append(item)
+            data = {
+                "Page": {
+                    "pageInfo": {"hasNextPage": False, "totalPages": 1},
+                    "media": seasonal_fixtures,
+                }
+            }
         else:
             data = {
                 "Page": {
