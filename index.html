@@ -2136,6 +2136,7 @@ function availableQuestionModes(a,format=$('#answerFormatSelect')?.value||'choic
  if(titleUsable(a)&&a?.format!=='MOVIE'&&Number.isInteger(Number(a?.episodes))&&Number(a.episodes)>0)modes.push('titleEpisodes');
  if(titleUsable(a)&&Array.isArray(a?.genres)&&a.genres.length)modes.push('titleGenre');
  if(titleUsable(a)&&a?.format)modes.push('titleFormat');
+ if(titleUsable(a)&&a?.source)modes.push('titleSource');
  
  return modes.filter(mode=>questionModeHasFourChoices(a,mode));
 }
