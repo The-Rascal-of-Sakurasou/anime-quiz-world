@@ -583,15 +583,9 @@ function runRecommendationSelfTests(){
  const allowedFormats=['TV','TV_SHORT','MOVIE','ONA','OVA','SPECIAL'];
  check('対象形式6種類は推薦候補として扱う',allowedFormats.every(format=>isRecommendationCandidate({...candidateBase,format})));
  check('対象形式外は推薦候補に含めない',!isRecommendationCandidate({...candidateBase,format:'MUSIC'}));
- check('日本語タイトルと知名度基準を満たす海外作品は推薦候補に含める',isRecommendationCandidate({...candidateBase,countryOfOrigin:'US',popularity:10000,synonyms:['海外作品の日本語題'],format:'TV'}));
- check('日本語以外と明示された原作は除外する',!isRecommendationCandidate({...candidateBase,originLanguage:'en',format:'TV'}));
- check('日本語タイトルを持つ有名な海外作品は採用する',isRecommendationCandidate({...candidateBase,countryOfOrigin:'US',popularity:10000,synonyms:['海外作品の日本語題'],format:'TV'}));
- check('日本語タイトルがない海外作品は除外する',!isRecommendationCandidate({...candidateBase,countryOfOrigin:'US',popularity:50000,synonyms:['Foreign title'],format:'TV'}));
- check('漢字だけの外国語タイトルを日本語タイトルと誤認しない',!isRecommendationCandidate({...candidateBase,countryOfOrigin:'US',popularity:50000,synonyms:['三国演义'],format:'TV'}));
- check('知名度の基準に届かない海外作品は除外する',!isRecommendationCandidate({...candidateBase,countryOfOrigin:'US',popularity:9999,synonyms:['海外作品の日本語題'],format:'TV'}));
- check('日本語と明示された原作は適格性判定を通過する',isRecommendationCandidate({...candidateBase,originLanguage:'ja',format:'TV'}));
- check('原作情報が不明な翻案作品は除外する',!isRecommendationCandidate({...candidateBase,source:'MANGA',relations:{edges:[]},format:'TV'}));
- check('日本原産の原作メディアを確認できる翻案作品は通過する',isRecommendationCandidate({...candidateBase,source:'MANGA',relations:{edges:[{relationType:'SOURCE',node:{type:'MANGA',countryOfOrigin:'JP',format:'MANGA'}}]},format:'TV'}));
+ check('日本原産（countryOfOrigin=JP）の作品は推薦候補に含める',isRecommendationCandidate({...candidateBase,countryOfOrigin:'JP',format:'TV'}));
+ check('外国原産の作品は日本語タイトルや人気度に関係なく除外する',!isRecommendationCandidate({...candidateBase,countryOfOrigin:'US',popularity:100000,synonyms:['日本語タイトル'],format:'TV'}));
+ check('原産国が不明な作品は除外する',!isRecommendationCandidate({...candidateBase,countryOfOrigin:null,format:'TV'}));
  check('タイトル画像がない作品は推薦候補に含めない',!isRecommendationCandidate({...candidateBase,coverImage:{},format:'TV'}));
  // 通常80選択肢と追加2回答を含む120選択肢それぞれを単独で選んだprofileでも、候補の適格判定結果が変わらないことを確認する。
  const eligibilitySamples=[
@@ -884,26 +878,8 @@ function normalizeSeedTitle(value){
  return String(value||'').toLocaleLowerCase().normalize('NFKC')
   .replace(/[\s・：:!！?？。、,.'’"「」『』()（）［］【】_ｰ-]/g,'');
 }
-function hasFamousJapaneseTitle(media){
- const names=[media?.title?.native,media?.title?.english,media?.title?.romaji,...(Array.isArray(media?.synonyms)?media.synonyms:[])];
- return names.some(name=>typeof name==='string'&&/[ぁ-んァ-ヶ]/.test(name));
-}
 function isJapaneseOriginAnime(media){
- if(!media)return false;
- // 海外作品は、日本語の作品名が確認でき、AniList popularity が10,000以上の有名作品に限って採用する。
- if(media.countryOfOrigin!=='JP')return Number(media.popularity)>=10000&&hasFamousJapaneseTitle(media);
- const languageValues=[media.originLanguage,media.originalLanguage,media.sourceLanguage,media.language].filter(value=>typeof value==='string'&&value.trim());
- if(languageValues.some(value=>!['ja','ja-jp','japanese','日本語'].includes(value.trim().toLowerCase())))return false;
- if(media.source==='ORIGINAL')return true;
- const sourceRules={MANGA:{type:'MANGA',formats:['MANGA','ONE_SHOT']},LIGHT_NOVEL:{type:'MANGA',formats:['NOVEL']},NOVEL:{type:'MANGA',formats:['NOVEL']},DOUJINSHI:{type:'MANGA',formats:['MANGA','ONE_SHOT','NOVEL']},ANIME:{type:'ANIME',formats:['TV','TV_SHORT','MOVIE','OVA','ONA','SPECIAL']}};
- const rule=sourceRules[media.source];
- if(!rule||!Array.isArray(media.relations?.edges))return false;
- return media.relations.edges.some(edge=>{
-  const node=edge?.node;
-  if(!node||node.type!==rule.type||node.countryOfOrigin!=='JP'||!rule.formats.includes(node.format))return false;
-  const sourceLanguage=[node.originLanguage,node.originalLanguage,node.sourceLanguage,node.language].filter(value=>typeof value==='string'&&value.trim());
-  return !sourceLanguage.some(value=>!['ja','ja-jp','japanese','日本語'].includes(value.trim().toLowerCase()));
- });
+ return Boolean(media&&media.countryOfOrigin==='JP');
 }
 function matchesSeedTitle(media,title){
  const wanted=normalizeSeedTitle(title);
@@ -912,7 +888,7 @@ function matchesSeedTitle(media,title){
  return aliases.some(alias=>normalizeSeedTitle(alias)===wanted);
 }
 async function findSeedAnime(title){
- const query='query ($search:String) { Page(perPage:25) { media(search:$search,type:ANIME,isAdult:false,sort:SEARCH_MATCH) { id countryOfOrigin popularity source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } title { romaji english native } synonyms genres tags { name rank isMediaSpoiler } } } }';
+ const query='query ($search:String) { Page(perPage:25) { media(search:$search,type:ANIME,countryOfOrigin:JP,isAdult:false,sort:SEARCH_MATCH) { id countryOfOrigin popularity source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } title { romaji english native } synonyms genres tags { name rank isMediaSpoiler } } } }';
  let lastError=null;
  for(let attempt=0;attempt<3;attempt++){
   try{
@@ -978,7 +954,7 @@ function isRecommendationCandidate(anime){
  return Boolean(anime&&isJapaneseOriginAnime(anime)&&anime.coverImage?.large&&anime.title&&allowedFormats.has(anime.format));
 }
 async function getRecommendations(profile){
- const query='query ($page:Int,$sort:[MediaSort]) { Page(page:$page,perPage:50) { pageInfo { totalPages } media(type:ANIME,sort:$sort,isAdult:false) { id countryOfOrigin source(version:2) format title { romaji english native } synonyms description(asHtml:false) coverImage { extraLarge large } episodes seasonYear averageScore popularity genres tags { name rank isMediaSpoiler } relations { edges { relationType node { id type countryOfOrigin format } } } siteUrl externalLinks { url site language isDisabled } } } }';
+ const query='query ($page:Int,$sort:[MediaSort]) { Page(page:$page,perPage:50) { pageInfo { totalPages } media(type:ANIME,countryOfOrigin:JP,sort:$sort,isAdult:false) { id countryOfOrigin source(version:2) format title { romaji english native } synonyms description(asHtml:false) coverImage { extraLarge large } episodes seasonYear averageScore popularity genres tags { name rank isMediaSpoiler } relations { edges { relationType node { id type countryOfOrigin format } } } siteUrl externalLinks { url site language isDisabled } } } }';
  const fetchPage=async (page,sort)=>{
   let lastError=null;
   for(let attempt=0;attempt<3;attempt++){
