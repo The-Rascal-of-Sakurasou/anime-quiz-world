@@ -269,7 +269,7 @@ assert.ok(recommend.includes("AQWAnimePolicy.isJapaneseOriginAnime"), "Recommend
 assert.match(animeOriginPolicy, /countryOfOrigin === "JP"/, "Shared origin policy must accept only AniList Japanese-origin works");
 const animeOriginPolicyCode = animeOriginPolicy.replace(/\/\/[^\n]*/g, "");
 assert.doesNotMatch(animeOriginPolicyCode, /anime\.popularity|hasJapaneseTitle|SOURCE_RULES/, "Popularity, title language, and source heuristics must not override country of origin");
-const isRecommendedOriginJapanese = vm.runInNewContext(animeOriginPolicy + "\\nAQWAnimePolicy.isJapaneseOriginAnime");
+const isRecommendedOriginJapanese = vm.runInNewContext(animeOriginPolicy + "\nAQWAnimePolicy.isJapaneseOriginAnime");
 assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP" }), true, "Japanese-origin anime must remain eligible");
 for (const countryOfOrigin of ["US", "CN", "KR", "TW", "GB", ""]) {
   assert.equal(isRecommendedOriginJapanese({ countryOfOrigin, popularity: 100000, title: { native: "日本語タイトル" } }), false,
