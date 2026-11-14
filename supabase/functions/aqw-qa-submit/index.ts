@@ -44,17 +44,27 @@ Deno.serve(async (req: Request) => {
       return json({ error: "送信元を確認できません。時間をおいて再度お試しください。" }, 503);
     }
 
-    const body = await req.json();
+    const rawBody = await req.text();
+    if (new TextEncoder().encode(rawBody).byteLength > 8192) {
+      return json({ error: "送信内容が大きすぎます。" }, 413);
+    }
+    let body: unknown;
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      return json({ error: "送信内容を読み取れませんでした。" }, 400);
+    }
     if (!body || typeof body !== "object" || Array.isArray(body)) {
       return json({ error: "入力内容を確認してください。" }, 400);
     }
-    if (typeof body.website === "string" && body.website.trim()) {
+    if (typeof (body as Record<string, unknown>).website === "string" && String((body as Record<string, unknown>).website).trim()) {
       return json({ success: true }, 200);
     }
 
-    const displayName = typeof body.display_name === "string" ? body.display_name.trim() : "";
-    const title = typeof body.title === "string" ? body.title.trim() : "";
-    const question = typeof body.body === "string" ? body.body.trim() : "";
+    const payload = body as Record<string, unknown>;
+    const displayName = typeof payload.display_name === "string" ? payload.display_name.trim() : "";
+    const title = typeof payload.title === "string" ? payload.title.trim() : "";
+    const question = typeof payload.body === "string" ? payload.body.trim() : "";
     if (displayName.length > 40 || title.length < 1 || title.length > 100 || question.length < 5 || question.length > 3000) {
       return json({ error: "入力内容を確認してください。" }, 400);
     }

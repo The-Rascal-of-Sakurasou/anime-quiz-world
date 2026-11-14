@@ -10,6 +10,7 @@ const config = fs.readFileSync("supabase/config.toml", "utf8");
 assert.match(page, /functions\.invoke\(['"]aqw-qa-submit['"]/);
 assert.doesNotMatch(page, /\.from\(['"]qa_questions['"]\)\.insert/);
 assert.match(fn, /cf-connecting-ip/);
+assert.match(fn, /new TextEncoder\(\)\.encode\(rawBody\)\.byteLength > 8192/);
 assert.match(fn, /name:\s*"HMAC",\s*hash:\s*"SHA-256"/);
 assert.match(fn, /consume_qa_submission_rate_limit/);
 assert.match(fn, /admin\.from\("qa_questions"\)\.insert/);
