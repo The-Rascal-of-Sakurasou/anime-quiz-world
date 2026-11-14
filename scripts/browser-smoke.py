@@ -339,6 +339,12 @@ def test_public_catalogue_all_modes(browser):
         )
         prompt = page.locator("#answerPrompt").inner_text().strip()
         assert prompt, f"Public {mode} mode did not render a question prompt"
+        if mode == "titleYear":
+            year_prompt_suffix = page.evaluate("() => qText('titleYear')")
+            assert "公開・放送年" in year_prompt_suffix, (
+                "Year questions must cover both film release and TV broadcast years: "
+                + year_prompt_suffix
+            )
         if mode == "synopsis":
             assert re.search(r"[ぁ-んァ-ヶ一-龯]", prompt), (
                 "Public synopsis mode did not render Japanese synopsis text: " + prompt
@@ -594,6 +600,35 @@ def test_all_question_modes(browser):
             result_text = page.locator("#resultText").inner_text()
             assert "1問中 1問正解" in result_text, (
                 "Selecting the Japanese synopsis answer must be scored as correct: " + result_text
+            )
+        if mode == "synopsis":
+            # Typed synopsis questions ask for the title too; do not show the generic base-title note.
+            page.locator("#homeAfterQuiz").click()
+            page.wait_for_function(
+                "() => { const button = document.querySelector('#start'); return button && !button.classList.contains('hidden') && !button.disabled; }",
+                timeout=20000,
+            )
+            page.locator("#modeSelect").select_option("synopsis")
+            page.locator("#answerFormatSelect").select_option("typed")
+            page.locator("#difficultySelect").select_option("easy")
+            page.locator("#questionCount").fill("1")
+            page.locator("#timeLimitSelect").select_option("60")
+            page.locator("#start").click()
+            page.locator("#typedAnswer").wait_for(state="visible", timeout=20000)
+            typed_prompt = page.locator("#answerPrompt").inner_text()
+            assert "作品名の基本部分だけ入力してください" not in typed_prompt, (
+                "Typed synopsis questions must not show the generic title-entry note: " + typed_prompt
+            )
+            typed_correct_answer = page.evaluate("() => correctAnswer")
+            assert isinstance(typed_correct_answer, str) and typed_correct_answer.strip(), (
+                "Typed synopsis question must have a Japanese title answer"
+            )
+            page.locator("#typedAnswer").fill(typed_correct_answer)
+            page.locator("#submitTypedAnswer").click()
+            page.locator("#result:not(.hidden)").wait_for(state="visible", timeout=20000)
+            typed_result = page.locator("#resultText").inner_text()
+            assert "1問中 1問正解" in typed_result, (
+                "Typing the Japanese synopsis answer must be scored as correct: " + typed_result
             )
         assert not errors, f"Question mode {mode} raised JavaScript errors: " + " | ".join(errors)
         context.close()
