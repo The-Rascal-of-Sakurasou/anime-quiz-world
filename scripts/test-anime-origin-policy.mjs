@@ -32,6 +32,34 @@ assert.equal(isJapaneseOriginAnime({
 
 assert.equal(isJapaneseOriginAnime({
   countryOfOrigin: "JP",
+  source: "OTHER",
+  popularity: 100,
+  relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] },
+}), false, "Unsupported source types must fail closed even when a relation is present.");
+
+assert.equal(isJapaneseOriginAnime({
+  countryOfOrigin: "JP",
+  source: "VIDEO_GAME",
+  popularity: 100,
+  relations: { edges: [{ relationType: "SOURCE", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] },
+}), false, "Unsupported VIDEO_GAME source types must fail closed.");
+
+assert.equal(isJapaneseOriginAnime({
+  countryOfOrigin: "JP",
+  source: "VISUAL_NOVEL",
+  popularity: 100,
+  relations: { edges: [{ relationType: "SOURCE", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] },
+}), false, "Unsupported VISUAL_NOVEL source types must fail closed.");
+
+assert.equal(isJapaneseOriginAnime({
+  countryOfOrigin: "JP",
+  source: "WEB_NOVEL",
+  popularity: 100,
+  relations: { edges: [{ relationType: "SOURCE", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] },
+}), false, "Unsupported WEB_NOVEL source types must fail closed.");
+
+assert.equal(isJapaneseOriginAnime({
+  countryOfOrigin: "JP",
   source: "MANGA",
   popularity: 100,
   relations: {

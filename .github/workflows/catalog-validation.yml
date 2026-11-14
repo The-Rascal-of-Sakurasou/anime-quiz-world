@@ -7,6 +7,12 @@ on:
       - "data/anime-catalog.json"
       - "data/anime-catalog.json.gz"
       - "scripts/validate-anime-catalog.mjs"
+      - "anime-origin-policy.js"
+      - "scripts/test-anime-origin-policy.mjs"
+      - "scripts/sync-anime-catalog.mjs"
+      - "scripts/audit-question-mode-coverage.mjs"
+      - "scripts/audit-anime-catalog.py"
+      - "scripts/test_anime_catalog_origin_policy.py"
       - "scripts/test-anime-origin-policy.mjs"
       - "anime-origin-policy.js"
       - "scripts/test_anime_catalog_origin_policy.py"
@@ -21,6 +27,12 @@ on:
       - "data/anime-catalog.json"
       - "data/anime-catalog.json.gz"
       - "scripts/validate-anime-catalog.mjs"
+      - "anime-origin-policy.js"
+      - "scripts/test-anime-origin-policy.mjs"
+      - "scripts/sync-anime-catalog.mjs"
+      - "scripts/audit-question-mode-coverage.mjs"
+      - "scripts/audit-anime-catalog.py"
+      - "scripts/test_anime_catalog_origin_policy.py"
       - "scripts/test-anime-origin-policy.mjs"
       - "anime-origin-policy.js"
       - "scripts/test_anime_catalog_origin_policy.py"
@@ -46,8 +58,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Check validator syntax
-        run: node --check scripts/validate-anime-catalog.mjs
+      - name: Check shared policy and catalogue script syntax
+        run: |
+          node --check anime-origin-policy.js
+          node --check scripts/validate-anime-catalog.mjs
+          node --check scripts/sync-anime-catalog.mjs
+          node --check scripts/audit-question-mode-coverage.mjs
+      - name: Run shared JavaScript origin-policy tests
+        run: node scripts/test-anime-origin-policy.mjs
+      - name: Run Python catalogue-origin audit tests
+        run: python3 -m unittest scripts.test_anime_catalog_origin_policy
       - name: Run catalogue validator regression tests
         run: node scripts/test-anime-catalog-validator.mjs
       - name: Validate known-good Japanese-origin fixture

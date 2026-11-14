@@ -5,11 +5,7 @@
     MANGA: { type: "MANGA", formats: ["MANGA", "ONE_SHOT"] },
     LIGHT_NOVEL: { type: "MANGA", formats: ["NOVEL"] },
     NOVEL: { type: "MANGA", formats: ["NOVEL"] },
-    WEB_NOVEL: { type: "MANGA", formats: ["NOVEL"] },
     DOUJINSHI: { type: "MANGA", formats: ["MANGA", "ONE_SHOT", "NOVEL"] },
-    VISUAL_NOVEL: { type: "MANGA", formats: ["MANGA", "ONE_SHOT", "NOVEL"] },
-    VIDEO_GAME: { type: "MANGA", formats: ["MANGA", "ONE_SHOT", "NOVEL"] },
-    OTHER: { type: "MANGA", formats: ["MANGA", "ONE_SHOT", "NOVEL"] },
     ANIME: { type: "ANIME", formats: ["TV", "TV_SHORT", "MOVIE", "OVA", "ONA", "SPECIAL"] },
   });
 
