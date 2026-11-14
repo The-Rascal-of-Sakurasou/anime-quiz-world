@@ -141,7 +141,7 @@ def main() -> int:
     if "itemCount" in payload:
         payload["itemCount"] = len(kept)
     payload["generatedAt"] = datetime.now(timezone.utc).isoformat()
-    payload["originRule"] = "Verified Japanese-origin works plus foreign works with a Japanese-language title and popularity >= 10000"
+    payload["originRule"] = "AniList countryOfOrigin must equal JP; foreign and unknown-origin works are excluded"
     args.output.parent.mkdir(parents=True, exist_ok=True)
     serialized = json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + "\n"
     args.output.write_text(serialized, encoding="utf-8")
