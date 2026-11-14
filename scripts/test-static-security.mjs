@@ -737,8 +737,8 @@ assert.match(index, /function yearChoiceRecordsForAnime\(a\)\{[^\n]*records\.len
 const synopsisChoiceBuilder = index.match(/function synopsisChoiceRecords\(a,answerIsTitle=false\)\{[\s\S]*?\n\}/)?.[0];
 assert.ok(synopsisChoiceBuilder, "Synopsis choice builder must exist");
 assert.match(synopsisChoiceBuilder, /offset<candidates\.length&&options\.size<4/, "Synopsis distractor selection must stop after four choices");
-assert.match(index, /if\(mode==='image'\)return[^;]+;if\(mode==='titleStudio'\)return[^;]+;const summary=questionChoiceSummary\(\)/, "Image and studio questions must avoid constructing unrelated global choice indexes");
-assert.match(index, /if\(!\['image','titleStudio'\]\.includes\(mode\)\)await ensureQuestionChoiceSummaryAsync\(\)/, "Image and studio candidate preparation must skip the full-catalogue choice-index build");
+assert.match(index, /if\(mode==='image'\)return[^;]+;if\(mode==='studio'\)return[^;]+;if\(mode==='year'\)return[^;]+;if\(mode==='titleStudio'\)return[^;]+;const summary=questionChoiceSummary\(\)/, "Image and studio questions must avoid constructing unrelated global choice indexes");
+assert.match(index, /if\(!\['image','studio','year','titleStudio'\]\.includes\(mode\)\)await ensureQuestionChoiceSummaryAsync\(\)/, "Image and studio candidate preparation must skip the full-catalogue choice-index build");
 assert.match(index, /\$\('#answerFormatSelect'\)\.addEventListener\('change',refreshCandidatePrewarm\)/, "Changing answer format must refresh candidate prewarming");
 
 console.log(`Static security checks passed. Checked ${checkedScripts} inline script(s) across ${frontendFiles.length} pages.`);
