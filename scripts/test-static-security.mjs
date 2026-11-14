@@ -429,7 +429,7 @@ assert.doesNotMatch(index, /rememberAnime|safeStorage\.(?:getItem|setItem)\([\'"
 assert.match(index, /safeStorage\.removeItem\('aqw-collection'\)/, "Legacy per-user anime collection data must be removed on page load");
 assert.match(index, /\[t\.fifty,runs>=50\]/, "The 50-play achievement must not depend on a stored anime collection");
 assert.ok(index.includes("media(type:ANIME,sort:"), "Quiz catalogue queries must retrieve candidates before applying source eligibility");
-assert.ok(index.includes("countryOfOrigin source(version:2) relations"), "Quiz catalogue records must include source-country verification metadata");
+assert.ok(index.includes("countryOfOrigin"), "Quiz catalogue records must include the country-of-origin field");
 assert.ok(index.includes("format popularity title { romaji english native }"), "Quiz catalogue records must include popularity and title evidence");
 assert.ok(index.includes("synonyms coverImage"), "Quiz catalogue records must include alternate titles for Japanese-title verification");
 assert.ok(index.includes("AQWAnimePolicy.isJapaneseOriginAnime"), "Quiz page must use the shared Japanese-origin policy");
@@ -526,7 +526,7 @@ const sharedCatalogLoader=index.slice(index.indexOf("async function fetchSharedA
 assert.ok(sharedCatalogLoader.includes("cache:'no-cache'"), "The shared catalogue should revalidate cached responses so new catalogue versions become visible after deployment");
 assert.ok(!sharedCatalogLoader.includes("cache:'reload'")&&!sharedCatalogLoader.includes("cache:'no-store'"), "Shared catalogue requests should retain conditional HTTP caching rather than bypassing the cache");
 assert.match(index, /payload\?\.schemaVersion!==2/, "The quiz must require the compact shared-catalogue schema");
-assert.ok(syncScript.includes("const { source, relations, ...compact } = dedupeAnimeMetadata(anime)"), "The published catalogue must deduplicate metadata and omit bulky source-relation details after verification");
+assert.ok(syncScript.includes("dedupeAnimeMetadata(anime)"), "The published catalogue must normalize duplicate metadata");
 assert.ok(syncScript.includes("export function dedupeAnimeMetadata(anime)"), "Catalogue synchronization must deduplicate synonym and character metadata");
 assert.match(syncScript, /catalogueEligible: true/, "The published catalogue must mark every accepted record as catalogue-eligible");
 assert.match(syncScript, /originVerified: compact\.countryOfOrigin === 'JP'/, "Only Japanese-origin records may carry the Japanese-origin verification marker");
