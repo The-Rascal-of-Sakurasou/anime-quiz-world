@@ -1,0 +1,55 @@
+name: Filter anime catalogue to Japanese origin only
+
+on:
+  push:
+    branches: [main, refactor/aqw-shared-code-20261114]
+    paths:
+      - "data/anime-catalog.json"
+      - "scripts/filter-anime-catalog-japan-only.mjs"
+      - ".github/workflows/filter-anime-catalog-japan-only.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: aqw-japan-only-catalogue-filter
+  cancel-in-progress: false
+
+jobs:
+  filter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check policy and catalogue scripts
+        run: |
+          node --check anime-origin-policy.js
+          node --check scripts/filter-anime-catalog-japan-only.mjs
+          node --check scripts/sync-anime-catalog.mjs
+          node --check scripts/validate-anime-catalog.mjs
+          node scripts/test-anime-origin-policy.mjs
+          node scripts/test-anime-catalog-validator.mjs
+          node scripts/test-static-security.mjs
+      - name: Remove every non-Japanese-origin catalogue entry
+        run: node scripts/filter-anime-catalog-japan-only.mjs
+      - name: Verify compressed and uncompressed catalogue match
+        run: node scripts/validate-anime-catalog.mjs
+      - name: Commit filtered catalogue
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/anime-catalog.json data/anime-catalog.json.gz
+          if git diff --cached --quiet; then
+            echo "Catalogue already contains Japanese-origin works only."
+            exit 0
+          fi
+          git commit -m "Remove non-Japanese-origin anime from catalogue"
+          git push origin "HEAD:${{ github.ref_name }}"

@@ -13,13 +13,23 @@ on:
       - "privacy.html"
       - "terms.html"
       - "responsive.css"
+      - "anime-origin-policy.js"
+      - "aqw-mobile-refinements.css"
+      - "aqw-brand-logo.css"
+      - "aqw-brand-base.css"
+      - "aqw-document-pages.css"
+      - "aqw-safe-storage.js"
       - "sitemap.xml"
       - "robots.txt"
       - "scripts/test-static-security.mjs"
       - "scripts/test-anime-search-deduplication.mjs"
       - "scripts/test-official-site-links.mjs"
-      - "scripts/test-anime-search-deduplication.mjs"
       - "scripts/sync-anime-catalog.mjs"
+      - "scripts/validate-anime-catalog.mjs"
+      - "scripts/audit-question-mode-coverage.mjs"
+      - "scripts/test-anime-origin-policy.mjs"
+      - "scripts/audit-anime-catalog.py"
+      - "scripts/test_anime_catalog_origin_policy.py"
       - "scripts/audit-anime-image-urls.mjs"
       - "scripts/detect-title-image-text.py"
       - "scripts/audit-japanese-synopses.mjs"
@@ -42,8 +52,19 @@ on:
       - "privacy.html"
       - "terms.html"
       - "responsive.css"
+      - "anime-origin-policy.js"
+      - "aqw-mobile-refinements.css"
+      - "aqw-brand-logo.css"
+      - "aqw-brand-base.css"
+      - "aqw-document-pages.css"
+      - "aqw-safe-storage.js"
       - "scripts/test-static-security.mjs"
       - "scripts/sync-anime-catalog.mjs"
+      - "scripts/validate-anime-catalog.mjs"
+      - "scripts/audit-question-mode-coverage.mjs"
+      - "scripts/test-anime-origin-policy.mjs"
+      - "scripts/audit-anime-catalog.py"
+      - "scripts/test_anime_catalog_origin_policy.py"
       - "scripts/audit-japanese-synopses.mjs"
       - ".github/workflows/japanese-synopsis-audit.yml"
       - ".github/workflows/sync-anime-catalog.yml"
@@ -59,8 +80,10 @@ jobs:
     name: Frontend security and JavaScript syntax
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout the exact pull-request revision
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:

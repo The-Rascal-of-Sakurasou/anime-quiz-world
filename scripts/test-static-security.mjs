@@ -264,34 +264,20 @@ assert.doesNotMatch(privacy, /コレクション/, "Privacy policy must not desc
 const recommend = source.get("recommend.html");
 assert.ok(recommend.includes("media(search:$search,type:ANIME,isAdult:false"), "Favorite-work search must retrieve candidates before applying verified origin eligibility");
 assert.ok(recommend.includes("media(type:ANIME,sort:$sort,isAdult:false)"), "Recommendation catalog query must retrieve candidates before applying verified origin eligibility");
-assert.match(recommend, /countryOfOrigin!==.JP./, "Recommendation data must reject non-Japanese animation unless it meets the documented famous-Japanese-title exception");
-assert.match(recommend, /popularity\s*\)\s*>=\s*10000/, "Foreign anime must meet the documented popularity threshold");
-assert.match(recommend, /hasFamousJapaneseTitle\(media\)/, "Foreign anime must have a Japanese-language title");
-
-const recommendOriginHelper = recommend.match(/function isJapaneseOriginAnime\(media\)\{[\s\S]*?\n\}/)?.[0];
-assert.ok(recommendOriginHelper, "Recommendation Japanese-origin verification helper missing");
-const famousTitleHelper = recommend.match(/function hasFamousJapaneseTitle\(media\)\{[\s\S]*?\n\}/)?.[0];
-assert.ok(famousTitleHelper, "Japanese-title verification helper missing");
-const isRecommendedOriginJapanese = vm.runInNewContext(famousTitleHelper + "\n" + recommendOriginHelper + "\nisJapaneseOriginAnime");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "ORIGINAL" }), true, "Japanese original anime must remain eligible");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), true, "Japanese manga adaptations must remain eligible");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "SOURCE", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), true, "AniList v2 SOURCE relations must recognize Japanese manga originals");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "LIGHT_NOVEL", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "NOVEL" } }] } }), true, "Japanese light-novel adaptations must remain eligible");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "NOVEL", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "NOVEL" } }] } }), true, "Japanese novel adaptations must remain eligible");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "DOUJINSHI", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), true, "Japanese doujinshi adaptations must remain eligible");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "ANIME", countryOfOrigin: "JP", format: "TV" } }] } }), true, "Japanese anime-source spin-offs must be eligible when their source anime is verified");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "ANIME", countryOfOrigin: "US", format: "TV" } }] } }), false, "Foreign anime-source spin-offs must be excluded");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), false, "Anime source metadata must match an anime relation node");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "VISUAL_NOVEL", relations: { edges: [] } }), false, "Visual novel source origin must not be guessed without explicit evidence");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "VIDEO_GAME", relations: { edges: [] } }), false, "Game source origin must not be guessed without source-country evidence");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "OTHER", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), false, "Unknown source types must fail closed");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "NOVEL" } }] } }), false, "Manga source must match manga format");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "US", format: "MANGA" } }] } }), false, "Non-Japanese source adaptations must be excluded");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL", popularity: 99999, title: { native: "English Only" } }), false, "Foreign anime without a Japanese title must be excluded");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL", popularity: 9999, title: { native: "日本語タイトル" } }), false, "Foreign anime below the popularity threshold must be excluded");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL", popularity: 10000, title: { native: "日本語タイトル" } }), true, "Popular foreign anime with a Japanese title must be eligible");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL", popularity: 10000, synonyms: ["日本語の別名"] }), true, "A Japanese-language synonym may qualify a popular foreign anime");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL", popularity: 10000, title: { native: "English Only" } }), false, "Foreign anime with only non-Japanese titles must be excluded");
+const animeOriginPolicy = fs.readFileSync("anime-origin-policy.js", "utf8");
+assert.ok(recommend.includes("AQWAnimePolicy.isJapaneseOriginAnime"), "Recommendation diagnosis must use the shared Japanese-origin policy");
+assert.match(recommend, /const isJapaneseOriginAnime = window\.AQWAnimePolicy\.isJapaneseOriginAnime;/, "Recommendation page must bind the shared origin predicate before using it");
+assert.match(animeOriginPolicy, /countryOfOrigin === "JP"/, "Shared origin policy must accept only AniList Japanese-origin works");
+const animeOriginPolicyCode = animeOriginPolicy.replace(/\/\/[^\n]*/g, "");
+assert.doesNotMatch(animeOriginPolicyCode, /anime\.popularity|hasJapaneseTitle|SOURCE_RULES/, "Popularity, title language, and source heuristics must not override country of origin");
+const isRecommendedOriginJapanese = vm.runInNewContext(animeOriginPolicy + "\nAQWAnimePolicy.isJapaneseOriginAnime");
+assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP" }), true, "Japanese-origin anime must remain eligible");
+for (const countryOfOrigin of ["US", "CN", "KR", "TW", "GB", ""]) {
+  assert.equal(isRecommendedOriginJapanese({ countryOfOrigin, popularity: 100000, title: { native: "日本語タイトル" } }), false,
+    "Non-Japanese anime must be excluded regardless of popularity or Japanese title: " + countryOfOrigin);
+}
+assert.equal(isRecommendedOriginJapanese({ popularity: 100000, title: { native: "日本語タイトル" } }), false,
+  "Unknown-origin anime must fail closed");
 
 const questionBlock = recommend.match(/const questions=\[([\s\S]*?)\n\];/)?.[1];
 assert.ok(questionBlock, "Recommendation question block not found");
@@ -408,24 +394,16 @@ assert.match(recommend, /独立したサイドストーリーは親作品と別�
 
 const syncScript = fs.readFileSync("scripts/sync-anime-catalog.mjs", "utf8");
 const syncWorkflow = fs.readFileSync(".github/workflows/sync-anime-catalog.yml", "utf8");
-assert.match(syncScript, /function isJapaneseOriginAnime\(anime\)/, "Shared catalogue sync must verify Japanese source origin");
-const syncOriginHelper = syncScript.match(/function isJapaneseOriginAnime\(anime\)\s*\{[\s\S]*?\n\}/)?.[0];
-const syncJapaneseTitleHelper = syncScript.match(/function hasJapaneseTitle\(anime\)\s*\{[\s\S]*?\n\}/)?.[0];
-assert.ok(syncOriginHelper && syncJapaneseTitleHelper, "Shared catalogue origin helpers must be extractable for regression tests");
-const originResults = vm.runInNewContext(`(()=>{${syncJapaneseTitleHelper};${syncOriginHelper};const check=isJapaneseOriginAnime;return [
-  check({ countryOfOrigin: "JP", source: "ORIGINAL" }),
-  check({ countryOfOrigin: "JP", originVerified: true }),
-  check({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "ANIME", countryOfOrigin: "JP", format: "TV" } }] } }),
-  check({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "ANIME", countryOfOrigin: "US", format: "TV" } }] } }),
-  check({ countryOfOrigin: "JP", source: "VIDEO_GAME", relations: [] }),
-  check({ countryOfOrigin: "US", popularity: 10000, title: { native: "日本語タイトル" } }),
-  check({ countryOfOrigin: "US", popularity: 9999, title: { native: "日本語タイトル" } }),
-  check({ countryOfOrigin: "US", popularity: 10000, title: { native: "English Only" } })
-]})()`);
-assert.equal(JSON.stringify(originResults), JSON.stringify([true, true, true, false, false, true, false, false]), "Shared catalogue origin eligibility must pass Japanese works and only popular foreign works with Japanese titles");
+assert.ok(syncScript.includes('import "../anime-origin-policy.js";'), "Catalogue sync must use the shared origin policy");
+const originResults = [
+  isRecommendedOriginJapanese({ countryOfOrigin: "JP" }),
+  isRecommendedOriginJapanese({ countryOfOrigin: "US", popularity: 100000, title: { native: "日本語タイトル" } }),
+  isRecommendedOriginJapanese({ countryOfOrigin: "CN" }),
+  isRecommendedOriginJapanese({}),
+];
+assert.equal(JSON.stringify(originResults), JSON.stringify([true, false, false, false]), "Only explicit Japanese-origin records may pass the shared policy");
 assert.match(syncScript, /startDate_greater/, "The shared catalogue must split oversized format scopes by release decade");
 
-assert.match(syncScript, /if \(anime\.countryOfOrigin !== 'JP'\) return Number\(anime\.popularity\) >= 10000 && hasJapaneseTitle\(anime\)/, "Foreign catalogue entries must pass both the popularity and Japanese-title requirements");
 assert.match(syncScript, /const API_REQUEST_INTERVAL_MS = 2100/, "Manual AniList requests must stay below the current 30 requests/minute limit");
 assert.match(syncScript, /await sleep\(API_REQUEST_INTERVAL_MS\)/, "Every catalogue request must use the documented rate-limit pacing");
 assert.match(syncScript, /isAdult:false/, "Shared catalogue sync must exclude adult catalogue entries");
@@ -440,6 +418,17 @@ assert.match(syncWorkflow, /workflow_dispatch:/, "Shared catalogue sync must sup
 assert.match(syncWorkflow, /contents: write/, "Shared catalogue sync must be able to publish the generated dataset");
 
 const index = source.get("index.html");
+const sharedStorage = fs.readFileSync("aqw-safe-storage.js", "utf8");
+assert.ok(index.includes('src="./aqw-safe-storage.js"'), "Quiz page must load the shared safe-storage helper before its inline application script");
+assert.ok(recommend.includes('src="./aqw-safe-storage.js"'), "Recommendation page must load the shared safe-storage helper before its inline application script");
+assert.ok(index.includes("const safeStorage = window.AQWSafeStorage") && recommend.includes("const safeStorage = window.AQWSafeStorage"), "Both pages must use the same safe-storage implementation");
+assert.match(sharedStorage, /getItem\(key\)[\s\S]*?global\.localStorage\.getItem/);
+assert.match(sharedStorage, /setItem\(key, value\)[\s\S]*?global\.localStorage\.setItem/);
+assert.doesNotMatch(index + recommend, /window\.localStorage\.(?:getItem|setItem|removeItem)\(key/);
+for (const page of ["guide.html", "privacy.html", "terms.html"]) {
+  assert.ok(fs.readFileSync(page, "utf8").includes('href="./aqw-document-pages.css"'), page + " must load shared document-page styles");
+}
+
 const fallbackPlanStart = index.indexOf("const makeTasks=()=>{");
 const fallbackPlanEnd = index.indexOf("const tasks=makeTasks();", fallbackPlanStart);
 assert.ok(fallbackPlanStart >= 0 && fallbackPlanEnd > fallbackPlanStart, "Limited AniList fallback task plan must exist");
@@ -453,36 +442,14 @@ assert.doesNotMatch(index, /rememberAnime|safeStorage\.(?:getItem|setItem)\([\'"
 assert.match(index, /safeStorage\.removeItem\('aqw-collection'\)/, "Legacy per-user anime collection data must be removed on page load");
 assert.match(index, /\[t\.fifty,runs>=50\]/, "The 50-play achievement must not depend on a stored anime collection");
 assert.ok(index.includes("media(type:ANIME,sort:"), "Quiz catalogue queries must retrieve candidates before applying source eligibility");
-assert.ok(index.includes("countryOfOrigin source(version:2) relations"), "Quiz catalogue records must include source-country verification metadata");
+assert.ok(index.includes("countryOfOrigin"), "Quiz catalogue records must include the country-of-origin field");
 assert.ok(index.includes("format popularity title { romaji english native }"), "Quiz catalogue records must include popularity and title evidence");
 assert.ok(index.includes("synonyms coverImage"), "Quiz catalogue records must include alternate titles for Japanese-title verification");
-assert.match(index, /countryOfOrigin!==.JP./, "Quiz data must apply the documented foreign-title exception only to non-Japanese production countries");
-const indexOriginHelper = index.match(/function isJapaneseOriginAnime\(a\)\{[\s\S]*?\n\}/)?.[0];
-const indexFamousTitleHelper = index.match(/function hasFamousJapaneseTitle\(a\)\{[\s\S]*?\n\}/)?.[0];
-assert.ok(indexOriginHelper && indexFamousTitleHelper, "Quiz Japanese-origin and Japanese-title verification helpers must exist");
-const isQuizOriginJapanese = vm.runInNewContext(indexFamousTitleHelper + "\n" + indexOriginHelper + "\nisJapaneseOriginAnime");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "ORIGINAL" }), true, "Japanese original anime must remain eligible in the quiz");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", originVerified: true }), true, "Compact shared-catalogue entries must pass the verified-origin marker");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "US", originVerified: true }), false, "The verified-origin marker must never override a non-Japanese country");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL", popularity: 10000, title: { native: "日本語タイトル" } }), true, "Popular foreign anime with a Japanese-language title must be eligible in the quiz");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL", popularity: 9999, title: { native: "日本語タイトル" } }), false, "Foreign anime below the popularity threshold must be excluded from the quiz");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL", popularity: 10000, title: { native: "English Only" } }), false, "Foreign anime without a Japanese-language title must be excluded from the quiz");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), true, "Japanese manga adaptations must remain eligible in the quiz");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "SOURCE", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), true, "AniList v2 SOURCE relations must recognize Japanese manga originals in the quiz");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "LIGHT_NOVEL", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "NOVEL" } }] } }), true, "Japanese light-novel adaptations must remain eligible in the quiz");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "NOVEL", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "NOVEL" } }] } }), true, "Japanese novel adaptations must remain eligible in the quiz");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "DOUJINSHI", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), true, "Japanese doujinshi adaptations must remain eligible in the quiz");
-
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "ANIME", countryOfOrigin: "JP", format: "TV" } }] } }), true, "Japanese anime-source spin-offs must be eligible in the quiz when their source anime is verified");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "ANIME", countryOfOrigin: "KR", format: "TV" } }] } }), false, "Foreign anime-source spin-offs must be excluded from the quiz");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), false, "Anime source metadata must match an anime relation node in the quiz");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "VISUAL_NOVEL", relations: { edges: [] } }), false, "Visual novel source origin must not be guessed in the quiz without explicit evidence");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "VIDEO_GAME", relations: { edges: [] } }), false, "Game source origin must not be guessed without source-country evidence");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "OTHER", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), true, "OTHER source metadata must qualify only when a Japanese manga relation is explicitly verified");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "UNRECOGNIZED_SOURCE", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), false, "Unrecognized source types must fail closed in the quiz");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "NOVEL" } }] } }), false, "Manga source must match manga format in the quiz");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "KR", format: "MANGA" } }] } }), false, "Non-Japanese source adaptations must be excluded from the quiz");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL" }), false, "Non-Japanese animation must be excluded from the quiz");
+assert.ok(index.includes("AQWAnimePolicy.isJapaneseOriginAnime"), "Quiz page must use the shared Japanese-origin policy");
+const isQuizOriginJapanese = isRecommendedOriginJapanese;
+assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP" }), true, "Japanese-origin anime must remain eligible in the quiz");
+assert.equal(isQuizOriginJapanese({ countryOfOrigin: "US", originVerified: true, popularity: 100000, title: { native: "日本語タイトル" } }), false, "No marker, popularity, or title may override a foreign origin");
+assert.equal(isQuizOriginJapanese({ countryOfOrigin: null }), false, "Unknown-origin anime must be excluded from the quiz");
 assert.match(index, /async function fetchSharedAnimeCatalog\(\)/, "The quiz must load the shared catalogue");
 
 // The exact shared character-choice builder is asserted below.
@@ -580,14 +547,12 @@ const sharedCatalogLoader=index.slice(index.indexOf("async function fetchSharedA
 assert.ok(sharedCatalogLoader.includes("cache:'no-cache'"), "The shared catalogue should revalidate cached responses so new catalogue versions become visible after deployment");
 assert.ok(!sharedCatalogLoader.includes("cache:'reload'")&&!sharedCatalogLoader.includes("cache:'no-store'"), "Shared catalogue requests should retain conditional HTTP caching rather than bypassing the cache");
 assert.match(index, /payload\?\.schemaVersion!==2/, "The quiz must require the compact shared-catalogue schema");
-assert.ok(syncScript.includes("const { source, relations, ...compact } = dedupeAnimeMetadata(anime)"), "The published catalogue must deduplicate metadata and omit bulky source-relation details after verification");
+assert.ok(syncScript.includes("dedupeAnimeMetadata(anime)"), "The published catalogue must normalize duplicate metadata");
 assert.ok(syncScript.includes("export function dedupeAnimeMetadata(anime)"), "Catalogue synchronization must deduplicate synonym and character metadata");
 assert.match(syncScript, /catalogueEligible: true/, "The published catalogue must mark every accepted record as catalogue-eligible");
 assert.match(syncScript, /originVerified: compact\.countryOfOrigin === 'JP'/, "Only Japanese-origin records may carry the Japanese-origin verification marker");
-assert.match(syncScript, /POPULARITY_DESC.*true, 20/, "The catalogue must include a bounded popularity scan for famous foreign works with Japanese titles");
 assert.match(syncScript, /const initialRecordCount = records\.size/, "Catalogue sync must retain the starting record count for accurate incremental summaries");
 assert.match(syncScript, /New unique records: .*items\.length - initialRecordCount/, "Catalogue sync must distinguish new IDs from refreshed existing records");
-assert.match(syncScript, /if \(anime\.countryOfOrigin !== 'JP'\)\s*return Number\(anime\.popularity\) >= 10000 && hasJapaneseTitle\(anime\)/, "Foreign catalogue entries must require both a Japanese-language title and the popularity threshold");
 assert.match(index, /new URL\('data\/anime-catalog\.json',document\.baseURI\)/, "The shared catalogue must resolve correctly from GitHub Pages subpaths");
 assert.match(index, /const sharedCatalogPromise=fetchSharedAnimeCatalog\(\)/, "Shared catalogue loading must start independently of the local cache");
 assert.match(index, /sharedCatalogPromise\.then\(items=>\(\{timedOut:false,items\}\)\)/, "The quiz must merge shared catalogue entries when the asynchronous load completes");
@@ -595,8 +560,6 @@ assert.match(index, /if\(sharedCatalogActive\)\{[\s\S]*?pool=initial;[\s\S]*?Fet
 assert.match(index, /if\(!backgroundLoadPromise&&!sharedCatalogActive\)\{\s*backgroundLoadPromise=\(async\(\)=>/, "The quiz must not repeat the expensive AniList backfill when the complete shared catalogue is already active");
 assert.match(index, /sharedCatalogActive\?\(/, "The loading screen must distinguish the shared catalogue from local background backfill");
 assert.match(index, /const cacheKey='aqw-anime-pool-v22-compact-shared-catalog'/, "Verified original-source eligibility must rebuild the browser catalogue");
-assert.ok(index.includes("source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } }"), "Quiz queries must request detailed source metadata and adaptation-origin evidence");
-assert.ok(recommend.includes("source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } }"), "Recommendation queries must request detailed source metadata and adaptation-origin evidence");
 
 
 
@@ -605,7 +568,7 @@ assert.match(index, /pageInfo \{ hasNextPage \} media\(id_in:\$id_in/, "Base Ani
 assert.match(index, /items\.hasNextPage=pageData\?\.pageInfo\?\.hasNextPage===true/, "Filtered results must retain the upstream hasNextPage flag");
 assert.match(index, /hasNextPage:items\.hasNextPage===true/, "Fallback pagination must not infer page completion from filtered result count");
 
-assert.match(index, /function isUsableAnime\(a\)\{[^\n]*isJapaneseOriginAnime\(a\)/, "Every cached and live quiz record must pass strict Japanese-source eligibility");
+assert.match(index, /function isUsableAnime\(a\)\{[^\n]*AQWAnimePolicy\.isJapaneseOriginAnime\(a\)/, "Every cached and live quiz record must pass strict Japanese-source eligibility");
 assert.match(index, /function isUsableAnime\(a\)\{[^\n]*a\.isAdult!==true/, "Adult-flagged records must be excluded from live and cached quiz data");
 assert.match(index, /function hasUsableImageUrl\(value\)\{[^\n]*no\[-_ \]\?image/i, "NO IMAGE placeholders must be excluded from all image displays");
 assert.match(index, /function isUsableAnime\(a\)\{[^\n]*hasUsableImageUrl\(titleImage\)/, "Anime without a usable cover image must be excluded from image-backed displays and quiz data");
@@ -627,15 +590,13 @@ assert.equal(titleImageIsSafe({coverImage:{large:'https://example.test/cover.jpg
 assert.equal(titleImageIsSafe({coverImage:{large:'https://example.test/no-image.jpg'}}),false,"NO IMAGE placeholders must remain excluded from title-identification questions");
 
 
-assert.match(index, /source\(version:2\) relations \{ edges \{ relationType node \{ id type countryOfOrigin format \} \} \}/, "Featured seasonal queries must include source and related-origin metadata");
 assert.ok(index.includes("season seasonYear startDate { year month day }"), "Featured seasonal queries must include season and start-date metadata");
-assert.ok(index.includes("if(!isJapaneseOriginAnime(anime)||!Number.isFinite(Number(anime.id)))continue"), "New seasonal anime must pass verified Japanese-source filtering");
-assert.match(index, /for\(const anime of items\|\|\[\]\)\{\s*if\(!isJapaneseOriginAnime\(anime\)\|\|!Number\.isFinite\(Number\(anime\.id\)\)\)continue;/, "All seasonal anime results must pass verified Japanese-source filtering before rendering");
+assert.ok(index.includes("if(!AQWAnimePolicy.isJapaneseOriginAnime(anime)||!Number.isFinite(Number(anime.id)))continue"), "New seasonal anime must pass verified Japanese-source filtering");
+assert.match(index, /for\(const anime of items\|\|\[\]\)\{\s*if\(!AQWAnimePolicy\.isJapaneseOriginAnime\(anime\)\|\|!Number\.isFinite\(Number\(anime\.id\)\)\)continue;/, "All seasonal anime results must pass verified Japanese-source filtering before rendering");
 
-assert.match(index, /function isJapaneseOriginAnime\(a\)\{[\s\S]*?a\.countryOfOrigin!==.JP./, "Japanese-origin eligibility must apply the documented exception only to foreign productions");
 assert.match(index, /const cleanedItems=value\.items\.filter\(isUsableAnime\)/, "Existing IndexedDB catalogues must be purged of non-Japanese-origin anime when loaded");
 assert.match(index, /initial=legacy\.items\.filter\(isUsableAnime\)/, "Existing localStorage catalogues must be filtered through current source and image eligibility when loaded");
-assert.match(index, /if\(!isJapaneseOriginAnime\(anime\)\|\|!Number\.isFinite\(Number\(anime\.id\)\)\)continue/, "Featured anime rail must apply strict Japanese-source verification before rendering");
+assert.match(index, /if\(!AQWAnimePolicy\.isJapaneseOriginAnime\(anime\)\|\|!Number\.isFinite\(Number\(anime\.id\)\)\)continue/, "Featured anime rail must apply strict Japanese-source verification before rendering");
 assert.match(index, /term\.normalize\('NFKC'\)/, "Community search input must be normalized before building PostgREST filters");
 assert.match(index, /safeTerm\.length<2|\[\.\.\.safeTerm\]\.length<2/, "Community search must reject terms shorter than two searchable characters");
 assert.match(index, /body\.textContent\s*=\s*post\.body/, "User-generated post text must be rendered with textContent");

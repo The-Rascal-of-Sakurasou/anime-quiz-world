@@ -21,12 +21,16 @@ const foreignFixture = structuredClone(fixture);
 const foreignAnime = structuredClone(fixture.items[0]);
 foreignAnime.id = 3;
 foreignAnime.countryOfOrigin = "US";
-foreignAnime.popularity = 10000;
+foreignAnime.popularity = 100000;
 foreignAnime.title.native = "海外作品の日本語タイトル";
 delete foreignAnime.originVerified;
 foreignFixture.items.push(foreignAnime);
 foreignFixture.count = foreignFixture.items.length;
-assert.equal(validateCatalog(foreignFixture).count, 3, "Famous foreign anime with a Japanese title should pass");
+assert.throws(
+  () => validateCatalog(foreignFixture),
+  /countryOfOrigin must be exactly JP/,
+  "Foreign anime must be rejected even when popular and titled in Japanese"
+);
 
 const rejects = (label, mutate) => {
   const sample = structuredClone(fixture);
@@ -42,13 +46,15 @@ rejects("foreign anime without a Japanese title", (sample) => {
   sample.items[0].title.native = "English Only";
   delete sample.items[0].originVerified;
 });
-rejects("foreign anime below popularity threshold", (sample) => {
+rejects("foreign anime with Japanese title and low popularity", (sample) => {
   sample.items[0].countryOfOrigin = "US";
-  sample.items[0].popularity = 9999;
+  sample.items[0].popularity = 0;
   sample.items[0].title.native = "海外作品の日本語タイトル";
   delete sample.items[0].originVerified;
 });
-rejects("missing build-time origin marker", (sample) => { sample.items[0].originVerified = false; });
+const markerlessJapaneseFixture = structuredClone(fixture);
+delete markerlessJapaneseFixture.items[0].originVerified;
+assert.equal(validateCatalog(markerlessJapaneseFixture).count, 2, "A JP country field is sufficient; the derived originVerified marker is not an independent requirement.");
 rejects("unsupported format", (sample) => { sample.items[0].format = "MUSIC"; });
 rejects("placeholder cover image", (sample) => { sample.items[0].coverImage.large = "https://example.com/no-image.png"; });
 rejects("adult content", (sample) => { sample.items[0].isAdult = true; });

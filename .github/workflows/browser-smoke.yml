@@ -12,6 +12,12 @@ on:
       - privacy.html
       - terms.html
       - responsive.css
+      - anime-origin-policy.js
+      - aqw-mobile-refinements.css
+      - aqw-brand-logo.css
+      - aqw-brand-base.css
+      - aqw-document-pages.css
+      - aqw-safe-storage.js
       - scripts/browser-smoke.py
       - scripts/test-official-site-links.mjs
       - scripts/audit-anime-image-urls.mjs
@@ -32,6 +38,10 @@ on:
       - privacy.html
       - terms.html
       - responsive.css
+      - anime-origin-policy.js
+      - aqw-mobile-refinements.css
+      - aqw-brand-logo.css
+      - aqw-brand-base.css
       - scripts/browser-smoke.py
       - scripts/test-official-site-links.mjs
       - scripts/audit-anime-image-urls.mjs
@@ -53,8 +63,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 18
     steps:
-      - name: Check out the test revision
+      - name: Check out the exact pull-request revision
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Start a local preview for deterministic browser tests
         run: |

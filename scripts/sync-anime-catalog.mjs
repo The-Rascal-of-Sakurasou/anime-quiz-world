@@ -2,6 +2,9 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { isUsableCoverImage } from './catalog-image-url.mjs';
+import "../anime-origin-policy.js";
+
+const { isJapaneseOriginAnime, metadataKey } = globalThis.AQWAnimePolicy;
 
 const API = 'https://graphql.anilist.co';
 const API_REQUEST_INTERVAL_MS = 2100; // Stay below AniList's currently documented 30 requests/minute limit.
@@ -23,38 +26,9 @@ const normalize = (value) => {
   return value;
 };
 
-function hasJapaneseTitle(anime) {
-  const names = [anime?.title?.native, anime?.title?.english, anime?.title?.romaji,
-    ...(Array.isArray(anime?.synonyms) ? anime.synonyms : [])];
-  return names.some((name) => typeof name === 'string' && /[ぁ-んァ-ヶ]/.test(name));
-}
 
-function isJapaneseOriginAnime(anime) {
-  if (!anime || typeof anime.countryOfOrigin !== 'string' || !anime.countryOfOrigin) return false;
-  if (anime.countryOfOrigin !== 'JP') return Number(anime.popularity) >= 10000 && hasJapaneseTitle(anime);
-  if (anime.originVerified === true) return true;
-  if (anime.source === 'ORIGINAL') return true;
-  const sourceRules = {
-    MANGA: { type: 'MANGA', formats: ['MANGA', 'ONE_SHOT'] },
-    LIGHT_NOVEL: { type: 'MANGA', formats: ['NOVEL'] },
-    NOVEL: { type: 'MANGA', formats: ['NOVEL'] },
-    WEB_NOVEL: { type: 'MANGA', formats: ['NOVEL'] },
-    DOUJINSHI: { type: 'MANGA', formats: ['MANGA', 'ONE_SHOT', 'NOVEL'] },
-    VISUAL_NOVEL: { type: 'MANGA', formats: ['MANGA', 'ONE_SHOT', 'NOVEL'] },
-    VIDEO_GAME: { type: 'MANGA', formats: ['MANGA', 'ONE_SHOT', 'NOVEL'] },
-    OTHER: { type: 'MANGA', formats: ['MANGA', 'ONE_SHOT', 'NOVEL'] },
-    ANIME: { type: 'ANIME', formats: ['TV', 'TV_SHORT', 'MOVIE', 'OVA', 'ONA', 'SPECIAL'] },
-  };
-  const rule = sourceRules[anime.source];
-  const relationVerified = !!rule && Array.isArray(anime.relations?.edges) && anime.relations.edges.some((edge) =>
-    (edge?.relationType === 'SOURCE' || edge?.relationType === 'ADAPTATION') &&
-    edge.node?.type === rule.type &&
-    edge.node?.countryOfOrigin === 'JP' &&
-    rule.formats.includes(edge.node?.format)
-  );
-  if (relationVerified) return true;
-  return !!rule && Number(anime.popularity) >= 10000 && hasJapaneseTitle(anime);
-}
+
+
 function isUsableAnime(anime) {
   const image = anime?.coverImage?.large || anime?.coverImage?.medium || anime?.coverImage?.extraLarge || '';
   return Boolean(
@@ -69,11 +43,11 @@ function isUsableAnime(anime) {
   );
 }
 
-async function fetchBatch(pages, sort, format, yearStart, yearEnd, includeForeign = false) {
+async function fetchBatch(pages, sort, format, yearStart, yearEnd) {
   const dateFilter = Number.isInteger(yearStart) && Number.isInteger(yearEnd)
     ? ',startDate_greater:' + (yearStart * 10000) + ',startDate_lesser:' + ((yearEnd + 1) * 10000)
     : '';
-  const countryFilter = includeForeign ? '' : 'countryOfOrigin:JP,';
+  const countryFilter = 'countryOfOrigin:JP,';
   const aliases = pages.map((page, index) =>
     'p' + index + ': Page(page:' + page + ',perPage:50) { pageInfo { hasNextPage } media(type:ANIME,' + countryFilter + 'sort:' +
     sort + ',isAdult:false,format_in:[' + format + ']' + dateFilter + ') { ' + FIELDS + ' } }'
@@ -121,11 +95,11 @@ let requests = 0;
 let accepted = 0;
 let filtered = 0;
 
-async function scanScope(format, sort, yearStart, yearEnd, appendOnly = false, includeForeign = false, pageLimit = 100) {
+async function scanScope(format, sort, yearStart, yearEnd, appendOnly = false, pageLimit = 100) {
   for (let page = 1; page <= pageLimit; page += 3) {
     const pages = [page, page + 1, page + 2].filter((value) => value <= pageLimit);
     await sleep(API_REQUEST_INTERVAL_MS);
-    const results = await fetchBatch(pages, sort, format, yearStart, yearEnd, includeForeign);
+    const results = await fetchBatch(pages, sort, format, yearStart, yearEnd);
     requests++;
     let addedThisBatch = 0;
     for (const result of results) {
@@ -159,9 +133,7 @@ async function scanScope(format, sort, yearStart, yearEnd, appendOnly = false, i
   return false;
 }
 
-function metadataKey(value) {
-  return String(value || '').normalize('NFKC').toLocaleLowerCase().replace(/\s+/g, '');
-}
+
 
 export function dedupeAnimeMetadata(anime) {
   const synonyms = [];
@@ -276,9 +248,7 @@ for (const format of FORMATS) {
     await scanScope(format, 'ID_DESC', undefined, undefined, true);
     // Refresh the most popular Japanese-origin works on every sync, not only newly indexed IDs.
     // This backfills famous catalogue gaps while keeping the extra API work bounded.
-    await scanScope(format, 'POPULARITY_DESC', undefined, undefined, false, false, 10);
-    // Add a bounded supplement of famous foreign works with Japanese titles.
-    await scanScope(format, 'POPULARITY_DESC', undefined, undefined, false, true, 20);
+    await scanScope(format, 'POPULARITY_DESC', undefined, undefined, false, 10);
     continue;
   }
   let overflow = false;
@@ -294,8 +264,6 @@ for (const format of FORMATS) {
       if (reachedLimit) await scanDateRanges(format, sort);
     }
   }
-  // The foreign supplement is deliberately popularity-bounded to avoid a catalogue-size explosion.
-  await scanScope(format, 'POPULARITY_DESC', undefined, undefined, false, true, 20);
 }
 
 // Recheck the final merged set so legacy placeholder covers cannot survive an incremental refresh.
@@ -316,7 +284,7 @@ const output = {
   schemaVersion: 2,
   generatedAt: unchanged ? previousOutput.generatedAt : new Date().toISOString(),
   source: 'AniList GraphQL API',
-  originRule: 'Verified Japanese-origin works plus foreign works with a Japanese-language title and popularity >= 10000',
+  originRule: 'AniList countryOfOrigin must equal JP; non-Japanese and unknown-origin works are excluded',
   count: items.length,
   items,
 };

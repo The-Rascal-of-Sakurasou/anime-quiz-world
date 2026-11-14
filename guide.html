@@ -17,9 +17,10 @@
 <meta name="twitter:title" content="遊び方・お知らせ | Anime Quiz World">
 <meta name="twitter:description" content="Anime Quiz Worldの遊び方、クイズ機能、コミュニティ機能、更新情報をご案内します。">
 <title>遊び方・お知らせ | Anime Quiz World</title>
+<link rel="stylesheet" href="./aqw-document-pages.css">
 <style>
 :root{color-scheme:light;--bg:#f5f6f8;--panel:#fff;--text:#20242b;--muted:#68717d;--accent:#315b9a;--line:#dfe3e8;--soft:#edf3fb}
-*{box-sizing:border-box}
+
 body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Noto Sans JP","Yu Gothic",Meiryo,sans-serif;line-height:1.7}
 a{color:var(--accent)}
 .wrap{width:min(920px,calc(100% - 32px));margin:0 auto}
@@ -39,25 +40,25 @@ footer{padding:18px 0 32px;color:var(--muted);font-size:.85rem}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 
 .brand{display:flex;align-items:center;gap:12px;font-size:1.3rem;font-weight:800;color:#102b46;text-decoration:none;letter-spacing:-.035em;white-space:nowrap}.brand-mark{display:inline-flex;align-items:center;justify-content:center;position:relative;left:-2px;flex:0 0 60px;width:60px;height:60px;box-sizing:border-box;background:#064675;color:#fff;font-family:Arial,Helvetica,sans-serif;font-size:1.28rem;font-weight:800;font-style:italic;letter-spacing:-1.2px;line-height:1}.brand span{color:#102b46}.brand-copy{display:flex;flex-direction:column;gap:5px}.brand-tagline{font-size:.78rem;font-weight:600;letter-spacing:.035em;color:#667789;line-height:1.35}@media(max-width:520px){.brand{font-size:1.02rem;gap:9px}.brand-mark{flex-basis:52px;width:52px;height:52px;font-size:1.1rem}.brand-tagline{font-size:.68rem}}
-:root{--bg:#f2f5f9;--text:#172b43;--muted:#64758a;--line:#dce4ed;--accent:#14558b;--soft:#eaf2f9}
-body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Noto Sans JP","Yu Gothic",Meiryo,sans-serif;line-height:1.85;color:var(--text);background:var(--bg)}
-.wrap{max-width:1040px;width:calc(100% - 32px);padding-top:20px}
-header,main{border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px rgba(25,49,76,.06)}
-header{background:linear-gradient(120deg,#fff,#f0f6fc)}
-main{padding:clamp(20px,4vw,40px)}
-h1{font-size:clamp(1.8rem,4vw,2.5rem);letter-spacing:-.03em;color:#172b43}
-h2{margin-top:34px;padding-top:20px;border-top:1px solid var(--line);font-size:1.2rem;color:#173c60;scroll-margin-top:20px}
-h2:first-child{margin-top:0;padding-top:0;border-top:0}
-a{color:var(--accent);text-underline-offset:3px}
-li{padding-left:3px;margin:8px 0}
-.back{display:inline-flex;align-items:center;min-height:40px;padding:7px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;text-decoration:none;font-weight:700}
-.page-nav{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
-.page-nav a{padding:7px 11px;border:1px solid var(--line);border-radius:8px;background:#fff;text-decoration:none;font-size:.88rem;font-weight:700}
-.toc{padding:16px 18px;margin:0 0 22px;border:1px solid #d7e5f3;border-radius:10px;background:var(--soft)}
-.toc strong{display:block;margin-bottom:6px}.toc ol{columns:2;margin:0;padding-left:1.4rem}.toc li{margin:3px 0;font-size:.9rem;break-inside:avoid}
-.doc-meta{display:flex;flex-wrap:wrap;gap:8px 18px;color:var(--muted);font-size:.85rem}
-.doc-footer{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;padding:18px 4px 0;color:var(--muted);font-size:.82rem}
-.doc-footer nav{display:flex;flex-wrap:wrap;gap:8px 16px}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 @media(max-width:560px){.toc ol{columns:1}.wrap{width:calc(100% - 24px)}header,main{padding:20px 17px}}
 
 /* Site-wide mobile pass: guide and announcements */
@@ -90,24 +91,14 @@ li{padding-left:3px;margin:8px 0}
   .jump{grid-template-columns:minmax(0,1fr)}
 }
 
-/* Mobile refinement: prevent clipping and improve touch/accessibility */
-@media(max-width:700px){
-  html{scroll-padding-top:14px}
-  body{overflow-wrap:anywhere}
-  img,video,canvas{max-width:100%;height:auto}
-  iframe{max-width:100%}
-  button,input,select,textarea{max-width:100%;min-width:0}
-  button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-  :focus-visible{outline:3px solid #3978c8;outline-offset:2px}
-  [id]{scroll-margin-top:14px}
-  pre{max-width:100%;overflow-x:auto}
-  code{overflow-wrap:anywhere}
-}
+</style>
+<link rel="stylesheet" href="./aqw-mobile-refinements.css">
+<style>
 
 
-/* Unified AQW logo sizing: match the home page on every page. */
-.site-brand-logo{display:block;flex:0 0 48px;width:48px;height:48px;max-width:none;}
-@media(max-width:700px){.site-brand-logo{flex-basis:46px;width:46px;height:46px}}
+</style>
+<link rel="stylesheet" href="./aqw-brand-logo.css">
+<style>
 @media(max-width:380px){.site-brand-logo{flex-basis:42px;width:42px;height:42px}}
 </style>
  <link rel="stylesheet" href="./responsive.css">

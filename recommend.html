@@ -20,7 +20,7 @@
 <style>
 .question-other{margin-top:12px;padding:14px;border:1px solid var(--line);border-radius:9px;background:#f8fafc}.free-text-details{margin-top:20px;border:1px solid var(--line);border-radius:10px;background:#f8fafc}.free-text-details>summary{padding:14px 16px;cursor:pointer;font-weight:750;color:var(--accent)}.free-text-details[open]>summary{border-bottom:1px solid var(--line)}.free-text-details .free-text-inner{padding:14px}.question-other label,.free-topic-grid label{display:block;font-weight:700;font-size:.92rem}.question-other textarea,.free-topic-grid textarea{display:block;width:100%;max-width:100%;margin-top:6px;padding:11px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--text);font:inherit;resize:vertical}.free-text-topics{margin-top:22px;padding:16px;border:1px solid var(--line);border-radius:10px;background:#f8fafc}.free-text-topics h3{margin:0 0 4px;font-size:1.05rem}.free-text-topics>p{margin:4px 0 12px;color:var(--muted);font-size:.9rem}.free-topic-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.free-topic-grid label:last-child{grid-column:1/-1}@media(max-width:620px){.free-topic-grid{grid-template-columns:minmax(0,1fr)}.free-topic-grid label:last-child{grid-column:auto}}
 :root{color-scheme:light;--bg:#f5f6f8;--panel:#fff;--text:#20242b;--muted:#68717d;--accent:#315b9a;--line:#dfe3e8;--soft:#edf3fb}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Noto Sans JP","Yu Gothic",Meiryo,sans-serif;line-height:1.65}button,select{font:inherit}button{cursor:pointer;border:1px solid var(--line);border-radius:8px;min-height:44px;padding:11px 16px;background:#fff;color:var(--text);font-weight:650}button:hover{background:var(--soft);border-color:#b7c5d9}button:disabled{opacity:.55;cursor:default}.wrap{width:min(1000px,calc(100% - 32px));margin:auto}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 0;border-bottom:1px solid var(--line)}.brand-area{display:flex;align-items:center;gap:12px;min-width:0}.brand-mark{display:flex;align-items:center;justify-content:center;flex:0 0 60px;width:60px;height:60px;background:#064675;color:#fff;font-family:Arial,Helvetica,sans-serif;font-size:1.28rem;font-weight:800;font-style:italic;letter-spacing:-1.2px;line-height:1}.brand-tagline{margin-top:5px;color:#667789;font-size:.78rem;font-weight:600;letter-spacing:.035em;line-height:1.35}@media(max-width:520px){.brand-area{gap:9px}.brand-mark{flex-basis:52px;width:52px;height:52px;font-size:1.1rem}.brand-tagline{font-size:.68rem;margin-top:4px}.top{align-items:center;flex-wrap:wrap}.top>a{margin-left:auto}}.brand{display:flex;align-items:center;gap:12px;font-family:"Yu Mincho","Hiragino Mincho ProN","Noto Serif JP",Georgia,serif;font-weight:800;font-size:1.35rem;letter-spacing:-.035em;line-height:1.2;color:#102b46;white-space:nowrap}.brand:before{content:"AQW";display:inline-flex;align-items:center;justify-content:center;flex:0 0 60px;width:60px;height:60px;box-sizing:border-box;background:#064675;color:#fff;font-family:Arial,Helvetica,sans-serif;font-size:1.28rem;font-weight:800;font-style:italic;letter-spacing:-1.2px;line-height:1}.brand span{color:#102b46}@media(max-width:520px){.brand{font-size:1.05rem;gap:9px}.brand:before{flex-basis:52px;width:52px;height:52px;font-size:1.1rem}}a{color:var(--accent)}.hero{padding:28px 0 20px}.eyebrow{font-size:.82rem;color:var(--muted);font-weight:750;letter-spacing:.08em}.hero h1{font-size:clamp(1.8rem,4vw,2.5rem);line-height:1.25;margin:8px 0}.hero p{color:var(--muted);max-width:720px;margin:0}.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:clamp(18px,3vw,30px);box-shadow:0 2px 8px #1d293908}.progress{height:7px;border-radius:9px;background:#e9edf2;overflow:hidden;margin:0 0 24px}.progress>div{height:100%;width:0;background:var(--accent);transition:width .2s}.question{margin:0 0 20px}.question h2{font-size:1.18rem;margin:0 0 5px}.question p{color:var(--muted);margin:0;font-size:.94rem}.choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:18px}.choice{min-height:74px;text-align:left;padding:14px 16px;display:flex;gap:12px;align-items:center}.choice .n{display:grid;place-items:center;width:30px;height:30px;flex:0 0 30px;border-radius:50%;background:var(--soft);color:var(--accent);font-weight:800}.choice.selected{border-color:var(--accent);background:var(--soft);box-shadow:inset 0 0 0 1px var(--accent)}.actions{display:flex;justify-content:space-between;gap:10px;margin-top:24px}.save-note{font-size:.86rem;color:var(--muted);margin:14px 0 4px}.primary{background:var(--accent);border-color:var(--accent);color:white}.primary:hover{background:#254879}.hidden{display:none!important}.status{color:var(--muted);margin:12px 0}.results-head{margin-bottom:20px}.results-head h2{margin:5px 0}.profile{background:var(--soft);border-radius:10px;padding:16px;margin:16px 0}.profile strong{display:block;font-size:1.08rem}.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}.chip{border:1px solid #d4deeb;background:#fff;color:#38557e;border-radius:30px;padding:4px 10px;font-size:.84rem}.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.anime{min-width:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}.anime img{width:100%;aspect-ratio:2/3;object-fit:cover;display:block;background:#e9edf2}.anime-body{padding:11px}.anime h3{font-size:.96rem;line-height:1.4;margin:0 0 7px}.anime small{color:var(--muted)}.score{font-size:.82rem;color:var(--accent);font-weight:750}.anime p{font-size:.84rem;color:var(--muted);margin:8px 0 0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.reason-details{display:grid;gap:8px;margin-top:10px}.reason-detail{padding:8px;border-radius:7px;background:#f2f6fb}.reason-detail.adjustment{background:#fbf4ed}.reason-detail strong{font-size:.78rem;display:block;margin-bottom:5px}.reason-chips{display:flex;flex-wrap:wrap;gap:5px}.reason-chip{font-size:.75rem;border:1px solid #d7e0eb;border-radius:20px;padding:2px 7px;background:#fff;color:#46566b}.anime a{display:inline-block;margin-top:10px;font-size:.85rem;font-weight:700}.share-panel{margin:22px 0;padding:16px;border:1px solid var(--line);border-radius:10px;background:#f8faff}.share-panel ul{color:var(--muted);font-size:.88rem}.share-panel li{margin:3px 0}.share-panel>strong{font-size:1rem}.share-panel>p{font-size:.88rem;color:var(--muted);margin:5px 0 12px}.share-actions{display:flex;flex-wrap:wrap;gap:8px}.share-panel .status{min-height:1.4em;margin:8px 0 0}.foot{color:var(--muted);font-size:.82rem;margin:20px 0 34px}.loading{padding:32px;text-align:center;color:var(--muted)}@media(max-width:620px){.preference-inputs{grid-template-columns:1fr!important}}@media(max-width:720px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:480px){.choices{grid-template-columns:1fr}.wrap{width:calc(100% - 20px)}.top{padding:14px 0}.cards{gap:9px}.anime-body{padding:9px}.anime h3{font-size:.9rem}}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Noto Sans JP","Yu Gothic",Meiryo,sans-serif;line-height:1.65}button,select{font:inherit}button{cursor:pointer;border:1px solid var(--line);border-radius:8px;min-height:44px;padding:11px 16px;background:#fff;color:var(--text);font-weight:650}button:hover{background:var(--soft);border-color:#b7c5d9}button:disabled{opacity:.55;cursor:default}.wrap{width:min(1000px,calc(100% - 32px));margin:auto}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 0;border-bottom:1px solid var(--line)}.brand-area{display:flex;align-items:center;gap:12px;min-width:0}.brand-mark{display:flex;align-items:center;justify-content:center;flex:0 0 60px;width:60px;height:60px;background:#064675;color:#fff;font-family:Arial,Helvetica,sans-serif;font-size:1.28rem;font-weight:800;font-style:italic;letter-spacing:-1.2px;line-height:1}.brand-tagline{margin-top:5px;color:#667789;font-size:.78rem;font-weight:600;letter-spacing:.035em;line-height:1.35}@media(max-width:520px){.brand-area{gap:9px}.brand-mark{flex-basis:52px;width:52px;height:52px;font-size:1.1rem}.brand-tagline{font-size:.68rem;margin-top:4px}.top{align-items:center;flex-wrap:wrap}.top>a{margin-left:auto}}.brand{display:flex;align-items:center;gap:12px;font-family:"Yu Mincho","Hiragino Mincho ProN","Noto Serif JP",Georgia,serif;font-weight:800;font-size:1.35rem;letter-spacing:-.035em;line-height:1.2;color:#102b46;white-space:nowrap}.brand:before{content:"AQW";display:inline-flex;align-items:center;justify-content:center;flex:0 0 60px;width:60px;height:60px;box-sizing:border-box;background:#064675;color:#fff;font-family:Arial,Helvetica,sans-serif;font-size:1.28rem;font-weight:800;font-style:italic;letter-spacing:-1.2px;line-height:1}.brand span{color:#102b46}@media(max-width:520px){.brand{font-size:1.05rem;gap:9px}.brand:before{flex-basis:52px;width:52px;height:52px;font-size:1.1rem}}a{color:var(--accent)}.hero{padding:28px 0 20px}.eyebrow{font-size:.82rem;color:var(--muted);font-weight:750;letter-spacing:.08em}.hero h1{font-size:clamp(1.8rem,4vw,2.5rem);line-height:1.25;margin:8px 0}.hero p{color:var(--muted);max-width:720px;margin:0}.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:clamp(18px,3vw,30px);box-shadow:0 2px 8px #1d293908}.progress{height:7px;border-radius:9px;background:#e9edf2;overflow:hidden;margin:0 0 24px}.progress>div{height:100%;width:0;background:var(--accent);transition:width .2s}.question{margin:0 0 20px}.question h2{font-size:1.18rem;margin:0 0 5px}.question p{color:var(--muted);margin:0;font-size:.94rem}.choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:18px}.choice{min-height:74px;text-align:left;padding:14px 16px;display:flex;gap:12px;align-items:center}.choice .n{display:grid;place-items:center;width:30px;height:30px;flex:0 0 30px;border-radius:50%;background:var(--soft);color:var(--accent);font-weight:800}.choice.selected{border-color:var(--accent);background:var(--soft);box-shadow:inset 0 0 0 1px var(--accent)}.actions{display:flex;justify-content:space-between;gap:10px;margin-top:24px}.save-note{font-size:.86rem;color:var(--muted);margin:14px 0 4px}.primary{background:var(--accent);border-color:var(--accent);color:white}.primary:hover{background:#254879}.status{color:var(--muted);margin:12px 0}.results-head{margin-bottom:20px}.results-head h2{margin:5px 0}.profile{background:var(--soft);border-radius:10px;padding:16px;margin:16px 0}.profile strong{display:block;font-size:1.08rem}.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}.chip{border:1px solid #d4deeb;background:#fff;color:#38557e;border-radius:30px;padding:4px 10px;font-size:.84rem}.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.anime{min-width:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}.anime img{width:100%;aspect-ratio:2/3;object-fit:cover;display:block;background:#e9edf2}.anime-body{padding:11px}.anime h3{font-size:.96rem;line-height:1.4;margin:0 0 7px}.anime small{color:var(--muted)}.score{font-size:.82rem;color:var(--accent);font-weight:750}.anime p{font-size:.84rem;color:var(--muted);margin:8px 0 0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.reason-details{display:grid;gap:8px;margin-top:10px}.reason-detail{padding:8px;border-radius:7px;background:#f2f6fb}.reason-detail.adjustment{background:#fbf4ed}.reason-detail strong{font-size:.78rem;display:block;margin-bottom:5px}.reason-chips{display:flex;flex-wrap:wrap;gap:5px}.reason-chip{font-size:.75rem;border:1px solid #d7e0eb;border-radius:20px;padding:2px 7px;background:#fff;color:#46566b}.anime a{display:inline-block;margin-top:10px;font-size:.85rem;font-weight:700}.share-panel{margin:22px 0;padding:16px;border:1px solid var(--line);border-radius:10px;background:#f8faff}.share-panel ul{color:var(--muted);font-size:.88rem}.share-panel li{margin:3px 0}.share-panel>strong{font-size:1rem}.share-panel>p{font-size:.88rem;color:var(--muted);margin:5px 0 12px}.share-actions{display:flex;flex-wrap:wrap;gap:8px}.share-panel .status{min-height:1.4em;margin:8px 0 0}.foot{color:var(--muted);font-size:.82rem;margin:20px 0 34px}.loading{padding:32px;text-align:center;color:var(--muted)}@media(max-width:620px){.preference-inputs{grid-template-columns:1fr!important}}@media(max-width:720px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:480px){.choices{grid-template-columns:1fr}.wrap{width:calc(100% - 20px)}.top{padding:14px 0}.cards{gap:9px}.anime-body{padding:9px}.anime h3{font-size:.9rem}}
 
 :focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 .skip-link{position:fixed;z-index:10000;top:10px;left:10px;transform:translateY(-160%);padding:10px 14px;border-radius:8px;background:var(--text);color:#fff;font-weight:700;text-decoration:none;box-shadow:0 3px 12px #0003}
@@ -95,19 +95,9 @@ body{background:#f6f7f9;color:#202936;letter-spacing:.005em}
   .actions>*{width:100%}
 }
 
-/* Mobile refinement: prevent clipping and improve touch/accessibility */
-@media(max-width:700px){
-  html{scroll-padding-top:14px}
-  body{overflow-wrap:anywhere}
-  img,video,canvas{max-width:100%;height:auto}
-  iframe{max-width:100%}
-  button,input,select,textarea{max-width:100%;min-width:0}
-  button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-  :focus-visible{outline:3px solid #3978c8;outline-offset:2px}
-  [id]{scroll-margin-top:14px}
-  pre{max-width:100%;overflow-x:auto}
-  code{overflow-wrap:anywhere}
-}
+</style>
+<link rel="stylesheet" href="./aqw-mobile-refinements.css">
+<style>
 /* Additional mobile layout: make optional preference fields readable */
 @media(max-width:700px){
   .preference-inputs{grid-template-columns:minmax(0,1fr)!important;gap:10px!important}
@@ -119,12 +109,13 @@ body{background:#f6f7f9;color:#202936;letter-spacing:.005em}
 }
 
 
-/* Unified AQW logo sizing: match the home page on every page. */
-.site-brand-logo{display:block;flex:0 0 48px;width:48px;height:48px;max-width:none;}
-@media(max-width:700px){.site-brand-logo{flex-basis:46px;width:46px;height:46px}}
+</style>
+<link rel="stylesheet" href="./aqw-brand-logo.css">
+<style>
 @media(max-width:380px){.site-brand-logo{flex-basis:42px;width:42px;height:42px}}
 </style>
  <link rel="stylesheet" href="./responsive.css">
+<script src="./anime-origin-policy.js"></script>
 </head>
 <body>
 <a class="skip-link" href="#mainContent">診断コンテンツへ移動</a>
@@ -183,13 +174,10 @@ body{background:#f6f7f9;color:#202936;letter-spacing:.005em}
 window.addEventListener("error",event=>{const box=document.getElementById("error");if(box){box.textContent="診断画面の初期化中にエラーが発生しました："+(event.message||"詳細不明")+"。ページを再読み込みしてください。";box.classList.remove("hidden");}});
 window.addEventListener("unhandledrejection",event=>{const box=document.getElementById("error");if(box){const reason=event.reason;box.textContent="診断処理でエラーが発生しました："+(reason&&reason.message?reason.message:String(reason||"詳細不明"));box.classList.remove("hidden");}});
 </script>
+<script src="./aqw-safe-storage.js"></script>
 <script>
-const safeStorage={
- getItem(key){try{return window.localStorage.getItem(key)}catch(_){return null}},
- setItem(key,value){try{window.localStorage.setItem(key,String(value));return true}catch(_){return false}},
- removeItem(key){try{window.localStorage.removeItem(key);return true}catch(_){return false}},
- keys(){try{return Object.keys(window.localStorage)}catch(_){return []}}
-};
+const safeStorage = window.AQWSafeStorage;
+const isJapaneseOriginAnime = window.AQWAnimePolicy.isJapaneseOriginAnime;
 const API='https://graphql.anilist.co';
 const MAX_RECOMMENDATION_PAGES_PER_SORT=4;
 const questions=[
@@ -583,15 +571,11 @@ function runRecommendationSelfTests(){
  const allowedFormats=['TV','TV_SHORT','MOVIE','ONA','OVA','SPECIAL'];
  check('対象形式6種類は推薦候補として扱う',allowedFormats.every(format=>isRecommendationCandidate({...candidateBase,format})));
  check('対象形式外は推薦候補に含めない',!isRecommendationCandidate({...candidateBase,format:'MUSIC'}));
- check('日本語タイトルと知名度基準を満たす海外作品は推薦候補に含める',isRecommendationCandidate({...candidateBase,countryOfOrigin:'US',popularity:10000,synonyms:['海外作品の日本語題'],format:'TV'}));
- check('日本語以外と明示された原作は除外する',!isRecommendationCandidate({...candidateBase,originLanguage:'en',format:'TV'}));
- check('日本語タイトルを持つ有名な海外作品は採用する',isRecommendationCandidate({...candidateBase,countryOfOrigin:'US',popularity:10000,synonyms:['海外作品の日本語題'],format:'TV'}));
- check('日本語タイトルがない海外作品は除外する',!isRecommendationCandidate({...candidateBase,countryOfOrigin:'US',popularity:50000,synonyms:['Foreign title'],format:'TV'}));
- check('漢字だけの外国語タイトルを日本語タイトルと誤認しない',!isRecommendationCandidate({...candidateBase,countryOfOrigin:'US',popularity:50000,synonyms:['三国演义'],format:'TV'}));
- check('知名度の基準に届かない海外作品は除外する',!isRecommendationCandidate({...candidateBase,countryOfOrigin:'US',popularity:9999,synonyms:['海外作品の日本語題'],format:'TV'}));
- check('日本語と明示された原作は適格性判定を通過する',isRecommendationCandidate({...candidateBase,originLanguage:'ja',format:'TV'}));
- check('原作情報が不明な翻案作品は除外する',!isRecommendationCandidate({...candidateBase,source:'MANGA',relations:{edges:[]},format:'TV'}));
- check('日本原産の原作メディアを確認できる翻案作品は通過する',isRecommendationCandidate({...candidateBase,source:'MANGA',relations:{edges:[{relationType:'SOURCE',node:{type:'MANGA',countryOfOrigin:'JP',format:'MANGA'}}]},format:'TV'}));
+ check('日本原産作品は原作種別や人気度にかかわらず候補になる',isRecommendationCandidate({...candidateBase,countryOfOrigin:'JP',source:'VIDEO_GAME',popularity:0,format:'TV'}));
+ check('海外原産作品は日本語タイトルがあっても除外する',!isRecommendationCandidate({...candidateBase,countryOfOrigin:'US',popularity:1000000,synonyms:['海外作品の日本語題'],format:'TV'}));
+ check('原産国不明の作品は除外する',!isRecommendationCandidate({...candidateBase,countryOfOrigin:undefined,popularity:1000000,format:'TV'}));
+ check('原産国が空欄の作品は除外する',!isRecommendationCandidate({...candidateBase,countryOfOrigin:'',format:'TV'}));
+ check('日本原産以外の国コードはすべて除外する',['US','CN','KR','TW','GB'].every(country=>!isRecommendationCandidate({...candidateBase,countryOfOrigin:country,format:'TV'})));
  check('タイトル画像がない作品は推薦候補に含めない',!isRecommendationCandidate({...candidateBase,coverImage:{},format:'TV'}));
  // 通常80選択肢と追加2回答を含む120選択肢それぞれを単独で選んだprofileでも、候補の適格判定結果が変わらないことを確認する。
  const eligibilitySamples=[
@@ -884,27 +868,8 @@ function normalizeSeedTitle(value){
  return String(value||'').toLocaleLowerCase().normalize('NFKC')
   .replace(/[\s・：:!！?？。、,.'’"「」『』()（）［］【】_ｰ-]/g,'');
 }
-function hasFamousJapaneseTitle(media){
- const names=[media?.title?.native,media?.title?.english,media?.title?.romaji,...(Array.isArray(media?.synonyms)?media.synonyms:[])];
- return names.some(name=>typeof name==='string'&&/[ぁ-んァ-ヶ]/.test(name));
-}
-function isJapaneseOriginAnime(media){
- if(!media)return false;
- // 海外作品は、日本語の作品名が確認でき、AniList popularity が10,000以上の有名作品に限って採用する。
- if(media.countryOfOrigin!=='JP')return Number(media.popularity)>=10000&&hasFamousJapaneseTitle(media);
- const languageValues=[media.originLanguage,media.originalLanguage,media.sourceLanguage,media.language].filter(value=>typeof value==='string'&&value.trim());
- if(languageValues.some(value=>!['ja','ja-jp','japanese','日本語'].includes(value.trim().toLowerCase())))return false;
- if(media.source==='ORIGINAL')return true;
- const sourceRules={MANGA:{type:'MANGA',formats:['MANGA','ONE_SHOT']},LIGHT_NOVEL:{type:'MANGA',formats:['NOVEL']},NOVEL:{type:'MANGA',formats:['NOVEL']},DOUJINSHI:{type:'MANGA',formats:['MANGA','ONE_SHOT','NOVEL']},ANIME:{type:'ANIME',formats:['TV','TV_SHORT','MOVIE','OVA','ONA','SPECIAL']}};
- const rule=sourceRules[media.source];
- if(!rule||!Array.isArray(media.relations?.edges))return false;
- return media.relations.edges.some(edge=>{
-  const node=edge?.node;
-  if(!node||node.type!==rule.type||node.countryOfOrigin!=='JP'||!rule.formats.includes(node.format))return false;
-  const sourceLanguage=[node.originLanguage,node.originalLanguage,node.sourceLanguage,node.language].filter(value=>typeof value==='string'&&value.trim());
-  return !sourceLanguage.some(value=>!['ja','ja-jp','japanese','日本語'].includes(value.trim().toLowerCase()));
- });
-}
+
+
 function matchesSeedTitle(media,title){
  const wanted=normalizeSeedTitle(title);
  if(!wanted)return false;
@@ -975,7 +940,7 @@ function getOfficialAnimeSiteUrl(anime){
 // 回答内容とは独立した推薦候補の適格条件。質問への回答は候補除外に使わず、順位調整だけに使う。
 function isRecommendationCandidate(anime){
  const allowedFormats=new Set(['TV','TV_SHORT','MOVIE','ONA','OVA','SPECIAL']);
- return Boolean(anime&&isJapaneseOriginAnime(anime)&&anime.coverImage?.large&&anime.title&&allowedFormats.has(anime.format));
+ return Boolean(anime&&AQWAnimePolicy.isJapaneseOriginAnime(anime)&&anime.coverImage?.large&&anime.title&&allowedFormats.has(anime.format));
 }
 async function getRecommendations(profile){
  const query='query ($page:Int,$sort:[MediaSort]) { Page(page:$page,perPage:50) { pageInfo { totalPages } media(type:ANIME,sort:$sort,isAdult:false) { id countryOfOrigin source(version:2) format title { romaji english native } synonyms description(asHtml:false) coverImage { extraLarge large } episodes seasonYear averageScore popularity genres tags { name rank isMediaSpoiler } relations { edges { relationType node { id type countryOfOrigin format } } } siteUrl externalLinks { url site language isDisabled } } } }';

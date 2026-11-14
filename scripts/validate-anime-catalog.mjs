@@ -2,47 +2,19 @@ import { readFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import { gunzipSync } from "node:zlib";
 import { isUsableCoverImage } from "./catalog-image-url.mjs";
+import "../anime-origin-policy.js";
+
+const { isJapaneseOriginAnime, metadataKey } = globalThis.AQWAnimePolicy;
 
 const FILE = process.argv[2] || "data/anime-catalog.json";
 const FORMATS = new Set(["TV", "TV_SHORT", "MOVIE", "OVA", "ONA", "SPECIAL"]);
 const MAX_JSON_BYTES = 20 * 1024 * 1024;
 const MAX_GZIP_BYTES = 5 * 1024 * 1024;
 
-function hasJapaneseTitle(anime) {
-  const names = [anime?.title?.native, anime?.title?.english, anime?.title?.romaji,
-    ...(Array.isArray(anime?.synonyms) ? anime.synonyms : [])];
-  return names.some((name) => typeof name === "string" && /[ぁ-んァ-ヶ]/.test(name));
-}
 
-function isJapaneseOriginAnime(anime) {
-  if (!anime || typeof anime.countryOfOrigin !== "string" || !anime.countryOfOrigin) return false;
-  if (anime.countryOfOrigin !== "JP") return Number(anime.popularity) >= 10000 && hasJapaneseTitle(anime);
-  if (anime.originVerified === true) return true;
-  if (anime.source === "ORIGINAL") return true;
-  const sourceRules = {
-    MANGA: { type: "MANGA", formats: ["MANGA", "ONE_SHOT"] },
-    LIGHT_NOVEL: { type: "MANGA", formats: ["NOVEL"] },
-    NOVEL: { type: "MANGA", formats: ["NOVEL"] },
-    WEB_NOVEL: { type: "MANGA", formats: ["NOVEL"] },
-    DOUJINSHI: { type: "MANGA", formats: ["MANGA", "ONE_SHOT", "NOVEL"] },
-    VISUAL_NOVEL: { type: "MANGA", formats: ["MANGA", "ONE_SHOT", "NOVEL"] },
-    VIDEO_GAME: { type: "MANGA", formats: ["MANGA", "ONE_SHOT", "NOVEL"] },
-    OTHER: { type: "MANGA", formats: ["MANGA", "ONE_SHOT", "NOVEL"] },
-    ANIME: { type: "ANIME", formats: ["TV", "TV_SHORT", "MOVIE", "OVA", "ONA", "SPECIAL"] },
-  };
-  const rule = sourceRules[anime.source];
-  const relationVerified = !!rule && Array.isArray(anime.relations?.edges) && anime.relations.edges.some((edge) =>
-    (edge?.relationType === "SOURCE" || edge?.relationType === "ADAPTATION") &&
-    edge.node?.type === rule.type &&
-    edge.node?.countryOfOrigin === "JP" &&
-    rule.formats.includes(edge.node?.format)
-  );
-  if (relationVerified) return true;
-  return !!rule && Number(anime.popularity) >= 10000 && hasJapaneseTitle(anime);
-}
-function metadataKey(value) {
-  return String(value || '').normalize('NFKC').toLocaleLowerCase().replace(/\s+/g, '');
-}
+
+
+
 export function validateCatalog(catalog) {
   if (!catalog || typeof catalog !== "object" || Array.isArray(catalog)) {
     throw new Error("Catalogue root must be a JSON object.");
@@ -75,9 +47,8 @@ export function validateCatalog(catalog) {
     else if (ids.has(id)) failures.push(label + ": duplicate AniList ID " + id);
     else ids.add(id);
 
-    if (anime?.countryOfOrigin === "JP" && anime?.originVerified !== true) failures.push(label + ": build-time Japanese-origin verification marker is missing");
     if (anime?.catalogueEligible === false) failures.push(label + ": catalogue eligibility is explicitly disabled");
-    if (!isJapaneseOriginAnime(anime)) failures.push(label + ": Japanese origin or famous Japanese-title eligibility could not be verified");
+    if (!isJapaneseOriginAnime(anime)) failures.push(label + ": countryOfOrigin must be exactly JP; non-Japanese and unknown origins are excluded");
     if (!FORMATS.has(anime?.format)) failures.push(label + ": unsupported anime format");
     if (anime?.isAdult === true) failures.push(label + ": adult content is not allowed");
     if ((anime?.genres || []).includes("Hentai")) failures.push(label + ": Hentai genre is not allowed");
@@ -155,7 +126,7 @@ async function main() {
   }
 
   const result = validateCatalog(catalog);
-  console.log("Catalogue validation passed: " + result.count + " unique eligible Japanese-origin and famous foreign anime.");
+  console.log("Catalogue validation passed: " + result.count + " unique eligible Japanese-origin anime.");
   console.log("Generated at: " + result.generatedAt);
   console.log("Compressed catalogue matches the JSON source.");
 }

@@ -6,6 +6,14 @@ on:
     paths:
       - "data/anime-catalog.json"
       - "index.html"
+      - "anime-origin-policy.js"
+      - "scripts/audit-question-mode-coverage.mjs"
+      - ".github/workflows/question-mode-coverage.yml"
+  pull_request:
+    paths:
+      - "data/anime-catalog.json"
+      - "index.html"
+      - "anime-origin-policy.js"
       - "scripts/audit-question-mode-coverage.mjs"
       - ".github/workflows/question-mode-coverage.yml"
   workflow_dispatch:
