@@ -2,6 +2,12 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { validateCatalog } from "./validate-anime-catalog.mjs";
 import { isUsableCoverImage } from "./catalog-image-url.mjs";
+import "../anime-origin-policy.js";
+const { isJapaneseOriginAnime } = globalThis.AQWAnimePolicy;
+
+assert.equal(isJapaneseOriginAnime({ countryOfOrigin: "JP", popularity: 0 }), true);
+assert.equal(isJapaneseOriginAnime({ countryOfOrigin: "US", popularity: 999999, title: { native: "日本語タイトル" } }), false);
+assert.equal(isJapaneseOriginAnime({ countryOfOrigin: null, originVerified: true }), false);
 
 assert.equal(isUsableCoverImage("https://cdn.example.com/cover.jpg"), true, "Valid HTTPS cover URL should pass");
 assert.equal(isUsableCoverImage("http://cdn.example.com/cover.jpg"), true, "Valid HTTP cover URL should pass");
@@ -50,4 +56,4 @@ rejects("missing title", (sample) => { sample.items[0].title = {}; });
 rejects("duplicate normalized synonyms", (sample) => { sample.items[0].synonyms = ["Test Alias", "test alias"]; });
 rejects("embedded character data is excluded from the shared catalogue", (sample) => { sample.items[0].characters = { nodes: [] }; });
 
-console.log("Anime catalogue validator tests passed: 1 valid compact-schema fixture and 11 rejected invalid cases.");
+console.log("Anime catalogue validator tests passed: 1 valid compact-schema fixture and 10 rejected invalid cases.");
