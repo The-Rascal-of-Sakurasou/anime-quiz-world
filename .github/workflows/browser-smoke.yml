@@ -45,7 +45,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: aqw-browser-smoke
+  group: aqw-browser-smoke-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
