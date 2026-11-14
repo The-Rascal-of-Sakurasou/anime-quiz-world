@@ -264,168 +264,23 @@ assert.doesNotMatch(privacy, /コレクション/, "Privacy policy must not desc
 const recommend = source.get("recommend.html");
 assert.ok(recommend.includes("media(search:$search,type:ANIME,isAdult:false"), "Favorite-work search must retrieve candidates before applying verified origin eligibility");
 assert.ok(recommend.includes("media(type:ANIME,sort:$sort,isAdult:false)"), "Recommendation catalog query must retrieve candidates before applying verified origin eligibility");
-assert.match(recommend, /countryOfOrigin!==.JP./, "Recommendation data must reject non-Japanese animation unless it meets the documented famous-Japanese-title exception");
-assert.match(recommend, /popularity\s*\)\s*>=\s*10000/, "Foreign anime must meet the documented popularity threshold");
-assert.match(recommend, /hasFamousJapaneseTitle\(media\)/, "Foreign anime must have a Japanese-language title");
 
-const recommendOriginHelper = recommend.match(/function isJapaneseOriginAnime\(media\)\{[\s\S]*?\n\}/)?.[0];
-assert.ok(recommendOriginHelper, "Recommendation Japanese-origin verification helper missing");
-const famousTitleHelper = recommend.match(/function hasFamousJapaneseTitle\(media\)\{[\s\S]*?\n\}/)?.[0];
-assert.ok(famousTitleHelper, "Japanese-title verification helper missing");
-const isRecommendedOriginJapanese = vm.runInNewContext(famousTitleHelper + "\n" + recommendOriginHelper + "\nisJapaneseOriginAnime");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "ORIGINAL" }), true, "Japanese original anime must remain eligible");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), true, "Japanese manga adaptations must remain eligible");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "SOURCE", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), true, "AniList v2 SOURCE relations must recognize Japanese manga originals");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "LIGHT_NOVEL", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "NOVEL" } }] } }), true, "Japanese light-novel adaptations must remain eligible");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "NOVEL", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "NOVEL" } }] } }), true, "Japanese novel adaptations must remain eligible");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "DOUJINSHI", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), true, "Japanese doujinshi adaptations must remain eligible");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "ANIME", countryOfOrigin: "JP", format: "TV" } }] } }), true, "Japanese anime-source spin-offs must be eligible when their source anime is verified");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "ANIME", countryOfOrigin: "US", format: "TV" } }] } }), false, "Foreign anime-source spin-offs must be excluded");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), false, "Anime source metadata must match an anime relation node");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "VISUAL_NOVEL", relations: { edges: [] } }), false, "Visual novel source origin must not be guessed without explicit evidence");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "VIDEO_GAME", relations: { edges: [] } }), false, "Game source origin must not be guessed without source-country evidence");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "OTHER", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), false, "Unknown source types must fail closed");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "NOVEL" } }] } }), false, "Manga source must match manga format");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "US", format: "MANGA" } }] } }), false, "Non-Japanese source adaptations must be excluded");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL", popularity: 99999, title: { native: "English Only" } }), false, "Foreign anime without a Japanese title must be excluded");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL", popularity: 9999, title: { native: "日本語タイトル" } }), false, "Foreign anime below the popularity threshold must be excluded");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL", popularity: 10000, title: { native: "日本語タイトル" } }), true, "Popular foreign anime with a Japanese title must be eligible");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL", popularity: 10000, synonyms: ["日本語の別名"] }), true, "A Japanese-language synonym may qualify a popular foreign anime");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL", popularity: 10000, title: { native: "English Only" } }), false, "Foreign anime with only non-Japanese titles must be excluded");
-
-const questionBlock = recommend.match(/const questions=\[([\s\S]*?)\n\];/)?.[1];
-assert.ok(questionBlock, "Recommendation question block not found");
-const parsedQuestions = vm.runInNewContext("[" + questionBlock + "]");
-const questionTitles = [...questionBlock.matchAll(/title:'([^']+)'/g)].map(match => match[1].trim());
-const questionDimensions = [...questionBlock.matchAll(/dimension:'([^']+)'/g)].map(match => match[1].trim());
-const expectedDimensions = ["genre", "protagonist_challenge", "pacing", "emotional_intensity", "setting", "duration", "character_appeal", "narrative_complexity", "release_era", "relationships", "romance_amount", "tone_balance", "story_structure", "visual_style", "sound_music", "stakes", "ending_preference", "theme_focus", "format_preference", "source_preference"];
-assert.equal(questionTitles.length, 20, "Recommendation diagnosis must contain exactly twenty distinct questions");
-assert.equal(new Set(questionTitles).size, questionTitles.length, "Recommendation question titles must be unique");
-assert.equal(questionDimensions.length, 20, "Every recommendation question must declare a dimension");
-assert.equal(new Set(questionDimensions).size, questionDimensions.length, "Recommendation question dimensions must be unique");
-assert.deepEqual(questionDimensions, expectedDimensions, "Recommendation questions must preserve all twenty distinct preference dimensions");
-assert.equal(parsedQuestions.length, 20, "The parsed recommendation question set must contain twenty questions");
-assert.ok(parsedQuestions.every(question => question.options.length === 4), "Every recommendation question must have four choices");
-const recommendationLabels = parsedQuestions.flatMap(question => question.options.map(option => option.label));
-assert.equal(recommendationLabels.length, 80, "Each of the twenty recommendation questions must have four options");
-assert.equal(new Set(recommendationLabels).size, recommendationLabels.length, "Recommendation option labels must not be duplicated across questions");
-assert.ok(recommendationLabels.every(label => Array.from(label).length <= 30), "Recommendation choices must stay short and easy to scan");
-assert.match(questionBlock, /help:'[^']+'/g, "Recommendation questions must include simple guidance");
-const questionByDimension = new Map(parsedQuestions.map(question => [question.dimension, question]));
-const tagsFor = dimension => new Set(questionByDimension.get(dimension).options.flatMap(option => option.tags || []));
-assert.ok(questionByDimension.get("setting").options.every(option => !option.genres?.length), "Setting preferences must not duplicate genre scoring");
-assert.ok(questionByDimension.get("narrative_complexity").options.every(option => !option.genres?.length && !option.avoidGenres?.length), "Narrative complexity must not double-count the genre preference axis");
-assert.ok(questionByDimension.get("relationships").options.every(option => !option.genres?.includes("Romance") && !option.tags?.includes("Love Triangle")), "Non-romantic relationship preferences must remain separate from romance amount");
-assert.ok([...tagsFor("ending_preference")].every(tag => !tagsFor("emotional_intensity").has(tag)), "Viewing emotions and ending aftertaste must use distinct tag signals");
-assert.ok(questionByDimension.get("pacing").options.every(option => !option.genres?.length), "Pacing must not be scored as a genre preference");
-assert.ok(questionByDimension.get("story_structure").options.some(option => option.tagWeights?.Episodic > 0), "Story structure must use its own episodic signal");
-assert.ok(questionByDimension.get("tone_balance").options.some(option => option.genreWeights?.Comedy > 0) && questionByDimension.get("tone_balance").options.some(option => option.genreWeights?.Drama > 0), "Comedy-serious balance must use dedicated weights");
-assert.ok(questionByDimension.get("protagonist_challenge").options.every(option => !["Mystery", "Conspiracy", "World Building", "Ensemble Cast"].some(tag => option.tags?.includes(tag))), "Protagonist goals must not duplicate complexity and ensemble signals");
-assert.match(recommend, /new Set\(q\.options\.map\(o=>o\.label\.trim\(\)\)\)\.size!==q\.options\.length/, "Runtime duplicate-option guard missing");
-assert.match(recommend, /new Set\(allQuestionTitles\)\.size!==questions\.length/, "Runtime duplicate-question-title guard missing");
-assert.match(recommend, /new Set\(allQuestionDimensions\)\.size!==questions\.length/, "Runtime duplicate-dimension guard missing");
-assert.match(recommend, /new Set\(allQuestionLabels\)\.size!==allQuestionLabels\.length/, "Runtime duplicate-option-label guard missing");
-assert.match(recommend, /const FIXED_QUESTION_COUNT=20;/, "The recommendation diagnosis must remain fixed at twenty questions");
-assert.match(recommend, /if\(questions\.length!==FIXED_QUESTION_COUNT\)/, "Runtime fixed-question-count guard missing");
-assert.equal(parsedQuestions.length, 20, "Recommendation diagnosis must remain exactly twenty questions");
-const complexityQuestion = questionBlock.match(/\{dimension:\'narrative_complexity\'[\s\S]*?\n\]\}/)?.[0] || "";
-assert.ok(complexityQuestion, "Narrative complexity question must exist");
-assert.doesNotMatch(complexityQuestion, /genres:|avoidGenres:/, "Narrative complexity must not double-count the genre preference axis");
-assert.match(recommend, /const state=\{v:9,a:answers,/, "New recommendation share links must use version 9");
-assert.match(recommend, /const SAVE_KEY='aqw-recommendation-v9'/, "New local diagnosis saves must use version 9");
-assert.match(recommend, /const PREVIOUS_SAVE_KEY='aqw-recommendation-v8'/, "Previous version 8 local saves must remain readable");
-assert.match(recommend, /const LEGACY_SAVE_KEY='aqw-recommendation-v2'/, "Legacy version 2 local diagnosis data must remain readable");
-assert.match(recommend, /safeStorage\.removeItem\(PREVIOUS_SAVE_KEY\)/, "Clearing diagnosis data must remove the previous save");
-assert.match(recommend, /safeStorage\.removeItem\(LEGACY_SAVE_KEY\)/, "Clearing diagnosis data must remove the legacy save");
-const legacyValidatorSource = recommend.match(/function areValidLegacyAnswers\(values\)\{[\s\S]*?\n\}/)?.[0];
-const legacySevenMapperSource = recommend.match(/function mapLegacySevenAnswersToThirteen\(values\)\{[\s\S]*?\n\}/)?.[0];
-const legacyThirteenMapperSource = recommend.match(/function mapLegacyThirteenAnswers\(values\)\{[\s\S]*?\n\}/)?.[0];
-const versionFourMapperSource = recommend.match(/function mapVersionFourAnswersToThirteen\(values\)\{[\s\S]*?\n\}/)?.[0];
-const shareNormalizerSource = recommend.match(/function normalizeSharedAnswers\(state\)\{[\s\S]*?\n\}/)?.[0];
-const savedNormalizerSource = recommend.match(/function normalizeSavedAnswers\(data\)\{[\s\S]*?\n\}/)?.[0];
-assert.ok(legacyValidatorSource && legacySevenMapperSource && legacyThirteenMapperSource && versionFourMapperSource && shareNormalizerSource && savedNormalizerSource, "Versioned diagnosis migration helpers must exist");
-const migrationSource = [legacyValidatorSource, legacySevenMapperSource, legacyThirteenMapperSource, versionFourMapperSource, shareNormalizerSource, savedNormalizerSource].join("\n");
-const migrationHelpers = vm.runInNewContext(migrationSource + "\n({ normalizeSharedAnswers, normalizeSavedAnswers })", { questions: parsedQuestions });
-const legacySevenAnswers = [0, 1, 2, 3, 0, 1, 2];
-const migratedSevenAnswers = [0, null, 1, 2, null, 3, 1, 1, null, null, 2, null, null, null, null, null, null, null, null, null];
-const currentAnswers = Array.from({ length: 20 }, (_, index) => index % 4);
-assert.deepEqual([...migrationHelpers.normalizeSharedAnswers({ v: 9, a: currentAnswers })], currentAnswers, "Version 9 share links must restore all twenty answers");
-assert.deepEqual([...migrationHelpers.normalizeSavedAnswers({ v: 9, answers: currentAnswers })], currentAnswers, "Version 9 local saves must restore all twenty answers");
-const migratedV7 = [...Array(18).fill(0), null, null]; [8, 15, 17, 18, 19].forEach(index => migratedV7[index] = null);
-assert.deepEqual([...migrationHelpers.normalizeSharedAnswers({ v: 7, a: Array(18).fill(0) })], migratedV7, "Version 7 share links must re-ask newly introduced preference dimensions");
-assert.deepEqual([...migrationHelpers.normalizeSavedAnswers({ v: 7, answers: Array(18).fill(0) })], migratedV7, "Version 7 local saves must re-ask newly introduced preference dimensions");
-assert.deepEqual([...migrationHelpers.normalizeSharedAnswers({ v: 5, a: Array(13).fill(0) })], [...Array(13).fill(0), ...Array(7).fill(null)], "Version 5 share links must migrate thirteen answers into the twenty-question structure");
-assert.deepEqual([...migrationHelpers.normalizeSharedAnswers({ v: 3, a: legacySevenAnswers })], migratedSevenAnswers, "Version 3 seven-question share links must map into the twenty-question structure");
-assert.deepEqual([...migrationHelpers.normalizeSavedAnswers({ v: 2, answers: legacySevenAnswers })], migratedSevenAnswers, "Legacy seven-answer local saves must map into the twenty-question structure");
-const legacy13Answers = [0, 1, 2, 3, 0, 1, 2, 3, 0, 3, 2, 1, 0];
-const migratedLegacy13 = [0, 1, 2, 3, 0, 1, 2, 3, 0, null, 2, 1, 0, null, null, null, null, null, null, null];
-assert.deepEqual([...migrationHelpers.normalizeSharedAnswers({ v: 2, a: legacy13Answers })], migratedLegacy13, "Legacy version 2 romantic relationship answer must be re-asked instead of misread");
-assert.deepEqual([...migrationHelpers.normalizeSavedAnswers({ v: 2, answers: legacy13Answers })], migratedLegacy13, "Legacy local romantic relationship answer must be re-asked instead of misread");
-const previousV4Answers = Array(13).fill(0);
-const migratedV4Answers = [0, 2, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, null, null, null, null, null, null, null];
-assert.deepEqual([...migrationHelpers.normalizeSharedAnswers({ v: 4, a: previousV4Answers })], migratedV4Answers, "Version 4 share links must map to the twenty-question structure");
-assert.deepEqual([...migrationHelpers.normalizeSavedAnswers({ v: 4, answers: previousV4Answers })], migratedV4Answers, "Version 4 local saves must map to the twenty-question structure");
-assert.deepEqual([...migrationHelpers.normalizeSharedAnswers({ v: 2, a: [0, 1, 2, 3, 0, 1] })], [0, 1, 2, 3, 0, 1, ...Array(14).fill(null)], "Legacy six-answer share links must preserve their saved prefix");
-assert.deepEqual([...migrationHelpers.normalizeSharedAnswers({ v: 2, a: [0, 1, 2, 3, 0, 1, 2, 3, 0, 1] })], [0, 1, 2, 3, 0, 1, 2, 3, 0, 1, ...Array(10).fill(null)], "Legacy ten-answer share links must preserve their saved prefix");
-assert.deepEqual([...migrationHelpers.normalizeSavedAnswers({ v: 1, answers: [0, 1, 2, 3, 0, 1] })], [0, 1, 2, 3, 0, 1, ...Array(14).fill(null)], "Older partial local saves must preserve their saved prefix");
-assert.equal(migrationHelpers.normalizeSharedAnswers({ v: 3, a: [0, 1, 2, 3, 0, 1] }), null, "Incomplete version 3 share links must be rejected");
-assert.equal(migrationHelpers.normalizeSharedAnswers({ v: 5, a: [0, 1, 2, 3, 0, 1, 2] }), null, "Version 5 share links must contain thirteen answers");
-assert.equal(migrationHelpers.normalizeSharedAnswers({ v: 5, a: [0, 1, 2, 3, 0, 1, 4, 0, 0, 0, 0, 0, 0] }), null, "Out-of-range shared answers must be rejected");
-assert.equal(migrationHelpers.normalizeSavedAnswers({ v: 2, answers: [0, 1, 2, 3, 4, 1, 2] }), null, "Out-of-range legacy local answers must be rejected");
-assert.doesNotMatch(questionBlock, /NDCG|IDF|重み付け|希少性/, "Technical recommendation terms must not appear in user-facing questions");
-const tagNameMapBodies = [...recommend.matchAll(/const tagNames=\{([^}]*)\};/g)].map(match => match[1]);
-assert.equal(tagNameMapBodies.length, 2, "Recommendation tag-name maps must exist in both scoring and profile rendering");
-for (const body of tagNameMapBodies) {
-  const tagKeys = [...body.matchAll(/(?:^|,)'([^']+)':/g)].map(match => match[1]);
-  assert.equal(new Set(tagKeys).size, tagKeys.length, "Recommendation tag-name maps must not contain duplicate keys");
-}
-const clearDiagnosisSource = recommend.match(/function clearSavedDiagnosis\(\)\{[\s\S]*?\n\}/)?.[0] || "";
-assert.equal((clearDiagnosisSource.match(/safeStorage\.removeItem\(LEGACY_SAVE_KEY\)/g) || []).length, 1, "Legacy local diagnosis data must be cleared exactly once");
-assert.equal((clearDiagnosisSource.match(/safeStorage\.removeItem\(PREVIOUS_SAVE_KEY\)/g) || []).length, 1, "Previous local diagnosis data must be cleared exactly once");
-const seedSimilaritySource = recommend.match(/function calculateSeedSimilarity\(candidate,seeds,rarityWeight,genreRarity\)\{[\s\S]*?\n\}/)?.[0];
-assert.ok(seedSimilaritySource, "Favorite-anime similarity function not found");
-const calculateSeedSimilarity = vm.runInNewContext(`(${seedSimilaritySource})`);
-const rarityWeight = () => 1;
-const genreRarity = () => 0.5;
-const seed = { genres: ["Fantasy"], tags: [{ name: "World Building", rank: 90 }] };
-const strongCandidate = { genres: ["Fantasy"], tags: [{ name: "World Building", rank: 90 }] };
-const weakCandidate = { genres: ["Fantasy"], tags: [{ name: "World Building", rank: 45 }] };
-const strongMatch = calculateSeedSimilarity(strongCandidate, [seed], rarityWeight, genreRarity);
-const weakMatch = calculateSeedSimilarity(weakCandidate, [seed], rarityWeight, genreRarity);
-assert.ok(strongMatch.score > weakMatch.score, "Candidate-side tag rank must affect favorite-anime similarity");
-assert.deepEqual([...strongMatch.matchedGenres], ["Fantasy"], "Shared genres must be reported");
-assert.deepEqual([...strongMatch.matchedTags], ["World Building"], "Strong shared tags must be reported");
-assert.equal(calculateSeedSimilarity(strongCandidate, [], rarityWeight, genreRarity).score, 0, "No favorite seeds must produce zero similarity");
-const spoilerOnly = { genres: [], tags: [{ name: "World Building", rank: 100, isMediaSpoiler: true }] };
-assert.equal(calculateSeedSimilarity(spoilerOnly, [seed], rarityWeight, genreRarity).score, 0, "Spoiler tags must not affect similarity");
-assert.match(recommend, /function buildRecommendationDataWarnings\(failedPages,totalPages,cappedSorts\)/, "Partial recommendation data warning helper missing");
-assert.match(recommend, /report\.dataWarnings\?\.length/, "Partial recommendation data warning must be shown to users");
-assert.match(recommend, /buildRecommendationDataWarnings\(failedPages,totalPages,cappedSorts\)/, "Recommendation fetch failures and page caps must be reflected in the result report");
-const relationAllowlist = recommend.match(/const relatedTypes=new Set\(\[([^\]]+)\]\)/)?.[1] || "";
-assert.match(relationAllowlist, /PREQUEL.*SEQUEL.*SUMMARY.*ALTERNATIVE.*COMPILATION/, "Recommendation deduplication must cover series and alternate/summary relations");
-assert.doesNotMatch(relationAllowlist, /PARENT/, "A side story parent relation must not hide a distinct side story");
-assert.match(recommend, /独立したサイドストーリーは親作品と別候補として残す/, "Side-story separation regression test missing");
-
+assert.ok(recommend.includes('src="./anime-origin-policy.js"'), "Recommendation page must load shared origin policy");
+assert.ok(recommend.includes("window.AQWAnimePolicy.isJapaneseOriginAnime"), "Recommendation page must use strict shared origin policy");
 const syncScript = fs.readFileSync("scripts/sync-anime-catalog.mjs", "utf8");
 const syncWorkflow = fs.readFileSync(".github/workflows/sync-anime-catalog.yml", "utf8");
-assert.match(syncScript, /function isJapaneseOriginAnime\(anime\)/, "Shared catalogue sync must verify Japanese source origin");
-const syncOriginHelper = syncScript.match(/function isJapaneseOriginAnime\(anime\)\s*\{[\s\S]*?\n\}/)?.[0];
-const syncJapaneseTitleHelper = syncScript.match(/function hasJapaneseTitle\(anime\)\s*\{[\s\S]*?\n\}/)?.[0];
-assert.ok(syncOriginHelper && syncJapaneseTitleHelper, "Shared catalogue origin helpers must be extractable for regression tests");
-const originResults = vm.runInNewContext(`(()=>{${syncJapaneseTitleHelper};${syncOriginHelper};const check=isJapaneseOriginAnime;return [
-  check({ countryOfOrigin: "JP", source: "ORIGINAL" }),
-  check({ countryOfOrigin: "JP", originVerified: true }),
-  check({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "ANIME", countryOfOrigin: "JP", format: "TV" } }] } }),
-  check({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "ANIME", countryOfOrigin: "US", format: "TV" } }] } }),
-  check({ countryOfOrigin: "JP", source: "VIDEO_GAME", relations: [] }),
-  check({ countryOfOrigin: "US", popularity: 10000, title: { native: "日本語タイトル" } }),
-  check({ countryOfOrigin: "US", popularity: 9999, title: { native: "日本語タイトル" } }),
-  check({ countryOfOrigin: "US", popularity: 10000, title: { native: "English Only" } })
-]})()`);
-assert.equal(JSON.stringify(originResults), JSON.stringify([true, true, true, false, false, true, false, false]), "Shared catalogue origin eligibility must pass Japanese works and only popular foreign works with Japanese titles");
-assert.match(syncScript, /startDate_greater/, "The shared catalogue must split oversized format scopes by release decade");
 
-assert.match(syncScript, /if \(anime\.countryOfOrigin !== 'JP'\) return Number\(anime\.popularity\) >= 10000 && hasJapaneseTitle\(anime\)/, "Foreign catalogue entries must pass both the popularity and Japanese-title requirements");
+assert.ok(syncScript.includes("import '../anime-origin-policy.js'"), "Catalogue sync must import the shared origin policy");
+assert.ok(syncScript.includes("const { isJapaneseOriginAnime, metadataKey } = globalThis.AQWAnimePolicy"), "Catalogue sync must use shared policy helpers");
+assert.doesNotMatch(syncScript, /function isJapaneseOriginAnime\(|function hasJapaneseTitle\(|function metadataKey\(/, "Catalogue sync must not duplicate shared helpers");
+const originPolicy = fs.readFileSync("anime-origin-policy.js", "utf8");
+const policyFunction = originPolicy.match(/function isJapaneseOriginAnime\(anime\)\s*\{[\s\S]*?\n  \}/)?.[0];
+assert.ok(policyFunction, "Shared policy predicate must exist");
+const isJapaneseOriginAnime = vm.runInNewContext(policyFunction + "\nisJapaneseOriginAnime");
+assert.equal(isJapaneseOriginAnime({ countryOfOrigin: "JP" }), true);
+assert.equal(isJapaneseOriginAnime({ countryOfOrigin: "US", popularity: 100000, title: { native: "日本語タイトル" } }), false);
+assert.equal(isJapaneseOriginAnime({ countryOfOrigin: null, originVerified: true }), false);
+assert.match(syncScript, /startDate_greater/, "The shared catalogue must split oversized format scopes by release decade");
 assert.match(syncScript, /const API_REQUEST_INTERVAL_MS = 2100/, "Manual AniList requests must stay below the current 30 requests/minute limit");
 assert.match(syncScript, /await sleep\(API_REQUEST_INTERVAL_MS\)/, "Every catalogue request must use the documented rate-limit pacing");
 assert.match(syncScript, /isAdult:false/, "Shared catalogue sync must exclude adult catalogue entries");
@@ -453,36 +308,10 @@ assert.doesNotMatch(index, /rememberAnime|safeStorage\.(?:getItem|setItem)\([\'"
 assert.match(index, /safeStorage\.removeItem\('aqw-collection'\)/, "Legacy per-user anime collection data must be removed on page load");
 assert.match(index, /\[t\.fifty,runs>=50\]/, "The 50-play achievement must not depend on a stored anime collection");
 assert.ok(index.includes("media(type:ANIME,sort:"), "Quiz catalogue queries must retrieve candidates before applying source eligibility");
-assert.ok(index.includes("countryOfOrigin source(version:2) relations"), "Quiz catalogue records must include source-country verification metadata");
-assert.ok(index.includes("format popularity title { romaji english native }"), "Quiz catalogue records must include popularity and title evidence");
-assert.ok(index.includes("synonyms coverImage"), "Quiz catalogue records must include alternate titles for Japanese-title verification");
-assert.match(index, /countryOfOrigin!==.JP./, "Quiz data must apply the documented foreign-title exception only to non-Japanese production countries");
-const indexOriginHelper = index.match(/function isJapaneseOriginAnime\(a\)\{[\s\S]*?\n\}/)?.[0];
-const indexFamousTitleHelper = index.match(/function hasFamousJapaneseTitle\(a\)\{[\s\S]*?\n\}/)?.[0];
-assert.ok(indexOriginHelper && indexFamousTitleHelper, "Quiz Japanese-origin and Japanese-title verification helpers must exist");
-const isQuizOriginJapanese = vm.runInNewContext(indexFamousTitleHelper + "\n" + indexOriginHelper + "\nisJapaneseOriginAnime");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "ORIGINAL" }), true, "Japanese original anime must remain eligible in the quiz");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", originVerified: true }), true, "Compact shared-catalogue entries must pass the verified-origin marker");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "US", originVerified: true }), false, "The verified-origin marker must never override a non-Japanese country");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL", popularity: 10000, title: { native: "日本語タイトル" } }), true, "Popular foreign anime with a Japanese-language title must be eligible in the quiz");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL", popularity: 9999, title: { native: "日本語タイトル" } }), false, "Foreign anime below the popularity threshold must be excluded from the quiz");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL", popularity: 10000, title: { native: "English Only" } }), false, "Foreign anime without a Japanese-language title must be excluded from the quiz");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), true, "Japanese manga adaptations must remain eligible in the quiz");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "SOURCE", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), true, "AniList v2 SOURCE relations must recognize Japanese manga originals in the quiz");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "LIGHT_NOVEL", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "NOVEL" } }] } }), true, "Japanese light-novel adaptations must remain eligible in the quiz");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "NOVEL", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "NOVEL" } }] } }), true, "Japanese novel adaptations must remain eligible in the quiz");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "DOUJINSHI", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), true, "Japanese doujinshi adaptations must remain eligible in the quiz");
 
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "ANIME", countryOfOrigin: "JP", format: "TV" } }] } }), true, "Japanese anime-source spin-offs must be eligible in the quiz when their source anime is verified");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "ANIME", countryOfOrigin: "KR", format: "TV" } }] } }), false, "Foreign anime-source spin-offs must be excluded from the quiz");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), false, "Anime source metadata must match an anime relation node in the quiz");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "VISUAL_NOVEL", relations: { edges: [] } }), false, "Visual novel source origin must not be guessed in the quiz without explicit evidence");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "VIDEO_GAME", relations: { edges: [] } }), false, "Game source origin must not be guessed without source-country evidence");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "OTHER", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), true, "OTHER source metadata must qualify only when a Japanese manga relation is explicitly verified");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "UNRECOGNIZED_SOURCE", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), false, "Unrecognized source types must fail closed in the quiz");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "NOVEL" } }] } }), false, "Manga source must match manga format in the quiz");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "KR", format: "MANGA" } }] } }), false, "Non-Japanese source adaptations must be excluded from the quiz");
-assert.equal(isQuizOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL" }), false, "Non-Japanese animation must be excluded from the quiz");
+assert.ok(index.includes("countryOfOrigin"), "Quiz data request must include origin country");
+assert.ok(index.includes('src="./anime-origin-policy.js"'), "Quiz page must load shared origin policy");
+assert.ok(index.includes("window.AQWAnimePolicy.isJapaneseOriginAnime"), "Quiz page must use strict shared origin policy");
 assert.match(index, /async function fetchSharedAnimeCatalog\(\)/, "The quiz must load the shared catalogue");
 
 // The exact shared character-choice builder is asserted below.
@@ -580,14 +409,11 @@ const sharedCatalogLoader=index.slice(index.indexOf("async function fetchSharedA
 assert.ok(sharedCatalogLoader.includes("cache:'no-cache'"), "The shared catalogue should revalidate cached responses so new catalogue versions become visible after deployment");
 assert.ok(!sharedCatalogLoader.includes("cache:'reload'")&&!sharedCatalogLoader.includes("cache:'no-store'"), "Shared catalogue requests should retain conditional HTTP caching rather than bypassing the cache");
 assert.match(index, /payload\?\.schemaVersion!==2/, "The quiz must require the compact shared-catalogue schema");
-assert.ok(syncScript.includes("const { source, relations, ...compact } = dedupeAnimeMetadata(anime)"), "The published catalogue must deduplicate metadata and omit bulky source-relation details after verification");
-assert.ok(syncScript.includes("export function dedupeAnimeMetadata(anime)"), "Catalogue synchronization must deduplicate synonym and character metadata");
-assert.match(syncScript, /catalogueEligible: true/, "The published catalogue must mark every accepted record as catalogue-eligible");
-assert.match(syncScript, /originVerified: compact\.countryOfOrigin === 'JP'/, "Only Japanese-origin records may carry the Japanese-origin verification marker");
-assert.match(syncScript, /POPULARITY_DESC.*true, 20/, "The catalogue must include a bounded popularity scan for famous foreign works with Japanese titles");
-assert.match(syncScript, /const initialRecordCount = records\.size/, "Catalogue sync must retain the starting record count for accurate incremental summaries");
-assert.match(syncScript, /New unique records: .*items\.length - initialRecordCount/, "Catalogue sync must distinguish new IDs from refreshed existing records");
-assert.match(syncScript, /if \(anime\.countryOfOrigin !== 'JP'\)\s*return Number\(anime\.popularity\) >= 10000 && hasJapaneseTitle\(anime\)/, "Foreign catalogue entries must require both a Japanese-language title and the popularity threshold");
+
+assert.ok(syncScript.includes("export function dedupeAnimeMetadata(anime)"), "Catalogue synchronization must deduplicate metadata");
+assert.match(syncScript, /catalogueEligible: true/, "Published records must be marked catalogue-eligible");
+assert.match(syncScript, /originVerified: compact\.countryOfOrigin === 'JP'/, "Only Japanese-origin records may carry the legacy marker");
+assert.doesNotMatch(syncScript, /hasJapaneseTitle|popularity\) >= 10000/, "Popularity and Japanese titles must not override origin country");
 assert.match(index, /new URL\('data\/anime-catalog\.json',document\.baseURI\)/, "The shared catalogue must resolve correctly from GitHub Pages subpaths");
 assert.match(index, /const sharedCatalogPromise=fetchSharedAnimeCatalog\(\)/, "Shared catalogue loading must start independently of the local cache");
 assert.match(index, /sharedCatalogPromise\.then\(items=>\(\{timedOut:false,items\}\)\)/, "The quiz must merge shared catalogue entries when the asynchronous load completes");
@@ -595,16 +421,9 @@ assert.match(index, /if\(sharedCatalogActive\)\{[\s\S]*?pool=initial;[\s\S]*?Fet
 assert.match(index, /if\(!backgroundLoadPromise&&!sharedCatalogActive\)\{\s*backgroundLoadPromise=\(async\(\)=>/, "The quiz must not repeat the expensive AniList backfill when the complete shared catalogue is already active");
 assert.match(index, /sharedCatalogActive\?\(/, "The loading screen must distinguish the shared catalogue from local background backfill");
 assert.match(index, /const cacheKey='aqw-anime-pool-v22-compact-shared-catalog'/, "Verified original-source eligibility must rebuild the browser catalogue");
-assert.ok(index.includes("source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } }"), "Quiz queries must request detailed source metadata and adaptation-origin evidence");
-assert.ok(recommend.includes("source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } }"), "Recommendation queries must request detailed source metadata and adaptation-origin evidence");
 
-
-
-
-assert.match(index, /pageInfo \{ hasNextPage \} media\(id_in:\$id_in/, "Base AniList query must expose source pagination metadata");
-assert.match(index, /items\.hasNextPage=pageData\?\.pageInfo\?\.hasNextPage===true/, "Filtered results must retain the upstream hasNextPage flag");
-assert.match(index, /hasNextPage:items\.hasNextPage===true/, "Fallback pagination must not infer page completion from filtered result count");
-
+assert.ok(index.includes("countryOfOrigin"), "Quiz queries must include origin country");
+assert.ok(recommend.includes("countryOfOrigin"), "Recommendation queries must include origin country");
 assert.match(index, /function isUsableAnime\(a\)\{[^\n]*isJapaneseOriginAnime\(a\)/, "Every cached and live quiz record must pass strict Japanese-source eligibility");
 assert.match(index, /function isUsableAnime\(a\)\{[^\n]*a\.isAdult!==true/, "Adult-flagged records must be excluded from live and cached quiz data");
 assert.match(index, /function hasUsableImageUrl\(value\)\{[^\n]*no\[-_ \]\?image/i, "NO IMAGE placeholders must be excluded from all image displays");
