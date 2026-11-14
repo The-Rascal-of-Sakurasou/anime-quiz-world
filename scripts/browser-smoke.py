@@ -1313,8 +1313,7 @@ def test_live_seasonal_anilist():
           isAdult: false,
           sort: POPULARITY_DESC
         ) {
-          id countryOfOrigin source(version: 2)
-          relations { edges { relationType node { id type countryOfOrigin format } } }
+          id countryOfOrigin
           format startDate { year month day }
           title { romaji english native }
           coverImage { large medium }
@@ -1334,14 +1333,6 @@ def test_live_seasonal_anilist():
         raise AssertionError("AniList GraphQL returned errors: " + str(payload["errors"]))
 
     items = payload.get("data", {}).get("Page", {}).get("media", [])
-    rules = {
-        "MANGA": ("MANGA", {"MANGA", "ONE_SHOT"}),
-        "LIGHT_NOVEL": ("MANGA", {"NOVEL"}),
-        "NOVEL": ("MANGA", {"NOVEL"}),
-        "DOUJINSHI": ("MANGA", {"MANGA", "ONE_SHOT", "NOVEL"}),
-        "ANIME": ("ANIME", {"TV", "TV_SHORT", "MOVIE", "OVA", "ONA", "SPECIAL"}),
-    }
-
     def japanese_origin(item):
         return item.get("countryOfOrigin") == "JP"
 
