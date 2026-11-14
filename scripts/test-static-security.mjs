@@ -266,32 +266,16 @@ assert.ok(recommend.includes("media(search:$search,type:ANIME,isAdult:false"), "
 assert.ok(recommend.includes("media(type:ANIME,sort:$sort,isAdult:false)"), "Recommendation catalog query must retrieve candidates before applying verified origin eligibility");
 const animeOriginPolicy = fs.readFileSync("anime-origin-policy.js", "utf8");
 assert.ok(recommend.includes("AQWAnimePolicy.isJapaneseOriginAnime"), "Recommendation diagnosis must use the shared Japanese-origin policy");
-assert.match(animeOriginPolicy, /countryOfOrigin !== "JP"/, "Shared origin policy must distinguish Japanese and foreign anime");
-assert.match(animeOriginPolicy, /Number\(anime\.popularity\) >= 10000/, "Foreign anime must meet the documented popularity threshold");
-assert.match(animeOriginPolicy, /hasJapaneseTitle\(anime\)/, "Foreign anime must have a Japanese-language title");
-const isRecommendedOriginJapanese = vm.runInNewContext(animeOriginPolicy + "\nAQWAnimePolicy.isJapaneseOriginAnime");
-const hasJapaneseTitle = vm.runInNewContext(animeOriginPolicy + "\nAQWAnimePolicy.hasJapaneseTitle");
-assert.equal(hasJapaneseTitle({ title: { native: "日本語タイトル" } }), true, "Japanese-language titles must be recognized");
-assert.equal(hasJapaneseTitle({ title: { native: "English Only" } }), false, "English-only titles must not be treated as Japanese");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "ORIGINAL" }), true, "Japanese original anime must remain eligible");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), true, "Japanese manga adaptations must remain eligible");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "SOURCE", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), true, "AniList v2 SOURCE relations must recognize Japanese manga originals");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "LIGHT_NOVEL", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "NOVEL" } }] } }), true, "Japanese light-novel adaptations must remain eligible");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "NOVEL", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "NOVEL" } }] } }), true, "Japanese novel adaptations must remain eligible");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "DOUJINSHI", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), true, "Japanese doujinshi adaptations must remain eligible");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "ANIME", countryOfOrigin: "JP", format: "TV" } }] } }), true, "Japanese anime-source spin-offs must be eligible when their source anime is verified");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "ANIME", countryOfOrigin: "US", format: "TV" } }] } }), false, "Foreign anime-source spin-offs must be excluded");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), false, "Anime source metadata must match an anime relation node");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "VISUAL_NOVEL", relations: { edges: [] } }), false, "Visual novel source origin must not be guessed without explicit evidence");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "VIDEO_GAME", relations: { edges: [] } }), false, "Game source origin must not be guessed without source-country evidence");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "OTHER", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), false, "Unknown source types must fail closed");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "NOVEL" } }] } }), false, "Manga source must match manga format");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "US", format: "MANGA" } }] } }), false, "Non-Japanese source adaptations must be excluded");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL", popularity: 99999, title: { native: "English Only" } }), false, "Foreign anime without a Japanese title must be excluded");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL", popularity: 9999, title: { native: "日本語タイトル" } }), false, "Foreign anime below the popularity threshold must be excluded");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL", popularity: 10000, title: { native: "日本語タイトル" } }), true, "Popular foreign anime with a Japanese title must be eligible");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL", popularity: 10000, synonyms: ["日本語の別名"] }), true, "A Japanese-language synonym may qualify a popular foreign anime");
-assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "US", source: "ORIGINAL", popularity: 10000, title: { native: "English Only" } }), false, "Foreign anime with only non-Japanese titles must be excluded");
+assert.match(animeOriginPolicy, /countryOfOrigin === "JP"/, "Shared origin policy must accept only AniList Japanese-origin works");
+assert.doesNotMatch(animeOriginPolicy, /popularity|hasJapaneseTitle|SOURCE_RULES/, "Popularity, title language, and source heuristics must not override country of origin");
+const isRecommendedOriginJapanese = vm.runInNewContext(animeOriginPolicy + "\\nAQWAnimePolicy.isJapaneseOriginAnime");
+assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP" }), true, "Japanese-origin anime must remain eligible");
+for (const countryOfOrigin of ["US", "CN", "KR", "TW", "GB", ""]) {
+  assert.equal(isRecommendedOriginJapanese({ countryOfOrigin, popularity: 100000, title: { native: "日本語タイトル" } }), false,
+    "Non-Japanese anime must be excluded regardless of popularity or Japanese title: " + countryOfOrigin);
+}
+assert.equal(isRecommendedOriginJapanese({ popularity: 100000, title: { native: "日本語タイトル" } }), false,
+  "Unknown-origin anime must fail closed");
 
 const questionBlock = recommend.match(/const questions=\[([\s\S]*?)\n\];/)?.[1];
 assert.ok(questionBlock, "Recommendation question block not found");
