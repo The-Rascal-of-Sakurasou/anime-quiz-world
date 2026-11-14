@@ -136,7 +136,7 @@ function aliases(a) {
   }
   return [...new Set(values.filter(Boolean))];
 }
-function synopsisText(a) { const s = desc(a); return s.length > 260 ? s.slice(0,257).trimEnd()+"…" : s; }
+function synopsisText(a) { return truncateSynopsisText(desc(a)); }
 
 const payload = JSON.parse(await readFile(CATALOG, "utf8"));
 const declaredCount = payload.count ?? payload.itemCount;
