@@ -13,12 +13,13 @@ on:
       - "privacy.html"
       - "terms.html"
       - "responsive.css"
+      - "anime-origin-policy.js"
+      - "anime-text-utils.js"
       - "sitemap.xml"
       - "robots.txt"
       - "scripts/test-static-security.mjs"
       - "scripts/test-anime-search-deduplication.mjs"
       - "scripts/test-official-site-links.mjs"
-      - "scripts/test-anime-search-deduplication.mjs"
       - "scripts/sync-anime-catalog.mjs"
       - "scripts/audit-anime-image-urls.mjs"
       - "scripts/detect-title-image-text.py"
@@ -33,22 +34,6 @@ on:
       - ".github/workflows/aqw-static-security.yml"
   pull_request:
     paths:
-      - "multiplayer.html"
-      - "index.html"
-      - "data/anime-catalog.json"
-      - "admin.html"
-      - "recommend.html"
-      - "guide.html"
-      - "privacy.html"
-      - "terms.html"
-      - "responsive.css"
-      - "scripts/test-static-security.mjs"
-      - "scripts/sync-anime-catalog.mjs"
-      - "scripts/audit-japanese-synopses.mjs"
-      - ".github/workflows/japanese-synopsis-audit.yml"
-      - ".github/workflows/sync-anime-catalog.yml"
-      - "supabase/migrations/**"
-      - ".github/workflows/aqw-static-security.yml"
   workflow_dispatch:
 
 permissions:
