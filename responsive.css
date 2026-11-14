@@ -1,0 +1,185 @@
+/* Shared responsive layer for every Anime Quiz World page.
+   Kept separate so mobile fixes stay consistent without changing page logic. */
+:root{scroll-behavior:smooth}
+html{max-width:100%;overflow-x:clip;-webkit-text-size-adjust:100%;text-size-adjust:100%;scroll-padding-top:16px}
+body{max-width:100%;overflow-x:clip}
+img,video,canvas,svg{max-width:100%}
+button,a,input,select,textarea{-webkit-tap-highlight-color:transparent}
+button,a,input,select,textarea{touch-action:manipulation}
+:focus-visible{outline:3px solid #7da4dc;outline-offset:2px}
+@media(max-width:768px){
+  .wrap{width:calc(100% - 28px);max-width:100%}
+  main{min-width:0}
+  header{gap:10px}
+  .card,.panel,.social-box,.auth-panel,.step,.metric,.post{min-width:0}
+  .row,.head,.room-head,.post-head{min-width:0}
+  .row>*{max-width:100%}
+  input,select,textarea{max-width:100%;font-size:16px}
+  button{min-height:44px;padding:10px 13px}
+  table{max-width:100%}
+  .table-wrap{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .quiz-layout,.social-columns,.steps{grid-template-columns:minmax(0,1fr)}
+  .grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))}
+  .metrics,.aqw-match-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .tabs,.jump,.page-nav,.footer-links,.doc-footer nav{max-width:100%;overflow-x:auto;flex-wrap:nowrap;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;padding-bottom:4px}
+  .tabs>* ,.jump>* ,.page-nav>*{flex:0 0 auto;white-space:nowrap}
+  .searchbar{min-width:0}
+  .searchbar input{min-width:0;width:100%}
+  .auth-grid{grid-template-columns:minmax(0,1fr)}
+  .game-tools,.share-actions,.auth-actions,.form-actions,.actions{gap:8px}
+  .game-tools>button,.share-actions>button,.auth-actions>button,.form-actions>button,.actions>button{flex:1 1 135px}
+  .answer{width:100%;min-height:48px}
+  .cover{width:100%;max-width:100%;max-height:min(48vh,360px);object-fit:contain}
+  .anime img{height:clamp(150px,52vw,230px)}
+  .aqw-post-image{max-width:100%;height:auto}
+  .aqw-player-cell{min-width:0}
+  .aqw-notification span{min-width:0}
+  .aqw-reply-form{min-width:0}
+  .room-code{font-size:clamp(1.4rem,8vw,2.2rem);letter-spacing:.1em;overflow-wrap:anywhere}
+  .doc-footer{gap:10px}
+  .toc ol{columns:1}
+  footer{padding-bottom:calc(28px + env(safe-area-inset-bottom))}
+}
+@media(max-width:480px){
+  .wrap{width:calc(100% - 22px)}
+  .hero{padding-top:18px}
+  .hero h1,h1{font-size:clamp(1.4rem,7vw,1.85rem);line-height:1.35}
+  h2{font-size:1.12rem}
+  .card,.panel{padding:14px 12px}
+  .language-box{padding:20px 16px}
+  .language-options{display:grid;grid-template-columns:1fr}
+  .language-options button{width:100%}
+  .top{align-items:center;flex-wrap:wrap}
+  .top-actions{max-width:100%;flex-wrap:wrap}
+  .language-picker{max-width:100%}
+  .language-picker select{max-width:42vw}
+  .aqw-match-stat{padding:10px}
+  .aqw-match-stat strong{font-size:1.25rem}
+  .anime div{padding:9px}
+  .anime strong{font-size:.86rem}
+  .social-box{padding:12px}
+  .aqw-avatar-editor{align-items:flex-start}
+  .aqw-avatar-controls{flex-basis:100%}
+  .post-head,.aqw-post-head{align-items:flex-start}
+  .doc-footer{flex-direction:column}
+}
+@media(orientation:landscape) and (max-height:520px) and (max-width:900px){
+  .cover{max-height:55vh}
+  .hero{padding-top:12px}
+}
+@media(prefers-reduced-motion:reduce){
+  :root{scroll-behavior:auto}
+  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+
+/* Mobile usability layer shared by every AQW page.
+   Keep every feature available; adapt layout and scrolling instead of hiding controls. */
+*,*::before,*::after{box-sizing:border-box}
+html,body{width:100%;min-width:0}
+body{overflow-x:hidden;overflow-x:clip}
+main,header,footer,section,article,aside,.wrap,.card,.panel,.social-box,.auth-panel,.step,.metric,.post,.room,.match,.quiz-layout,.social-columns{min-width:0;max-width:100%}
+img,svg,video,canvas,iframe{max-width:100%}
+input,select,textarea,button{font:inherit;max-width:100%}
+button,a,[role="button"],input[type="button"],input[type="submit"],input[type="checkbox"],input[type="radio"],label{touch-action:manipulation}
+button,a,[role="button"],input[type="button"],input[type="submit"]{min-height:44px}
+input:not([type="checkbox"]):not([type="radio"]),select,textarea{min-height:44px;min-width:0}
+textarea{max-width:100%;resize:vertical}
+table{border-collapse:collapse}
+.table-wrap,.table-scroll,.overflow-x-auto,.aqw-rush-board-scroll{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+pre,code{max-width:100%;overflow-wrap:anywhere}
+dialog,[role="dialog"],.modal,.modal-content,.overlay-content{max-width:min(100vw - 24px,720px);max-height:calc(100dvh - 24px);overflow:auto;overscroll-behavior:contain}
+:focus-visible{scroll-margin-block:90px}
+
+@media(max-width:768px){
+  .wrap{width:calc(100% - 24px);max-width:none}
+  .top,.head,.room-head,.post-head,.aqw-post-head{min-width:0;max-width:100%}
+  .top{flex-wrap:wrap}
+  .top-actions,.actions,.game-tools,.share-actions,.auth-actions,.form-actions,.aqw-post-actions,.aqw-chat-actions,.aqw-report-actions{display:flex;flex-wrap:wrap;max-width:100%;gap:8px}
+  .top-actions>* ,.actions>* ,.game-tools>* ,.share-actions>* ,.auth-actions>* ,.form-actions>*{flex:1 1 auto;min-width:0}
+  .tabs,.jump,.page-nav,.footer-links,.doc-footer nav{max-width:100%;overflow-x:auto;overflow-y:hidden;flex-wrap:nowrap;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+  .tabs>* ,.jump>* ,.page-nav>*{flex:0 0 auto;white-space:nowrap}
+  .quiz-layout,.social-columns,.steps,.auth-grid,.preference-inputs{grid-template-columns:minmax(0,1fr)!important}
+  .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .metrics,.aqw-match-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .searchbar{display:flex;flex-wrap:wrap;min-width:0}
+  .searchbar input{flex:1 1 180px;width:100%;min-width:0}
+  .searchbar button{flex:0 0 auto}
+  .setup-controls{display:grid;grid-template-columns:minmax(0,1fr);width:100%;min-width:0}
+  .setup-controls label,.setup-controls select{width:100%;min-width:0}
+  .answer{width:100%;min-width:0;min-height:50px;white-space:normal;overflow-wrap:anywhere}
+  .cover{width:100%;max-width:100%;max-height:min(55dvh,420px);object-fit:contain}
+  .anime img{height:clamp(145px,48vw,220px);object-fit:cover}
+  .aqw-post,.post,.report-card{overflow-wrap:anywhere}
+  .aqw-reply-form{display:flex;flex-direction:column;min-width:0}
+  .aqw-reply-form input{width:100%;min-width:0}
+  .aqw-player-cell{min-width:0;max-width:100%}
+  .aqw-notification span{min-width:0;flex:1 1 100%}
+  .aqw-avatar-editor{flex-wrap:wrap;min-width:0}
+  .aqw-avatar-controls{flex:1 1 160px;min-width:0}
+  .aqw-avatar-controls input[type=file]{width:100%;max-width:100%}
+  .table-wrap table{min-width:560px}
+  .report-meta{align-items:stretch}
+  .report-meta select{min-width:0;max-width:100%}
+  .site-brand-bar,.site-header,.site-brand{min-width:0;max-width:100%}
+  .site-brand-title,.brand{overflow-wrap:anywhere;white-space:normal}
+  .site-brand-logo{flex-shrink:0}
+  .doc-footer{flex-wrap:wrap}
+  .doc-footer nav{flex-wrap:wrap}
+  .aqw-rush-board-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .aqw-rush-board-actions>*{min-width:0;width:100%}
+}
+
+@media(max-width:480px){
+  .wrap{width:calc(100% - 20px)}
+  body{font-size:16px}
+  h1{font-size:clamp(1.35rem,6.4vw,1.8rem);line-height:1.35}
+  h2{font-size:1.12rem;line-height:1.4}
+  .card,.panel,.social-box,.post,.aqw-post{padding:12px}
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .metrics,.aqw-match-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .metric{padding:10px;min-width:0}
+  .metric strong{font-size:1.1rem;overflow-wrap:anywhere}
+  .top-actions,.actions,.game-tools,.share-actions,.auth-actions,.form-actions{gap:7px}
+  .top-actions>* ,.actions>* ,.game-tools>* ,.share-actions>* ,.auth-actions>* ,.form-actions>*{flex:1 1 125px}
+  .searchbar{display:grid;grid-template-columns:minmax(0,1fr);width:100%}
+  .searchbar input,.searchbar button{width:100%}
+  .language-picker{max-width:100%;min-width:0}
+  .language-picker select{max-width:48vw;min-width:0}
+  .table-wrap table{min-width:520px}
+  .aqw-rush-board table{min-width:420px}
+  .aqw-report-panel{padding:10px}
+  .aqw-report-actions{justify-content:stretch}
+  .aqw-report-actions>*{flex:1 1 100%}
+  .aqw-message-actions{flex-wrap:wrap}
+  .aqw-message-actions button,.aqw-blocked-user-row button{min-height:44px}
+  .aqw-blocked-user-row{align-items:flex-start;flex-wrap:wrap}
+  .aqw-blocked-user-row button{flex:1 1 100%}
+  .page-nav a{min-height:44px;display:flex;align-items:center;justify-content:center}
+  .doc-footer nav{gap:8px}
+  footer{padding-bottom:calc(24px + env(safe-area-inset-bottom))}
+}
+
+@media(max-width:360px){
+  .wrap{width:calc(100% - 16px)}
+  .grid,.cards{grid-template-columns:minmax(0,1fr)}
+  .metrics,.aqw-match-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .top-actions>* ,.actions>* ,.game-tools>* ,.share-actions>* ,.auth-actions>* ,.form-actions>*{flex-basis:100%}
+  .table-wrap table{min-width:500px}
+}
+
+
+/* Consistent footer navigation on every public page. */
+.site-footer{
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
+  gap:12px;max-width:1040px;width:calc(100% - 32px);margin:24px auto 0;
+  padding:18px 4px calc(24px + env(safe-area-inset-bottom));
+  color:#64758a;font-size:.84rem;line-height:1.6;
+}
+.site-footer nav{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.site-footer a{color:#14558b;text-underline-offset:3px}
+@media(max-width:700px){
+  .site-footer{display:grid;gap:10px;width:calc(100% - 22px);margin-top:18px}
+  .site-footer nav{gap:10px 14px}
+}
+@media(max-width:380px){.site-footer{width:calc(100% - 16px)}}
