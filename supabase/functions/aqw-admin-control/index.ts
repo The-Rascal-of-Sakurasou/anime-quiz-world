@@ -1,17 +1,10 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { AQW_ALLOWED_ORIGIN, AQW_CORS_HEADERS, createJsonResponder } from "../_shared/http.ts";
 
-const ALLOWED_ORIGIN = "https://the-rascal-of-sakurasou.github.io";
-const corsHeaders = {
-  "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Max-Age": "600",
-  "Vary": "Origin",
-};
-const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
-  status, headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" }
-});
+const ALLOWED_ORIGIN = AQW_ALLOWED_ORIGIN;
+const corsHeaders = AQW_CORS_HEADERS;
+const json = createJsonResponder(corsHeaders);
 
 Deno.serve(async (req: Request) => {
   if (req.headers.get("Origin") !== ALLOWED_ORIGIN) return json({ error: "許可されていない接続元です。" }, 403);
