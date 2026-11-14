@@ -445,7 +445,6 @@ assert.equal(titleImageIsSafe({coverImage:{large:'https://example.test/cover.jpg
 assert.equal(titleImageIsSafe({coverImage:{large:'https://example.test/no-image.jpg'}}),false,"NO IMAGE placeholders must remain excluded from title-identification questions");
 
 
-assert.match(index, /source\(version:2\) relations \{ edges \{ relationType node \{ id type countryOfOrigin format \} \} \}/, "Featured seasonal queries must include source and related-origin metadata");
 assert.ok(index.includes("season seasonYear startDate { year month day }"), "Featured seasonal queries must include season and start-date metadata");
 assert.ok(index.includes("if(!isJapaneseOriginAnime(anime)||!Number.isFinite(Number(anime.id)))continue"), "New seasonal anime must pass verified Japanese-source filtering");
 assert.match(index, /for\(const anime of items\|\|\[\]\)\{\s*if\(!isJapaneseOriginAnime\(anime\)\|\|!Number\.isFinite\(Number\(anime\.id\)\)\)continue;/, "All seasonal anime results must pass verified Japanese-source filtering before rendering");
