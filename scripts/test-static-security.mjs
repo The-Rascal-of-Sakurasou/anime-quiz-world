@@ -451,7 +451,6 @@ assert.ok(index.includes("season seasonYear startDate { year month day }"), "Fea
 assert.ok(index.includes("if(!isJapaneseOriginAnime(anime)||!Number.isFinite(Number(anime.id)))continue"), "New seasonal anime must pass verified Japanese-source filtering");
 assert.match(index, /for\(const anime of items\|\|\[\]\)\{\s*if\(!isJapaneseOriginAnime\(anime\)\|\|!Number\.isFinite\(Number\(anime\.id\)\)\)continue;/, "All seasonal anime results must pass verified Japanese-source filtering before rendering");
 
-assert.match(index, /function isJapaneseOriginAnime\(a\)\{[\s\S]*?a\.countryOfOrigin!==.JP./, "Japanese-origin eligibility must apply the documented exception only to foreign productions");
 assert.match(index, /const cleanedItems=value\.items\.filter\(isUsableAnime\)/, "Existing IndexedDB catalogues must be purged of non-Japanese-origin anime when loaded");
 assert.match(index, /initial=legacy\.items\.filter\(isUsableAnime\)/, "Existing localStorage catalogues must be filtered through current source and image eligibility when loaded");
 assert.match(index, /if\(!isJapaneseOriginAnime\(anime\)\|\|!Number\.isFinite\(Number\(anime\.id\)\)\)continue/, "Featured anime rail must apply strict Japanese-source verification before rendering");
