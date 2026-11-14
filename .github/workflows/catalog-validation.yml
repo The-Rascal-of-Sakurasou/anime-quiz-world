@@ -7,6 +7,7 @@ on:
       - "data/anime-catalog.json"
       - "data/anime-catalog.json.gz"
       - "anime-origin-policy.js"
+      - "anime-text-utils.js"
       - "scripts/validate-anime-catalog.mjs"
       - "scripts/test-anime-catalog-validator.mjs"
       - "scripts/fixtures/anime-catalog-sample.json"
