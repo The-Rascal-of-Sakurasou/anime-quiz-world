@@ -627,7 +627,7 @@ function runRecommendationSelfTests(){
  check('苦手な作品そのものを推薦候補から除外する',buildExcludedSeedIds([],[{id:12}]).has(12));
  check('好き・苦手の両方に入力した作品も推薦候補から除外する',buildExcludedSeedIds([{id:13}],[{id:13}]).has(13));
  check('未解決の作品入力は他の候補IDを誤って除外しない',buildExcludedSeedIds([{id:null}],[]).size===0);
- check('推薦データの取得上限は4並び順×最大20ページ',4*MAX_RECOMMENDATION_PAGES_PER_SORT*50===4000);
+ check('推薦データの取得上限は4並び順×最大4ページ',4*MAX_RECOMMENDATION_PAGES_PER_SORT*50===800);
  check('全ページ取得成功時はデータ不足警告を表示しない',buildRecommendationDataWarnings(0,20).length===0);
  check('一部ページ失敗時は候補の偏りを警告する',buildRecommendationDataWarnings(3,20)[0]?.includes('3/20ページ'));
  check('全ページ失敗時も取得失敗を警告する',buildRecommendationDataWarnings(1,1)[0]?.includes('1/1ページ'));
