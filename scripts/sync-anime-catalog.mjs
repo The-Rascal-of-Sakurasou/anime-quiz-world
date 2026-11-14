@@ -2,6 +2,8 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { isUsableCoverImage } from './catalog-image-url.mjs';
+import '../anime-origin-policy.js';
+const { isJapaneseOriginAnime, metadataKey } = globalThis.AQWAnimePolicy;
 
 const API = 'https://graphql.anilist.co';
 const API_REQUEST_INTERVAL_MS = 2100; // Stay below AniList's currently documented 30 requests/minute limit.
@@ -23,38 +25,7 @@ const normalize = (value) => {
   return value;
 };
 
-function hasJapaneseTitle(anime) {
-  const names = [anime?.title?.native, anime?.title?.english, anime?.title?.romaji,
-    ...(Array.isArray(anime?.synonyms) ? anime.synonyms : [])];
-  return names.some((name) => typeof name === 'string' && /[ぁ-んァ-ヶ]/.test(name));
-}
 
-function isJapaneseOriginAnime(anime) {
-  if (!anime || typeof anime.countryOfOrigin !== 'string' || !anime.countryOfOrigin) return false;
-  if (anime.countryOfOrigin !== 'JP') return Number(anime.popularity) >= 10000 && hasJapaneseTitle(anime);
-  if (anime.originVerified === true) return true;
-  if (anime.source === 'ORIGINAL') return true;
-  const sourceRules = {
-    MANGA: { type: 'MANGA', formats: ['MANGA', 'ONE_SHOT'] },
-    LIGHT_NOVEL: { type: 'MANGA', formats: ['NOVEL'] },
-    NOVEL: { type: 'MANGA', formats: ['NOVEL'] },
-    WEB_NOVEL: { type: 'MANGA', formats: ['NOVEL'] },
-    DOUJINSHI: { type: 'MANGA', formats: ['MANGA', 'ONE_SHOT', 'NOVEL'] },
-    VISUAL_NOVEL: { type: 'MANGA', formats: ['MANGA', 'ONE_SHOT', 'NOVEL'] },
-    VIDEO_GAME: { type: 'MANGA', formats: ['MANGA', 'ONE_SHOT', 'NOVEL'] },
-    OTHER: { type: 'MANGA', formats: ['MANGA', 'ONE_SHOT', 'NOVEL'] },
-    ANIME: { type: 'ANIME', formats: ['TV', 'TV_SHORT', 'MOVIE', 'OVA', 'ONA', 'SPECIAL'] },
-  };
-  const rule = sourceRules[anime.source];
-  const relationVerified = !!rule && Array.isArray(anime.relations?.edges) && anime.relations.edges.some((edge) =>
-    (edge?.relationType === 'SOURCE' || edge?.relationType === 'ADAPTATION') &&
-    edge.node?.type === rule.type &&
-    edge.node?.countryOfOrigin === 'JP' &&
-    rule.formats.includes(edge.node?.format)
-  );
-  if (relationVerified) return true;
-  return !!rule && Number(anime.popularity) >= 10000 && hasJapaneseTitle(anime);
-}
 function isUsableAnime(anime) {
   const image = anime?.coverImage?.large || anime?.coverImage?.medium || anime?.coverImage?.extraLarge || '';
   return Boolean(
