@@ -190,6 +190,7 @@ footer{color:var(--muted);font-size:.85rem;padding:10px 0 30px}
 </main>
 <footer class="wrap">Anime Quiz World — 管理操作はSupabaseのRow Level Securityによって保護されています。</footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./aqw-text-utils.js"></script>
 <script>
 (()=> {
 'use strict';
@@ -218,7 +219,7 @@ client.auth.onAuthStateChange((event,session)=>{
   say('セッションが終了しました。再度ログインしてください。');
  },0);
 });
-const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const esc = window.AQWTextUtils.escapeHTML;
 function say(message,kind=''){status.textContent=message;status.className='status'+(kind?' '+kind:'')}
 function date(value){if(!value)return '—';const d=new Date(value);return Number.isNaN(d.getTime())?'—':d.toLocaleString('ja-JP')}
 async function count(table){const {count,error}=await client.from(table).select('*',{count:'exact',head:true});if(error)throw error;return count??0}
