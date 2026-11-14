@@ -173,7 +173,7 @@ body{background:#f6f7f9;color:#202936;letter-spacing:.005em}
  </div>
  <p id="shareStatus" class="status" role="status" aria-live="polite"></p>
 </div>
-<div class="actions"><button id="retry" type="button">もう一度診断する</button><a href="./index.html">クイズに戻る</a></div>
+<div class="actions"><button id="retryData" type="button" class="primary" hidden>作品データを再取得</button><button id="retry" type="button">もう一度診断する</button><a href="./index.html">クイズに戻る</a></div>
 </section>
 <div id="error" class="status hidden" role="alert"></div>
 </main>
@@ -936,12 +936,12 @@ function matchesSeedTitle(media,title){
  const aliases=[media?.title?.native,media?.title?.english,media?.title?.romaji,...(Array.isArray(media?.synonyms)?media.synonyms:[])];
  return aliases.some(alias=>normalizeSeedTitle(alias)===wanted);
 }
-async function findSeedAnime(title){
+async function findSeedAnime(title,externalSignal=null){
  const query='query ($search:String) { Page(perPage:25) { media(search:$search,type:ANIME,isAdult:false,sort:SEARCH_MATCH) { id countryOfOrigin popularity source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } title { romaji english native } synonyms genres tags { name rank isMediaSpoiler } } } }';
  let lastError=null;
  for(let attempt=0;attempt<3;attempt++){
   try{
-   const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query,variables:{search:title}}),signal:AbortSignal.timeout(12000)});
+   const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query,variables:{search:title}}),signal:externalSignal?AbortSignal.any([AbortSignal.timeout(10000),externalSignal]):AbortSignal.timeout(10000)});
    const json=await response.json().catch(()=>null);
    if(response.ok&&!json?.errors?.length&&json?.data?.Page){
     const candidates=(json.data.Page.media||[]).filter(isJapaneseOriginAnime);
@@ -957,6 +957,7 @@ async function findSeedAnime(title){
    lastError=error;
    if(error.retryable===false)throw error;
   }
+  if(externalSignal?.aborted)throw lastError||externalSignal.reason||new Error('診断処理が中断されました。');
   if(attempt<2)await new Promise(resolve=>setTimeout(resolve,800*(attempt+1)));
  }
  throw lastError||new Error('タイトル検索に失敗しました。');
@@ -1002,13 +1003,13 @@ function isRecommendationCandidate(anime){
  const allowedFormats=new Set(['TV','TV_SHORT','MOVIE','ONA','OVA','SPECIAL']);
  return Boolean(anime&&isJapaneseOriginAnime(anime)&&anime.coverImage?.large&&anime.title&&allowedFormats.has(anime.format));
 }
-async function getRecommendations(profile){
+async function getRecommendations(profile,externalSignal=null){
  const query='query ($page:Int,$sort:[MediaSort]) { Page(page:$page,perPage:50) { pageInfo { totalPages } media(type:ANIME,sort:$sort,isAdult:false) { id countryOfOrigin source(version:2) format title { romaji english native } synonyms description(asHtml:false) coverImage { extraLarge large } episodes seasonYear averageScore popularity genres tags { name rank isMediaSpoiler } relations { edges { relationType node { id type countryOfOrigin format } } } siteUrl externalLinks { url site language isDisabled } } } }';
  const fetchPage=async (page,sort)=>{
   let lastError=null;
   for(let attempt=0;attempt<3;attempt++){
    try{
-    const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query,variables:{page,sort:[sort]}}),signal:AbortSignal.timeout(15000)});
+    const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query,variables:{page,sort:[sort]}}),signal:externalSignal?AbortSignal.any([AbortSignal.timeout(10000),externalSignal]):AbortSignal.timeout(10000)});
     const json=await response.json().catch(()=>null);
     if(response.ok&&!json?.errors?.length&&json?.data?.Page)return {media:(json.data.Page.media||[]).filter(isJapaneseOriginAnime),totalPages:Math.max(1,Number(json.data.Page.pageInfo?.totalPages)||1)};
     const apiMessage=(json?.errors||[]).map(error=>error.message).filter(Boolean).join(' / ');
@@ -1020,7 +1021,8 @@ async function getRecommendations(profile){
     lastError=error;
     if(error.retryable===false)throw error;
    }
-   if(attempt<2)await new Promise(resolve=>setTimeout(resolve,1200*(attempt+1)));
+   if(externalSignal?.aborted)throw lastError||externalSignal.reason||new Error('診断処理が中断されました。');
+   if(attempt<2)await new Promise(resolve=>setTimeout(resolve,800*(attempt+1)));
   }
   throw lastError||new Error('作品データを取得できませんでした。');
  };
@@ -1082,7 +1084,7 @@ async function getRecommendations(profile){
  const favoriteSeeds=[],dislikedSeeds=[];
  const seedReport={unresolvedFavorites:[],unresolvedDislikes:[],conflicts:[],resolvedFavorites:[],resolvedDislikes:[],lookupErrors:[],dataWarnings:buildRecommendationDataWarnings(failedPages,totalPages,cappedSorts),retrievalStats:{rawRecordCount,uniqueIdCount:items.length,sortCoverage}};
  for(const name of favoriteNames){
-  try{const found=await findSeedAnime(name);if(found){favoriteSeeds.push({...found,_requestedTitle:name});seedReport.resolvedFavorites.push({requested:name,resolved:found.title?.native||found.title?.english||found.title?.romaji||'タイトル不明'})}else seedReport.unresolvedFavorites.push(name)}
+  try{const found=await findSeedAnime(name,externalSignal);if(found){favoriteSeeds.push({...found,_requestedTitle:name});seedReport.resolvedFavorites.push({requested:name,resolved:found.title?.native||found.title?.english||found.title?.romaji||'タイトル不明'})}else seedReport.unresolvedFavorites.push(name)}
   catch(error){seedReport.lookupErrors.push({type:'好きな作品',title:name,message:error.message||'検索に失敗しました'})}
  }
  for(const name of dislikedNames){
@@ -1713,16 +1715,43 @@ async function finish(){
  if(isFinishingDiagnosis)return;
  isFinishingDiagnosis=true;
  $('next').disabled=true;
- $('diagnosis').classList.add('hidden');$('error').classList.add('hidden');$('loading').classList.remove('hidden');
- try{const profile=profileFromAnswers();buildProfile(profile);const result=await getRecommendations(profile);renderCards(result);const favCount=parseTitleInput('favoriteTitles').length,disCount=parseTitleInput('dislikedTitles').length;const textCount=['wantText','avoidText','preferenceText'].filter(id=>$(id).value.trim()).length+questionTextAnswers.filter(value=>value.trim()).length;$('resultIntro').textContent=questions.length+'問の回答'+(favCount||disCount?'と、入力された好き・苦手な作品':'')+(textCount?'、自由記述 '+textCount+'項目':'')+'をもとに分析しました。各作品の推薦理由も確認できます。';$('loading').classList.add('hidden');$('results').classList.remove('hidden');saveDiagnosis(latestResult||result);window.scrollTo({top:0,behavior:'smooth'})}
- catch(e){$('loading').classList.add('hidden');$('diagnosis').classList.remove('hidden');$('error').textContent=e.message||'予期しないエラーが発生しました。';$('error').classList.remove('hidden')}
- finally{isFinishingDiagnosis=false;$('next').disabled=false;}
+ $('diagnosis').classList.add('hidden');$('results').classList.add('hidden');$('error').classList.add('hidden');$('loading').classList.remove('hidden');
+ let profile=null;
+ const controller=new AbortController();
+ const timeoutId=setTimeout(()=>controller.abort(new Error('作品データの取得に時間がかかっています。通信状態を確認して、再試行してください。')),90000);
+ try{
+  profile=profileFromAnswers();buildProfile(profile);
+  $('loading').textContent='20問の回答を確認しました。作品データを取得しています…';
+  const result=await getRecommendations(profile,controller.signal);
+  renderCards(result);
+  const favCount=parseTitleInput('favoriteTitles').length,disCount=parseTitleInput('dislikedTitles').length;
+  const textCount=['wantText','avoidText','preferenceText'].filter(id=>$(id).value.trim()).length+questionTextAnswers.filter(value=>value.trim()).length;
+  $('resultIntro').textContent=questions.length+'問の回答'+(favCount||disCount?'と、入力された好き・苦手の作品':'')+(textCount?'、自由記述 '+textCount+'項目':'')+'をもとに分析しました。各作品の推薦理由も確認できます。';
+  $('loading').classList.add('hidden');$('results').classList.remove('hidden');$('retryData').hidden=true;saveDiagnosis(latestResult||result);
+  window.scrollTo({top:0,behavior:'smooth'});
+ }catch(e){
+  $('loading').classList.add('hidden');
+  if(profile)buildProfile(profile);
+  renderCards({closeMatches:[],discoveries:[]});
+  $('resultIntro').textContent='20問の回答は完了しました。ただし、作品データを取得できなかったため、推薦作品をまだ表示できません。';
+  $('resultStatus').textContent='原因：'+(e?.message||'作品データの取得に失敗しました。')+' 「作品データを再取得」から再試行できます。回答内容は保持されています。';
+  $('retryData').hidden=false;
+  $('diagnosis').classList.add('hidden');$('results').classList.remove('hidden');
+  $('error').textContent='推薦作品データを取得できませんでした。通信状態やAPIの応答を確認して、再試行してください。';
+  $('error').classList.remove('hidden');
+  saveDiagnosis();
+ }finally{
+  clearTimeout(timeoutId);
+  isFinishingDiagnosis=false;
+  $('next').disabled=false;
+ }
 }
 ['wantText','avoidText','preferenceText','favoriteTitles','dislikedTitles'].forEach(id=>$(id).addEventListener('input',()=>saveDiagnosis()));
 $('clearSaved').addEventListener('click',clearSavedDiagnosis);
 $('back').addEventListener('click',()=>{if(step>0){step--;render()}});
 $('next').addEventListener('click',()=>{const selected=questions[step].options[answers[step]];if(answers[step]===null||(selected?.other&&!questionTextAnswers[step].trim()))return;if(step<questions.length-1){step++;render()}else finish()});
-$('retry').addEventListener('click',()=>{step=0;answers.fill(null);questionTextAnswers.fill('');$('wantText').value='';$('avoidText').value='';$('preferenceText').value='';$('results').classList.add('hidden');$('diagnosis').classList.remove('hidden');$('progressBar').style.width='0%';history.replaceState(null,'',location.pathname+location.search);saveDiagnosis();render();window.scrollTo({top:0,behavior:'smooth'})});
+$('retryData').addEventListener('click',()=>{if(!isFinishingDiagnosis)finish()});
+$('retry').addEventListener('click',()=>{$('retryData').hidden=true;step=0;answers.fill(null);questionTextAnswers.fill('');$('wantText').value='';$('avoidText').value='';$('preferenceText').value='';$('results').classList.add('hidden');$('diagnosis').classList.remove('hidden');$('progressBar').style.width='0%';history.replaceState(null,'',location.pathname+location.search);saveDiagnosis();render();window.scrollTo({top:0,behavior:'smooth'})});
 $('shareX').addEventListener('click',shareOnX);
 $('copyResultLink').addEventListener('click',copyResultLink);
 $('copyShare').addEventListener('click',copyShareText);
