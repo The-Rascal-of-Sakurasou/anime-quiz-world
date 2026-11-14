@@ -33,7 +33,8 @@ begin
      or has_function_privilege(current_user, 'public.submit_aqw_player_run(uuid,integer,integer,integer,jsonb)', 'EXECUTE')
      or has_function_privilege(current_user, 'public.submit_aqw_speed_rush(integer,integer,uuid)', 'EXECUTE')
      or has_function_privilege(current_user, 'public.reset_aqw_player_records()', 'EXECUTE')
-     or has_function_privilege(current_user, 'public.set_aqw_leaderboard_enabled(boolean)', 'EXECUTE') then
+     or has_function_privilege(current_user, 'public.set_aqw_leaderboard_enabled(boolean)', 'EXECUTE')
+     or has_function_privilege(current_user, 'public.is_site_owner()', 'EXECUTE') then
     raise exception 'FAIL: anonymous role can execute a personal or write RPC';
   end if;
 
@@ -140,8 +141,14 @@ $set_aal1$;
 set local role authenticated;
 do $owner_aal1$
 begin
+  -- The password-only Edge Function uses public.is_site_owner(), not the
+  -- AAL2-only helper reserved for direct database RLS access.
+  if not public.is_site_owner() then
+    raise exception 'FAIL: registered site owner was denied by the password-only admin check at AAL1';
+  end if;
+
   if private.is_site_owner_mfa() then
-    raise exception 'FAIL: site owner passed the admin gate at AAL1';
+    raise exception 'FAIL: site owner passed the AAL2-only RLS gate at AAL1';
   end if;
 end
 $owner_aal1$;
@@ -182,8 +189,12 @@ begin
     true
   );
 
+  if public.is_site_owner() then
+    raise exception 'FAIL: non-owner passed the password-only admin check';
+  end if;
+
   if private.is_site_owner_mfa() then
-    raise exception 'FAIL: non-owner passed the admin gate at AAL2';
+    raise exception 'FAIL: non-owner passed the AAL2-only RLS gate';
   end if;
 end
 $non_owner_aal2$;

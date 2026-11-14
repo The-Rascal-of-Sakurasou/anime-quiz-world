@@ -31,6 +31,7 @@ on:
       - "supabase/config.toml"
       - "supabase/functions/aqw-match-prepare/**"
       - "supabase/functions/aqw-admin-control/**"
+      - "supabase/manual-tests/**"
       - ".github/workflows/aqw-static-security.yml"
   pull_request:
     paths:
@@ -50,6 +51,7 @@ on:
       - ".github/workflows/sync-anime-catalog.yml"
       - "supabase/migrations/**"
       - "supabase/functions/aqw-admin-control/**"
+      - "supabase/manual-tests/**"
       - ".github/workflows/aqw-static-security.yml"
   workflow_dispatch:
 
@@ -83,3 +85,57 @@ jobs:
           node --check scripts/audit-japanese-synopses.mjs
           python3 -m py_compile scripts/detect-title-image-text.py
           python3 scripts/detect-title-image-text.py --self-test
+
+  local-admin-database-security:
+    name: Local Supabase database security regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Prepare local-only schema baseline fixture
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          migration = Path("supabase/migrations/20261107143951_add_period_based_aqw_rankings.sql")
+          fixture = Path("supabase/manual-tests/aqw_local_schema_bootstrap.sql").read_text()
+          original = migration.read_text()
+          marker = "create table private.aqw_speed_rush_attempts"
+          if marker not in original:
+              raise SystemExit("Expected migration anchor was not found; refusing to modify files.")
+          migration.write_text(fixture + "\n" + original)
+
+          # The hosted runner may already have a service bound to Supabase's
+          # default PostgreSQL port. Use an isolated port only in this CI checkout.
+          config_path = Path("supabase/config.toml")
+          config = config_path.read_text()
+          if "[db]" in config:
+              raise SystemExit("Unexpected [db] section; refusing to overwrite existing database settings.")
+          config_path.write_text(config + "\n[db]\nport = 55432\nshadow_port = 55430\n")
+
+          PY
+      - name: Start disposable local Supabase
+        run: supabase start --debug
+      - name: Apply migrations to the local database
+        run: supabase db reset --local
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Create disposable local admin identity
+        run: |
+          psql "postgresql://postgres:postgres@127.0.0.1:55432/postgres" \
+            --set ON_ERROR_STOP=1 \
+            --file supabase/manual-tests/aqw_local_admin_seed.sql
+      - name: Run database security regression tests
+        run: |
+          psql "postgresql://postgres:postgres@127.0.0.1:55432/postgres" \
+            --set ON_ERROR_STOP=1 \
+            --file supabase/manual-tests/aqw_security_smoke.sql
+      - name: Stop disposable local Supabase
+        if: always()
+        run: supabase stop --no-backup
