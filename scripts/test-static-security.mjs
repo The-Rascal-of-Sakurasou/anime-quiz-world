@@ -647,7 +647,6 @@ assert.match(textUtils, /function normalizeAnswer\(value\)/, "Shared text normal
 assert.match(textUtils, /function truncateSynopsis\(value, maxLength = 260\)/, "Shared synopsis truncation must be implemented once");
 assert.doesNotMatch(index, /function normalizeAnswer\(|function synopsisText\(/, "The quiz must not duplicate shared text utility implementations");
 assert.ok(recommend.includes('src="./aqw-text-utils.js"') && recommend.includes("const escapeHTML = window.AQWTextUtils.escapeHTML"), "Recommendation cards must use shared HTML escaping");
-const admin = source.get("admin.html");
 assert.ok(admin.includes('src="./aqw-text-utils.js"') && admin.includes("const esc = window.AQWTextUtils.escapeHTML"), "Admin data must use shared HTML escaping");
 assert.match(textUtils, /function escapeHTML\(value\)/, "HTML escaping must be implemented once in the shared helper");
 
