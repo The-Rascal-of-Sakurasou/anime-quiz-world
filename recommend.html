@@ -152,7 +152,7 @@ body{background:#f6f7f9;color:#202936;letter-spacing:.005em}
 <section id="results" class="hidden">
 <div class="results-head"><div class="eyebrow">YOUR ANIME PROFILE</div><h2>診断結果</h2><p id="resultIntro"></p></div>
 <div class="profile"><strong id="profileTitle"></strong><span id="profileDescription"></span><div class="chips" id="profileChips"></div></div>
-<h2>好みにかなり近い作品</h2><p class="status">診断との一致度が高い作品を中心に選んでいます。</p>
+<h2>好みにかなり近い作品</h2><p class="status">好みとの一致度を重視しながら、人気・知名度の高い作品も含めて選んでいます。</p>
 <div class="cards" id="animeCards"></div>
 <h2 style="margin-top:30px">意外なおすすめ</h2><p class="status">好みとの共通点を保ちつつ、人気度が比較的低い作品から選んでいます。知らない作品との出会いを目的とした枠です。</p>
 <div class="cards" id="discoveryCards"></div>
@@ -559,6 +559,17 @@ function calculateSelectionAdjustment(candidate,selected,discovery=false,maxPopu
  return {similarityPenalty,genreConcentrationPenalty,tagConcentrationPenalty,noveltyBonus,maxSimilarity,total:-similarityPenalty-genreConcentrationPenalty-tagConcentrationPenalty+noveltyBonus};
 }
 
+function selectPopularAnchor(scored,selected){
+ const candidates=Array.isArray(scored)?scored:[];
+ const current=Array.isArray(selected)?selected:[];
+ if(candidates.length<5||!current.length)return null;
+ const scoreRanked=[...candidates].sort((a,b)=>(Number(b._score)||0)-(Number(a._score)||0));
+ const scoreEligible=new Set(scoreRanked.slice(0,Math.max(1,Math.ceil(scoreRanked.length*0.4))).map(a=>a.id));
+ const popularityRanked=[...candidates].sort((a,b)=>(Number(b._popularity)||0)-(Number(a._popularity)||0));
+ const popularityEligible=new Set(popularityRanked.slice(0,Math.max(1,Math.ceil(popularityRanked.length*0.2))).map(a=>a.id));
+ const alreadySelected=new Set(current.map(a=>a.id));
+ return popularityRanked.find(a=>scoreEligible.has(a.id)&&popularityEligible.has(a.id)&&!alreadySelected.has(a.id))||null;
+}
 function buildExcludedSeedIds(favorites,dislikes){
  return new Set([...(Array.isArray(favorites)?favorites:[]),...(Array.isArray(dislikes)?dislikes:[])].map(item=>item?.id).filter(id=>id!==undefined&&id!==null));
 }
@@ -615,6 +626,20 @@ function runRecommendationSelfTests(){
  const allCandidates=[{id:1,_score:100,_popularity:100},{id:2,_score:-80,_popularity:5},{id:3,_score:0,_popularity:20}];
  const openPool=buildDiscoveryPool(allCandidates,new Set([1]));
  check('相性スコアが低い作品も意外なおすすめ候補に残る',openPool.some(a=>a.id===2));
+ const popularitySample=[
+  {id:1,_score:100,_popularity:10},
+  {id:2,_score:95,_popularity:20},
+  {id:3,_score:90,_popularity:30},
+  {id:4,_score:85,_popularity:40},
+  {id:5,_score:80,_popularity:50},
+  {id:6,_score:75,_popularity:1000},
+  {id:7,_score:70,_popularity:15},
+  {id:8,_score:65,_popularity:12},
+  {id:9,_score:60,_popularity:11},
+  {id:10,_score:55,_popularity:9}
+ ];
+ check('相性上位40%に入る人気作品を推薦枠に確保する',selectPopularAnchor(popularitySample,popularitySample.slice(0,4))?.id===6);
+ check('すでに選ばれた作品を人気枠として重複選択しない',selectPopularAnchor(popularitySample,[popularitySample[5],...popularitySample.slice(0,3)])?.id!==6);
  const repeated={genres:['Fantasy'],tags:[{name:'Magic',rank:80,isMediaSpoiler:false}]};
  const similar=calculateSelectionAdjustment({genres:['Fantasy'],tags:[{name:'Magic',rank:80,isMediaSpoiler:false}],_popularity:20},[repeated]);
  const varied=calculateSelectionAdjustment({genres:['Drama'],tags:[{name:'Family',rank:80,isMediaSpoiler:false}],_popularity:20},[repeated]);
@@ -1195,6 +1220,13 @@ async function getRecommendations(profile){
   return selected;
  };
  const closeMatches=selectDiverse(scored,4);
+ // 相性上位の候補群から人気度の高い作品も1枠確保し、知名度の低い作品だけに偏らないようにする。
+ // 人気度だけで選ばず、相性スコア上位40%以内を条件にして診断との関連性を保つ。
+ const popularAnchor=selectPopularAnchor(scored,closeMatches);
+ if(popularAnchor&&closeMatches.length){
+  const replaceIndex=closeMatches.reduce((worstIndex,item,index)=>item._score<closeMatches[worstIndex]._score?index:worstIndex,0);
+  closeMatches[replaceIndex]=popularAnchor;
+ }
  const selectedIds=new Set(closeMatches.map(a=>a.id));
  // 回答スコアによる足切りは行わない。取得済みの全候補を意外なおすすめの対象にする。
  const discoveryPool=buildDiscoveryPool(scored,selectedIds);
