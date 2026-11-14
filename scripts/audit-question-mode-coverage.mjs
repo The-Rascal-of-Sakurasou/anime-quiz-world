@@ -201,7 +201,7 @@ const report = {
   uniqueSynopsisTexts: synopsisCandidateCount,
   modes: [
     summarize("synopsis","あらすじ → 作品名",eligible.synopsis),
-    summarize("titleYear","作品名 → 放送年",eligible.titleYear),
+    summarize("titleYear","作品名 → 公開・放送年",eligible.titleYear),
     summarize("synonym","略称 → 作品名",eligible.synonym),
     summarize("titleStudio","作品名 → 制作スタジオ",eligible.titleStudio),
   ],
