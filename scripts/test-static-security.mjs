@@ -566,7 +566,7 @@ assert.match(syncScript, /originVerified: compact\.countryOfOrigin === 'JP'/, "O
 assert.doesNotMatch(syncScript, /POPULARITY_DESC.*true, 20/, "The catalogue must not include a foreign-origin supplement scan");
 assert.match(syncScript, /const initialRecordCount = records\.size/, "Catalogue sync must retain the starting record count for accurate incremental summaries");
 assert.match(syncScript, /New unique records: .*items\.length - initialRecordCount/, "Catalogue sync must distinguish new IDs from refreshed existing records");
-assert.match(syncScript, /if \(anime\.countryOfOrigin !== 'JP'\)\s*return Number\(anime\.popularity\) >= 10000 && hasJapaneseTitle\(anime\)/, "Foreign catalogue entries must require both a Japanese-language title and the popularity threshold");
+assert.match(syncScript, /return Boolean\(anime && anime\.countryOfOrigin === 'JP'\)/, "Catalogue sync must require an explicit Japanese origin");
 assert.match(index, /new URL\('data\/anime-catalog\.json',document\.baseURI\)/, "The shared catalogue must resolve correctly from GitHub Pages subpaths");
 assert.match(index, /const sharedCatalogPromise=fetchSharedAnimeCatalog\(\)/, "Shared catalogue loading must start independently of the local cache");
 assert.match(index, /sharedCatalogPromise\.then\(items=>\(\{timedOut:false,items\}\)\)/, "The quiz must merge shared catalogue entries when the asynchronous load completes");
