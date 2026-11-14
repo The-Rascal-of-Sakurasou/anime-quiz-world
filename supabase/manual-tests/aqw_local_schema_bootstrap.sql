@@ -80,3 +80,7 @@ returns boolean language sql as $$ select false $$;
 
 create or replace function private.submit_aqw_player_run(uuid, integer, integer, integer)
 returns jsonb language sql as $$ select '{}'::jsonb $$;
+
+-- Four-argument legacy overload referenced by the privilege migration.
+create or replace function public.submit_aqw_player_run(uuid, integer, integer, integer)
+returns jsonb language sql as $$ select '{}'::jsonb $$;
