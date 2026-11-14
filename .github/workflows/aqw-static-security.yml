@@ -20,6 +20,10 @@ on:
       - "scripts/test-official-site-links.mjs"
       - "scripts/test-anime-search-deduplication.mjs"
       - "scripts/sync-anime-catalog.mjs"
+      - "anime-origin-policy.js"
+      - "scripts/test-anime-origin-policy.mjs"
+      - "scripts/audit-anime-catalog.py"
+      - "scripts/test-anime-origin-policy.py"
       - "scripts/audit-anime-image-urls.mjs"
       - "scripts/detect-title-image-text.py"
       - "scripts/audit-japanese-synopses.mjs"
@@ -44,6 +48,10 @@ on:
       - "responsive.css"
       - "scripts/test-static-security.mjs"
       - "scripts/sync-anime-catalog.mjs"
+      - "anime-origin-policy.js"
+      - "scripts/test-anime-origin-policy.mjs"
+      - "scripts/audit-anime-catalog.py"
+      - "scripts/test-anime-origin-policy.py"
       - "scripts/audit-japanese-synopses.mjs"
       - ".github/workflows/japanese-synopsis-audit.yml"
       - ".github/workflows/sync-anime-catalog.yml"
@@ -67,6 +75,10 @@ jobs:
           node-version: 22
       - name: Run security checks
         run: |
+          node --check anime-origin-policy.js
+          node scripts/test-anime-origin-policy.mjs
+          python3 -m py_compile scripts/audit-anime-catalog.py
+          python3 scripts/test-anime-origin-policy.py
           node scripts/test-static-security.mjs
           node scripts/test-official-site-links.mjs
           node scripts/test-anime-search-deduplication.mjs

@@ -2,7 +2,7 @@
 """Audit Anime Quiz World catalogue.
 
 Input: data/anime-catalog.json (AniList-shaped schemaVersion 2).
-Output: replaces the catalogue with Japanese-origin eligible works only and
+Output: replaces the catalogue with Japanese-origin and qualifying famous foreign works and
 writes data/title-image-exclusions.json. Cover images are OCR-checked with
 Tesseract; only images with no title match are marked safe for title-image quiz.
 Requires Python 3.10+, Pillow, and the Tesseract executable with jpn and eng data.
@@ -49,6 +49,7 @@ def japanese_origin(item: dict) -> bool:
     country = item.get("countryOfOrigin")
     if not isinstance(country, str) or not country:
         return False
+
     title = item.get("title") or {}
     names = [title.get("native"), title.get("english"), title.get("romaji")]
     names.extend(item.get("synonyms") or [])
@@ -57,13 +58,28 @@ def japanese_origin(item: dict) -> bool:
         for name in names
     )
     popularity = int(item.get("popularity") or 0)
+
     if country != "JP":
         return popularity >= 10000 and has_japanese_title
+
+    japanese_languages = {"ja", "ja-jp", "japanese", "日本語"}
+    language_values = [
+        item.get("originLanguage"),
+        item.get("originalLanguage"),
+        item.get("sourceLanguage"),
+        item.get("language"),
+    ]
+    language_values = [value for value in language_values if isinstance(value, str) and value.strip()]
+    if any(value.strip().lower() not in japanese_languages for value in language_values):
+        return False
+
     if item.get("originVerified") is True or item.get("source") == "ORIGINAL":
         return True
+
     rule = SOURCE_RULES.get(item.get("source"))
     if not rule:
         return False
+
     node_type, formats = rule
     relation_verified = any(
         edge.get("relationType") in {"SOURCE", "ADAPTATION"}
@@ -71,6 +87,15 @@ def japanese_origin(item: dict) -> bool:
         and edge["node"].get("type") == node_type
         and edge["node"].get("countryOfOrigin") == "JP"
         and edge["node"].get("format") in formats
+        and not any(
+            isinstance(value, str) and value.strip() and value.strip().lower() not in japanese_languages
+            for value in (
+                edge["node"].get("originLanguage"),
+                edge["node"].get("originalLanguage"),
+                edge["node"].get("sourceLanguage"),
+                edge["node"].get("language"),
+            )
+        )
         for edge in (item.get("relations") or {}).get("edges", [])
     )
     return relation_verified or (popularity >= 10000 and has_japanese_title)

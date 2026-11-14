@@ -19,9 +19,9 @@
 <title>アニメクイズワールド | 無料アニメクイズ</title>
 <style>
 :root{color-scheme:light;--bg:#f5f6f8;--panel:#fff;--panel2:#f0f2f5;--text:#20242b;--muted:#68717d;--accent:#315b9a;--pink:#315b9a;--good:#217a4b;--bad:#b42332;--line:#dfe3e8}
-*{box-sizing:border-box}
+
 body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;min-height:100vh;line-height:1.6}
-button,input,select{font:inherit}
+
 button{cursor:pointer;border:1px solid var(--line);border-radius:6px;min-height:44px;padding:10px 16px;font-weight:600;background:#fff;color:var(--text);transition:background-color .15s,border-color .15s}
 button:hover{background:#f0f4fa;border-color:#b7c5d9}
 button:disabled{cursor:default;opacity:.55}
@@ -87,7 +87,7 @@ button:disabled{cursor:default;opacity:.55}
 .anime div{padding:12px}
 .anime strong{display:block;font-size:.94rem;line-height:1.45}
 .anime small{display:block;color:var(--muted);margin-top:6px;line-height:1.5}
-.share-actions{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0 8px}.share-note{font-size:.86rem;color:var(--muted);line-height:1.7;margin:8px 0 16px}.hidden{display:none!important}
+.share-actions{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0 8px}.share-note{font-size:.86rem;color:var(--muted);line-height:1.7;margin:8px 0 16px}
 footer{padding:28px 0 36px;color:var(--muted);font-size:.82rem;line-height:1.7}
 @media(max-width:700px){.wrap{width:calc(100% - 28px)}.quiz-layout{grid-template-columns:1fr;gap:20px}.cover{max-height:340px}.top{align-items:flex-start;flex-direction:column;padding:18px 0}.hero{padding:24px 0 18px}.hero h1{font-size:1.8rem}.tabs{margin-top:4px;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:thin}.tab{flex:0 0 auto;min-height:48px;padding:11px 14px;white-space:nowrap;scroll-snap-align:start}.searchbar{flex-direction:column}.language-box{padding:24px}}
 
@@ -599,19 +599,9 @@ body{background:#f6f7f9;color:#202936;letter-spacing:.005em}
   .card{padding:13px 11px}
 }
 
-/* Mobile refinement: prevent clipping and improve touch/accessibility */
-@media(max-width:700px){
-  html{scroll-padding-top:14px}
-  body{overflow-wrap:anywhere}
-  img,video,canvas{max-width:100%;height:auto}
-  iframe{max-width:100%}
-  button,input,select,textarea{max-width:100%;min-width:0}
-  button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-  :focus-visible{outline:3px solid #3978c8;outline-offset:2px}
-  [id]{scroll-margin-top:14px}
-  pre{max-width:100%;overflow-x:auto}
-  code{overflow-wrap:anywhere}
-}
+</style>
+<link rel="stylesheet" href="./aqw-mobile-refinements.css">
+<style>
 /* Additional mobile layout: header, shortcuts and fixed menu */
 @media(max-width:700px){
   .top{align-items:flex-start;flex-wrap:wrap;gap:10px}
@@ -657,6 +647,7 @@ body.quiz-preparing #quizStatus:before{content:"";display:inline-block;width:22p
 @media(max-width:380px){body.quiz-active #answers{grid-template-columns:minmax(0,1fr)!important}}
 </style>
  <link rel="stylesheet" href="./responsive.css">
+<script src="./anime-origin-policy.js"></script>
 </head>
 <body><a class="skip-link" href="#quiz">クイズへ移動</a><div id="app" class="wrap">
 <header class="top"><div class="brand-area"><button type="button" class="brand-home" id="homeLogo" aria-label="AQW Home" title="AQW Home"><svg class="aqw-logo" viewBox="0 0 100 100" role="img" aria-label="AQW"><rect x="2" y="2" width="96" height="96" fill="#064675"/><text x="50" y="64" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="34" font-weight="800" font-style="italic" letter-spacing="-1" textLength="80" lengthAdjust="spacingAndGlyphs" fill="#fff">AQW</text></svg></button><div><div class="brand">Anime Quiz <span>World</span></div></div></div><div class="top-actions"><label class="language-picker" for="languageSelect"><span id="languageLabel">Language</span> <select id="languageSelect" aria-label="Display language" onchange="selectLanguage(this.value)"><option value="ja">日本語</option><option value="en">English</option><option value="ko">한국어</option><option value="zh">简体中文</option><option value="es">Español</option><option value="fr">Français</option><option value="pt">Português</option><option value="de">Deutsch</option></select></label></div></header>
@@ -821,39 +812,8 @@ const ph=document.getElementById('query');if(ph)ph.placeholder=lang==='ja'?'例�
 }
 const query=`query ($page:Int,$perPage:Int,$search:String,$id_in:[Int],$format_in:[MediaFormat],$startDate_greater:FuzzyDateInt,$startDate_lesser:FuzzyDateInt) { Page(page:$page,perPage:$perPage) { pageInfo { hasNextPage } media(id_in:$id_in,format_in:$format_in,startDate_greater:$startDate_greater,startDate_lesser:$startDate_lesser,type:ANIME,sort:POPULARITY_DESC,search:$search,isAdult:false) { id countryOfOrigin source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } format popularity title { romaji english native } description(asHtml:false) synonyms coverImage { large medium extraLarge } episodes seasonYear averageScore genres studios { nodes { name } } startDate { year }  externalLinks { url site type isDisabled language } } } }`;
 function normalizeUnicode(value){if(typeof value==='string')return value.normalize('NFC');if(Array.isArray(value))return value.map(normalizeUnicode);if(value&&typeof value==='object'){const out={};for(const [key,item] of Object.entries(value))out[key]=normalizeUnicode(item);return out}return value}
-function hasFamousJapaneseTitle(a){
- const names=[a?.title?.native,a?.title?.english,a?.title?.romaji,...(Array.isArray(a?.synonyms)?a.synonyms:[])];
- return names.some(name=>typeof name==='string'&&/[ぁ-んァ-ヶ]/.test(name));
-}
-function isJapaneseOriginAnime(a){
- if(!a)return false;
- if(a.countryOfOrigin!=='JP')return Number(a.popularity)>=10000&&hasFamousJapaneseTitle(a);
- const isJapaneseLanguage=value=>['ja','ja-jp','japanese','日本語'].includes(String(value||'').trim().toLowerCase());
- const languageValues=[a.originLanguage,a.originalLanguage,a.sourceLanguage,a.language].filter(value=>typeof value==='string'&&value.trim());
- if(languageValues.some(value=>!isJapaneseLanguage(value)))return false;
- if(a.originVerified===true)return true;
- if(a.source==='ORIGINAL')return true;
- const sourceRules={
-  MANGA:{type:'MANGA',formats:['MANGA','ONE_SHOT']},
-  LIGHT_NOVEL:{type:'MANGA',formats:['NOVEL']},
-  NOVEL:{type:'MANGA',formats:['NOVEL']},
-  DOUJINSHI:{type:'MANGA',formats:['MANGA','ONE_SHOT','NOVEL']},
-  ANIME:{type:'ANIME',formats:['TV','TV_SHORT','MOVIE','OVA','ONA','SPECIAL']},
-  WEB_NOVEL:{type:'MANGA',formats:['NOVEL']},
-  VISUAL_NOVEL:{type:'MANGA',formats:['MANGA','ONE_SHOT','NOVEL']},
-  VIDEO_GAME:{type:'MANGA',formats:['MANGA','ONE_SHOT','NOVEL']},
-  OTHER:{type:'MANGA',formats:['MANGA','ONE_SHOT','NOVEL']}
- };
- const rule=sourceRules[a.source];
- const relationVerified=!!rule&&Array.isArray(a.relations?.edges)&&a.relations.edges.some(edge=>{
-  const node=edge?.node;
-  if(!['SOURCE','ADAPTATION'].includes(edge?.relationType)||!node||node.type!==rule.type||node.countryOfOrigin!=='JP'||!rule.formats.includes(node.format))return false;
-  const sourceLanguage=[node.originLanguage,node.originalLanguage,node.sourceLanguage,node.language].filter(value=>typeof value==='string'&&value.trim());
-  return !sourceLanguage.some(value=>!isJapaneseLanguage(value));
- });
- if(relationVerified)return true;
- return !!rule&&Number(a.popularity)>=10000&&hasFamousJapaneseTitle(a);
-}
+
+
 const $=s=>document.querySelector(s);let pool=[],questions=[],index=0,points=0,skippedQuestionCount=0,locked=false,questionTimer=null,clockTimer=null,secondsLeft=15,questionDeadline=0,startedAt=0,elapsedSeconds=0,missedQuestions=[],questionAttemptResults=[],reviewMode=false,playMode='normal',roundFailed=false,lastResultData=null,combo=0,bestCombo=0,choiceHintUsed=false,typedHintUsed=false,backgroundLoadPromise=null,sharedCatalogActive=false,requestedQuestionCount=10,rateLimitedUntil=0,failedImageUrls=new Set(),lateSharedCatalogItems=[],autoNextTimer=null,questionAdvanceToken=0,sharedSearchCatalogCache=null,sharedSearchIndexCache=new Map();
 function titleImageIsSafe(anime){const image=anime?.coverImage?.large||anime?.coverImage?.medium||anime?.coverImage?.extraLarge||'';return hasUsableImageUrl(image)}
 async function fetchSharedAnimeCatalog(){
@@ -1167,7 +1127,7 @@ async function fetchAnime(vars={}){
  return initial;
 }
 function hasUsableImageUrl(value){const url=String(value||'').trim();return /^https?:\/\//i.test(url)&&!/(?:no[-_ ]?image|placeholder|default[-_ ]?image|(?:^|\/)default(?:\.[a-z0-9]+)?(?:[?#]|$))/i.test(url)&&!failedImageUrls.has(url)}
-function isUsableAnime(a){const titleImage=a?.coverImage?.large||a?.coverImage?.medium||a?.coverImage?.extraLarge||'';return !!(a&&a.id&&a.isAdult!==true&&isJapaneseOriginAnime(a)&&hasUsableImageUrl(titleImage)&&titleOf(a)&&['TV','TV_SHORT','MOVIE','OVA','ONA','SPECIAL'].includes(a.format)&&!((a.genres||[]).includes('Hentai')))}
+function isUsableAnime(a){const titleImage=a?.coverImage?.large||a?.coverImage?.medium||a?.coverImage?.extraLarge||'';return !!(a&&a.id&&a.isAdult!==true&&AQWAnimePolicy.isJapaneseOriginAnime(a)&&hasUsableImageUrl(titleImage)&&titleOf(a)&&['TV','TV_SHORT','MOVIE','OVA','ONA','SPECIAL'].includes(a.format)&&!((a.genres||[]).includes('Hentai')))}
 function deduplicateSearchResults(items){
  // Prefer the most popular record. Deduplicate identical title/year/format records,
  // but do not discard a sequel merely because it shares a franchise alias.
@@ -3909,7 +3869,7 @@ async function loadFeaturedRail(){
  const renderItems=items=>{
   const unique=new Map();
   for(const anime of items||[]){
-   if(!isJapaneseOriginAnime(anime)||!Number.isFinite(Number(anime.id)))continue;
+   if(!AQWAnimePolicy.isJapaneseOriginAnime(anime)||!Number.isFinite(Number(anime.id)))continue;
    const year=Number(anime.startDate?.year),month=Number(anime.startDate?.month);
    const belongs=Number(anime.seasonYear)===current.year&&anime.season===current.season;
    const dateFallback=year===current.year&&month>=({WINTER:1,SPRING:4,SUMMER:7,FALL:10}[current.season])&&month<=({WINTER:3,SPRING:6,SUMMER:9,FALL:12}[current.season]);

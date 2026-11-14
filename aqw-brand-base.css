@@ -1,0 +1,7 @@
+/* Shared AQW brand mark used across every site page */
+.site-brand{display:flex;align-items:center;gap:10px;min-width:0;color:#102b46;text-decoration:none}
+.site-brand-logo{display:block;flex:0 0 60px;width:60px;height:60px}
+.site-brand-copy{display:flex;flex-direction:column;gap:4px;min-width:0}
+.site-brand-title{font-family:"Yu Mincho","Hiragino Mincho ProN","Noto Serif JP",Georgia,serif;font-size:1.28rem;font-weight:800;letter-spacing:-.035em;line-height:1.2;color:#102b46;white-space:nowrap}
+.site-brand-tagline{color:#667789;font-size:.78rem;font-weight:600;letter-spacing:.035em;line-height:1.35}
+@media(max-width:520px){.site-brand{gap:9px}.site-brand-logo{flex-basis:52px;width:52px;height:52px}.site-brand-title{font-size:1.05rem}.site-brand-tagline{font-size:.68rem}}
