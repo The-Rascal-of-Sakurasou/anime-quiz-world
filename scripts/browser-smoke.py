@@ -44,14 +44,16 @@ def make_anime(index):
     # Keep every alias distinct: numbered titles such as "Anime 1" and
     # "Anime 10" overlap and are correctly rejected as ambiguous distractors.
     suffix = chr(65 + index)
+    format = ["TV", "TV_SHORT", "MOVIE", "OVA", "ONA", "SPECIAL"][index % 6]
+    source = ["ORIGINAL", "MANGA", "LIGHT_NOVEL", "NOVEL", "VISUAL_NOVEL", "VIDEO_GAME"][index % 6]
     title = f"検証作品{suffix}"
     cover = f"https://example.test/cover-{index + 1}.png"
     return {
         "id": anime_id,
         "countryOfOrigin": "JP",
-        "source": "ORIGINAL",
+        "source": source,
         "isAdult": False,
-        "format": "TV",
+        "format": format,
         "title": {
             "native": title,
             "english": f"Verification Anime {suffix}",
@@ -82,9 +84,9 @@ def make_anime(index):
             f"検証作品短縮名{suffix}",
         ],
         "coverImage": {"large": cover, "medium": cover, "extraLarge": cover},
-        "episodes": 12,
+        "episodes": None if format == "MOVIE" else 2 + index,
         "season": CURRENT_SEASON,
-        "seasonYear": 2010 + index,
+        "seasonYear": 2010 + index // 4,
         "startDate": {"year": 2010 + index, "month": 1, "day": 1},
         "averageScore": 70 + (index % 20),
         "popularity": 50000 - index * 1000,
@@ -107,7 +109,7 @@ def make_anime(index):
     }
 
 
-QUIZ_FIXTURES = [make_anime(i) for i in range(12)]
+QUIZ_FIXTURES = [make_anime(i) for i in range(24)]
 RECOMMENDATION_FIXTURES = [make_anime(i) for i in range(24)]
 CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
@@ -340,6 +342,18 @@ def test_public_catalogue_all_modes(browser):
         prompt = page.locator("#answerPrompt").inner_text().strip()
         assert prompt, f"Public {mode} mode did not render a question prompt"
         if mode == "titleYear":
+            selected_mode_label = page.locator("#modeSelect option:checked").inner_text()
+            assert "公開・放送年" in selected_mode_label, (
+                "The Japanese title-year mode label must cover release and broadcast years: "
+                + selected_mode_label
+            )
+            result_mode_label = page.evaluate(
+                "() => resultLabels({playMode: 'normal', questionMode: 'titleYear'}).mode"
+            )
+            assert "公開・放送年" in result_mode_label, (
+                "The Japanese result label must identify release and broadcast years: "
+                + result_mode_label
+            )
             year_prompt_suffix = page.evaluate("() => qText('titleYear')")
             assert "公開・放送年" in year_prompt_suffix, (
                 "Year questions must cover both film release and TV broadcast years: "
@@ -457,15 +471,16 @@ def test_quiz_start_answer_finish(browser):
 
 def test_all_question_modes(browser):
     """Verify every selectable question mode can prepare, answer, and finish."""
-    modes = ["synopsis", "titleYear", "synonym", "titleStudio"]
+    modes = ["image", "synopsis", "synonym", "studio", "year", "titleYear", "titleStudio", "titleSynopsis", "titleEpisodes", "titleGenre", "titleFormat", "titleSource"]
     context = browser.new_context(locale="ja-JP")
     page = context.new_page()
     install_routes(page)
     page.goto(f"{BASE_URL}/index.html", wait_until="domcontentloaded")
     page.wait_for_function("document.querySelector('#modeSelect option') !== null", timeout=20000)
     mode_values = page.locator("#modeSelect option").evaluate_all("(options) => options.map(option => option.value)")
-    assert mode_values == ["mixed", "synopsis", "titleYear", "synonym", "titleStudio"], (
-        "The selectable quiz modes must remain limited to the four requested formats plus mixed mode: "
+    expected_modes = ["mixed", "image", "synopsis", "synonym", "studio", "year", "titleYear", "titleStudio", "titleSynopsis", "titleEpisodes", "titleGenre", "titleFormat", "titleSource"]
+    assert mode_values == expected_modes, (
+        "The quiz menu must expose every supported, data-backed question mode: "
         + repr(mode_values)
     )
     context.close()
@@ -633,6 +648,37 @@ def test_all_question_modes(browser):
         assert not errors, f"Question mode {mode} raised JavaScript errors: " + " | ".join(errors)
         context.close()
         print(f"PASS: question mode {mode}")
+
+
+def test_question_count_controls(browser):
+    """Check custom question counts and fixed-count play modes."""
+    context = browser.new_context(locale="ja-JP")
+    page = context.new_page()
+    install_routes(page)
+    page.goto(f"{BASE_URL}/index.html", wait_until="domcontentloaded")
+    page.wait_for_function(
+        "() => { const button = document.querySelector('#start'); return button && !button.classList.contains('hidden') && !button.disabled; }",
+        timeout=60000,
+    )
+    count = page.locator("#questionCount")
+    preset = page.locator("#questionCountPreset")
+    assert count.get_attribute("min") == "1" and count.get_attribute("max") == "10000", (
+        "Custom question count must be limited to 1–10,000"
+    )
+    count.fill("37")
+    assert preset.input_value() == "custom", "A non-preset count must select the custom option"
+    preset.select_option("20")
+    assert count.input_value() == "20", "Selecting a preset must update the numeric input"
+    page.locator("#playMode").select_option("daily")
+    assert count.is_disabled() and preset.is_disabled(), "Daily mode must disable the custom count controls"
+    assert "10問固定" in page.locator("#questionCountHelp").inner_text(), (
+        "Daily mode must explain its fixed question count"
+    )
+    page.locator("#playMode").select_option("normal")
+    assert count.is_enabled() and preset.is_enabled(), "Normal mode must allow custom question counts"
+    page.locator("#playMode").select_option("endless")
+    assert count.is_disabled() and preset.is_disabled(), "Endless mode must disable the fixed question count"
+    context.close()
 
 
 def test_live_quiz_preparation_performance(browser):
@@ -1390,6 +1436,8 @@ def main():
             print("PASS: quiz start -> answer -> finish")
             test_all_question_modes(browser)
             print("PASS: all selectable question modes")
+            test_question_count_controls(browser)
+            print("PASS: custom and fixed question count controls")
             test_main_navigation_and_search(browser)
             print("PASS: primary navigation and anime search")
             test_quiz_quit_only(browser)
