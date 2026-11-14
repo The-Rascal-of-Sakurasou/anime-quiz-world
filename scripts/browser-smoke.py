@@ -162,7 +162,7 @@ def install_routes(page):
         elif "countryOfOrigin:JP" in query and "seasonYear:" in query and "season:" in query:
             # Featured-season tests need fixtures from the requested season.
             # The shared recommendation fixtures intentionally use older years.
-            year_match = re.search(r"seasonYear:(\\d+)", query)
+            year_match = re.search(r"seasonYear:(\d+)", query)
             season_match = re.search(r"season:(WINTER|SPRING|SUMMER|FALL)", query)
             if not year_match or not season_match:
                 raise AssertionError("Could not read the featured-season GraphQL filters")
