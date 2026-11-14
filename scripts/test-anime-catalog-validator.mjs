@@ -23,10 +23,10 @@ foreignAnime.id = 3;
 foreignAnime.countryOfOrigin = "US";
 foreignAnime.popularity = 10000;
 foreignAnime.title.native = "海外作品の日本語タイトル";
-delete foreignAnime.originVerified;
+foreignAnime.originVerified = true;
 foreignFixture.items.push(foreignAnime);
 foreignFixture.count = foreignFixture.items.length;
-assert.equal(validateCatalog(foreignFixture).count, 3, "Famous foreign anime with a Japanese title should pass");
+assert.throws(() => validateCatalog(foreignFixture), undefined, "Foreign-origin anime must be rejected regardless of popularity, Japanese title, or verification markers");
 
 const rejects = (label, mutate) => {
   const sample = structuredClone(fixture);
@@ -36,19 +36,12 @@ const rejects = (label, mutate) => {
 
 rejects("count mismatch", (sample) => { sample.count += 1; });
 rejects("duplicate AniList IDs", (sample) => { sample.items[1].id = sample.items[0].id; });
-rejects("foreign anime without a Japanese title", (sample) => {
+rejects("foreign anime despite Japanese title and popularity", (sample) => {
   sample.items[0].countryOfOrigin = "US";
   sample.items[0].popularity = 50000;
-  sample.items[0].title.native = "English Only";
-  delete sample.items[0].originVerified;
-});
-rejects("foreign anime below popularity threshold", (sample) => {
-  sample.items[0].countryOfOrigin = "US";
-  sample.items[0].popularity = 9999;
   sample.items[0].title.native = "海外作品の日本語タイトル";
-  delete sample.items[0].originVerified;
+  sample.items[0].originVerified = true;
 });
-rejects("missing build-time origin marker", (sample) => { sample.items[0].originVerified = false; });
 rejects("unsupported format", (sample) => { sample.items[0].format = "MUSIC"; });
 rejects("placeholder cover image", (sample) => { sample.items[0].coverImage.large = "https://example.com/no-image.png"; });
 rejects("adult content", (sample) => { sample.items[0].isAdult = true; });
@@ -57,4 +50,4 @@ rejects("missing title", (sample) => { sample.items[0].title = {}; });
 rejects("duplicate normalized synonyms", (sample) => { sample.items[0].synonyms = ["Test Alias", "test alias"]; });
 rejects("embedded character data is excluded from the shared catalogue", (sample) => { sample.items[0].characters = { nodes: [] }; });
 
-console.log("Anime catalogue validator tests passed: 1 valid compact-schema fixture and 12 rejected invalid cases.");
+console.log("Anime catalogue validator tests passed: 1 valid compact-schema fixture and 11 rejected invalid cases.");
