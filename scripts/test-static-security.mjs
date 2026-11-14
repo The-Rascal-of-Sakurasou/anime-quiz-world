@@ -488,18 +488,26 @@ assert.match(index, /async function fetchSharedAnimeCatalog\(\)/, "The quiz must
 // The exact shared character-choice builder is asserted below.
 assert.match(index, /if\(mode===\'characterImage\'\)return characterRecordsWithFourChoicesForAnime\(a,summary,false\)\.length>0/, "Character-image question eligibility must validate four distinct character portraits");
 assert.match(index, /shuffle\(characterRecordsWithFourChoicesForAnime\(a,questionChoiceSummary\(\),true\)\)/, "Character-name-to-image questions must choose from records with four distinct portraits");
-// The four requested question formats are text/data driven and must not depend on cover-image loading.
-
-assert.match(index, /function availableQuestionModes\(a,format=/, "Mixed mode must derive the available question types for each anime");
+// The expanded, catalogue-backed question formats must remain selectable and share one eligibility calculation.
+assert.match(index, /function availableQuestionModes\(a,format=/, "Mixed mode must derive available question types for each anime");
 const modeSelectMarkup = index.match(/<select id="modeSelect">([\s\S]*?)<\/select>/)?.[1] || "";
-for (const mode of ["synopsis", "titleYear", "synonym", "titleStudio"]) {
-  assert.ok(modeSelectMarkup.includes('value="' + mode + '"'), "The four requested question formats must remain selectable: " + mode);
+const supportedModes = ["image", "synopsis", "synonym", "studio", "year", "titleYear", "titleStudio", "titleSynopsis", "titleEpisodes", "titleGenre", "titleFormat", "titleSource"];
+for (const mode of supportedModes) {
+  assert.ok(modeSelectMarkup.includes('value="' + mode + '"'), "Every data-backed question format must be selectable: " + mode);
 }
-assert.doesNotMatch(modeSelectMarkup, /value="(?:image|character|characterImage|characterNameImage|titleCharacter)"/, "Unrequested legacy question formats must not appear in the selector");
-assert.match(index, /const modes=\[\];\s*if\(titleUsable\(a\)&&a\?\.studios\?\.nodes\?\.\[0\]\?\.name\)modes\.push\('titleStudio'\)/, "Mixed mode must use only the four requested question formats");
+assert.doesNotMatch(modeSelectMarkup, /value="(?:character|characterImage|characterNameImage|titleCharacter)"/, "Character formats without character data must not appear in the selector");
+for (const mode of ["image", "studio", "year", "titleSynopsis", "titleEpisodes", "titleGenre", "titleFormat", "titleSource"]) {
+  assert.ok(index.includes("modes.push('" + mode + "')"), "Mixed mode must include supported format " + mode);
+}
 assert.match(index, /const hasQuestion=mode===\'mixed\'\s*\?availableQuestionModes\(anime,format\)\.length>0/, "Cached candidate building must accept mixed-mode anime with at least one valid question type");
 assert.match(index, /mode===\'mixed\'\?items\.filter\(a=>isUsableAnime\(a\)&&titleUsable\(a\)&&availableQuestionModes\(a,format\)\.length>0\)/, "Background loading in mixed mode must use the same per-anime question-type eligibility");
 assert.ok(index.includes("let modesForFormat=availableQuestionModes(a,$('#answerFormatSelect').value)"), "Question rendering must use the same available-mode calculation");
+assert.match(index, /function studioTitleChoiceRecordsForAnime\(a\)/, "Studio-to-title questions must exclude titles from the same studio");
+assert.match(index, /function yearTitleChoiceRecordsForAnime\(a\)/, "Year-to-title questions must build a distinct distractor set");
+assert.match(index, /function episodeChoiceRecordsForAnime\(a\)/, "Episode-count questions must use distinct counts");
+assert.match(index, /function genreChoiceRecordsForAnime\(a\)/, "Genre questions must exclude the title's other valid genres from distractors");
+assert.match(index, /function formatChoiceRecordsForAnime\(a\)/, "Format questions must use distinct format values");
+assert.match(index, /function sourceChoiceRecordsForAnime\(a\)/, "Source questions must use distinct source values");
 
 assert.match(index, /function studioChoiceRecordsForAnime\(a\)/, "Studio question eligibility and generation must share the same studio candidate builder");
 assert.match(index, /function hasFourDistinctStudioChoices\(a\)\{return studioChoiceRecordsForAnime\(a\)\.length>=4\}/, "Studio question eligibility must validate the exact generated options");
@@ -507,7 +515,7 @@ assert.match(index, /function makeStudioOptions\(a\)/, "Studio question generati
 assert.match(index, /function yearChoiceRecordsForAnime\(a\)/, "Year question eligibility and generation must share the same year candidate builder");
 assert.match(index, /if\(mode===\'titleYear\'\)return yearChoiceRecordsForAnime\(a\)\.length>=4/, "Year question eligibility must validate the exact generated year options");
 assert.match(index, /function makeYearOptions\(a\)\{const records=yearChoiceRecordsForAnime\(a\),correct=String\(animeYear\(a\)\);return records\.some\(record=>record\.value===correct\)\?\[\{label:correct,value:correct\},\.\.\.shuffle\(records\.filter\(record=>record\.value!==correct\)\)\.slice\(0,3\)\]:\[\]\}/, "Year question generation must always include the correct year alongside three distinct distractors");
-assert.match(index, /if\(actualMode===\'titleStudio\'\)\{prompt=titleOf\(a\)\+qText\(\'titleStudio\'\);correct=String\(a\.studios\?\.nodes\?\.\[0\]\?\.name\|\|\'\'\);opts=makeStudioOptions\(a\)/, "Title-to-studio generation must use the shared validated studio options");
+assert.match(index, /if\(actualMode===\'titleStudio\'\)\{prompt=\'「\'\+titleOf\(a\)\+\'」\'\+qText\(\'titleStudio\'\);correct=String\(a\.studios\?\.nodes\?\.\[0\]\?\.name\|\|\'\'\);opts=makeStudioOptions\(a\)/, "Title-to-studio generation must use the shared validated studio options");
 assert.match(index, /function titleChoiceRecordsForAnime\(a\)/, "Title-based question eligibility and generation must share the same alias-safe option builder");
 assert.match(index, /function hasFourDistinctTitleChoices\(anime,summary=questionChoiceSummary\(\)\)\{return titleChoiceRecordsForAnime\(anime\)\.length>=4\}/, "Title-based question eligibility must count the exact generated title options");
 assert.match(index, /function makeTitleOptions\(a\)\{const records=titleChoiceRecordsForAnime\(a\);if\(!records\.length\)return \[\];const correctKey=normalizeAnswer\(titleOf\(a\)\);const correct=records\.find\(record=>normalizeAnswer\(record\.value\)===correctKey\);const distractors=shuffle\(records\.filter\(record=>normalizeAnswer\(record\.value\)!==correctKey\)\);return correct\?\[correct,\.\.\.distractors\.slice\(0,3\)\]:shuffle\(records\)\.slice\(0,4\)\}/, "Title-based question generation must retain the correct answer and randomize distractors");
