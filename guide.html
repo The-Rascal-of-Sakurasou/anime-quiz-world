@@ -104,11 +104,17 @@ li{padding-left:3px;margin:8px 0}
   code{overflow-wrap:anywhere}
 }
 
+
+/* Unified AQW logo sizing: match the home page on every page. */
+.site-brand-logo{display:block;flex:0 0 48px;width:48px;height:48px;max-width:none;}
+@media(max-width:700px){.site-brand-logo{flex-basis:46px;width:46px;height:46px}}
+@media(max-width:380px){.site-brand-logo{flex-basis:42px;width:42px;height:42px}}
 </style>
+ <link rel="stylesheet" href="./responsive.css">
 </head>
 <body>
 <div class="wrap">
-<header class="site-header"><a class="site-brand" href="./" aria-label="Anime Quiz World トップページ"><svg class="site-brand-logo" viewBox="0 0 100 100" role="img" aria-label="AQW"><rect x="2" y="2" width="96" height="96" fill="#064675"/><text x="50" y="64" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="34" font-weight="800" font-style="italic" letter-spacing="-1" textLength="80" lengthAdjust="spacingAndGlyphs" fill="#fff">AQW</text></svg><span class="site-brand-copy"><span class="site-brand-title">Anime Quiz World</span><span class="site-brand-tagline">知識を試して、新しい作品と出会う。</span></span></a><nav class="page-nav" aria-label="サイト内ナビゲーション"><a href="./">ホーム</a><a href="./guide.html">遊び方・お知らせ</a><a href="./terms.html">利用規約</a><a href="./privacy.html">プライバシーポリシー</a></nav></header>
+<header class="site-header"><a class="site-brand" href="./" aria-label="Anime Quiz World トップページ"><svg class="site-brand-logo" viewBox="0 0 100 100" role="img" aria-label="AQW"><rect x="2" y="2" width="96" height="96" fill="#064675"/><text x="50" y="64" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="34" font-weight="800" font-style="italic" letter-spacing="-1" textLength="80" lengthAdjust="spacingAndGlyphs" fill="#fff">AQW</text></svg><span class="site-brand-copy"><span class="site-brand-title">Anime Quiz World</span></span></a><nav class="page-nav" aria-label="サイト内ナビゲーション"><a href="./">ホーム</a><a href="./guide.html">遊び方・お知らせ</a><a href="./terms.html">利用規約</a><a href="./privacy.html">プライバシーポリシー</a></nav></header>
 <main>
 <div class="hero"><div class="eyebrow">HELP CENTER</div><h1>遊び方・お知らせ</h1><p class="lead">Anime Quiz Worldの機能や遊び方、最新の更新情報をまとめています。</p></div>
 <nav class="jump" aria-label="ページ内メニュー"><a href="#howto">遊び方</a><a href="#modes">出題形式</a><a href="#features">その他の機能</a><a href="#news">お知らせ</a><a href="#multiplayer">オンライン対戦</a></nav>
@@ -150,28 +156,30 @@ li{padding-left:3px;margin:8px 0}
 <li><strong>フレンドチャット：</strong>相互フォローしているユーザー同士で1対1のメッセージを送れます。</li>
 <li><strong>ブロック・通報：</strong>投稿・返信・メッセージから通報できます。ユーザーをブロックすると、自分のフィードから相手の投稿が非表示になり、相互フォローのチャットと新しいフォローが制限されます。ブロック一覧から解除できます。</li>
 </ul>
-<div class="callout">クイズは基本的にログインなしで遊べます。投稿・フォロー・チャット・ブロック・通報などのコミュニティ機能にはアカウントが必要です。通報内容は運営者が確認し、ブロック関係と通報記録にはアクセス制限を設けています。</div>
+<div class="callout">クイズは基本的にログインなしで遊べます。投稿・フォロー・チャット・ブロック・通報などのコミュニティ機能にはアカウントが必要です。通報内容は、サービスの安全維持や利用規約に基づく対応のため、必要な範囲で確認されます。</div>
 <div class="actions"><a class="primary" href="./">クイズを始める</a><a class="secondary" href="./recommend.html">おすすめ診断へ</a></div>
 </section>
 <section id="news">
 <h2>お知らせ</h2>
-<article class="notice"><div class="date">2026年11月10日</div><h3>サイト全体の使いやすさを改善中</h3><p>初めて訪れた方にも機能が分かるよう、遊び方・お知らせページを追加しました。今後もクイズ画面や作品データの読み込み、スマートフォンでの操作性を改善していきます。</p></article>
-<article class="notice"><div class="date">開発予定</div><h3>オンライン対戦機能</h3><p>友達と同じルームに参加してクイズで競える機能を検討・開発予定です。現在はまだ利用できません。公開時にはこのページで遊び方を案内します。</p></article>
+<article class="notice"><div class="date">2026年11月14日</div><h3>スマートフォンでの操作性を改善</h3><p>各ページの画面幅に合わせたレイアウト調整、タッチ操作しやすいボタン・入力欄、横幅の大きい表のスクロール表示に対応しました。</p></article>
 </section>
 <section id="multiplayer">
 <h2>オンライン対戦について</h2>
-<p>オンライン対戦では、次のような機能を目標にしています。</p>
+<p>オンライン対戦は現在、1対1で利用できます。</p>
 <ul>
-<li>ルームを作成し、参加コードを友達に共有</li>
-<li>参加コードを入力して同じ対戦に参加</li>
-<li>参加者の準備状況や接続状態を表示</li>
-<li>同じ問題を同時に出題し、正解数や回答時間で競争</li>
-<li>対戦終了後に結果を表示・共有</li>
+<li>ルームを作成し、参加コードや招待リンクを共有</li>
+<li>参加コードを入力してルームに参加</li>
+<li>ランダムマッチで対戦相手を探す</li>
+<li>両プレイヤーが準備完了になった後、5・10・15・20問の同期クイズを開始</li>
+<li>各問題20秒の制限時間、サーバー側の正誤判定・得点集計</li>
+<li>対戦終了後の勝敗表示、戦績・対戦履歴の確認</li>
+<li>相手の承認を得て同じ相手と再戦</li>
 </ul>
-<p class="callout"><span class="status">開発予定・未実装</span><br>この機能はまだ公開されていません。現時点では通常のクイズ、ランキング、コミュニティ機能をご利用ください。</p>
+<p class="callout">現在対応している対戦人数は2人です。3〜4人での対戦には対応していません。</p>
+<div class="actions"><a class="primary" href="./multiplayer.html">オンライン対戦を開く</a></div>
 </section>
 </main>
-<footer class="doc-footer"><span>© Anime Quiz World / 非公式ファンサイト</span><nav><a href="./terms.html">利用規約</a><a href="./privacy.html">プライバシーポリシー</a><span>連絡先：@anime_love_p（X）</span></nav></footer>
+<footer class="site-footer"><span>© Anime Quiz World / 非公式ファンサイト</span><nav aria-label="フッターナビゲーション"><a href="./index.html">ホーム</a><a href="./guide.html">遊び方・お知らせ</a><a href="./terms.html">利用規約</a><a href="./privacy.html">プライバシーポリシー</a><a href="./admin.html">管理者ログイン</a><a href="https://x.com/anime_love_p" target="_blank" rel="noopener noreferrer">連絡先：@anime_love_p（X）</a></nav></footer>
 </div>
 </body>
 </html>

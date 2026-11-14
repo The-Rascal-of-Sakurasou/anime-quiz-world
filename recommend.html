@@ -117,12 +117,18 @@ body{background:#f6f7f9;color:#202936;letter-spacing:.005em}
   .cards{align-items:stretch}
 }
 
+
+/* Unified AQW logo sizing: match the home page on every page. */
+.site-brand-logo{display:block;flex:0 0 48px;width:48px;height:48px;max-width:none;}
+@media(max-width:700px){.site-brand-logo{flex-basis:46px;width:46px;height:46px}}
+@media(max-width:380px){.site-brand-logo{flex-basis:42px;width:42px;height:42px}}
 </style>
+ <link rel="stylesheet" href="./responsive.css">
 </head>
 <body>
 <a class="skip-link" href="#mainContent">診断コンテンツへ移動</a>
 <div class="wrap">
-<header class="top"><a class="site-brand" href="./index.html" aria-label="Anime Quiz World トップページ"><svg class="site-brand-logo" viewBox="0 0 100 100" role="img" aria-label="AQW"><rect x="2" y="2" width="96" height="96" fill="#064675"/><text x="50" y="64" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="34" font-weight="800" font-style="italic" letter-spacing="-1" textLength="80" lengthAdjust="spacingAndGlyphs" fill="#fff">AQW</text></svg><span class="site-brand-copy"><span class="site-brand-title">Anime Quiz World</span><span class="site-brand-tagline">知識を試して、新しい作品と出会う。</span></span></a><a href="./index.html">クイズに戻る</a></header>
+<header class="top"><a class="site-brand" href="./index.html" aria-label="Anime Quiz World トップページ"><svg class="site-brand-logo" viewBox="0 0 100 100" role="img" aria-label="AQW"><rect x="2" y="2" width="96" height="96" fill="#064675"/><text x="50" y="64" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="34" font-weight="800" font-style="italic" letter-spacing="-1" textLength="80" lengthAdjust="spacingAndGlyphs" fill="#fff">AQW</text></svg><span class="site-brand-copy"><span class="site-brand-title">Anime Quiz World</span></span></a><a href="./index.html">クイズに戻る</a></header>
 <section class="hero"><div class="eyebrow">ANIME RECOMMENDATION ANALYSIS</div><h1>あなたに合うアニメを分析</h1><p>好きなジャンルだけでなく、物語の展開・雰囲気・作品の長さなどから好みの傾向を分析し、次に見る候補を提案します。18問の質問に回答すると、好みに合う作品を提案します。好きな作品・苦手な作品も任意で入力できます。</p></section>
 <main class="panel" id="mainContent" tabindex="-1">
 <div id="diagnosis">
@@ -184,7 +190,7 @@ const safeStorage={
  keys(){try{return Object.keys(window.localStorage)}catch(_){return []}}
 };
 const API='https://graphql.anilist.co';
-const MAX_RECOMMENDATION_PAGES_PER_SORT=20;
+const MAX_RECOMMENDATION_PAGES_PER_SORT=4;
 const questions=[
 {dimension:'genre',title:'見たい作品のジャンルは？',help:'作品の大まかなジャンルを選んでください。',options:[
 {label:'ファンタジー・冒険',genres:['Fantasy','Adventure']},
@@ -548,7 +554,7 @@ function buildRecommendationDataWarnings(failedPages,totalPages,cappedSorts){
  const capped=Number.isInteger(cappedSorts)?Math.max(0,cappedSorts):0;
  const warnings=[];
  if(failed&&total)warnings.push('作品データの一部を取得できませんでした（'+failed+'/'+total+'ページ）。推薦候補が偏る可能性があります。時間をおいて再診断してください。');
- if(capped)warnings.push('一部の並び順で取得上限（1グループ最大20ページ）に達しました。全作品を網羅できていない可能性があります。');
+ if(capped)warnings.push('一部の並び順で取得上限（1グループ最大4ページ）に達しました。全作品を網羅できていない可能性があります。');
  return warnings;
 }
 
@@ -626,7 +632,7 @@ function runRecommendationSelfTests(){
  check('苦手な作品そのものを推薦候補から除外する',buildExcludedSeedIds([],[{id:12}]).has(12));
  check('好き・苦手の両方に入力した作品も推薦候補から除外する',buildExcludedSeedIds([{id:13}],[{id:13}]).has(13));
  check('未解決の作品入力は他の候補IDを誤って除外しない',buildExcludedSeedIds([{id:null}],[]).size===0);
- check('推薦データの取得上限は4並び順×最大20ページ',4*MAX_RECOMMENDATION_PAGES_PER_SORT*50===4000);
+ check('推薦データの取得上限は4並び順×最大4ページ',4*MAX_RECOMMENDATION_PAGES_PER_SORT*50===800);
  check('全ページ取得成功時はデータ不足警告を表示しない',buildRecommendationDataWarnings(0,20).length===0);
  check('一部ページ失敗時は候補の偏りを警告する',buildRecommendationDataWarnings(3,20)[0]?.includes('3/20ページ'));
  check('全ページ失敗時も取得失敗を警告する',buildRecommendationDataWarnings(1,1)[0]?.includes('1/1ページ'));
@@ -946,7 +952,7 @@ async function getRecommendations(profile){
   throw lastError||new Error('作品データを取得できませんでした。');
  };
  // ジャンルで候補を絞らず、4種類の並び順についてAPIが返す総ページ数を確認して取得する。
- // API負荷と待ち時間を抑えるため、各並び順は5ページずつ取得し、1並び順あたり最大20ページまでとする。
+ // API負荷と待ち時間を抑えるため、各並び順は2ページずつ取得し、1並び順あたり最大4ページまでとする。
  // 上限を超える場合は取得上限到達として警告し、取得済みデータで診断を続行する。
  const sortModes=['POPULARITY_DESC','SCORE_DESC','TRENDING_DESC','START_DATE_DESC'];
  const maxPagesPerSort=MAX_RECOMMENDATION_PAGES_PER_SORT;
@@ -973,8 +979,8 @@ async function getRecommendations(profile){
  for(let i=0;i<sortPlans.length;i++){
   const plan=sortPlans[i];
   if(plan.failed||plan.target<=1)continue;
-  for(let start=2;start<=plan.target;start+=5){
-   const batchPages=Array.from({length:Math.min(5,plan.target-start+1)},(_,index)=>start+index);
+  for(let start=2;start<=plan.target;start+=2){
+   const batchPages=Array.from({length:Math.min(2,plan.target-start+1)},(_,index)=>start+index);
    const batch=await Promise.allSettled(batchPages.map(page=>fetchPage(page,plan.sort)));
    for(const result of batch){
     if(result.status==='fulfilled')pages.push({sort:plan.sort,media:result.value.media});
@@ -1489,7 +1495,7 @@ function renderFeedbackAnalytics(){
  const similarityTitle=document.createElement('strong');similarityTitle.textContent='好きな作品との類似度と評価';similaritySection.append(similarityTitle);
  const similarityText=document.createElement('p');similarityText.className='status';
  similarityText.textContent=metricRecords.length
-  ?'類似度データ付き評価 '+metricRecords.length+' 件。類似度は好きな作品とのジャンル・タグの共通度から算出した0〜8.5の内部指標です。'
+  ?'類似度データ付き評価 '+metricRecords.length+' 件。類似度は、好きな作品とのジャンルやタグの共通点をもとにした参考値です。'
   :'類似度データはまだありません。今回以降の推薦を評価すると記録されます。以前の評価にはさかのぼって追加できません。';
  similaritySection.append(similarityText);
  Object.entries(similarityGroups).forEach(([label,count])=>{
@@ -1643,5 +1649,6 @@ render();
 if(restoreShareState())finish();
 else restoreSavedDiagnosis();
 </script>
+<footer class="site-footer"><span>© Anime Quiz World / 非公式ファンサイト</span><nav aria-label="フッターナビゲーション"><a href="./index.html">ホーム</a><a href="./guide.html">遊び方・お知らせ</a><a href="./terms.html">利用規約</a><a href="./privacy.html">プライバシーポリシー</a><a href="./admin.html">管理者ログイン</a><a href="https://x.com/anime_love_p" target="_blank" rel="noopener noreferrer">連絡先：@anime_love_p（X）</a></nav></footer>
 </body>
 </html>
