@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import "../aqw-text-utils.js";
 
 const html = await readFile("index.html", "utf8");
 const start = html.indexOf("function deduplicateSearchResults(");
@@ -7,12 +8,7 @@ const end = html.indexOf("\nfunction mergeAnimeRecords", start);
 assert.notEqual(start, -1, "Search-result deduplication function must exist");
 assert.notEqual(end, -1, "Search-result deduplication function must have a stable boundary");
 const source = html.slice(start, end).trim();
-const normalizeStart = html.indexOf("function normalizeAnswer(");
-const normalizeEnd = html.indexOf("\nfunction titleAnswerVariants", normalizeStart);
-assert.notEqual(normalizeStart, -1, "Production title normalizer must exist");
-assert.notEqual(normalizeEnd, -1, "Production title normalizer must have a stable boundary");
-const normalizeSource = html.slice(normalizeStart, normalizeEnd).trim();
-const normalizeAnswer = new Function(normalizeSource + "; return normalizeAnswer;")();
+const normalizeAnswer = globalThis.AQWTextUtils.normalizeAnswer;
 const titleOf = (anime) => anime?.title?.native || anime?.title?.english || anime?.title?.romaji || "Unknown";
 assert.equal(normalizeAnswer("検証 アニメ！"), normalizeAnswer("検証アニメ"), "Production normalization must ignore spaces and punctuation");
 const deduplicateSearchResults = new Function(
