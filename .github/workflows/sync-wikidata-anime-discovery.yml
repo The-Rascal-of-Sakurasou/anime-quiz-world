@@ -1,0 +1,51 @@
+name: Refresh Wikidata anime discovery candidates
+
+on:
+  schedule:
+    - cron: '23 4 * * 1'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'scripts/sync-wikidata-anime-discovery.mjs'
+      - '.github/workflows/sync-wikidata-anime-discovery.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: aqw-wikidata-anime-discovery
+  cancel-in-progress: false
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate discovery script
+        run: |
+          node --check scripts/sync-wikidata-anime-discovery.mjs
+          node scripts/sync-wikidata-anime-discovery.mjs --self-test
+      - name: Refresh candidate snapshot
+        if: github.event_name != 'pull_request'
+        run: node scripts/sync-wikidata-anime-discovery.mjs
+      - name: Commit changed snapshot
+        if: github.event_name != 'pull_request'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/wikidata-anime-discovery.json data/wikidata-anime-discovery.json.gz
+          if git diff --cached --quiet; then
+            echo "Wikidata candidate snapshot is unchanged."
+            exit 0
+          fi
+          git commit -m "Refresh Wikidata anime discovery candidates"
+          git pull --rebase origin main
+          git push
