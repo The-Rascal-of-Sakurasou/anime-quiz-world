@@ -1,0 +1,111 @@
+-- Integration test against a disposable real PostgreSQL instance.
+-- Runs as authenticated, while auth.uid() is driven by the JWT claim fixture.
+SET ROLE authenticated;
+DO $test$
+DECLARE
+  v_run_id uuid;
+  v_result jsonb;
+  v_elapsed_ms integer;
+BEGIN
+  PERFORM set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', true);
+  v_result := public.start_aqw_speed_rush();
+  v_run_id := (v_result ->> 'run_id')::uuid;
+
+  IF v_run_id IS NULL THEN
+    RAISE EXCEPTION 'start RPC did not return a run ID';
+  END IF;
+
+  -- A different authenticated user must not be able to submit this run.
+  PERFORM set_config('request.jwt.claim.sub', '22222222-2222-4222-8222-222222222222', true);
+  BEGIN
+    PERFORM public.submit_aqw_speed_rush(10, 1, v_run_id);
+    RAISE EXCEPTION 'foreign run ID was unexpectedly accepted';
+  EXCEPTION WHEN SQLSTATE '22023' THEN
+    NULL;
+  END;
+
+  -- The owner can submit. p_elapsed_ms=1 is deliberately false; the DB clock
+  -- should produce a value >= 1000 after the wait.
+  PERFORM set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', true);
+  PERFORM pg_sleep(1.1);
+  v_result := public.submit_aqw_speed_rush(7, 1, v_run_id);
+  v_elapsed_ms := (v_result ->> 'elapsed_ms')::integer;
+
+  IF v_elapsed_ms < 1000 OR v_elapsed_ms > 120000 THEN
+    RAISE EXCEPTION 'elapsed time was not computed from the server clock: %', v_elapsed_ms;
+  END IF;
+  IF v_result ->> 'duplicate' <> 'false' THEN
+    RAISE EXCEPTION 'first valid submission was not recorded: %', v_result;
+  END IF;
+
+  -- The same run is single-use and cannot be replayed.
+  BEGIN
+    PERFORM public.submit_aqw_speed_rush(10, 1, v_run_id);
+    RAISE EXCEPTION 'replayed run was unexpectedly accepted';
+  EXCEPTION WHEN SQLSTATE '22023' THEN
+    NULL;
+  END;
+
+  -- Preserve values for owner-level assertions after leaving the authenticated role.
+  PERFORM set_config('aqw_test.run_id', v_run_id::text, false);
+  PERFORM set_config('aqw_test.elapsed_ms', v_elapsed_ms::text, false);
+END
+$test$;
+
+-- Inspect table contents as the database owner; authenticated users should
+-- not gain direct table access merely to make this test pass.
+RESET ROLE;
+
+-- The private submit RPC must be callable by authenticated users only.
+DO $function_acl$
+BEGIN
+  IF NOT has_function_privilege('authenticated', 'private.submit_aqw_speed_rush(integer,integer,uuid)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'authenticated role cannot execute the private submit function';
+  END IF;
+  IF has_function_privilege('anon', 'private.submit_aqw_speed_rush(integer,integer,uuid)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'anon role unexpectedly has execute permission on the private submit function';
+  END IF;
+END
+$function_acl$;
+
+DO $score_check$
+DECLARE
+  v_elapsed_ms integer := current_setting('aqw_test.elapsed_ms')::integer;
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM public.aqw_speed_rush_scores
+     WHERE user_id = '11111111-1111-4111-8111-111111111111'
+       AND correct_count = 7
+       AND elapsed_ms = v_elapsed_ms
+  ) THEN
+    RAISE EXCEPTION 'leaderboard score did not store the server elapsed time';
+  END IF;
+END
+$score_check$;
+
+DO $attempt_check$
+DECLARE
+  v_attempt_count integer;
+BEGIN
+  SELECT count(*) INTO v_attempt_count
+    FROM private.aqw_speed_rush_attempts
+   WHERE user_id = '11111111-1111-4111-8111-111111111111'
+     AND run_id = current_setting('aqw_test.run_id')::uuid;
+  IF v_attempt_count <> 1 THEN
+    RAISE EXCEPTION 'expected exactly one attempt row, found %', v_attempt_count;
+  END IF;
+END
+$attempt_check$;
+
+-- Verify that unauthenticated callers are rejected by the private start logic.
+SELECT set_config('request.jwt.claim.sub', '', false);
+DO $unauth$
+BEGIN
+  BEGIN
+    PERFORM private.start_aqw_speed_rush();
+    RAISE EXCEPTION 'unauthenticated start was unexpectedly accepted';
+  EXCEPTION WHEN SQLSTATE '28000' THEN
+    NULL;
+  END;
+END
+$unauth$;

@@ -1,0 +1,66 @@
+name: Speed Rush server timing contract
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'supabase/migrations/**'
+      - 'scripts/test-speed-rush-server-timing.mjs'
+      - 'scripts/test-speed-rush-postgres.sql'
+      - 'scripts/fixtures/speed-rush-postgres.sql'
+      - '.github/workflows/speed-rush-server-timing.yml'
+  push:
+    branches:
+      - 'fix/speed-rush-server-timing-*'
+    paths:
+      - 'index.html'
+      - 'supabase/migrations/**'
+      - 'scripts/test-speed-rush-server-timing.mjs'
+      - 'scripts/test-speed-rush-postgres.sql'
+      - 'scripts/fixtures/speed-rush-postgres.sql'
+      - '.github/workflows/speed-rush-server-timing.yml'
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/test-speed-rush-server-timing.mjs
+
+  postgres-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: aqw_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d aqw_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Prepare isolated AQW schema
+        env:
+          PGPASSWORD: postgres
+        run: psql --host 127.0.0.1 --username postgres --dbname aqw_test --set ON_ERROR_STOP=1 --file scripts/fixtures/speed-rush-postgres.sql
+      - name: Apply migration to disposable PostgreSQL
+        env:
+          PGPASSWORD: postgres
+        run: psql --host 127.0.0.1 --username postgres --dbname aqw_test --set ON_ERROR_STOP=1 --file supabase/migrations/20261112230000_aqw_speed_rush_server_timing.sql
+      - name: Verify authenticated run lifecycle
+        env:
+          PGPASSWORD: postgres
+        run: psql --host 127.0.0.1 --username postgres --dbname aqw_test --set ON_ERROR_STOP=1 --file scripts/test-speed-rush-postgres.sql
