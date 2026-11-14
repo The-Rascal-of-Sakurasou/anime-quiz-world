@@ -34,6 +34,9 @@ assert.match(supabaseConfig, /\[functions\.aqw-match-prepare\][\s\S]*?verify_jwt
 
 const synopsisOverrideEntries = ["Fate/stay night", "GTO", "幽☆遊☆白書", "偽物語", "魔女の旅々", "見える子ちゃん", "オーバーロードⅣ", "BTOOOM!", "アクダマドライブ", "虚構推理", "ゼロの使い魔", "クズの本懐", "蜘蛛ですが、なにか？", "学戦都市アスタリスク", "四畳半神話大系", "ポケットモンスター", "K", "マギ The kingdom of magic", "ゲーマーズ！", "ヒナまつり", "ワンパンマン３", "Ergo Proxy", "進撃の巨人 The Final Season完結編 後編", "わたしの幸せな結婚", "黄泉のツガイ", "らき☆すた", "かぐや様は告らせたい -ファーストキッスは終わらない-", "あそびあそばせ", "涼宮ハルヒの消失", "さよならの朝に約束の花をかざろう", "ヴァイオレット・エヴァーガーデン 外伝~永遠と自動手記人形~", "猫物語（黒）"];
 const synopsisSource = source.get("index.html");
+assert.match(synopsisSource, /workRarity\*\.45\+heuristic\*\.55/, "Difficulty score must weight anime familiarity at 45% and question format at 55%");
+assert.match(synopsisSource, /作品の知名度（45%）と問題形式（55%）/, "Japanese difficulty guidance must disclose the 45/55 weighting");
+assert.match(synopsisSource, /45% anime familiarity and 55% question format/, "English difficulty guidance must disclose the 45/55 weighting");
 for (const title of synopsisOverrideEntries) {
   const entryStart = synopsisSource.indexOf("'" + title + "':'");
   const entryEnd = synopsisSource.indexOf("',", entryStart);
