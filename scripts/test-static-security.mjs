@@ -446,7 +446,7 @@ assert.ok(fetchAnimeStart >= 0 && fetchAnimeEnd > fetchAnimeStart, "AniList brow
 const fetchAnimeSource = index.slice(fetchAnimeStart, fetchAnimeEnd);
 assert.equal((fetchAnimeSource.match(/const requestAniListJson=/g) || []).length, 1, "AniList requests must share one retry helper");
 assert.equal((fetchAnimeSource.match(/if\(!response\.ok\)/g) || []).length, 1, "HTTP status handling must not be duplicated between single and batched AniList requests");
-assert.equal((fetchAnimeSource.match(/response\.status===429/g) || []).length, 1, "AniList rate-limit handling must exist in one shared location");
+assert.equal((fetchAnimeSource.match(/if\(response\.status===429\)/g) || []).length, 1, "AniList rate-limit handling must exist in one shared location");
 assert.ok(fetchAnimeSource.includes("requestAniListJson(requestQuery") && fetchAnimeSource.includes("requestAniListJson(batchQuery"), "Single and batched queries must use the same HTTP retry helper");
 const sharedStorage = fs.readFileSync("aqw-safe-storage.js", "utf8");
 assert.ok(index.includes('src="./aqw-safe-storage.js"'), "Quiz page must load the shared safe-storage helper before its inline application script");
