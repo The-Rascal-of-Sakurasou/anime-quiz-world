@@ -884,7 +884,7 @@ function extractTextSignals(raw,target,weight=.65,defaultPolarity='positive'){
   {terms:['群像劇','複数視点','複数の主人公','多視点','登場人物が多い'],tag:'Ensemble Cast',label:'群像劇'},
   {terms:['戦争','軍事','戦場','紛争'],tag:'War',label:'戦争・軍事'},
   {terms:['政治','国家','組織','社会問題','権力'],tag:'Politics',label:'政治・社会'},
-  {terms:['復讐','復讐劇',' revenge '],tag:'Revenge',label:'復讐'},
+  {terms:['復讐','復讐劇','報復','仇討ち'],tag:'Revenge',label:'復讐'},
   {terms:['サバイバル','生き残り','極限状態','脱出ゲーム'],tag:'Survival',label:'サバイバル'},
   {terms:['テンポが速い','展開が速い','スピーディー','テンポの良い','テンポがいい','次々と展開'],tag:'Fast-Paced',label:'テンポの速い展開'},
   {terms:['ゆっくり進む','じっくり','スローペース','ゆったり進む','丁寧に描く'],tag:'Slow Burn',label:'じっくり進む展開'},
@@ -899,7 +899,7 @@ function extractTextSignals(raw,target,weight=.65,defaultPolarity='positive'){
   {terms:['サイバーパンク','近未来都市'],tag:'Cyberpunk',label:'サイバーパンク'},
   {terms:['宇宙船','惑星','銀河','宇宙開拓'],tag:'Space',label:'宇宙'},
   {terms:['哲学','倫理','価値観','生き方を考える'],tag:'Philosophy',label:'哲学・倫理'},
-  {terms:['技術','テクノロジー','人工知能','ai','情報技術'],tag:'Technology',label:'科学技術'},
+  {terms:['技術','テクノロジー','人工知能','生成ai','ai技術','情報技術'],tag:'Technology',label:'科学技術'},
   {terms:['競争','ライバル','勝負','競い合う'],tag:'Competition',label:'競争・ライバル'},
   {terms:['スポ根','修行','訓練','特訓','鍛える'],tag:'Training',label:'努力・訓練'},
   {terms:['犯罪','犯罪捜査','裏社会','マフィア'],tag:'Crime',label:'犯罪・裏社会'},
@@ -907,7 +907,7 @@ function extractTextSignals(raw,target,weight=.65,defaultPolarity='positive'){
   {terms:['明るい雰囲気','前向き','爽やか','楽しい雰囲気'],tag:'Comedy',label:'明るい雰囲気'},
   {terms:['暗い雰囲気','重い展開','重厚','シリアス','緊迫'],tag:'Drama',label:'シリアスな雰囲気'}
  ];
- const negativeCues=['好きではない','見たくない','求めない','好まない','中心ではない','多くない','少なめ','少ない','少なく','控えめ','苦手','嫌い','避けたい','避けて','避ける','不要','いらない','含まない','なし','無い','ない'];
+ const negativeCues=['好きではない','好きじゃない','好みではない','見たいわけではない','見たくない','欲しくない','求めない','求めていない','好まない','興味がない','興味はない','重視しない','重要ではない','必要ない','中心ではない','多くない','少なめ','少ない','少なく','控えめ','苦手','嫌い','避けたい','避けて','避ける','不要','いらない','含まない','なし','無い','ない'];
  const positiveCues=['好き','見たい','欲しい','重視','楽しめる','求める','興味','大歓迎','好み','魅力','増やして'];
  const cueDistance=(windowText,termStart,termEnd,cues)=>{
   let best=Infinity;
