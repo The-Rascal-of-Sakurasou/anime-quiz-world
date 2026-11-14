@@ -158,8 +158,15 @@ footer{color:var(--muted);font-size:.85rem;padding:10px 0 30px}
 <div class="metric"><span>通知</span><strong id="notificationCount">—</strong></div>
 <div class="metric"><span>フレンドメッセージ</span><strong id="messageCount">—</strong></div>
 <div class="metric"><span>未対応の通報</span><strong id="reportCount">—</strong></div>
+<div class="metric"><span>未対応の質問</span><strong id="qaCount">—</strong></div>
 </div>
 <p class="muted" style="font-size:.85rem;margin-top:12px">件数のみを表示しています。個人間メッセージの本文は通常表示しません。通報対象として指定されたメッセージのみ、通報確認のため多要素認証済み管理者が個別に表示できます。</p>
+</div>
+<div class="card">
+<h2>Q&A・質問の管理</h2>
+<p class="muted">質問フォームから届いた内容を管理します。質問本文は多要素認証済みのサイト管理者だけが確認できます。運営メモは利用者には公開されません。</p>
+<div class="actions" style="margin-bottom:12px"><button id="reloadQuestions" type="button">質問を更新</button></div>
+<div id="qaQuestions" class="list"><p class="muted">読み込み中…</p></div>
 </div>
 <div class="card">
 <h2>投稿・返信の管理</h2>
@@ -312,18 +319,61 @@ async function startSession(session){
   say('管理者確認を完了できませんでした。安全のためログアウトしました。再度ログインしてください。','error');
  }
 }
+async function countNewQuestions(){
+ const {count,error}=await client.from('qa_questions').select('id',{count:'exact',head:true}).eq('status','new');
+ if(error)throw error;return count??0;
+}
+async function loadQuestions(){
+ const root=$('qaQuestions');root.textContent='質問を読み込み中…';
+ const {data,error}=await client.from('qa_questions').select('id,display_name,title,body,status,admin_reply,created_at,updated_at,answered_at').order('created_at',{ascending:false}).limit(100);
+ if(error)throw error;
+ root.replaceChildren();
+ if(!data?.length){root.textContent='質問はまだ届いていません。';return}
+ const labels={new:'未対応',reviewing:'確認中',answered:'回答済み',closed:'対応終了'};
+ for(const question of data){
+  const card=document.createElement('article');card.className='post report-card';
+  const head=document.createElement('div');head.className='post-head';
+  const heading=document.createElement('strong');heading.textContent=question.title;
+  const meta=document.createElement('small');meta.textContent=(question.display_name||'匿名')+' · '+date(question.created_at);
+  head.append(heading,meta);card.append(head);
+  const body=document.createElement('p');body.className='post-body';body.textContent=question.body;card.append(body);
+  const controls=document.createElement('div');controls.className='report-meta';
+  const statusLabel=document.createElement('label');statusLabel.textContent='対応状況';
+  const select=document.createElement('select');select.setAttribute('aria-label','質問の対応状況');
+  for(const value of ['new','reviewing','answered','closed']){const option=document.createElement('option');option.value=value;option.textContent=labels[value];select.append(option)}
+  select.value=question.status;statusLabel.append(select);controls.append(statusLabel);card.append(controls);
+  const noteLabel=document.createElement('label');noteLabel.textContent='運営メモ（非公開）';
+  const note=document.createElement('textarea');note.rows=3;note.maxLength=3000;note.value=question.admin_reply||'';note.placeholder='対応内容や回答案などを記録できます。';note.style.width='100%';note.style.padding='10px';note.style.border='1px solid #c7d0db';note.style.borderRadius='7px';note.style.font='inherit';noteLabel.append(note);card.append(noteLabel);
+  const save=document.createElement('button');save.type='button';save.className='primary';save.textContent='対応状況・メモを保存';
+  save.addEventListener('click',async()=>{
+   save.disabled=true;
+   try{
+    const nextStatus=select.value;
+    const update={status:nextStatus,admin_reply:note.value.trim(),updated_at:new Date().toISOString(),answered_at:nextStatus==='answered'?(question.answered_at||new Date().toISOString()):null};
+    const {error:updateError}=await client.from('qa_questions').update(update).eq('id',question.id);
+    if(updateError)throw updateError;
+    question.status=nextStatus;question.answered_at=update.answered_at;
+    say('質問の管理情報を保存しました。','success');
+    await countNewQuestions().then(count=>{$('qaCount').textContent=count.toLocaleString('ja-JP')});
+   }catch(error){say('質問を更新できませんでした：'+(error.message||String(error)),'error')}
+   finally{save.disabled=false}
+  });
+  card.append(save);root.append(card);
+ }
+}
 async function refreshAll(){
  $('refreshButton').disabled=true;
  try{
-  const [profiles,posts,notifications,messages,pendingReports]=await Promise.all([
-   count('profiles'),count('posts'),count('notifications'),count('friend_messages'),countPendingReports()
+  const [profiles,posts,notifications,messages,pendingReports,pendingQuestions]=await Promise.all([
+   count('profiles'),count('posts'),count('notifications'),count('friend_messages'),countPendingReports(),countNewQuestions()
   ]);
   $('profileCount').textContent=profiles.toLocaleString('ja-JP');
   $('postCount').textContent=posts.toLocaleString('ja-JP');
   $('notificationCount').textContent=notifications.toLocaleString('ja-JP');
   $('messageCount').textContent=messages.toLocaleString('ja-JP');
   $('reportCount').textContent=pendingReports.toLocaleString('ja-JP');
-  await Promise.all([loadPosts(),loadReports(),loadProfiles(),loadAuthUsers()]);
+  $('qaCount').textContent=pendingQuestions.toLocaleString('ja-JP');
+  await Promise.all([loadPosts(),loadReports(),loadQuestions(),loadProfiles(),loadAuthUsers()]);
   say('管理情報を更新しました。','success');
  }catch(error){say('データを取得できませんでした：'+(error.message||String(error)),'error')}
  finally{$('refreshButton').disabled=false}
@@ -578,6 +628,7 @@ $('logoutButton').addEventListener('click',async()=>{
 $('refreshButton').addEventListener('click',refreshAll);
 $('reloadUsers').addEventListener('click',loadAuthUsers);
 $('reloadReports').addEventListener('click',()=>loadReports().catch(error=>say('通報を取得できませんでした：'+(error.message||String(error)),'error')));
+$('reloadQuestions').addEventListener('click',()=>loadQuestions().catch(error=>say('質問を取得できませんでした：'+(error.message||String(error)),'error')));
 $('loadData').addEventListener('click',()=>loadDataRecords().catch(error=>say('データを取得できませんでした：'+(error.message||String(error)),'error')));
 $('dataTable').addEventListener('change',()=>loadDataRecords().catch(error=>say('データを取得できませんでした：'+(error.message||String(error)),'error')));
 say('メールアドレスとパスワードを入力して管理者認証を行ってください。');
