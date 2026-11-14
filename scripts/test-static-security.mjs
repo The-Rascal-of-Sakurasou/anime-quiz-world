@@ -269,8 +269,8 @@ assert.ok(recommend.includes("AQWAnimePolicy.isJapaneseOriginAnime"), "Recommend
 assert.match(animeOriginPolicy, /countryOfOrigin !== "JP"/, "Shared origin policy must distinguish Japanese and foreign anime");
 assert.match(animeOriginPolicy, /Number\(anime\.popularity\) >= 10000/, "Foreign anime must meet the documented popularity threshold");
 assert.match(animeOriginPolicy, /hasJapaneseTitle\(anime\)/, "Foreign anime must have a Japanese-language title");
-const isRecommendedOriginJapanese = vm.runInNewContext(animeOriginPolicy + "\\nAQWAnimePolicy.isJapaneseOriginAnime");
-const hasJapaneseTitle = vm.runInNewContext(animeOriginPolicy + "\\nAQWAnimePolicy.hasJapaneseTitle");
+const isRecommendedOriginJapanese = vm.runInNewContext(animeOriginPolicy + "\nAQWAnimePolicy.isJapaneseOriginAnime");
+const hasJapaneseTitle = vm.runInNewContext(animeOriginPolicy + "\nAQWAnimePolicy.hasJapaneseTitle");
 assert.equal(hasJapaneseTitle({ title: { native: "日本語タイトル" } }), true, "Japanese-language titles must be recognized");
 assert.equal(hasJapaneseTitle({ title: { native: "English Only" } }), false, "English-only titles must not be treated as Japanese");
 assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "ORIGINAL" }), true, "Japanese original anime must remain eligible");

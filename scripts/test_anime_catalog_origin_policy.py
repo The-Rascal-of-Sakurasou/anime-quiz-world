@@ -1,6 +1,12 @@
+import importlib.util
 import unittest
+from pathlib import Path
 
-from scripts.audit_anime_catalog import japanese_origin
+MODULE_PATH = Path(__file__).with_name("audit-anime-catalog.py")
+SPEC = importlib.util.spec_from_file_location("audit_anime_catalog", MODULE_PATH)
+AUDIT_MODULE = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(AUDIT_MODULE)
+japanese_origin = AUDIT_MODULE.japanese_origin
 
 
 class JapaneseOriginAuditTests(unittest.TestCase):
