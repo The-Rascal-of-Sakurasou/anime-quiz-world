@@ -6,6 +6,11 @@
 
 create schema if not exists private;
 
+-- Column exists in the hosted profile schema but its original migration is not tracked.
+-- Keep this compatibility addition confined to the disposable local test fixture.
+alter table public.profiles
+  add column if not exists leaderboard_enabled boolean not null default true;
+
 create table if not exists private.aqw_player_stat_runs (
   user_id uuid not null references public.profiles(id) on delete cascade,
   run_id uuid not null,
