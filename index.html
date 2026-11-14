@@ -2042,7 +2042,7 @@ async function ensureQuestionChoiceSummaryAsync(){
   const tierPool=sourcePool.filter(item=>titleUsable(item));
   const titleKeys=new Set(tierPool.map(item=>normalizeAnswer(titleOf(item))).filter(Boolean));
   const titleChoiceRecords=new Map(),titleAliasOwners=new Map(),aliasAnimeOwners=new Map();
-  const tierStudioKeys=new Set(),yearKeys=new Set(),synopsisKeys=new Set(),synopsisCandidates=[];
+  const tierStudioKeys=new Set(),yearKeys=new Set(),episodeKeys=new Set(),formatKeys=new Set(),sourceKeys=new Set(),genreKeys=new Set(),synopsisKeys=new Set(),synopsisCandidates=[];
   for(let i=0;i<tierPool.length;i++){
    const item=tierPool[i],primaryKey=normalizeAnswer(titleOf(item));
    if(primaryKey){
@@ -2062,6 +2062,10 @@ async function ensureQuestionChoiceSummaryAsync(){
    }
    const year=animeYear(item);
    if(Number.isInteger(year)&&year>1900)yearKeys.add(String(year));
+   const episodes=Number(item?.episodes);if(Number.isInteger(episodes)&&episodes>0)episodeKeys.add(String(episodes));
+   const format=String(item?.format||'').trim();if(format)formatKeys.add(format);
+   const source=String(item?.source||'').trim();if(source)sourceKeys.add(source);
+   for(const genre of Array.isArray(item?.genres)?item.genres:[]){const value=String(genre||'').trim();if(value)genreKeys.add(value)}
    if(hasUsableSynopsis(item)){
     const synopsisKey=normalizeAnswer(synopsisText(item));
     if(synopsisKey)synopsisKeys.add(synopsisKey);
@@ -2071,7 +2075,7 @@ async function ensureQuestionChoiceSummaryAsync(){
   }
   const value={
    titleKeys,titleChoiceRecords,titleAliasOwners,aliasAnimeOwners,
-   tierStudioKeys,studioKeys:tierStudioKeys,yearKeys,
+   tierStudioKeys,studioKeys:tierStudioKeys,yearKeys,episodeKeys,formatKeys,sourceKeys,genreKeys,
    characterNameKeys:new Set(),characterNamesByAnime:new Map(),
    characterNameAnimeCounts:new Map(),characterNameCounts:new Map(),
    uniqueCharacterNameKeys:new Set(),uniqueCharacterRecords:[],
