@@ -7,6 +7,7 @@ on:
       - "data/anime-catalog.json"
       - "data/anime-catalog.json.gz"
       - "scripts/validate-anime-catalog.mjs"
+      - "scripts/sanitize-japanese-origin-catalog.mjs"
       - "scripts/test-anime-catalog-validator.mjs"
       - "scripts/fixtures/anime-catalog-sample.json"
       - ".github/workflows/catalog-validation.yml"
@@ -15,6 +16,7 @@ on:
       - "data/anime-catalog.json"
       - "data/anime-catalog.json.gz"
       - "scripts/validate-anime-catalog.mjs"
+      - "scripts/sanitize-japanese-origin-catalog.mjs"
       - "scripts/test-anime-catalog-validator.mjs"
       - "scripts/fixtures/anime-catalog-sample.json"
       - ".github/workflows/catalog-validation.yml"
@@ -40,5 +42,7 @@ jobs:
         run: node scripts/test-anime-catalog-validator.mjs
       - name: Validate known-good Japanese-origin fixture
         run: node scripts/validate-anime-catalog.mjs scripts/fixtures/anime-catalog-sample.json
-      - name: Validate production catalogue and compressed copy
+      - name: Apply the strict Japanese-origin filter to the CI workspace
+        run: node scripts/sanitize-japanese-origin-catalog.mjs
+      - name: Validate sanitized production catalogue and compressed copy
         run: node scripts/validate-anime-catalog.mjs
