@@ -10,33 +10,24 @@ japanese_origin = AUDIT_MODULE.japanese_origin
 
 
 class JapaneseOriginAuditTests(unittest.TestCase):
-    def test_verified_japanese_record_passes(self):
+    def test_japanese_origin_passes_with_or_without_marker(self):
         self.assertTrue(japanese_origin({"countryOfOrigin": "JP", "originVerified": True}))
+        self.assertTrue(japanese_origin({"countryOfOrigin": "JP", "originVerified": False}))
+        self.assertTrue(japanese_origin({"countryOfOrigin": "JP"}))
 
-    def test_unverified_japanese_record_fails(self):
-        self.assertFalse(japanese_origin({"countryOfOrigin": "JP", "originVerified": False}))
-        self.assertFalse(japanese_origin({"countryOfOrigin": "JP"}))
-
-    def test_famous_foreign_record_with_japanese_title_passes(self):
-        self.assertTrue(japanese_origin({
-            "countryOfOrigin": "US",
-            "popularity": 10000,
-            "title": {"native": "日本語タイトル"},
-        }))
-
-    def test_foreign_record_below_popularity_threshold_fails(self):
+    def test_foreign_origin_fails_even_with_japanese_title_and_high_popularity(self):
         self.assertFalse(japanese_origin({
             "countryOfOrigin": "US",
-            "popularity": 9999,
+            "popularity": 1000000,
             "title": {"native": "日本語タイトル"},
+            "originVerified": True,
         }))
 
-    def test_foreign_record_without_japanese_title_fails(self):
-        self.assertFalse(japanese_origin({
-            "countryOfOrigin": "US",
-            "popularity": 50000,
-            "title": {"native": "English title"},
-        }))
+    def test_missing_or_unknown_origin_fails(self):
+        self.assertFalse(japanese_origin({"popularity": 50000, "title": {"native": "日本語"}}))
+        self.assertFalse(japanese_origin({"countryOfOrigin": ""}))
+        self.assertFalse(japanese_origin({"countryOfOrigin": None}))
+        self.assertFalse(japanese_origin(None))
 
     def test_missing_country_fails(self):
         self.assertFalse(japanese_origin({"popularity": 50000, "title": {"native": "日本語"}}))
