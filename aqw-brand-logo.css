@@ -1,3 +1,4 @@
 /* Unified AQW logo sizing: match the home page on every page. */
 .site-brand-logo{display:block;flex:0 0 48px;width:48px;height:48px;max-width:none;}
 @media(max-width:700px){.site-brand-logo{flex-basis:46px;width:46px;height:46px}}
+@media(max-width:380px){.site-brand-logo{flex-basis:42px;width:42px;height:42px}}
