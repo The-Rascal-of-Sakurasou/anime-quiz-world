@@ -1880,7 +1880,7 @@ function difficultyDistractors(excludeId){return pool.filter(item=>Number(item?.
 function updateDifficultyUI(){
  const select=$('#difficultySelect'),label=$('#difficultyLabel'),help=$('#difficultyHelp');if(!select||!label)return;
  const translations={
- ja:{label:'難易度',veryEasy:'とても簡単',easy:'簡単',normal:'ふつう',hard:'難しい',veryHard:'とても難しい',desc:{veryEasy:'作品の知名度と問題形式を組み合わせた難易度スコア0〜20点。',easy:'難易度スコア21〜40点。',normal:'難易度スコア41〜60点。',hard:'難易度スコア61〜80点。',veryHard:'難易度スコア81〜100点。',disabled:'作品の知名度と問題形式の両方から判定します。'}},
+ ja:{label:'難易度',veryEasy:'とても簡単',easy:'簡単',normal:'ふつう',hard:'難しい',veryHard:'とても難しい',desc:{veryEasy:'作品の知名度（60%）と問題形式（40%）で評価した0〜20点。',easy:'同じ基準で21〜40点。',normal:'同じ基準で41〜60点。',hard:'同じ基準で61〜80点。',veryHard:'同じ基準で81〜100点。',disabled:'作品の知名度と問題形式を組み合わせて判定します。'}},
  en:{label:'Difficulty',veryEasy:'Very easy',easy:'Easy',normal:'Normal',hard:'Hard',veryHard:'Very hard',desc:{veryEasy:'Combined anime familiarity and question complexity: 0–20.',easy:'Difficulty score: 21–40.',normal:'Difficulty score: 41–60.',hard:'Difficulty score: 61–80.',veryHard:'Difficulty score: 81–100.',disabled:'Uses both anime familiarity and question complexity.'}},
  ko:{label:'난이도',veryEasy:'매우 쉬움',easy:'쉬움',normal:'보통',hard:'어려움',veryHard:'매우 어려움',desc:{veryEasy:'작품 인지도와 문제 유형을 결합한 난이도 0~20점.',easy:'난이도 21~40점.',normal:'난이도 41~60점.',hard:'난이도 61~80점.',veryHard:'난이도 81~100점.',disabled:'작품 인지도와 문제 유형을 함께 평가합니다.'}},
  zh:{label:'难度',veryEasy:'非常简单',easy:'简单',normal:'普通',hard:'困难',veryHard:'非常困难',desc:{veryEasy:'结合作品知名度和题型难度：0–20分。',easy:'难度分数：21–40。',normal:'难度分数：41–60。',hard:'难度分数：61–80。',veryHard:'难度分数：81–100。',disabled:'同时评估作品知名度和题型难度。'}},
@@ -1908,7 +1908,27 @@ function updateDifficultyUI(){
   help.textContent=base+count+feedback+personal;
  }
 }
+function updateQuestionCountUI(){
+ const preset=$('#questionCountPreset'),input=$('#questionCount'),help=$('#questionCountHelp'),mode=$('#playMode')?.value||'normal';
+ if(!preset||!input||!help)return;
+ const fixed=mode==='daily'||mode==='rush'||mode==='endless';
+ preset.disabled=fixed;input.disabled=fixed;
+ const messages={
+  ja:mode==='endless'?'エンドレスは出題できる問題を続けて出題します。':mode==='daily'||mode==='rush'?'このプレイ形式は10問固定です。':'1〜10,000問を指定できます。条件に合う問題が少ない場合は、出題可能な数まで自動調整します。',
+  en:mode==='endless'?'Endless mode continues until no more eligible questions remain.':mode==='daily'||mode==='rush'?'This play mode uses a fixed set of 10 questions.':'Choose 1–10,000 questions. If fewer are available, the quiz uses the available number.',
+  ko:mode==='endless'?'무한 모드는 출제 가능한 문제가 남아 있는 동안 계속됩니다.':mode==='daily'||mode==='rush'?'이 플레이 모드는 10문제로 고정됩니다.':'1~10,000문제를 선택할 수 있습니다. 가능한 문제가 적으면 출제 가능한 수로 조정됩니다.',
+  zh:mode==='endless'?'无尽模式会持续出题，直到没有可用题目。':mode==='daily'||mode==='rush'?'此模式固定为10题。':'可选择1至10,000题。若可用题目较少，将自动调整为可出题数量。',
+  es:mode==='endless'?'El modo infinito continúa mientras haya preguntas disponibles.':mode==='daily'||mode==='rush'?'Este modo tiene 10 preguntas fijas.':'Elige entre 1 y 10.000 preguntas. Si hay menos disponibles, se ajustará la cantidad.',
+  fr:mode==='endless'?'Le mode sans fin continue tant que des questions sont disponibles.':mode==='daily'||mode==='rush'?'Ce mode comporte 10 questions fixes.':'Choisissez de 1 à 10 000 questions. Si moins sont disponibles, le nombre sera ajusté.',
+  pt:mode==='endless'?'O modo infinito continua enquanto houver perguntas disponíveis.':mode==='daily'||mode==='rush'?'Este modo tem 10 perguntas fixas.':'Escolha de 1 a 10.000 perguntas. Se houver menos disponíveis, a quantidade será ajustada.',
+  de:mode==='endless'?'Der Endlosmodus läuft, solange Fragen verfügbar sind.':mode==='daily'||mode==='rush'?'Dieser Modus umfasst fest 10 Fragen.':'Wähle 1 bis 10.000 Fragen. Sind weniger verfügbar, wird die Anzahl angepasst.'
+ };
+ help.textContent=messages[lang]||messages.en;
+}
 $('#difficultySelect')?.addEventListener('change',updateDifficultyUI);
+$('#playMode')?.addEventListener('change',updateQuestionCountUI);
+$('#questionCount')?.addEventListener('change',()=>{const input=$('#questionCount');const value=Number(input.value);input.value=String(Number.isFinite(value)?Math.min(10000,Math.max(1,Math.floor(value))):10);const preset=$('#questionCountPreset');if(preset)preset.value=['5','10','20','50','100','200','500','1000','5000','10000'].includes(input.value)?input.value:'custom'});
+updateQuestionCountUI();
 function synopsisText(a){const s=descriptionOf(a);return s.length>260?s.slice(0,257).trimEnd()+'…':s}
 function hasUsableSynopsis(a){
  const s=descriptionOf(a);
@@ -2442,7 +2462,7 @@ async function begin(){
  try{
   clearInterval(questionTimer);clearInterval(clockTimer);skippedQuestionCount=0;$('#quitQuizButton').classList.remove('hidden');$('#setupControls').classList.add('hidden');$('#result').classList.add('hidden');reviewMode=false;missedQuestions=[];questionAttemptResults=[];roundFailed=false;playMode=$('#playMode').value;mixedModeCounts={};adaptiveDifficultyOverride=calculatePersonalDifficultyOverride();if(typeof window.aqwEnsureSupabaseFeatures==='function'){Promise.resolve().then(()=>window.aqwEnsureSupabaseFeatures()).then(()=>typeof window.aqwLoadPersonalDifficultyProfile==='function'?window.aqwLoadPersonalDifficultyProfile():null).then(()=>{if($('#quizArea').classList.contains('hidden'))adaptiveDifficultyOverride=calculatePersonalDifficultyOverride()}).catch(error=>console.warn('Optional AQW services could not be initialized:',error))}await aqwMeasurePreparationStage('個人別難易度計算',async()=>{adaptiveDifficultyOverride=calculatePersonalDifficultyOverride()});let mode=$('#modeSelect').value;if(mode!=='titleStudio')await aqwMeasurePreparationStage('問題候補データ構築',()=>ensureQuestionChoiceSummaryAsync());await aqwMeasurePreparationStage('難易度データ準備',async()=>{prepareDifficultyTiers(pool)});
   const format=(playMode==='daily'||playMode==='rush')?'choices':$('#answerFormatSelect').value;
-  requestedQuestionCount=playMode==='endless'?Infinity:(playMode==='daily'||playMode==='rush')?10:Math.max(1,Math.floor(Number($('#questionCount').value)||10));
+  requestedQuestionCount=playMode==='endless'?Infinity:(playMode==='daily'||playMode==='rush')?10:Math.min(10000,Math.max(1,Math.floor(Number($('#questionCount').value)||10)));
   const target=playMode==='endless'?Infinity:requestedQuestionCount;
   const eligible=await collectEligibleAnime(mode,format,target);
    if(!eligible.length){document.body.classList.remove('quiz-active','quiz-preparing');clearInterval(questionTimer);clearInterval(clockTimer);locked=true;questions=[];index=0;$('#quizArea').classList.add('hidden');$('#quitQuizButton').classList.add('hidden');$('#setupControls').classList.remove('hidden');$('#start').classList.remove('hidden');$('#start').disabled=false;$('#start').textContent=tr('start');$('#quizStatus').textContent=lang==='ja'?'この形式で出題できる作品がありません。出題形式や難易度を変更してください。':'No anime are available for this format. Change the question type or difficulty.';return}
