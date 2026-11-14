@@ -104,18 +104,21 @@ small{font-size:.84rem;color:var(--muted);font-weight:400}
       var client = window.supabase.createClient(supabaseUrl, supabaseKey, {
         auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
       });
-      var result = await client.from('qa_questions').insert({
-        display_name: displayName,
-        title: title,
-        body: body
+      var result = await client.functions.invoke('aqw-qa-submit', {
+        body: { display_name: displayName, title: title, body: body }
       });
-      if (result.error) throw result.error;
+      if (result.error) {
+        if (result.error.context && result.error.context.status === 429) {
+          throw new Error('送信回数の上限に達しました。10分ほど待ってから再度お試しください。');
+        }
+        throw result.error;
+      }
       try { sessionStorage.setItem('aqw-question-last-submit', String(Date.now())); } catch (error) {}
       form.reset();
       showStatus('質問を送信しました。内容を確認のうえ、必要に応じて対応します。', 'success');
     } catch (error) {
       console.error('AQW Q&A submission failed:', error);
-      showStatus('送信できませんでした。通信状態を確認して、時間をおいて再度お試しください。', 'error');
+      showStatus(error instanceof Error && error.message.includes('上限') ? error.message : '送信できませんでした。通信状態を確認して、時間をおいて再度お試しください。', 'error');
     } finally {
       button.disabled = false;
     }
