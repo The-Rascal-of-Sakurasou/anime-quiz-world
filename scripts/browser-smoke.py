@@ -1247,10 +1247,13 @@ def test_recommendation_diagnosis(browser):
     question_count = int(match.group(1))
     assert question_count == 20, f"Diagnosis must contain exactly 20 questions: {question_count}"
 
+    # Four substantive choices plus neutral and free-text options.
+    expected_choice_count = 6
+
     for step in range(question_count):
         choices = page.locator("#choices button.choice")
         choices.first.wait_for(state="visible", timeout=10000)
-        assert choices.count() == 4, f"Question {step + 1} must have four choices"
+        assert choices.count() == expected_choice_count, f"Question {step + 1} must have four substantive choices plus two optional choices"
         choices.first.click()
         page.locator("#next").click()
         if step + 1 < question_count:
