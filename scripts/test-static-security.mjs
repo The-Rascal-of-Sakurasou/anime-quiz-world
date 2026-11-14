@@ -408,20 +408,17 @@ assert.match(recommend, /独立したサイドストーリーは親作品と別�
 
 const syncScript = fs.readFileSync("scripts/sync-anime-catalog.mjs", "utf8");
 const syncWorkflow = fs.readFileSync(".github/workflows/sync-anime-catalog.yml", "utf8");
-assert.match(syncScript, /function isJapaneseOriginAnime\(anime\)/, "Shared catalogue sync must verify Japanese source origin");
-const syncOriginHelper = syncScript.match(/function isJapaneseOriginAnime\(anime\)\s*\{[\s\S]*?\n\}/)?.[0];
-const syncJapaneseTitleHelper = syncScript.match(/function hasJapaneseTitle\(anime\)\s*\{[\s\S]*?\n\}/)?.[0];
-assert.ok(syncOriginHelper && syncJapaneseTitleHelper, "Shared catalogue origin helpers must be extractable for regression tests");
-const originResults = vm.runInNewContext(`(()=>{${syncJapaneseTitleHelper};${syncOriginHelper};const check=isJapaneseOriginAnime;return [
-  check({ countryOfOrigin: "JP", source: "ORIGINAL" }),
-  check({ countryOfOrigin: "JP", originVerified: true }),
-  check({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "ANIME", countryOfOrigin: "JP", format: "TV" } }] } }),
-  check({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "ANIME", countryOfOrigin: "US", format: "TV" } }] } }),
-  check({ countryOfOrigin: "JP", source: "VIDEO_GAME", relations: [] }),
-  check({ countryOfOrigin: "US", popularity: 10000, title: { native: "日本語タイトル" } }),
-  check({ countryOfOrigin: "US", popularity: 9999, title: { native: "日本語タイトル" } }),
-  check({ countryOfOrigin: "US", popularity: 10000, title: { native: "English Only" } })
-]})()`);
+assert.ok(syncScript.includes('import "../anime-origin-policy.js";'), "Catalogue sync must use the shared origin policy");
+const originResults = [
+  isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "ORIGINAL" }),
+  isRecommendedOriginJapanese({ countryOfOrigin: "JP", originVerified: true }),
+  isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "ANIME", countryOfOrigin: "JP", format: "TV" } }] } }),
+  isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "ANIME", relations: { edges: [{ relationType: "SOURCE", node: { type: "ANIME", countryOfOrigin: "US", format: "TV" } }] } }),
+  isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "VIDEO_GAME", relations: [] }),
+  isRecommendedOriginJapanese({ countryOfOrigin: "US", popularity: 10000, title: { native: "日本語タイトル" } }),
+  isRecommendedOriginJapanese({ countryOfOrigin: "US", popularity: 9999, title: { native: "日本語タイトル" } }),
+  isRecommendedOriginJapanese({ countryOfOrigin: "US", popularity: 10000, title: { native: "English Only" } })
+];
 assert.equal(JSON.stringify(originResults), JSON.stringify([true, true, true, false, false, true, false, false]), "Shared catalogue origin eligibility must pass Japanese works and only popular foreign works with Japanese titles");
 assert.match(syncScript, /startDate_greater/, "The shared catalogue must split oversized format scopes by release decade");
 
@@ -456,11 +453,9 @@ assert.ok(index.includes("media(type:ANIME,sort:"), "Quiz catalogue queries must
 assert.ok(index.includes("countryOfOrigin source(version:2) relations"), "Quiz catalogue records must include source-country verification metadata");
 assert.ok(index.includes("format popularity title { romaji english native }"), "Quiz catalogue records must include popularity and title evidence");
 assert.ok(index.includes("synonyms coverImage"), "Quiz catalogue records must include alternate titles for Japanese-title verification");
-assert.match(index, /countryOfOrigin!==.JP./, "Quiz data must apply the documented foreign-title exception only to non-Japanese production countries");
-const indexOriginHelper = index.match(/function isJapaneseOriginAnime\(a\)\{[\s\S]*?\n\}/)?.[0];
-const indexFamousTitleHelper = index.match(/function hasFamousJapaneseTitle\(a\)\{[\s\S]*?\n\}/)?.[0];
-assert.ok(indexOriginHelper && indexFamousTitleHelper, "Quiz Japanese-origin and Japanese-title verification helpers must exist");
-const isQuizOriginJapanese = vm.runInNewContext(indexFamousTitleHelper + "\n" + indexOriginHelper + "\nisJapaneseOriginAnime");
+assert.match(animeOriginPolicy, /anime\.countryOfOrigin !== "JP"/, "Quiz data must apply the documented foreign-title exception only to non-Japanese production countries");
+assert.ok(index.includes("AQWAnimePolicy.isJapaneseOriginAnime"), "Quiz page must use the shared Japanese-origin policy");
+const isQuizOriginJapanese = isRecommendedOriginJapanese;
 assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "ORIGINAL" }), true, "Japanese original anime must remain eligible in the quiz");
 assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", originVerified: true }), true, "Compact shared-catalogue entries must pass the verified-origin marker");
 assert.equal(isQuizOriginJapanese({ countryOfOrigin: "US", originVerified: true }), false, "The verified-origin marker must never override a non-Japanese country");
@@ -621,10 +616,10 @@ assert.equal(titleImageIsSafe({coverImage:{large:'https://example.test/no-image.
 
 assert.match(index, /source\(version:2\) relations \{ edges \{ relationType node \{ id type countryOfOrigin format \} \} \}/, "Featured seasonal queries must include source and related-origin metadata");
 assert.ok(index.includes("season seasonYear startDate { year month day }"), "Featured seasonal queries must include season and start-date metadata");
-assert.ok(index.includes("if(!isJapaneseOriginAnime(anime)||!Number.isFinite(Number(anime.id)))continue"), "New seasonal anime must pass verified Japanese-source filtering");
+assert.ok(index.includes("if(!AQWAnimePolicy.isJapaneseOriginAnime(anime)||!Number.isFinite(Number(anime.id)))continue"), "New seasonal anime must pass verified Japanese-source filtering");
 assert.match(index, /for\(const anime of items\|\|\[\]\)\{\s*if\(!isJapaneseOriginAnime\(anime\)\|\|!Number\.isFinite\(Number\(anime\.id\)\)\)continue;/, "All seasonal anime results must pass verified Japanese-source filtering before rendering");
 
-assert.match(index, /function isJapaneseOriginAnime\(a\)\{[\s\S]*?a\.countryOfOrigin!==.JP./, "Japanese-origin eligibility must apply the documented exception only to foreign productions");
+assert.match(animeOriginPolicy, /anime\.countryOfOrigin !== "JP"/, "Japanese-origin eligibility must apply the documented exception only to foreign productions");
 assert.match(index, /const cleanedItems=value\.items\.filter\(isUsableAnime\)/, "Existing IndexedDB catalogues must be purged of non-Japanese-origin anime when loaded");
 assert.match(index, /initial=legacy\.items\.filter\(isUsableAnime\)/, "Existing localStorage catalogues must be filtered through current source and image eligibility when loaded");
 assert.match(index, /if\(!isJapaneseOriginAnime\(anime\)\|\|!Number\.isFinite\(Number\(anime\.id\)\)\)continue/, "Featured anime rail must apply strict Japanese-source verification before rendering");
