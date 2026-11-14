@@ -9,9 +9,8 @@ h2{font-size:1.15rem;margin-top:28px}
 li{margin:7px 0}
 .muted{color:var(--muted);font-size:.9rem}
 .back{display:inline-block;margin-bottom:10px}
-@media(max-width:560px){.toc ol{columns:1}.wrap{width:calc(100% - 24px)}header,main{padding:20px 17px}}
+@media(max-width:560px){.wrap{width:calc(100% - 24px)}header,main{padding:20px 17px}}
 @media(max-width:700px){
-  html{scroll-padding-top:14px}
   body{font-size:16px;line-height:1.85;overflow-wrap:anywhere}
   .wrap{width:calc(100% - 22px);padding:12px 0 calc(30px + env(safe-area-inset-bottom))}
   header,main{border-radius:12px;margin-bottom:12px}
@@ -22,7 +21,7 @@ li{margin:7px 0}
   .page-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
   .page-nav a{display:flex;align-items:center;justify-content:center;min-height:44px;padding:8px;text-align:center}
   .toc{padding:13px;margin-bottom:17px}
-  .toc ol{columns:1;padding-left:1.25rem}
+  .toc ol{padding-left:1.25rem}
   .toc li{font-size:.92rem;line-height:1.55}
   .doc-meta{gap:6px 12px}
   .doc-footer{display:grid;gap:10px}
