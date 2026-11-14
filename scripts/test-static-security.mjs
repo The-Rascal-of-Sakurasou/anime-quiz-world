@@ -390,6 +390,17 @@ assert.match(relationAllowlist, /PREQUEL.*SEQUEL.*SUMMARY.*ALTERNATIVE.*COMPILAT
 assert.doesNotMatch(relationAllowlist, /PARENT/, "A side story parent relation must not hide a distinct side story");
 assert.match(recommend, /独立したサイドストーリーは親作品と別候補として残す/, "Side-story separation regression test missing");
 
+const synopsisAudit = fs.readFileSync("scripts/audit-japanese-synopses.mjs", "utf8");
+assert.match(synopsisAudit, /countryOfOrigin: JP/, "Japanese synopsis audit must request Japanese-origin records only");
+assert.match(synopsisAudit, /if \(item\.countryOfOrigin !== 'JP'\) return false/, "Japanese synopsis audit must reject every foreign-origin record");
+assert.match(synopsisAudit, /for \(let page = 1; page <= 20; page\+\+\)/, "Japanese synopsis audit must page sequentially");
+assert.match(synopsisAudit, /await sleep\(2100\)/, "Japanese synopsis audit must pace requests below the current API rate limit");
+assert.doesNotMatch(synopsisAudit, /famous foreign|Japanese-language title/, "Japanese synopsis audit must not include a foreign-origin exception");
+
+const coverageAudit = fs.readFileSync("scripts/audit-question-mode-coverage.mjs", "utf8");
+assert.match(coverageAudit, /const eligibleOrigin = \(a\) => a\?\.countryOfOrigin === "JP"/, "Question-mode coverage must include Japanese-origin records only");
+assert.doesNotMatch(coverageAudit, /hasJapaneseTitle|famousForeignCount/, "Question-mode coverage must not count foreign-origin records as eligible");
+
 const syncScript = fs.readFileSync("scripts/sync-anime-catalog.mjs", "utf8");
 const syncWorkflow = fs.readFileSync(".github/workflows/sync-anime-catalog.yml", "utf8");
 assert.match(syncScript, /function isJapaneseOriginAnime\(anime\)/, "Shared catalogue sync must verify Japanese source origin");
