@@ -694,7 +694,7 @@ function runRecommendationSelfTests(){
   const profileProbeOk=questions.every((question,questionIndex)=>question.options.every((option,optionIndex)=>{
    const probe=Array(questions.length).fill(null);probe[questionIndex]=optionIndex;
    const actual=profileFromAnswers(probe,{want:'',avoid:'',preference:''});
-   const expected={genres:{},tags:{},avoidGenres:{},avoidTags:{},formats:{},sources:{},textSignals:[],length:option.length||'any',startYearMin:Number.isFinite(option.startYearMin)?option.startYearMin:null,startYearMax:Number.isFinite(option.startYearMax)?option.startYearMax:null};
+   const expected={genres:{},tags:{},avoidGenres:{},avoidTags:{},formats:{},sources:{},length:option.length||'any',startYearMin:Number.isFinite(option.startYearMin)?option.startYearMin:null,startYearMax:Number.isFinite(option.startYearMax)?option.startYearMax:null,textSignals:[]};
    for(const [key,listKey,weightKey] of [['genres','genres','genreWeights'],['tags','tags','tagWeights'],['avoidGenres','avoidGenres','avoidGenreWeights'],['avoidTags','avoidTags','avoidTagWeights'],['formats',null,'formatWeights'],['sources',null,'sourceWeights']]){
     for(const name of option[listKey]||[])expected[key][name]=(expected[key][name]||0)+1;
     for(const [name,weight] of Object.entries(option[weightKey]||{}))expected[key][name]=(expected[key][name]||0)+weight;
