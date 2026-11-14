@@ -106,6 +106,14 @@ jobs:
           if marker not in original:
               raise SystemExit("Expected migration anchor was not found; refusing to modify files.")
           migration.write_text(fixture + "\n" + original)
+
+          # The hosted runner may already have a service bound to Supabase's
+          # default PostgreSQL port. Use an isolated port only in this CI checkout.
+          config_path = Path("supabase/config.toml")
+          config = config_path.read_text()
+          if "[db]" in config:
+              raise SystemExit("Unexpected [db] section; refusing to overwrite existing database settings.")
+          config_path.write_text(config + "\n[db]\nport = 55432\nshadow_port = 55430\n")
           PY
       - name: Start disposable local Supabase
         run: supabase start --debug
@@ -117,12 +125,12 @@ jobs:
           sudo apt-get install --yes postgresql-client
       - name: Create disposable local admin identity
         run: |
-          psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
+          psql "postgresql://postgres:postgres@127.0.0.1:55432/postgres" \
             --set ON_ERROR_STOP=1 \
             --file supabase/manual-tests/aqw_local_admin_seed.sql
       - name: Run database security regression tests
         run: |
-          psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
+          psql "postgresql://postgres:postgres@127.0.0.1:55432/postgres" \
             --set ON_ERROR_STOP=1 \
             --file supabase/manual-tests/aqw_security_smoke.sql
       - name: Stop disposable local Supabase
