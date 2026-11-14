@@ -13,10 +13,7 @@ const covered = new Set(
   [...mapSource.matchAll(/^\s*'([^']*)'\s*:/gm)].map(match => normalize(match[1]))
 );
 
-function normalize(value) {
-  return String(value || '').normalize('NFKC').toLocaleLowerCase()
-    .replace(/[\s　・･:：!！?？.,，。'"“”「」『』()（）‐‑–—―−_-]/g, '').trim();
-}
+const normalize = globalThis.AQWTextUtils.normalizeAnswer;
 
 function hasUsableJapaneseSynopsis(value) {
   const text = String(value || '')
