@@ -1254,8 +1254,7 @@ def test_live_seasonal_anilist():
           isAdult: false,
           sort: POPULARITY_DESC
         ) {
-          id countryOfOrigin source(version: 2)
-          relations { edges { relationType node { id type countryOfOrigin format } } }
+          id countryOfOrigin
           format startDate { year month day }
           title { romaji english native }
           coverImage { large medium }
