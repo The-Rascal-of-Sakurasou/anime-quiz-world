@@ -86,6 +86,7 @@ jobs:
   local-admin-database-security:
     name: Local Supabase database security regression
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -94,7 +95,7 @@ jobs:
         with:
           version: latest
       - name: Start disposable local Supabase
-        run: supabase start
+        run: supabase start --debug
       - name: Apply migrations to the local database
         run: supabase db reset --local
       - name: Install PostgreSQL client
