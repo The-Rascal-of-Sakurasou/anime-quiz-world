@@ -173,13 +173,9 @@ body{background:#f6f7f9;color:#202936;letter-spacing:.005em}
 window.addEventListener("error",event=>{const box=document.getElementById("error");if(box){box.textContent="診断画面の初期化中にエラーが発生しました："+(event.message||"詳細不明")+"。ページを再読み込みしてください。";box.classList.remove("hidden");}});
 window.addEventListener("unhandledrejection",event=>{const box=document.getElementById("error");if(box){const reason=event.reason;box.textContent="診断処理でエラーが発生しました："+(reason&&reason.message?reason.message:String(reason||"詳細不明"));box.classList.remove("hidden");}});
 </script>
+<script src="./aqw-safe-storage.js"></script>
 <script>
-const safeStorage={
- getItem(key){try{return window.localStorage.getItem(key)}catch(_){return null}},
- setItem(key,value){try{window.localStorage.setItem(key,String(value));return true}catch(_){return false}},
- removeItem(key){try{window.localStorage.removeItem(key);return true}catch(_){return false}},
- keys(){try{return Object.keys(window.localStorage)}catch(_){return []}}
-};
+const safeStorage = window.AQWSafeStorage;
 const API='https://graphql.anilist.co';
 const MAX_RECOMMENDATION_PAGES_PER_SORT=4;
 const questions=[
