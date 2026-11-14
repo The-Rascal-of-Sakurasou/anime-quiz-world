@@ -1079,16 +1079,7 @@ def test_mobile_quiz_layout(browser):
 
 
 def test_mobile_page_overflow(browser):
-    """Check all primary public pages for document-level horizontal overflow on mobile."""
-    context = browser.new_context(
-        viewport={"width": 390, "height": 844},
-        device_scale_factor=2,
-        is_mobile=True,
-        has_touch=True,
-        locale="ja-JP",
-    )
-    page = context.new_page()
-    install_routes(page)
+    """Check every primary page at narrow, common, and tablet mobile widths."""
     paths = [
         "index.html",
         "recommend.html",
@@ -1098,21 +1089,31 @@ def test_mobile_page_overflow(browser):
         "terms.html",
         "admin.html",
     ]
-    try:
-        for path in paths:
-            page.goto(f"{BASE_URL}/{path}", wait_until="domcontentloaded")
-            page.wait_for_timeout(250)
-            dimensions = page.evaluate("""() => ({
-                viewport: window.innerWidth,
-                document: document.documentElement.scrollWidth,
-                body: document.body?.scrollWidth || 0
-            })""")
-            widest = max(dimensions["document"], dimensions["body"])
-            assert widest <= dimensions["viewport"] + 1, (
-                f"Mobile horizontal overflow on {path}: {dimensions}"
-            )
-    finally:
-        context.close()
+    for width in (320, 360, 390, 768):
+        context = browser.new_context(
+            viewport={"width": width, "height": 844},
+            device_scale_factor=2,
+            is_mobile=True,
+            has_touch=True,
+            locale="ja-JP",
+        )
+        page = context.new_page()
+        install_routes(page)
+        try:
+            for path in paths:
+                page.goto(f"{BASE_URL}/{path}", wait_until="domcontentloaded")
+                page.wait_for_timeout(250)
+                dimensions = page.evaluate("""() => ({
+                    viewport: window.innerWidth,
+                    document: document.documentElement.scrollWidth,
+                    body: document.body?.scrollWidth || 0
+                })""")
+                widest = max(dimensions["document"], dimensions["body"])
+                assert widest <= dimensions["viewport"] + 1, (
+                    f"Mobile horizontal overflow at {width}px on {path}: {dimensions}"
+                )
+        finally:
+            context.close()
 
 
 def test_auth_form_reads_filled_inputs(browser):

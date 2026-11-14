@@ -6,6 +6,12 @@ on:
       - .github/workflows/browser-smoke.yml
       - index.html
       - recommend.html
+      - multiplayer.html
+      - admin.html
+      - guide.html
+      - privacy.html
+      - terms.html
+      - responsive.css
       - scripts/browser-smoke.py
       - scripts/test-official-site-links.mjs
       - scripts/audit-anime-image-urls.mjs
@@ -20,6 +26,12 @@ on:
       - .github/workflows/browser-smoke.yml
       - index.html
       - recommend.html
+      - multiplayer.html
+      - admin.html
+      - guide.html
+      - privacy.html
+      - terms.html
+      - responsive.css
       - scripts/browser-smoke.py
       - scripts/test-official-site-links.mjs
       - scripts/audit-anime-image-urls.mjs
