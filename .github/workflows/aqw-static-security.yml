@@ -124,7 +124,7 @@ jobs:
               raise SystemExit("Expected public RPC creation was not found; refusing to modify migration.")
           feature_sql = feature_sql.replace(
               create_marker,
-              "DROP FUNCTION IF EXISTS public.submit_aqw_player_run(uuid, integer, integer, integer, jsonb);\\n\\n" + create_marker,
+              "DROP FUNCTION IF EXISTS public.submit_aqw_player_run(uuid, integer, integer, integer, jsonb);\n\n" + create_marker,
               1,
           )
           feature_migration.write_text(feature_sql)
