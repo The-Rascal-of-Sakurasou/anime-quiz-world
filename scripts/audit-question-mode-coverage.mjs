@@ -1,8 +1,10 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { runInNewContext } from "node:vm";
 import "../anime-origin-policy.js";
+import "../aqw-text-utils.js";
 
 const { isJapaneseOriginAnime } = globalThis.AQWAnimePolicy;
+const { normalizeAnswer, truncateSynopsis } = globalThis.AQWTextUtils;
 
 const CATALOG = "data/anime-catalog.json";
 const REPORT = "artifacts/question-mode-coverage/report.json";
@@ -77,7 +79,7 @@ const CURATED = [
   [["賭ケグルイ××","Kakegurui XX"],"賭ケグルイ2期"],
   [["文豪ストレイドッグス 第2期","Bungou Stray Dogs 2nd Season","Bungo Stray Dogs Season 2"],"文スト2期"],
 ];
-const norm = (v) => String(v || "").normalize("NFKC").toLocaleLowerCase().replace(/[\s　・･:：!！?？.,，。'"“”「」『』()（）‐‑–—―−_-]/g, "").trim();
+const norm = normalizeAnswer;
 const title = (a) => String(a?.title?.native || a?.title?.english || a?.title?.romaji || "").trim();
 const year = (a) => Number.isInteger(a?.seasonYear) ? a.seasonYear : Number.isInteger(a?.startDate?.year) ? a.startDate.year : null;
 const indexHtml = await readFile("index.html", "utf8");
@@ -139,7 +141,7 @@ function aliases(a) {
   }
   return [...new Set(values.filter(Boolean))];
 }
-function synopsisText(a) { const s = desc(a); return s.length > 260 ? s.slice(0,257).trimEnd()+"…" : s; }
+const synopsisText = (anime) => truncateSynopsis(desc(anime));
 
 const payload = JSON.parse(await readFile(CATALOG, "utf8"));
 const declaredCount = payload.count ?? payload.itemCount;
