@@ -273,6 +273,15 @@ const syncWorkflow = fs.readFileSync(".github/workflows/sync-anime-catalog.yml",
 assert.ok(syncScript.includes("import '../anime-origin-policy.js'"), "Catalogue sync must import the shared origin policy");
 assert.ok(syncScript.includes("const { isJapaneseOriginAnime, metadataKey } = globalThis.AQWAnimePolicy"), "Catalogue sync must use shared policy helpers");
 assert.doesNotMatch(syncScript, /function isJapaneseOriginAnime\(|function hasJapaneseTitle\(|function metadataKey\(/, "Catalogue sync must not duplicate shared helpers");
+const textUtils = fs.readFileSync("anime-text-utils.js", "utf8");
+const truncateSource = textUtils.match(/function truncateSynopsisText\(value, limit = 260\)\s*\{[\s\S]*?\n  \}/)?.[0];
+assert.ok(truncateSource, "Shared synopsis truncation helper must exist");
+const truncateSynopsisText = vm.runInNewContext(truncateSource + "\ntruncateSynopsisText");
+assert.equal(truncateSynopsisText("x".repeat(260)).length, 260);
+assert.equal(truncateSynopsisText("x".repeat(261)).length, 258);
+assert.ok(index.includes('src="./anime-text-utils.js"'), "Quiz page must load shared synopsis utility");
+const coverageAuditSource = fs.readFileSync("scripts/audit-question-mode-coverage.mjs", "utf8");
+assert.ok(coverageAuditSource.includes('import "../anime-text-utils.js"'), "Coverage audit must reuse shared synopsis utility");
 const originPolicy = fs.readFileSync("anime-origin-policy.js", "utf8");
 const policyFunction = originPolicy.match(/function isJapaneseOriginAnime\(anime\)\s*\{[\s\S]*?\n  \}/)?.[0];
 assert.ok(policyFunction, "Shared policy predicate must exist");
