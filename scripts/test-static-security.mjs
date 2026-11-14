@@ -637,7 +637,12 @@ for (const mode of questionModes) {
 }
 assert.ok(index.includes("if(mode==='image'&&!titleImageIsSafe(a))return false"), "Image questions must require an OCR-audited, title-free cover");
 assert.ok(questionRenderer.includes("if(!typingOnly&&opts.length<4)throw new Error('Four unique answer choices could not be prepared.')"), "Choice questions must fail safely instead of displaying fewer than four choices");
-assert.ok(index.includes("function normalizeAnswer(value){return String(value||'').normalize('NFKC')"), "Answer de-duplication must normalize full-width and compatibility characters");
+assert.ok(index.includes('src="./aqw-text-utils.js"') && index.includes("const normalizeAnswer = window.AQWTextUtils.normalizeAnswer"), "The quiz must use the shared text-normalization helper");
+assert.ok(index.includes("const synopsisText = (anime) => window.AQWTextUtils.truncateSynopsis(descriptionOf(anime))"), "The quiz must use the shared synopsis truncation helper");
+const textUtils = fs.readFileSync("aqw-text-utils.js", "utf8");
+assert.match(textUtils, /function normalizeAnswer\(value\)/, "Shared text normalization must be implemented once");
+assert.match(textUtils, /function truncateSynopsis\(value, maxLength = 260\)/, "Shared synopsis truncation must be implemented once");
+assert.doesNotMatch(index, /function normalizeAnswer\(|function synopsisText\(/, "The quiz must not duplicate shared text utility implementations");
 
 assert.ok(index.includes('<textarea id="aqwPostBody" maxlength="2000">'), "Post composer must enforce the database 2,000-character limit");
 assert.ok(index.includes('id="aqwPostImage" type="file" accept="image/jpeg,image/png,image/webp,image/gif"'), "Post image picker must match the supported storage MIME types");
