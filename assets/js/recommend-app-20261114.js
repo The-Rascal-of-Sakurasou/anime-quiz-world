@@ -1038,7 +1038,7 @@ function renderCardList(containerId,items){
  const group=containerId==='animeCards'?'close':'discovery';
  items.forEach((a,i)=>{
   const card=document.createElement('article');card.className='anime';
-  const img=document.createElement('img');img.loading='lazy';img.src=a.coverImage.extraLarge||a.coverImage.large;img.alt=(a.title.native||a.title.english||a.title.romaji||'Anime')+' cover';
+  const img=document.createElement('img');img.loading='lazy';img.decoding='async';img.src=a.coverImage.extraLarge||a.coverImage.large;img.alt=(a.title.native||a.title.english||a.title.romaji||'Anime')+' cover';
   const body=document.createElement('div');body.className='anime-body';
   const h=document.createElement('h3');h.textContent=(i+1)+'. '+(a.title.native||a.title.english||a.title.romaji);
   const meta=document.createElement('small');meta.textContent=[a.seasonYear||'年不明',a.format,a.episodes?(a.episodes+'話'):'話数不明',a.averageScore?'評価 '+a.averageScore+'/100':null].filter(Boolean).join(' · ');
