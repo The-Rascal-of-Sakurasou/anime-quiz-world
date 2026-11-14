@@ -134,7 +134,7 @@ body{background:#f6f7f9;color:#202936;letter-spacing:.005em}
 <main class="panel" id="mainContent" tabindex="-1">
 <div id="diagnosis">
 <div class="progress" aria-label="診断の進行状況"><div id="progressBar"></div></div>
-<div class="question"><div class="eyebrow" id="stepLabel">QUESTION 1 / 18</div><h2 id="questionTitle">どんなジャンルのアニメが見たい？</h2><p id="questionHelp">今見たいジャンルを1つ選んでください。</p></div>
+<div class="question"><div class="eyebrow" id="stepLabel">QUESTION 1 / 20</div><h2 id="questionTitle">どんなジャンルのアニメが見たい？</h2><p id="questionHelp">今見たいジャンルを1つ選んでください。</p></div>
 <div class="choices" id="choices" aria-label="回答の選択肢"></div><div id="questionOtherWrap" class="question-other hidden"><label for="questionOtherText">選択肢にない内容を具体的に教えてください</label><textarea id="questionOtherText" maxlength="240" rows="3" placeholder="例：宇宙を舞台にした、伏線の多い作品が見たい"></textarea></div>
 <section class="free-text-topics" aria-labelledby="freeTextHeading"><h3 id="freeTextHeading">自由記述で好みを詳しく伝える</h3><p>選択肢だけでは表現しにくい好みを、トピックごとに記入できます。空欄でも診断できます。</p><div class="free-topic-grid"><label>見たい作品・要素<textarea id="wantText" maxlength="500" rows="3" placeholder="例：伏線が多く、先の読めない展開。SFや時間を扱う物語。"></textarea></label><label>避けたい作品・要素<textarea id="avoidText" maxlength="500" rows="3" placeholder="例：恋愛が中心の作品、日常描写が長く続く作品。"></textarea></label><label>作品の好み・補足<textarea id="preferenceText" maxlength="700" rows="4" placeholder="例：好きな作品のどこが好きか、重視する演出、希望する雰囲気など。"></textarea></label></div><p class="save-note">作品データのジャンル・タグと照合できた表現を反映します。意味を正確に読み取れない表現は推測で加点・減点しません。</p></section><div class="preference-inputs" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:22px">
 <label style="display:block;font-weight:700;font-size:.92rem">好きなアニメ（任意）
@@ -804,7 +804,7 @@ function restoreSavedDiagnosis(){
    try{data=JSON.parse(candidate.raw)}catch(_){continue}
    const normalized=normalizeSavedAnswers(data);
    if(!normalized||typeof data.favorite!=='string'||typeof data.disliked!=='string')continue;
-   restored={data,answers:normalized,legacy:candidate.legacy||data.v!==9};
+   restored={data,answers:normalized,legacy:candidate.legacy||data.v!==10};
    break;
   }
   if(!restored)return false;
