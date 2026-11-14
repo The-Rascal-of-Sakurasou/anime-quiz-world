@@ -815,57 +815,71 @@ async function fetchSharedAnimeCatalog(){
  }catch(error){console.warn('Shared anime catalogue could not be loaded:',error);return []}
 }
 async function fetchAnime(vars={}){
- const request=async(variables,sort='POPULARITY_DESC')=>{
+ const requestAniListJson=async(queryText,{attempts=5,timeoutMs=10000,retryDelayMs=700,graphqlErrorFlag='graphqlErrors'}={})=>{
   let lastError;
-  for(let attempt=0;attempt<5;attempt++){
-   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),10000);
+  for(let attempt=0;attempt<attempts;attempt++){
+   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),timeoutMs);
    try{
-    const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query:query.replace('sort:POPULARITY_DESC','sort:'+sort),variables}),signal:controller.signal});
+    const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query:queryText}),signal:controller.signal});
     if(!response.ok){
-     const err=new Error(response.status===429?'アクセスが集中しています（HTTP 429）。':('データサーバー応答エラー（HTTP '+response.status+'）。'));
-     err.status=response.status;
-     if(response.status===429){const retrySeconds=Number(response.headers.get('Retry-After'))||30;rateLimitedUntil=Math.max(rateLimitedUntil,Date.now()+retrySeconds*1000);lastError=err;await new Promise(resolve=>setTimeout(resolve,Math.max(5000*(attempt+1),rateLimitedUntil-Date.now())));continue}
-     if(response.status>=500){lastError=err;await new Promise(resolve=>setTimeout(resolve,1500*Math.pow(2,attempt)));continue}
-     throw err;
+     const error=new Error(response.status===429?'アクセスが集中しています（HTTP 429）。':('データサーバー応答エラー（HTTP '+response.status+'）。'));
+     error.status=response.status;
+     if(response.status===429){
+      const retrySeconds=Number(response.headers.get('Retry-After'))||30;
+      rateLimitedUntil=Math.max(rateLimitedUntil,Date.now()+retrySeconds*1000);
+      lastError=error;
+      await new Promise(resolve=>setTimeout(resolve,Math.max(5000*(attempt+1),rateLimitedUntil-Date.now())));
+      continue;
+     }
+     if(response.status>=500){
+      lastError=error;
+      await new Promise(resolve=>setTimeout(resolve,1500*Math.pow(2,attempt)));
+      continue;
+     }
+     throw error;
     }
     const json=await response.json();
-    if(json.errors?.length){const error=new Error(json.errors.map(e=>e.message).join(' / '));error.graphqlErrors=true;throw error}
-    const pageData=json.data?.Page;const items=normalizeUnicode(pageData?.media||[]).filter(isJapaneseOriginAnime);items.hasNextPage=pageData?.pageInfo?.hasNextPage===true;return items;
+    if(json.errors?.length){
+     const error=new Error(json.errors.map(item=>item.message).join(' / '));
+     error[graphqlErrorFlag]=true;
+     throw error;
+    }
+    return json;
    }catch(error){
     lastError=error.name==='AbortError'?new Error('データ取得がタイムアウトしました。'):error;
-    if(error.graphqlErrors||(error.status&&error.status<500&&error.status!==429))break;
-    if(attempt<4)await new Promise(resolve=>setTimeout(resolve,700*Math.pow(2,attempt)));
+    if(error[graphqlErrorFlag]||(error.status&&error.status<500&&error.status!==429))break;
+    if(attempt<attempts-1)await new Promise(resolve=>setTimeout(resolve,retryDelayMs*Math.pow(2,attempt)));
    }finally{clearTimeout(timeout)}
   }
   throw lastError||new Error('データを取得できませんでした。');
+ };
+ const request=async(variables,sort='POPULARITY_DESC')=>{
+  const requestQuery=query.replace('sort:POPULARITY_DESC','sort:'+sort);
+  const json=await requestAniListJson(requestQuery,{attempts:5,timeoutMs:10000,retryDelayMs:700,graphqlErrorFlag:'graphqlErrors'});
+  const pageData=json.data?.Page;
+  const items=normalizeUnicode(pageData?.media||[]).filter(isJapaneseOriginAnime);
+  items.hasNextPage=pageData?.pageInfo?.hasNextPage===true;
+  return items;
  };
  const requestPageBatch=async(pages,sort,format,yearStart,yearEnd)=>{
   const fields='id countryOfOrigin source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } format popularity title { romaji english native } description(asHtml:false) synonyms coverImage { large medium extraLarge } episodes seasonYear averageScore genres studios(isMain:true) { nodes { name } }  externalLinks { url site type isDisabled language }';
   const formatArg=(format?',format_in:['+format+']':'')+(yearStart?',startDate_greater:'+(yearStart*10000)+',startDate_lesser:'+((yearEnd+1)*10000):'');
   const aliases=pages.map((page,index)=>'p'+index+': Page(page:'+page+',perPage:50) { pageInfo { hasNextPage } media(type:ANIME,sort:'+sort+',isAdult:false'+formatArg+') { '+fields+' } }').join(' ');
   const batchQuery='query { '+aliases+' }';
-  let lastError;
-  for(let attempt=0;attempt<4;attempt++){
-   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);
-   try{
-    const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query:batchQuery}),signal:controller.signal});
-    if(!response.ok){
-     const err=new Error(response.status===429?'アクセスが集中しています（HTTP 429）。':('データサーバー応答エラー（HTTP '+response.status+'）。'));
-     if(response.status===429){const retrySeconds=Number(response.headers.get('Retry-After'))||30;rateLimitedUntil=Math.max(rateLimitedUntil,Date.now()+retrySeconds*1000);lastError=err;await new Promise(resolve=>setTimeout(resolve,Math.max(5000*(attempt+1),rateLimitedUntil-Date.now())));continue}
-     if(response.status>=500){lastError=err;await new Promise(resolve=>setTimeout(resolve,1500*Math.pow(2,attempt)));continue}
-     throw err;
-    }
-    const json=await response.json();
-    if(json.errors?.length){const error=new Error(json.errors.map(e=>e.message).join(' / '));error.batchUnsupported=true;throw error}
-    return pages.map((_,index)=>({items:normalizeUnicode(json.data?.['p'+index]?.media||[]).filter(isJapaneseOriginAnime),hasNextPage:json.data?.['p'+index]?.pageInfo?.hasNextPage===true}));
-   }catch(error){
-    if(error.name==='AbortError'){lastError=new Error('データ取得がタイムアウトしました。');lastError.batchUnsupported=error.batchUnsupported===true}else{lastError=error}
-    if(error.batchUnsupported)break;
-    if(attempt<3)await new Promise(resolve=>setTimeout(resolve,800*Math.pow(2,attempt)));
-   }finally{clearTimeout(timeout)}
+  let json;
+  try{
+   json=await requestAniListJson(batchQuery,{attempts:4,timeoutMs:15000,retryDelayMs:800,graphqlErrorFlag:'batchUnsupported'});
+  }catch(error){
+   if(!error.batchUnsupported)throw error;
+   return Promise.all(pages.map(async page=>{
+    const items=await request({page,perPage:50,format_in:format?[format]:undefined,startDate_greater:yearStart?yearStart*10000+101:undefined,startDate_lesser:yearEnd?yearEnd*10000+1231:undefined},sort);
+    return {items,hasNextPage:items.hasNextPage===true};
+   }));
   }
-  if(lastError?.batchUnsupported)return Promise.all(pages.map(async page=>{const items=await request({page,perPage:50,format_in:format?[format]:undefined,startDate_greater:yearStart?yearStart*10000+101:undefined,startDate_lesser:yearEnd?yearEnd*10000+1231:undefined},sort);return {items,hasNextPage:items.hasNextPage===true}}));
-  throw lastError||new Error('データをまとめて取得できませんでした。');
+  return pages.map((_,index)=>({
+   items:normalizeUnicode(json.data?.['p'+index]?.media||[]).filter(isJapaneseOriginAnime),
+   hasNextPage:json.data?.['p'+index]?.pageInfo?.hasNextPage===true
+  }));
  };
  if(vars.search){
   const searchKey=normalizeAnswer(vars.search);
