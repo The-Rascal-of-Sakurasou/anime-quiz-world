@@ -593,7 +593,7 @@ function runRecommendationSelfTests(){
  check('原作情報が不明な翻案作品は除外する',!isRecommendationCandidate({...candidateBase,source:'MANGA',relations:{edges:[]},format:'TV'}));
  check('日本原産の原作メディアを確認できる翻案作品は通過する',isRecommendationCandidate({...candidateBase,source:'MANGA',relations:{edges:[{relationType:'SOURCE',node:{type:'MANGA',countryOfOrigin:'JP',format:'MANGA'}}]},format:'TV'}));
  check('タイトル画像がない作品は推薦候補に含めない',!isRecommendationCandidate({...candidateBase,coverImage:{},format:'TV'}));
- // 52選択肢それぞれを単独で選んだprofileでも、候補の適格判定結果が変わらないことを確認する。
+ // 通常80選択肢と追加2回答を含む120選択肢それぞれを単独で選んだprofileでも、候補の適格判定結果が変わらないことを確認する。
  const eligibilitySamples=[
   {...candidateBase,id:101,format:'TV'},
   {...candidateBase,id:102,format:'MOVIE'},
@@ -664,7 +664,7 @@ function runRecommendationSelfTests(){
    }
    return JSON.stringify(actual)===JSON.stringify(expected);
   }));
-  check('全80選択肢の回答が推薦profileへ正しく反映される',profileProbeOk);
+  check('通常の80選択肢の回答が推薦profileへ正しく反映される',profileProbeOk);
   check('全20問の選択肢に中立回答と自由記述がある',!duplicateChoiceLabels&&questions.every(q=>q.options.length===6&&q.options[4].neutral&&q.options[5].other));
   check('結末の好みを1問に統合し、余韻質問を重ねない',!questionByDimension.has('aftertaste')&&questionByDimension.has('ending_preference'));
   check('舞台と作品テーマを別々の観点にする',questionByDimension.get('theme_focus').title.includes('テーマ')&&questionByDimension.get('setting').title.includes('舞台'));
@@ -673,7 +673,7 @@ function runRecommendationSelfTests(){
   check('物語の複雑さはジャンル加点と分離',questionByDimension.get('narrative_complexity').options.every(o=>!o.genres?.length&&!o.avoidGenres?.length));
   check('シンプル回答は考察要素を抑える',questionByDimension.get('narrative_complexity').options[0].avoidTags?.includes('Conspiracy')&&questionByDimension.get('narrative_complexity').options[0].avoidTags?.includes('World Building'));
   check('主人公の目標は複雑さの質問と異なる題材を扱う',questionByDimension.get('protagonist_challenge').options.every(o=>!['Mystery','Conspiracy','World Building','Ensemble Cast'].some(tag=>o.tags?.includes(tag))));
-  check('年代の質問は開始年・終了年を推薦スコアに反映',questions.find(q=>q.dimension==='release_era')?.options.every(o=>o.startYearMin||o.startYearMax)&&profileFromAnswers([null,null,null,null,null,null,null,null,1]).startYearMin===2000);
+  check('年代の質問は開始年・終了年を推薦スコアに反映',questions.find(q=>q.dimension==='release_era')?.options.filter(o=>!o.neutral&&!o.other).every(o=>o.startYearMin||o.startYearMax)&&profileFromAnswers([null,null,null,null,null,null,null,null,1]).startYearMin===2000);
   check('人物関係の質問は恋愛量と重複しない',questionByDimension.get('relationships').options.every(o=>!o.genres?.includes('Romance')&&!o.tags?.includes('Love Triangle')));
   check('テンポと物語構成を別の信号で扱う',questionByDimension.get('pacing').options.every(o=>!o.genres?.length)&&questionByDimension.get('story_structure').options.some(o=>o.tagWeights?.Episodic>0));
   check('笑いとシリアスの配分を独立して反映する',questionByDimension.get('tone_balance').options.some(o=>o.genreWeights?.Comedy>0)&&questionByDimension.get('tone_balance').options.some(o=>o.genreWeights?.Drama>0));
