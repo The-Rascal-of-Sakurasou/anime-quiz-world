@@ -1,0 +1,35 @@
+/* Shared responsive styles for the privacy policy and terms of service. */
+:root{color-scheme:light;--bg:#f5f6f8;--text:#20242b;--muted:#68717d;--line:#dfe3e8;--accent:#315b9a}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.85 Arial,"Yu Gothic",Meiryo,sans-serif}
+.wrap{max-width:850px;width:calc(100% - 32px);margin:0 auto;padding:28px 0 60px}
+header,main{background:#fff;border:1px solid var(--line);border-radius:12px;padding:clamp(18px,4vw,32px);margin-bottom:16px}
+a{color:var(--accent)}
+h1{line-height:1.35}
+h2{font-size:1.15rem;margin-top:28px}
+li{margin:7px 0}
+.muted{color:var(--muted);font-size:.9rem}
+.back{display:inline-block;margin-bottom:10px}
+@media(max-width:560px){.toc ol{columns:1}.wrap{width:calc(100% - 24px)}header,main{padding:20px 17px}}
+@media(max-width:700px){
+  html{scroll-padding-top:14px}
+  body{font-size:16px;line-height:1.85;overflow-wrap:anywhere}
+  .wrap{width:calc(100% - 22px);padding:12px 0 calc(30px + env(safe-area-inset-bottom))}
+  header,main{border-radius:12px;margin-bottom:12px}
+  header{padding:15px}
+  main{padding:20px 16px}
+  h1{font-size:clamp(1.55rem,6.5vw,2.1rem);line-height:1.35}
+  h2{font-size:1.12rem;line-height:1.5;margin-top:25px}
+  .page-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .page-nav a{display:flex;align-items:center;justify-content:center;min-height:44px;padding:8px;text-align:center}
+  .toc{padding:13px;margin-bottom:17px}
+  .toc ol{columns:1;padding-left:1.25rem}
+  .toc li{font-size:.92rem;line-height:1.55}
+  .doc-meta{gap:6px 12px}
+  .doc-footer{display:grid;gap:10px}
+  .doc-footer nav{gap:10px 14px}
+  a{overflow-wrap:anywhere}
+}
+@media(max-width:380px){
+  .wrap{width:calc(100% - 16px)}
+  header,main{padding-left:13px;padding-right:13px}
+}
