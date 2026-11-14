@@ -277,7 +277,7 @@ for (const [pageName, pageSource] of [["privacy.html", privacy], ["terms.html", 
   assert.ok(pageSource.includes('href="./aqw-legal-pages.css"'), pageName + " must load the shared legal-page stylesheet");
   assert.doesNotMatch(pageSource, /<style[\\s>]/i, pageName + " must not duplicate the shared legal-page CSS inline");
 }
-assert.match(legalPagesCss, /@media\\(max-width:700px\\)/, "Shared legal-page stylesheet must retain mobile layout rules");
+assert.match(legalPagesCss, /@media\(max-width:700px\)/, "Shared legal-page stylesheet must retain mobile layout rules");
 assert.doesNotMatch(privacy, /コレクション/, "Privacy policy must not describe the removed anime collection feature");
 
 const recommend = source.get("recommend.html");
