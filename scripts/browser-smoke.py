@@ -1270,18 +1270,17 @@ def test_recommendation_diagnosis(browser):
     for step in range(question_count):
         choices = page.locator("#choices button.choice")
         choices.first.wait_for(state="visible", timeout=10000)
-        assert choices.count() == 6, f"Question {step + 1} must have four answers plus unknown and free-text options"
+        assert choices.count() == 5, f"Question {step + 1} must have four answers plus unknown"
         if step == 0:
+            assert page.locator("#questionOtherWrap").count() == 0, "Per-question free-text controls must not exist"
+            page.locator("summary").filter(has_text="追加の自由記述").click()
+            page.locator("#wantText").fill("SFとミステリー、伏線の多い物語")
+            page.locator("#avoidText").fill("恋愛中心の作品")
+            page.locator("#preferenceText").fill("物語の展開が速い作品が好き")
+            assert choices.count() == 5, "Separate free-text fields must not alter question choices"
             choices.nth(4).click()
             assert page.locator("#next").is_enabled(), "Unknown answer must not require free text"
-            choices.nth(5).click()
-            assert page.locator("#questionOtherWrap").is_visible(), "Other answer must reveal its free-text field"
-            page.locator("#questionOtherText").fill("SFとミステリー")
-            assert page.locator("#next").is_enabled(), "Other answer must accept non-empty free text"
-            choices.nth(5).click()
-            assert page.locator("#questionOtherText").input_value() == "SFとミステリー", "Free-text answer must persist when revisiting the option"
-            choices.nth(4).click()
-            assert not page.locator("#questionOtherWrap").is_visible(), "Unknown answer must hide the free-text field"
+            assert page.locator("#wantText").input_value() == "SFとミステリー、伏線の多い物語", "Separate free text must remain available during question answering"
         choices.first.click()
         page.locator("#next").click()
         if step + 1 < question_count:
