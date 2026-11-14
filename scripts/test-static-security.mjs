@@ -646,6 +646,10 @@ const textUtils = fs.readFileSync("aqw-text-utils.js", "utf8");
 assert.match(textUtils, /function normalizeAnswer\(value\)/, "Shared text normalization must be implemented once");
 assert.match(textUtils, /function truncateSynopsis\(value, maxLength = 260\)/, "Shared synopsis truncation must be implemented once");
 assert.doesNotMatch(index, /function normalizeAnswer\(|function synopsisText\(/, "The quiz must not duplicate shared text utility implementations");
+assert.ok(recommend.includes('src="./aqw-text-utils.js"') && recommend.includes("const escapeHTML = window.AQWTextUtils.escapeHTML"), "Recommendation cards must use shared HTML escaping");
+const admin = source.get("admin.html");
+assert.ok(admin.includes('src="./aqw-text-utils.js"') && admin.includes("const esc = window.AQWTextUtils.escapeHTML"), "Admin data must use shared HTML escaping");
+assert.match(textUtils, /function escapeHTML\(value\)/, "HTML escaping must be implemented once in the shared helper");
 
 assert.ok(index.includes('<textarea id="aqwPostBody" maxlength="2000">'), "Post composer must enforce the database 2,000-character limit");
 assert.ok(index.includes('id="aqwPostImage" type="file" accept="image/jpeg,image/png,image/webp,image/gif"'), "Post image picker must match the supported storage MIME types");
