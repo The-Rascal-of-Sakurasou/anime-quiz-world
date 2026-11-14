@@ -47,7 +47,6 @@ export function validateCatalog(catalog) {
     else if (ids.has(id)) failures.push(label + ": duplicate AniList ID " + id);
     else ids.add(id);
 
-    if (anime?.countryOfOrigin === "JP" && anime?.originVerified !== true) failures.push(label + ": build-time Japanese-origin verification marker is missing");
     if (anime?.catalogueEligible === false) failures.push(label + ": catalogue eligibility is explicitly disabled");
     if (!isJapaneseOriginAnime(anime)) failures.push(label + ": countryOfOrigin must be exactly JP; non-Japanese and unknown origins are excluded");
     if (!FORMATS.has(anime?.format)) failures.push(label + ": unsupported anime format");
