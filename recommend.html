@@ -227,7 +227,7 @@ const questions=[
 {label:'短め（映画・1クール程度）',length:'short'},
 {label:'中くらい（2〜3クール程度）',length:'medium'},
 {label:'長編をじっくり見たい',length:'long'},
-{label:'長さは気にしない',length:'any'}
+{label:'長さよりもテンポを重視',tags:['Fast-Paced']}
 ]},
 {dimension:'character_appeal',title:'特に惹かれるキャラクター像は？',help:'人物の性格や魅力について選んでください。',options:[
 {label:'努力して成長する人物',tags:['Character Development']},
@@ -305,13 +305,13 @@ const questions=[
  {label:'TVシリーズ',formatWeights:{TV:2.5,TV_SHORT:0.4}},
  {label:'劇場版・映画',formatWeights:{MOVIE:3}},
  {label:'OVA・Webアニメ・特別編',formatWeights:{OVA:2,ONA:2,SPECIAL:1}},
- {label:'形式にはこだわらない'}
+ {label:'短編アニメ・ショートシリーズ',formatWeights:{TV_SHORT:3}}
  ]},
  {dimension:'source_preference',title:'原作・制作の出発点に好みはある？',help:'原作や企画の種類について、見たい傾向を選んでください。',options:[
  {label:'アニメオリジナル作品',sourceWeights:{ORIGINAL:3}},
  {label:'漫画が原作の作品',sourceWeights:{MANGA:3}},
  {label:'小説・ライトノベルが原作の作品',sourceWeights:{NOVEL:2,LIGHT_NOVEL:3,WEB_NOVEL:2}},
- {label:'原作の種類は気にしない'}
+ {label:'ゲームが原作の作品',sourceWeights:{VIDEO_GAME:3}}
  ]}
 ];
 const allQuestionTitles=questions.map(q=>q.title.trim());
@@ -691,6 +691,8 @@ function runRecommendationSelfTests(){
   }));
   check('通常の80選択肢の回答が推薦profileへ正しく反映される',profileProbeOk);
   check('全20問の選択肢に中立回答と自由記述がある',!duplicateChoiceLabels&&questions.every(q=>q.options.length===6&&q.options[4].neutral&&q.options[5].other));
+  check('20問目にゲーム原作の選択肢があり、原作の種類に関する中立選択肢と重複しない',questionByDimension.get('source_preference')?.options[3]?.label==='ゲームが原作の作品'&&questionByDimension.get('source_preference')?.options[3]?.sourceWeights?.VIDEO_GAME===3);
+  check('こだわらない・気にしない系の選択肢を中立回答と重複させない',questions.every(q=>q.options.slice(0,4).every(o=>!/(気にしない|こだわらない)/.test(o.label))));
   check('結末の好みを1問に統合し、余韻質問を重ねない',!questionByDimension.has('aftertaste')&&questionByDimension.has('ending_preference'));
   check('舞台と作品テーマを別々の観点にする',questionByDimension.get('theme_focus').title.includes('テーマ')&&questionByDimension.get('setting').title.includes('舞台'));
   check('旧18問版の意味が変わった回答は未回答に戻す',(()=>{const old=Array(18).fill(0);old[8]=1;old[15]=2;old[17]=3;const migrated=[...old];[8,15,17].forEach(i=>migrated[i]=null);return migrated[8]===null&&migrated[15]===null&&migrated[17]===null})());
