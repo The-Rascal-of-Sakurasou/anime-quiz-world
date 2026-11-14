@@ -1343,21 +1343,7 @@ def test_live_seasonal_anilist():
     }
 
     def japanese_origin(item):
-        if item.get("countryOfOrigin") != "JP":
-            return False
-        if item.get("source") == "ORIGINAL":
-            return True
-        rule = rules.get(item.get("source"))
-        if not rule:
-            return False
-        node_type, formats = rule
-        return any(
-            edge.get("relationType") in {"SOURCE", "ADAPTATION"}
-            and (node := edge.get("node") or {}).get("type") == node_type
-            and node.get("countryOfOrigin") == "JP"
-            and node.get("format") in formats
-            for edge in (item.get("relations") or {}).get("edges", [])
-        )
+        return item.get("countryOfOrigin") == "JP"
 
     season_items = [
         item for item in items
