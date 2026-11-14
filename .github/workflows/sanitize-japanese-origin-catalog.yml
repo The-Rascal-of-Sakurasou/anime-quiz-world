@@ -1,0 +1,45 @@
+name: Sanitize Japanese-origin anime catalogue
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: aqw-japanese-origin-catalogue-sanitize
+  cancel-in-progress: false
+
+jobs:
+  sanitize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check sanitizer and validator syntax
+        run: |
+          node --check scripts/sanitize-japanese-origin-catalog.mjs
+          node --check scripts/validate-anime-catalog.mjs
+      - name: Remove all non-Japanese-origin records
+        run: node scripts/sanitize-japanese-origin-catalog.mjs
+      - name: Validate sanitized catalogue
+        run: node scripts/validate-anime-catalog.mjs
+      - name: Commit sanitized catalogue
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/anime-catalog.json data/anime-catalog.json.gz
+          if git diff --cached --quiet; then
+            echo "Catalogue already contains only Japanese-origin records."
+            exit 0
+          fi
+          git commit -m "Remove non-Japanese-origin anime from catalogue"
+          git pull --rebase origin main
+          git push
