@@ -331,8 +331,8 @@ assert.equal(parsedQuestions.length, 20, "Recommendation diagnosis must remain e
 const complexityQuestion = questionBlock.match(/\{dimension:\'narrative_complexity\'[\s\S]*?\n\]\}/)?.[0] || "";
 assert.ok(complexityQuestion, "Narrative complexity question must exist");
 assert.doesNotMatch(complexityQuestion, /genres:|avoidGenres:/, "Narrative complexity must not double-count the genre preference axis");
-assert.match(recommend, /const state=\{v:9,a:answers,/, "New recommendation share links must use version 9");
-assert.match(recommend, /const SAVE_KEY='aqw-recommendation-v9'/, "New local diagnosis saves must use version 9");
+assert.match(recommend, /const state=\\{v:10,a:answers,/, "New recommendation share links must use version 10");
+assert.match(recommend, /const SAVE_KEY='aqw-recommendation-v10'/, "New local diagnosis saves must use version 10");
 assert.match(recommend, /const PREVIOUS_SAVE_KEY='aqw-recommendation-v8'/, "Previous version 8 local saves must remain readable");
 assert.match(recommend, /const LEGACY_SAVE_KEY='aqw-recommendation-v2'/, "Legacy version 2 local diagnosis data must remain readable");
 assert.match(recommend, /safeStorage\.removeItem\(PREVIOUS_SAVE_KEY\)/, "Clearing diagnosis data must remove the previous save");
