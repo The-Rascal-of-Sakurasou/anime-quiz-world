@@ -18,13 +18,13 @@ for (const file of frontendFiles) {
   const html = fs.readFileSync(file, "utf8");
   // Include first-party deferred bundles so source-level regression checks
   // continue to cover the complete page after script extraction.
-  const linkedScripts = [...html.matchAll(/<script\\b[^>]*src=["']\\.\\/([^"']+)["']/g)]
+  const linkedScripts = [...html.matchAll(/<script\b[^>]*src=["']\.\/([^"']+)["']/g)]
     .map((match) => {
       const scriptPath = match[1];
       assert.ok(fs.existsSync(scriptPath), `Missing linked page script: ${scriptPath}`);
       return fs.readFileSync(scriptPath, "utf8");
     });
-  source.set(file, html + "\\n" + linkedScripts.join("\\n"));
+  source.set(file, html + "\n" + linkedScripts.join("\n"));
 }
 
 const matchPreparePath = "supabase/functions/aqw-match-prepare/index.ts";
@@ -148,7 +148,7 @@ assert.match(source.get("guide.html"), /ブロック・通報/, "The guide must 
 
 let checkedScripts = 0;
 for (const [file, html] of source) {
-  const scripts = html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi);
+  const linkedScripts = [...html.matchAll(/<script\b[^>]*src=["']\.\/([^"']+)["']/g)]
   for (const match of scripts) {
     const attrs = match[1] || "";
     const body = match[2] || "";
