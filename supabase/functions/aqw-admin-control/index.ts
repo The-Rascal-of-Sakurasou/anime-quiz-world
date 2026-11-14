@@ -51,8 +51,8 @@ Deno.serve(async (req: Request) => {
   const requestId = crypto.randomUUID();
   let action = "unknown";
   try {
-    const contentLength = Number(req.headers.get("Content-Length") || 0);
-    if (contentLength > 16384) throw new ApiError("リクエストが大きすぎます。", 413);
+    const contentType = req.headers.get("Content-Type") || "";
+    if (!contentType.toLowerCase().startsWith("application/json")) throw new ApiError("JSON形式のリクエストが必要です。", 415);
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) throw new ApiError("ログインが必要です。", 401);
     const token = authHeader.slice(7);
@@ -71,10 +71,15 @@ Deno.serve(async (req: Request) => {
     if (ownerError || owner !== true) throw new ApiError("管理者権限がありません。", 403);
     let body: Record<string, unknown>;
     try {
-      const parsed = await req.json();
+      const rawBody = await req.text();
+      if (new TextEncoder().encode(rawBody).byteLength > 16384) throw new ApiError("リクエストが大きすぎます。", 413);
+      const parsed = JSON.parse(rawBody);
       if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("invalid");
       body = parsed as Record<string, unknown>;
-    } catch { throw new ApiError("リクエスト形式が正しくありません。"); }
+    } catch (error) {
+      if (error instanceof ApiError) throw error;
+      throw new ApiError("リクエスト形式が正しくありません。");
+    }
     if (typeof body.action !== "string") throw new ApiError("操作が指定されていません。");
     action = body.action;
     const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });

@@ -245,6 +245,7 @@ assert.equal(fs.existsSync(removedPasswordOnlyMigration), false, "Password-only 
 assert.match(admin, /adminAction\('get_dashboard'\)/, "Admin authorization must be checked through the protected Edge Function");
 assert.match(admin, /client\.functions\.invoke\('aqw-admin-control'/, "Admin operations must use the protected Edge Function");
 assert.doesNotMatch(admin, /client\.from\(|client\.rpc\(|client\.storage/, "Admin console must not access privileged tables or storage directly");
+assert.match(admin, /サーバー側で認証・権限確認・入力検証/, "Admin footer must describe the server-side security boundary");
 const adminEdge = fs.readFileSync("supabase/functions/aqw-admin-control/index.ts", "utf8");
 for (const action of ["get_dashboard", "list_reports", "get_report_context", "update_report", "list_posts", "update_post", "delete_post", "list_profiles", "update_profile", "list_data_records", "delete_data_record", "list_users", "set_ban"]) {
   assert.ok(adminEdge.includes('action === "' + action + '"'), "Admin Edge Function action missing: " + action);
