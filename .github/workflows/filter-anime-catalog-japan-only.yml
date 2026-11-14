@@ -2,8 +2,10 @@ name: Filter anime catalogue to Japanese origin only
 
 on:
   push:
-    branches:
-      - refactor/aqw-shared-code-20261114
+    branches: [main]
+    paths:
+      - "data/anime-catalog.json"
+  workflow_dispatch:
 
 permissions:
   contents: write
