@@ -7,14 +7,18 @@ on:
       - "data/anime-catalog.json"
       - "index.html"
       - "anime-origin-policy.js"
+      - "aqw-text-utils.js"
       - "scripts/audit-question-mode-coverage.mjs"
+      - "scripts/test-aqw-text-utils.mjs"
       - ".github/workflows/question-mode-coverage.yml"
   pull_request:
     paths:
       - "data/anime-catalog.json"
       - "index.html"
       - "anime-origin-policy.js"
+      - "aqw-text-utils.js"
       - "scripts/audit-question-mode-coverage.mjs"
+      - "scripts/test-aqw-text-utils.mjs"
       - ".github/workflows/question-mode-coverage.yml"
   workflow_dispatch:
 
