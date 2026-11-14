@@ -211,7 +211,7 @@ client.auth.onAuthStateChange((event,session)=>{
   say('セッションが終了しました。再度ログインしてください。');
  },0);
 });
-function say(message,kind=''){status.textContent=message;status.className='status'+(kind?' '+kind)}
+function say(message,kind=''){status.textContent=message;status.className='status'+(kind?' '+kind:'')}
 function date(value){if(!value)return '—';const d=new Date(value);return Number.isNaN(d.getTime())?'—':d.toLocaleString('ja-JP')}
 async function adminAction(action,payload={}){
  const {data,error}=await client.functions.invoke('aqw-admin-control',{body:{action,...payload}});
