@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
     paths:
+      - "anime-origin-policy.js"
+      - "anime-text-utils.js"
       - "data/anime-catalog.json"
       - "index.html"
       - "scripts/audit-question-mode-coverage.mjs"
