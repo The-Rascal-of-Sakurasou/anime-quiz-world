@@ -202,7 +202,6 @@ const report = {
   catalogueGeneratedAt: payload.generatedAt,
   catalogueCount: payload.count ?? payload.itemCount,
   japaneseOriginCount,
-  famousForeignCount,
   catalogueBytes,
   catalogueGzipBytes,
   embeddedCharacterRecords,
