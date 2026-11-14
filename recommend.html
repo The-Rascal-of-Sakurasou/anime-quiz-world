@@ -134,16 +134,20 @@ body{background:#f6f7f9;color:#202936;letter-spacing:.005em}
 <main class="panel" id="mainContent" tabindex="-1">
 <div id="diagnosis">
 <div class="progress" aria-label="診断の進行状況"><div id="progressBar"></div></div>
+<div id="questionStep">
 <div class="question"><div class="eyebrow" id="stepLabel">QUESTION 1 / 20</div><h2 id="questionTitle">どんなジャンルのアニメが見たい？</h2><p id="questionHelp">今見たいジャンルを1つ選んでください。</p></div>
-<div class="choices" id="choices" aria-label="回答の選択肢"></div><div id="questionOtherWrap" class="question-other hidden"><label for="questionOtherText">選択肢にない内容を具体的に教えてください</label><textarea id="questionOtherText" maxlength="240" rows="3" placeholder="例：宇宙を舞台にした、伏線の多い作品が見たい"></textarea></div>
-<details class="free-text-details"><summary>自由記述・好きな作品の入力（任意）</summary><div class="free-text-inner"><section class="free-text-topics" aria-labelledby="freeTextHeading"><h3 id="freeTextHeading">トピック別に好みを伝える</h3><p>選択肢だけでは表現しにくい好みを、話題ごとに記入できます。空欄でも診断できます。</p><div class="free-topic-grid"><label>見たい作品・要素<textarea id="wantText" maxlength="500" rows="3" placeholder="例：伏線が多く、先の読めない展開。SFや時間を扱う物語。"></textarea></label><label>避けたい作品・要素<textarea id="avoidText" maxlength="500" rows="3" placeholder="例：恋愛が中心の作品、日常描写が長く続く作品。"></textarea></label><label>作品の好み・補足<textarea id="preferenceText" maxlength="700" rows="4" placeholder="例：好きな作品のどこが好きか、重視する演出、希望する雰囲気など。"></textarea></label></div><p class="save-note">作品データのジャンル・タグと照合できた表現を反映します。意味を正確に読み取れない表現は推測で加点・減点しません。</p></section><div class="preference-inputs" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:22px">
+<div class="choices" id="choices" aria-label="回答の選択肢"></div>
+</div>
+<section id="additionalPreferences" class="free-text-details hidden" aria-labelledby="additionalPreferencesTitle">
+<h2 id="additionalPreferencesTitle">追加の希望を伝える（任意）</h2>
+<p>20問への回答が終わりました。ここでは質問の選択肢とは別に、自由な文章で好みを伝えられます。入力せずに診断することもできます。</p><div class="free-text-inner"><section class="free-text-topics" aria-labelledby="freeTextHeading"><h3 id="freeTextHeading">トピック別に好みを伝える</h3><p>20問への回答とは別に、自由な文章で好みを伝えられます。入力は任意で、空欄でも診断できます。</p><div class="free-topic-grid"><label>見たい作品・要素<textarea id="wantText" maxlength="500" rows="3" placeholder="例：伏線が多く、先の読めない展開。SFや時間を扱う物語。"></textarea></label><label>避けたい作品・要素<textarea id="avoidText" maxlength="500" rows="3" placeholder="例：恋愛が中心の作品、日常描写が長く続く作品。"></textarea></label><label>作品の好み・補足<textarea id="preferenceText" maxlength="700" rows="4" placeholder="例：好きな作品のどこが好きか、重視する演出、希望する雰囲気など。"></textarea></label></div><p class="save-note">作品データのジャンル・タグと照合できた表現を反映します。意味を正確に読み取れない表現は推測で加点・減点しません。</p></section><div class="preference-inputs" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:22px">
 <label style="display:block;font-weight:700;font-size:.92rem">好きなアニメ（任意）
 <input id="favoriteTitles" type="text" maxlength="180" placeholder="例：作品A、作品B" style="display:block;width:100%;margin-top:6px;padding:11px;border:1px solid var(--line);border-radius:8px;font:inherit;font-weight:400">
 <small style="color:var(--muted);font-weight:400">最大3作品。作品名は「、」またはカンマで区切ってください。</small></label>
 <label style="display:block;font-weight:700;font-size:.92rem">苦手なアニメ（任意）
 <input id="dislikedTitles" type="text" maxlength="180" placeholder="例：作品A、作品B" style="display:block;width:100%;margin-top:6px;padding:11px;border:1px solid var(--line);border-radius:8px;font:inherit;font-weight:400">
 <small style="color:var(--muted);font-weight:400">最大3作品。入力した作品自体を推薦候補から除外し、共通するジャンル・物語要素も推薦順位の調整に使います。</small></label>
-</div></div></details>
+</div></section>
 <div class="actions"><button id="back" type="button" disabled>戻る</button><button id="next" class="primary" type="button" disabled>次へ</button></div>
 <p class="save-note">診断の回答と結果は、このブラウザに自動保存されます。別の端末とは共有されません。</p>
 <div class="actions"><button id="clearSaved" type="button">保存データを削除</button></div>
@@ -316,7 +320,7 @@ const questions=[
 ];
 const allQuestionTitles=questions.map(q=>q.title.trim());
 const allQuestionDimensions=questions.map(q=>q.dimension);
-questions.forEach(q=>q.options.push({label:'わからない／特にこだわらない',neutral:true},{label:'選択肢にない（自由記述）',other:true}));
+questions.forEach(q=>q.options.push({label:'わからない',neutral:true},{label:'選択肢にない',neutral:true}));
 const allQuestionLabels=questions.flatMap(q=>q.options.filter(o=>!o.neutral&&!o.other).map(option=>option.label.trim()));
 if(new Set(allQuestionTitles).size!==questions.length||new Set(allQuestionDimensions).size!==questions.length||new Set(allQuestionLabels).size!==allQuestionLabels.length)throw new Error('診断の質問または選択肢に重複があります。');
 const questionTitles=questions.map(q=>q.title.trim());
@@ -327,9 +331,11 @@ if(new Set(questionTitles).size!==questionTitles.length||new Set(questionDimensi
 }
 const FIXED_QUESTION_COUNT=20;
 if(questions.length!==FIXED_QUESTION_COUNT)throw new Error('診断の質問数は20問固定です。')
-let step=0;const answers=Array(questions.length).fill(null);const questionTextAnswers=Array(questions.length).fill('');
-const SAVE_KEY='aqw-recommendation-v10';
-const PREVIOUS_SAVE_KEY='aqw-recommendation-v9';
+let step=0;const answers=Array(questions.length).fill(null);
+const SAVE_KEY='aqw-recommendation-v12';
+const PREVIOUS_SAVE_KEY='aqw-recommendation-v11';
+const OLDER_SAVE_KEY='aqw-recommendation-v10';
+const OLDEST_SAVE_KEY='aqw-recommendation-v9';
 const LEGACY_SAVE_KEY='aqw-recommendation-v2';
 const FEEDBACK_KEY='aqw-recommendation-feedback-v1';
 const EVALUATION_HISTORY_KEY='aqw-recommendation-evaluation-history-v1';
@@ -526,6 +532,8 @@ function buildDiscoveryPool(scored,selectedIds){
   .sort((a,b)=>(a._popularity||0)-(b._popularity||0)||(b._score||0)-(a._score||0)||(b._quality||0)-(a._quality||0));
 }
 
+const RECOMMENDATION_MAX_SIMILARITY=0.68;
+function passesRecommendationDiversityThreshold(candidate,selected,threshold=RECOMMENDATION_MAX_SIMILARITY){return calculateSelectionAdjustment(candidate,selected).maxSimilarity<threshold;}
 function calculateSelectionAdjustment(candidate,selected,discovery=false,maxPopularity=2){
  const genres=new Set(candidate.genres||[]);
  const tags=new Set((candidate.tags||[]).filter(t=>!t.isMediaSpoiler&&t.rank>=40).map(t=>t.name));
@@ -539,7 +547,7 @@ function calculateSelectionAdjustment(candidate,selected,discovery=false,maxPopu
   const tagUnion=new Set([...tags,...chosenTags]).size;
   const genreSimilarity=genreUnion?sharedGenres/genreUnion:0;
   const tagSimilarity=tagUnion?sharedTags/tagUnion:0;
-  maxSimilarity=Math.max(maxSimilarity,genreSimilarity*0.5+tagSimilarity*0.5);
+  maxSimilarity=Math.max(maxSimilarity,genreSimilarity,tagSimilarity);
  }
  for(const genre of genres){
   const occurrences=(selected||[]).filter(chosen=>(chosen.genres||[]).includes(genre)).length;
@@ -690,7 +698,9 @@ function runRecommendationSelfTests(){
    return JSON.stringify(actual)===JSON.stringify(expected);
   }));
   check('通常の80選択肢の回答が推薦profileへ正しく反映される',profileProbeOk);
-  check('全20問の選択肢に中立回答と自由記述がある',!duplicateChoiceLabels&&questions.every(q=>q.options.length===6&&q.options[4].neutral&&q.options[5].other));
+  check('全20問は通常4択・わからない・選択肢にないの6択で統一されている',!duplicateChoiceLabels&&questions.every(q=>q.options.length===6&&q.options[4].neutral&&q.options[4].label==='わからない'&&q.options[5].neutral&&q.options[5].label==='選択肢にない'));
+ check('わからない・選択肢にない回答は加点・減点しない',(()=>{for(const choice of [4,5]){const a=Array(questions.length).fill(null);a[0]=choice;const p=profileFromAnswers(a,{want:'',avoid:'',preference:''});if(Object.keys(p.genres).length||Object.keys(p.tags).length||Object.keys(p.avoidGenres).length||Object.keys(p.avoidTags).length)return false}return true})());
+ check('自由記述欄は20問の各質問とは独立して配置されている',Boolean($('wantText')&&$('avoidText')&&$('preferenceText'))&&!$('questionOtherWrap')&&!$('questionOtherText'));
   check('20問目にゲーム原作の選択肢があり、原作の種類に関する中立選択肢と重複しない',questionByDimension.get('source_preference')?.options[3]?.label==='ゲームが原作の作品'&&questionByDimension.get('source_preference')?.options[3]?.sourceWeights?.VIDEO_GAME===3);
   check('こだわらない・気にしない系の選択肢を中立回答と重複させない',questions.every(q=>q.options.slice(0,4).every(o=>!/(気にしない|こだわらない)/.test(o.label))));
   check('結末の好みを1問に統合し、余韻質問を重ねない',!questionByDimension.has('aftertaste')&&questionByDimension.has('ending_preference'));
@@ -814,7 +824,7 @@ function runRecommendationSelfTests(){
 }
 
 function saveDiagnosis(result=null){
- try{const data={v:10,savedAt:new Date().toISOString(),answers:[...answers],questionTextAnswers:[...questionTextAnswers],want:$('wantText').value.slice(0,500),avoid:$('avoidText').value.slice(0,500),preference:$('preferenceText').value.slice(0,700),favorite:$('favoriteTitles').value.slice(0,180),disliked:$('dislikedTitles').value.slice(0,180),result};safeStorage.setItem(SAVE_KEY,JSON.stringify(data));}
+ try{const data={v:12,savedAt:new Date().toISOString(),answers:[...answers],want:$('wantText').value.slice(0,500),avoid:$('avoidText').value.slice(0,500),preference:$('preferenceText').value.slice(0,700),favorite:$('favoriteTitles').value.slice(0,180),disliked:$('dislikedTitles').value.slice(0,180),result};safeStorage.setItem(SAVE_KEY,JSON.stringify(data));}
  catch(e){$('shareStatus').textContent='保存できませんでした。ブラウザの保存容量や設定を確認してください。';}
 }
 function restoreSavedDiagnosis(){
@@ -822,6 +832,8 @@ function restoreSavedDiagnosis(){
   const candidates=[
    {raw:safeStorage.getItem(SAVE_KEY),legacy:false},
    {raw:safeStorage.getItem(PREVIOUS_SAVE_KEY),legacy:true},
+   {raw:safeStorage.getItem(OLDER_SAVE_KEY),legacy:true},
+   {raw:safeStorage.getItem(OLDEST_SAVE_KEY),legacy:true},
    {raw:safeStorage.getItem(LEGACY_SAVE_KEY),legacy:true}
   ];
   let restored=null;
@@ -831,18 +843,18 @@ function restoreSavedDiagnosis(){
    try{data=JSON.parse(candidate.raw)}catch(_){continue}
    const normalized=normalizeSavedAnswers(data);
    if(!normalized||typeof data.favorite!=='string'||typeof data.disliked!=='string')continue;
-   restored={data,answers:normalized,legacy:candidate.legacy||data.v!==10};
+   restored={data,answers:normalized,legacy:candidate.legacy||data.v!==12};
    break;
   }
   if(!restored)return false;
   const {data,answers:restoredAnswers,legacy}=restored;
   answers.splice(0,answers.length,...restoredAnswers);
-  if(Array.isArray(data.questionTextAnswers))questionTextAnswers.splice(0,questionTextAnswers.length,...questions.map((_,i)=>String(data.questionTextAnswers[i]||'').slice(0,240)));
-  $('wantText').value=String(data.want||'').slice(0,500);$('avoidText').value=String(data.avoid||'').slice(0,500);$('preferenceText').value=String(data.preference||'').slice(0,700);
+  
+  $('wantText').value=String(data.want||'').slice(0,500);$('avoidText').value=String(data.avoid||'').slice(0,500);$('preferenceText').value=[String(data.preference||''),...(Array.isArray(data.questionTextAnswers)?data.questionTextAnswers:[])].map(value=>String(value||'').trim()).filter(Boolean).join(' / ').slice(0,700);
   $('favoriteTitles').value=data.favorite.slice(0,180);
   $('dislikedTitles').value=data.disliked.slice(0,180);
   step=Math.max(0,answers.findIndex(n=>n===null));
-  if(!answers.includes(null))step=questions.length-1;
+  if(!answers.includes(null))step=questions.length;
   if(!legacy&&data.result&&Array.isArray(data.result.closeMatches)&&Array.isArray(data.result.discoveries)&&!answers.includes(null)){
    const profile=profileFromAnswers();buildProfile(profile);renderCards(data.result);saveDiagnosis(latestResult);$('resultIntro').textContent='保存された前回の診断結果です。';$('diagnosis').classList.add('hidden');$('results').classList.remove('hidden');return true;
   }
@@ -852,51 +864,152 @@ function restoreSavedDiagnosis(){
  }catch(_){return false}
 }
 function clearSavedDiagnosis(){
- try{safeStorage.removeItem(SAVE_KEY);safeStorage.removeItem(PREVIOUS_SAVE_KEY);safeStorage.removeItem(LEGACY_SAVE_KEY);answers.fill(null);questionTextAnswers.fill('');step=0;$('wantText').value='';$('avoidText').value='';$('preferenceText').value='';$('favoriteTitles').value='';$('dislikedTitles').value='';$('results').classList.add('hidden');$('diagnosis').classList.remove('hidden');$('error').classList.add('hidden');$('progressBar').style.width='0%';history.replaceState(null,'',location.pathname+location.search);render();$('shareStatus').textContent='このブラウザに保存された診断データを削除しました。';}
+ try{safeStorage.removeItem(SAVE_KEY);safeStorage.removeItem(PREVIOUS_SAVE_KEY);safeStorage.removeItem(OLDER_SAVE_KEY);safeStorage.removeItem(OLDEST_SAVE_KEY);safeStorage.removeItem(LEGACY_SAVE_KEY);answers.fill(null);step=0;$('wantText').value='';$('avoidText').value='';$('preferenceText').value='';$('favoriteTitles').value='';$('dislikedTitles').value='';$('results').classList.add('hidden');$('diagnosis').classList.remove('hidden');$('error').classList.add('hidden');$('progressBar').style.width='0%';history.replaceState(null,'',location.pathname+location.search);render();$('shareStatus').textContent='このブラウザに保存された診断データを削除しました。';}
  catch(_){$('shareStatus').textContent='保存データを削除できませんでした。';}
 }
 const $=id=>document.getElementById(id);
 function render(){
- const q=questions[step];$('stepLabel').textContent='QUESTION '+(step+1)+' / '+questions.length;$('questionTitle').textContent=q.title;$('questionHelp').textContent=q.help;$('progressBar').style.width=(step/questions.length*100)+'%';$('choices').replaceChildren();
- q.options.forEach((option,i)=>{const b=document.createElement('button');b.type='button';b.className='choice'+(answers[step]===i?' selected':'');const n=document.createElement('span');n.className='n';n.textContent=i<4?String.fromCharCode(65+i):'・';const label=document.createElement('span');label.textContent=option.label;b.append(n,label);b.setAttribute('aria-pressed',String(answers[step]===i));b.addEventListener('click',()=>{answers[step]=i;saveDiagnosis();render()});$('choices').append(b)});
- const other=Boolean(q.options[answers[step]]?.other);$('questionOtherWrap').classList.toggle('hidden',!other);$('questionOtherWrap').setAttribute('aria-live','polite');$('questionOtherText').value=questionTextAnswers[step]||'';$('questionOtherText').oninput=()=>{questionTextAnswers[step]=$('questionOtherText').value.slice(0,240);$('next').disabled=!questionTextAnswers[step].trim();saveDiagnosis()};
- $('back').disabled=step===0;$('next').disabled=answers[step]===null||(other&&!questionTextAnswers[step].trim());$('next').textContent=step===questions.length-1?'診断する':'次へ';$('next').setAttribute('aria-label',step===questions.length-1?'20問の回答をもとに診断する':'質問 '+(step+1)+' の回答を保存して次へ進む');
+ const additionalStep=step===questions.length;
+ $('questionStep').classList.toggle('hidden',additionalStep);
+ $('additionalPreferences').classList.toggle('hidden',!additionalStep);
+ if(!additionalStep){
+  const q=questions[step];$('stepLabel').textContent='QUESTION '+(step+1)+' / '+questions.length;$('questionTitle').textContent=q.title;$('questionHelp').textContent=q.help;$('progressBar').style.width=(step/questions.length*100)+'%';$('choices').replaceChildren();
+  q.options.forEach((option,i)=>{const b=document.createElement('button');b.type='button';b.className='choice'+(answers[step]===i?' selected':'');const n=document.createElement('span');n.className='n';n.textContent=i<4?String.fromCharCode(65+i):'・';const label=document.createElement('span');label.textContent=option.label;b.append(n,label);b.setAttribute('aria-pressed',String(answers[step]===i));b.addEventListener('click',()=>{answers[step]=i;saveDiagnosis();render()});$('choices').append(b)});
+ }else{
+  $('progressBar').style.width='100%';
+ }
+ $('back').disabled=step===0;$('next').disabled=!additionalStep&&answers[step]===null;$('next').textContent=additionalStep?'診断結果を見る':'次へ';$('next').setAttribute('aria-label',additionalStep?'20問の回答と追加の希望をもとに診断する':(step===questions.length-1?'20問の回答後、追加の希望入力へ進む':'質問 '+(step+1)+' の回答を保存して次へ進む'));
 }
-function extractTextSignals(raw,target,weight=.65){
+function extractTextSignals(raw,target,weight=.65,defaultPolarity='positive'){
  const value=String(raw||'').toLocaleLowerCase().normalize('NFKC');
  const rules=[
-  {t:['ファンタジー','魔法','異世界'],g:'Fantasy'},{t:['冒険','旅','探検'],g:'Adventure'},
-  {t:['sf','宇宙','未来','ロボット','科学技術'],g:'Sci-Fi'},{t:['ミステリー','謎解き','推理','伏線','考察'],g:'Mystery'},
-  {t:['アクション','バトル','戦闘'],g:'Action'},{t:['日常','癒やし','癒し','スローライフ'],g:'Slice of Life'},
-  {t:['コメディ','ギャグ','笑い','面白い'],g:'Comedy'},{t:['感動','泣ける','切ない','人間ドラマ'],g:'Drama'},
-  {t:['恋愛','ラブコメ','ラブストーリー'],g:'Romance'},{t:['サスペンス','スリラー'],g:'Thriller'},
-  {t:['心理','心理戦','精神的'],g:'Psychological'},{t:['ホラー','恐怖','怖い'],g:'Horror'},
-  {t:['歴史','戦国','時代劇','古代'],g:'Historical'},{t:['スポーツ','競技','試合','部活'],g:'Sports'},
-  {t:['メカ','ロボットアニメ','巨大ロボ'],g:'Mecha'},{t:['音楽','バンド','主題歌','劇伴','演奏'],g:'Music'},
-  {t:['学園','学校','高校','学生'],tag:'School'},{t:['成長','努力','成長物語'],tag:'Character Development'},
-  {t:['頭脳戦','知略','戦略','天才','頭がいい'],tag:'Genius'},{t:['時間','タイムリープ','タイムトラベル','時間遡行'],tag:'Time Manipulation'},
-  {t:['伏線','陰謀','秘密','謎が多い'],tag:'Conspiracy'},{t:['世界観','設定が緻密','作り込まれた設定'],tag:'World Building'},
-  {t:['友情','仲間','絆','チーム'],tag:'Friendship'},{t:['家族','親子','兄弟','姉妹'],tag:'Family'},
-  {t:['群像劇','複数視点','複数の主人公'],tag:'Ensemble Cast'},{t:['戦争','軍事','戦場'],tag:'War'},
-  {t:['政治','国家','組織','社会問題'],tag:'Politics'},{t:['復讐','復讐劇'],tag:'Revenge'},
-  {t:['サバイバル','生き残り','極限状態'],tag:'Survival'},{t:['テンポが速い','展開が速い','スピーディー'],tag:'Fast-Paced'},
-  {t:['ゆっくり進む','じっくり','スローペース'],tag:'Slow Burn'},{t:['各話完結','一話完結'],tag:'Episodic'},
-  {t:['異能力','超能力','特殊能力'],tag:'Super Power'},{t:['探偵','捜査','事件を解決'],tag:'Detective'},
-  {t:['師弟','師匠','弟子'],tag:'Mentor'},{t:['意外な結末','どんでん返し'],tag:'Surprise Ending'},
-  {t:['ハッピーエンド','幸せな結末'],tag:'Happy Ending'},{t:['後味が苦い','ほろ苦い結末'],tag:'Bittersweet Ending'},
-  {t:['癒やし系','癒し系'],tag:'Iyashikei'},{t:['サイバーパンク'],tag:'Cyberpunk'},{t:['宇宙船','惑星','銀河'],tag:'Space'}
+  {terms:['ファンタジー','魔法','異世界'],genre:'Fantasy',label:'ファンタジー'},
+  {terms:['冒険','旅','探検','旅路'],genre:'Adventure',label:'冒険'},
+  {terms:['sf','サイエンスフィクション','宇宙','未来','科学技術','ロボット'],genre:'Sci-Fi',label:'SF'},
+  {terms:['ミステリー','謎解き','推理','伏線','考察','謎が多い'],genre:'Mystery',label:'ミステリー・考察'},
+  {terms:['アクション','バトル','戦闘','戦い','格闘'],genre:'Action',label:'アクション'},
+  {terms:['日常','癒やし','癒し','スローライフ','のんびり'],genre:'Slice of Life',label:'日常・癒やし'},
+  {terms:['コメディ','ギャグ','笑い','面白い','コメディー'],genre:'Comedy',label:'コメディ'},
+  {terms:['感動','泣ける','切ない','人間ドラマ','心に残る'],genre:'Drama',label:'感動・人間ドラマ'},
+  {terms:['恋愛','ラブコメ','ラブストーリー','恋の'],genre:'Romance',label:'恋愛'},
+  {terms:['サスペンス','スリラー','緊張感'],genre:'Thriller',label:'サスペンス'},
+  {terms:['心理','心理戦','精神的','心の動き'],genre:'Psychological',label:'心理描写'},
+  {terms:['ホラー','恐怖','怖い','不気味'],genre:'Horror',label:'ホラー'},
+  {terms:['歴史','戦国','時代劇','古代','歴史もの'],genre:'Historical',label:'歴史'},
+  {terms:['スポーツ','競技','試合','部活','大会'],genre:'Sports',label:'スポーツ'},
+  {terms:['メカ','ロボットアニメ','巨大ロボ','機械'],genre:'Mecha',label:'メカ'},
+  {terms:['音楽','バンド','主題歌','劇伴','演奏','ライブ'],genre:'Music',label:'音楽'},
+  {terms:['超常現象','オカルト','怪異','妖怪','幽霊'],genre:'Supernatural',label:'超常現象'},
+  {terms:['学園','学校','高校','学生','学園生活'],tag:'School',label:'学校が舞台'},
+  {terms:['成長','努力','成長物語','成長していく','変化していく'],tag:'Character Development',label:'登場人物の成長'},
+  {terms:['頭脳戦','知略','戦略','天才','頭がいい','頭の良い','駆け引き'],tag:'Genius',label:'頭脳戦・知略'},
+  {terms:['時間','タイムリープ','タイムトラベル','時間遡行','時間移動'],tag:'Time Manipulation',label:'時間に関する仕掛け'},
+  {terms:['伏線','陰謀','秘密','謎が多い','真相','どんでん返し'],tag:'Conspiracy',label:'伏線・謎'},
+  {terms:['世界観','設定が緻密','作り込まれた設定','設定が深い','独自の世界'],tag:'World Building',label:'作り込まれた世界観'},
+  {terms:['友情','仲間','絆','チーム','仲間との'],tag:'Friendship',label:'友情・仲間'},
+  {terms:['家族','親子','兄弟','姉妹','親子関係'],tag:'Family',label:'家族関係'},
+  {terms:['群像劇','複数視点','複数の主人公','多視点','登場人物が多い'],tag:'Ensemble Cast',label:'群像劇'},
+  {terms:['戦争','軍事','戦場','紛争'],tag:'War',label:'戦争・軍事'},
+  {terms:['政治','国家','組織','社会問題','権力'],tag:'Politics',label:'政治・社会'},
+  {terms:['復讐','復讐劇','報復','仇討ち'],tag:'Revenge',label:'復讐'},
+  {terms:['サバイバル','生き残り','極限状態','脱出ゲーム'],tag:'Survival',label:'サバイバル'},
+  {terms:['テンポが速い','テンポが速く','展開が速い','スピーディー','テンポの良い','テンポがいい','次々と展開'],tag:'Fast-Paced',label:'テンポの速い展開'},
+  {terms:['ゆっくり進む','じっくり','スローペース','ゆったり進む','丁寧に描く'],tag:'Slow Burn',label:'じっくり進む展開'},
+  {terms:['各話完結','一話完結','1話完結','一話ごと','一話ずつ'],tag:'Episodic',label:'各話完結'},
+  {terms:['異能力','超能力','特殊能力','超人的な力'],tag:'Super Power',label:'特殊能力'},
+  {terms:['探偵','捜査','事件を解決','事件の真相'],tag:'Detective',label:'探偵・捜査'},
+  {terms:['師弟','師匠','弟子','師匠と弟子'],tag:'Mentor',label:'師弟関係'},
+  {terms:['意外な結末','どんでん返し','予想外の結末','衝撃の展開'],tag:'Surprise Ending',label:'意外な展開・結末'},
+  {terms:['ハッピーエンド','幸せな結末','明るい結末'],tag:'Happy Ending',label:'幸福な結末'},
+  {terms:['後味が苦い','ほろ苦い結末','ビターエンド'],tag:'Bittersweet Ending',label:'ほろ苦い結末'},
+  {terms:['癒やし系','癒し系','穏やかな雰囲気'],tag:'Iyashikei',label:'癒やし系'},
+  {terms:['サイバーパンク','近未来都市'],tag:'Cyberpunk',label:'サイバーパンク'},
+  {terms:['宇宙船','惑星','銀河','宇宙開拓'],tag:'Space',label:'宇宙'},
+  {terms:['哲学','倫理','価値観','生き方を考える'],tag:'Philosophy',label:'哲学・倫理'},
+  {terms:['技術','テクノロジー','人工知能','生成ai','ai技術','情報技術'],tag:'Technology',label:'科学技術'},
+  {terms:['競争','ライバル','勝負','競い合う'],tag:'Competition',label:'競争・ライバル'},
+  {terms:['スポ根','修行','訓練','特訓','鍛える'],tag:'Training',label:'努力・訓練'},
+  {terms:['犯罪','犯罪捜査','裏社会','マフィア'],tag:'Crime',label:'犯罪・裏社会'},
+  {terms:['旅をする','旅が中心','冒険の目的','目的地を目指す'],tag:'Quest',label:'旅・目的の達成'},
+  {terms:['明るい雰囲気','前向き','爽やか','楽しい雰囲気'],tag:'Comedy',label:'明るい雰囲気'},
+  {terms:['暗い雰囲気','重い展開','重厚','シリアス','緊迫'],tag:'Drama',label:'シリアスな雰囲気'}
  ];
- const negativePattern=/(?:不要|いらない|苦手|嫌い|避けたい|避けて|少なめ|少ない|なし|無い|ない|含まない|中心ではない)/;
+ const negativeCues=['好きではない','好きじゃない','好みではない','見たいわけではない','見たくない','欲しくない','求めない','求めていない','好まない','興味がない','興味はない','重視しない','重要ではない','必要ない','中心ではない','多くない','少なめ','少ない','少なく','控えめ','苦手','嫌い','避けたい','避けて','避ける','不要','いらない','含まない','なし','無い','ない'];
+ const positiveCues=['好き','見たい','欲しい','重視','楽しめる','求める','興味','大歓迎','好み','魅力','増やして'];
+ const cueDistance=(windowText,termStart,termEnd,cues)=>{
+  let best=Infinity;
+  for(const cue of cues){
+   let from=0,index;
+   while((index=windowText.indexOf(cue,from))!==-1){
+    const end=index+cue.length;
+    const distance=index>=termEnd?index-termEnd:termStart>=end?termStart-end:0;
+    if(distance<best)best=distance;
+    from=index+1;
+   }
+  }
+  return best;
+ };
+ const recognized=[];
  for(const rule of rules){
-  if(!rule.t.some(term=>value.includes(term)))continue;
-  const term=rule.t.find(term=>value.includes(term));
-  const at=value.indexOf(term),near=value.slice(Math.max(0,at-8),Math.min(value.length,at+term.length+12));
-  const negative=negativePattern.test(near),isGenre=Boolean(rule.g),key=rule.g||rule.tag;
-  const destination=isGenre?(negative&&target.avoidGenres?target.avoidGenres:target.genres):(negative&&target.avoidTags?target.avoidTags:target.tags);
-  if(destination)destination[key]=(destination[key]||0)+weight;
+  const terms=rule.terms.filter(term=>value.includes(term)).sort((a,b)=>value.indexOf(a)-value.indexOf(b)||b.length-a.length);
+  if(!terms.length)continue;
+  const term=terms[0],index=value.indexOf(term);
+  const windowStart=Math.max(0,index-18),windowEnd=Math.min(value.length,index+term.length+24);
+  const windowText=value.slice(windowStart,windowEnd),termStart=index-windowStart,termEnd=termStart+term.length;
+  const negativeDistance=cueDistance(windowText,termStart,termEnd,negativeCues);
+  const positiveDistance=cueDistance(windowText,termStart,termEnd,positiveCues);
+  let polarity=defaultPolarity;
+  if(negativeDistance!==Infinity||positiveDistance!==Infinity){
+   if(negativeDistance<=positiveDistance)polarity='negative';
+   else polarity='positive';
+  }
+  const isGenre=Boolean(rule.genre),key=rule.genre||rule.tag;
+  const destination=isGenre
+   ?(polarity==='negative'?(target.avoidGenres||target.genres):target.genres)
+   :(polarity==='negative'?(target.avoidTags||target.tags):target.tags);
+  if(destination){
+   destination[key]=(destination[key]||0)+weight;
+   recognized.push({key,label:rule.label,kind:isGenre?'genre':'tag',polarity,weight});
+  }
  }
+ return recognized;
 }
-function profileFromAnswers(answerValues=answers,textAnswers=questionTextAnswers){const genres={},tags={},avoidGenres={},avoidTags={},formats={},sources={};let length='any',startYearMin=null,startYearMax=null;const addWeights=(target,values)=>{for(const [name,weight] of Object.entries(values||{})){const amount=Number(weight);if(Number.isFinite(amount)&&amount>0)target[name]=(target[name]||0)+amount}};answerValues.forEach((choice,i)=>{if(!Number.isInteger(choice)||!questions[i]?.options?.[choice])return;const option=questions[i].options[choice];if(option.neutral)return;if(option.other){extractTextSignals(textAnswers[i],{genres,tags,avoidGenres,avoidTags},.85);return}(option.genres||[]).forEach(g=>genres[g]=(genres[g]||0)+1);(option.tags||[]).forEach(t=>tags[t]=(tags[t]||0)+1);addWeights(genres,option.genreWeights);addWeights(tags,option.tagWeights);(option.avoidGenres||[]).forEach(g=>avoidGenres[g]=(avoidGenres[g]||0)+1);(option.avoidTags||[]).forEach(t=>avoidTags[t]=(avoidTags[t]||0)+1);addWeights(avoidGenres,option.avoidGenreWeights);addWeights(avoidTags,option.avoidTagWeights);addWeights(formats,option.formatWeights);addWeights(sources,option.sourceWeights);if(option.length)length=option.length;if(Number.isFinite(option.startYearMin))startYearMin=option.startYearMin;if(Number.isFinite(option.startYearMax))startYearMax=option.startYearMax});extractTextSignals($('wantText')?.value,{genres,tags,avoidGenres,avoidTags},.85);extractTextSignals($('preferenceText')?.value,{genres,tags,avoidGenres,avoidTags},.45);extractTextSignals($('avoidText')?.value,{genres:avoidGenres,tags:avoidTags},.85);return {genres,tags,avoidGenres,avoidTags,formats,sources,length,startYearMin,startYearMax};}
+function profileFromAnswers(answerValues=answers,textValues=null){
+ const genres={},tags={},avoidGenres={},avoidTags={},formats={},sources={};
+ let length='any',startYearMin=null,startYearMax=null;
+ const addWeights=(target,values)=>{
+  for(const [name,weight] of Object.entries(values||{})){
+   const amount=Number(weight);
+   if(Number.isFinite(amount)&&amount>0)target[name]=(target[name]||0)+amount;
+  }
+ };
+ answerValues.forEach((choice,index)=>{
+  if(!Number.isInteger(choice)||!questions[index]?.options?.[choice])return;
+  const option=questions[index].options[choice];
+  if(option.neutral)return;
+  (option.genres||[]).forEach(name=>genres[name]=(genres[name]||0)+1);
+  (option.tags||[]).forEach(name=>tags[name]=(tags[name]||0)+1);
+  addWeights(genres,option.genreWeights);addWeights(tags,option.tagWeights);
+  (option.avoidGenres||[]).forEach(name=>avoidGenres[name]=(avoidGenres[name]||0)+1);
+  (option.avoidTags||[]).forEach(name=>avoidTags[name]=(avoidTags[name]||0)+1);
+  addWeights(avoidGenres,option.avoidGenreWeights);addWeights(avoidTags,option.avoidTagWeights);
+  addWeights(formats,option.formatWeights);addWeights(sources,option.sourceWeights);
+  if(option.length)length=option.length;
+  if(Number.isFinite(option.startYearMin))startYearMin=option.startYearMin;
+  if(Number.isFinite(option.startYearMax))startYearMax=option.startYearMax;
+ });
+ const text=textValues||{
+  want:$('wantText')?.value||'',
+  avoid:$('avoidText')?.value||'',
+  preference:$('preferenceText')?.value||''
+ };
+ const textSignals=[
+  ...extractTextSignals(text.want,{genres,tags,avoidGenres,avoidTags},.85,'positive'),
+  ...extractTextSignals(text.preference,{genres,tags,avoidGenres,avoidTags},.45,'positive'),
+  ...extractTextSignals(text.avoid,{genres,tags,avoidGenres,avoidTags},.85,'negative')
+ ];
+ return {genres,tags,avoidGenres,avoidTags,formats,sources,length,startYearMin,startYearMax,textSignals};
+}
 function escapeHTML(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function parseTitleInput(id){
  const seen=new Set();
@@ -1239,15 +1352,15 @@ async function getRecommendations(profile,externalSignal=null){
  seedReport.retrievalStats.seriesDeduplicatedCount=scoredBeforeSeriesDedup-scored.length;
  seedReport.retrievalStats.eligibleAfterSeriesDedup=scored.length;
  // 一致度を保ちながら、同じジャンル・タグに偏りすぎないよう逐次選択する。
- const selectDiverse=(candidates,count,discovery=false)=>{
-  const pool=[...candidates],selected=[];
+ const selectDiverse=(candidates,count,discovery=false,previouslySelected=[])=>{
+  const pool=[...candidates],selected=[...previouslySelected],selectedHere=[];
   const maxPopularity=Math.max(2,...pool.map(x=>(Number(x._popularity)||0)+1));
-  while(pool.length&&selected.length<count){
+  while(pool.length&&selectedHere.length<count){
    let bestIndex=-1,bestValue=-Infinity,bestAdjustment=null;
    const adjustments=pool.map(candidate=>calculateSelectionAdjustment(candidate,selected,discovery,maxPopularity));
-   // 既出候補とジャンル・主要タグが極端に重なる作品は、代替候補がある限り選ばない。
-   const diverseIndexes=adjustments.map((adjustment,index)=>({adjustment,index})).filter(item=>item.adjustment.maxSimilarity<0.78).map(item=>item.index);
-   const candidateIndexes=diverseIndexes.length?diverseIndexes:pool.map((_,index)=>index);
+   // 類似度の上限を超える候補は採用しない。多様性を守れない場合は枠を空ける。
+   const candidateIndexes=adjustments.map((adjustment,index)=>({adjustment,index})).filter(item=>item.adjustment.maxSimilarity<RECOMMENDATION_MAX_SIMILARITY).map(item=>item.index);
+   if(!candidateIndexes.length)break;
    for(const i of candidateIndexes){
     const candidate=pool[i],adjustment=adjustments[i];
     const value=candidate._score+adjustment.total;
@@ -1255,29 +1368,30 @@ async function getRecommendations(profile,externalSignal=null){
    }
    if(bestIndex<0)break;
    const chosen=pool.splice(bestIndex,1)[0];
-   chosen._selectionAdjustment=bestAdjustment||{similarityPenalty:0,genreConcentrationPenalty:0,noveltyBonus:0,total:0};
+   chosen._selectionAdjustment=bestAdjustment||{similarityPenalty:0,genreConcentrationPenalty:0,tagConcentrationPenalty:0,noveltyBonus:0,total:0};
    chosen._selectionBreakdown=[
     {label:'既出作品との類似度による調整',points:-chosen._selectionAdjustment.similarityPenalty},
     {label:'ジャンルの偏りによる調整',points:-chosen._selectionAdjustment.genreConcentrationPenalty},
     {label:'物語タグの偏りによる調整',points:-chosen._selectionAdjustment.tagConcentrationPenalty},
     {label:'意外性（AniList上の人気度）',points:chosen._selectionAdjustment.noveltyBonus}
    ].filter(item=>Math.abs(item.points)>0.001);
-   selected.push(chosen);
+   selected.push(chosen);selectedHere.push(chosen);
   }
-  return selected;
+  return selectedHere;
  };
  const closeMatches=selectDiverse(scored,4);
- // 相性上位の候補群から人気度の高い作品も1枠確保し、知名度の低い作品だけに偏らないようにする。
- // 人気度だけで選ばず、相性スコア上位40%以内を条件にして診断との関連性を保つ。
+ // 人気枠も確保するが、既出候補との類似度上限を超える場合は採用しない。
  const popularAnchor=selectPopularAnchor(scored,closeMatches);
  if(popularAnchor&&closeMatches.length){
   const replaceIndex=closeMatches.reduce((worstIndex,item,index)=>item._score<closeMatches[worstIndex]._score?index:worstIndex,0);
-  closeMatches[replaceIndex]=popularAnchor;
+  const others=closeMatches.filter((_,index)=>index!==replaceIndex);
+  if(passesRecommendationDiversityThreshold(popularAnchor,others))closeMatches[replaceIndex]=popularAnchor;
  }
  const selectedIds=new Set(closeMatches.map(a=>a.id));
  // 回答スコアによる足切りは行わない。取得済みの全候補を意外なおすすめの対象にする。
  const discoveryPool=buildDiscoveryPool(scored,selectedIds);
- const discoveries=selectDiverse(discoveryPool,4,true);
+ const discoveries=selectDiverse(discoveryPool,4,true,closeMatches);
+ seedReport.retrievalStats.diversitySelection={closeSelected:closeMatches.length,discoverySelected:discoveries.length,similarityThreshold:RECOMMENDATION_MAX_SIMILARITY};
  seedReport.retrievalStats.recommendationQuality={
   closeMatches:summarizeRecommendationQuality(closeMatches,scored),
   discoveries:summarizeRecommendationQuality(discoveries,scored)
@@ -1394,9 +1508,12 @@ function mapVersionFourAnswersToThirteen(values){
 function normalizeSharedAnswers(state){
  if(!Array.isArray(state?.a))return null;
  let values;
- if(state.v===10||state.v===9){
+ if(state.v===12||state.v===11){
   if(state.a.length!==questions.length)return null;
-  values=state.a;
+  values=state.a.map(value=>value===5?null:value);
+ }else if(state.v===10||state.v===9){
+  if(state.a.length!==questions.length)return null;
+  values=state.a.map(value=>value===5?5:value);
  }else if(state.v===8||state.v===7||state.v===6){
   if(state.a.length!==18||!areValidLegacyAnswers(state.a))return null;
   values=[...state.a,null,null];[8,15,17].forEach(i=>values[i]=null);
@@ -1416,9 +1533,12 @@ function normalizeSharedAnswers(state){
 function normalizeSavedAnswers(data){
  if(!Array.isArray(data?.answers))return null;
  let values;
- if(data.v===10||data.v===9){
+ if(data.v===12||data.v===11){
   if(data.answers.length!==questions.length)return null;
-  values=data.answers;
+  values=data.answers.map(value=>value===5?null:value);
+ }else if(data.v===10||data.v===9){
+  if(data.answers.length!==questions.length)return null;
+  values=data.answers.map(value=>value===5?5:value);
  }else if(data.v===8||data.v===7||data.v===6){
   if(data.answers.length!==18||!areValidLegacyAnswers(data.answers))return null;
   values=[...data.answers,null,null];[8,15,17].forEach(i=>values[i]=null);
@@ -1449,7 +1569,7 @@ function restoreShareState(){
   if(typeof state.f!=='string'||typeof state.d!=='string'||state.f.length>180||state.d.length>180)return false;
   answers.splice(0,answers.length,...normalizedAnswers);
   if(Array.isArray(state.q))questionTextAnswers.splice(0,questionTextAnswers.length,...questions.map((_,i)=>String(state.q[i]||'').slice(0,240)));
-  $('wantText').value=String(state.w||'').slice(0,500);$('avoidText').value=String(state.x||'').slice(0,500);$('preferenceText').value=String(state.p||'').slice(0,700);
+  $('wantText').value=String(state.w||'').slice(0,500);$('avoidText').value=String(state.x||'').slice(0,500);$('preferenceText').value=[String(state.p||''),...(Array.isArray(state.q)?state.q:[])].map(value=>String(value||'').trim()).filter(Boolean).join(' / ').slice(0,700);
   $('favoriteTitles').value=state.f;$('dislikedTitles').value=state.d;
   step=answers.includes(null)?answers.findIndex(n=>n===null):questions.length-1;render();
   return true;
@@ -1770,7 +1890,7 @@ async function finish(){
   const result=await getRecommendations(profile,controller.signal);
   renderCards(result);
   const favCount=parseTitleInput('favoriteTitles').length,disCount=parseTitleInput('dislikedTitles').length;
-  const textCount=['wantText','avoidText','preferenceText'].filter(id=>$(id).value.trim()).length+questionTextAnswers.filter(value=>value.trim()).length;
+  const textCount=['wantText','avoidText','preferenceText'].filter(id=>$(id).value.trim()).length;
   $('resultIntro').textContent=questions.length+'問の回答'+(favCount||disCount?'と、入力された好き・苦手の作品':'')+(textCount?'、自由記述 '+textCount+'項目':'')+'をもとに分析しました。各作品の推薦理由も確認できます。';
   $('loading').classList.add('hidden');$('results').classList.remove('hidden');$('retryData').hidden=true;saveDiagnosis(latestResult||result);
   window.scrollTo({top:0,behavior:'smooth'});
@@ -1794,9 +1914,9 @@ async function finish(){
 ['wantText','avoidText','preferenceText','favoriteTitles','dislikedTitles'].forEach(id=>$(id).addEventListener('input',()=>saveDiagnosis()));
 $('clearSaved').addEventListener('click',clearSavedDiagnosis);
 $('back').addEventListener('click',()=>{if(step>0){step--;render()}});
-$('next').addEventListener('click',()=>{const selected=questions[step].options[answers[step]];if(answers[step]===null||(selected?.other&&!questionTextAnswers[step].trim()))return;if(step<questions.length-1){step++;render()}else finish()});
+$('next').addEventListener('click',()=>{if(step<questions.length){if(answers[step]===null)return;step++;render()}else finish()});
 $('retryData').addEventListener('click',()=>{if(!isFinishingDiagnosis)finish()});
-$('retry').addEventListener('click',()=>{$('retryData').hidden=true;step=0;answers.fill(null);questionTextAnswers.fill('');$('wantText').value='';$('avoidText').value='';$('preferenceText').value='';$('results').classList.add('hidden');$('diagnosis').classList.remove('hidden');$('progressBar').style.width='0%';history.replaceState(null,'',location.pathname+location.search);saveDiagnosis();render();window.scrollTo({top:0,behavior:'smooth'})});
+$('retry').addEventListener('click',()=>{$('retryData').hidden=true;step=0;answers.fill(null);$('wantText').value='';$('avoidText').value='';$('preferenceText').value='';$('favoriteTitles').value='';$('dislikedTitles').value='';$('results').classList.add('hidden');$('diagnosis').classList.remove('hidden');$('progressBar').style.width='0%';history.replaceState(null,'',location.pathname+location.search);saveDiagnosis();render();window.scrollTo({top:0,behavior:'smooth'})});
 $('shareX').addEventListener('click',shareOnX);
 $('copyResultLink').addEventListener('click',copyResultLink);
 $('copyShare').addEventListener('click',copyShareText);
