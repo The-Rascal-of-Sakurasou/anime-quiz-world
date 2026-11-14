@@ -334,9 +334,9 @@ assert.match(recommend, /id="additionalPreferences"/, "Free text must be a separ
 assert.match(recommend, /const additionalStep=step===questions\.length/, "Free text must appear only after all twenty questions");
 assert.match(recommend, /RECOMMENDATION_MAX_SIMILARITY=0\.68/, "Recommendation diversity threshold must be enforced");
 assert.match(recommend, /maxSimilarity=Math\.max\(maxSimilarity,genreSimilarity,tagSimilarity\)/, "Genre and tag similarity must be judged independently");
-assert.match(recommend, /questions\.forEach\(q=>q\.options\.push\(\{label:'わからない／特にこだわらない',neutral:true\},\{label:'選択肢にない（自由記述）',other:true\}\)\)/, "Every question must offer neutral and free-text answers");
+assert.match(recommend, /questions\.forEach\(q=>q\.options\.push\(\{label:'わからない',neutral:true\},\{label:'選択肢にない',neutral:true\}\)\)/, "Every question must offer distinct neutral and none-of-the-above answers");
 assert.match(recommend, /if\(option\.neutral\)return;/, "Neutral answers must not add preference score");
-assert.match(recommend, /if\(option\.other\)\{extractTextSignals\(textAnswers\[i\]/, "Free-text answers must feed into preference signals");
+assert.match(recommend, /extractTextSignals\(text\.want,\{genres,tags,avoidGenres,avoidTags\}/, "Separate free-text preferences must feed into preference signals");
 assert.match(recommend, /if\(questions\.length!==FIXED_QUESTION_COUNT\)/, "Runtime fixed-question-count guard missing");
 assert.equal(parsedQuestions.length, 20, "Recommendation diagnosis must remain exactly twenty questions");
 const complexityQuestion = questionBlock.match(/\{dimension:\'narrative_complexity\'[\s\S]*?\n\]\}/)?.[0] || "";
