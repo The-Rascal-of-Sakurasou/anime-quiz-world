@@ -2382,7 +2382,7 @@ const SUPABASE_KEY='sb_publishable_eL_Da06cmHz3W58jpcBIBQ_YzTThTL4';
 const $s=id=>document.getElementById(id);
 const status=$s('aqwSocialStatus'),authMsg=$s('aqwAuthMessage'),postMsg=$s('aqwPostMessage');
 let sb=null,currentUser=null,currentProfile=null;
-const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const escapeHtml = window.AQWTextUtils.escapeHTML;
 const message=(el,text)=>{if(el)el.textContent=text};
 const localJa=()=>lang==='ja';
 const aqwRuntimeText={
