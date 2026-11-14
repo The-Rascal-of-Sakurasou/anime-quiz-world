@@ -30,6 +30,7 @@ on:
       - "supabase/migrations/**"
       - "supabase/config.toml"
       - "supabase/functions/aqw-match-prepare/**"
+      - "supabase/functions/aqw-admin-control/**"
       - ".github/workflows/aqw-static-security.yml"
   pull_request:
     paths:
@@ -48,6 +49,7 @@ on:
       - ".github/workflows/japanese-synopsis-audit.yml"
       - ".github/workflows/sync-anime-catalog.yml"
       - "supabase/migrations/**"
+      - "supabase/functions/aqw-admin-control/**"
       - ".github/workflows/aqw-static-security.yml"
   workflow_dispatch:
 
@@ -65,6 +67,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check admin Edge Function
+        run: deno check supabase/functions/aqw-admin-control/index.ts
       - name: Run security checks
         run: |
           node scripts/test-static-security.mjs

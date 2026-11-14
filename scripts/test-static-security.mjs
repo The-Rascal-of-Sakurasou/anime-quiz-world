@@ -18,6 +18,18 @@ for (const file of frontendFiles) {
   source.set(file, fs.readFileSync(file, "utf8"));
 }
 
+const adminFunctionPath = "supabase/functions/aqw-admin-control/index.ts";
+const adminConfig = fs.readFileSync("supabase/config.toml", "utf8");
+assert.match(adminConfig, /\[functions\.aqw-admin-control\][\s\S]*?verify_jwt = true/, "Admin-control Edge Function must explicitly require JWT verification");
+assert.ok(fs.existsSync(adminFunctionPath), "Admin-control Edge Function source is missing");
+const adminFunction = fs.readFileSync(adminFunctionPath, "utf8");
+assert.match(adminFunction, /userClient\.auth\.getUser\(token\)/, "Admin-control must validate the bearer token with Supabase Auth");
+assert.match(adminFunction, /userClient\.rpc\("is_site_owner"\)/, "Admin-control must verify the registered site owner");
+assert.doesNotMatch(adminFunction, /aal2|mfa\.getAuthenticatorAssuranceLevel/, "Admin-control must not require TOTP/AAL2 after password-only login is enabled");
+const ownerCheckPosition = adminFunction.indexOf('if (ownerError || owner !== true)');
+const serviceRolePosition = adminFunction.indexOf('createClient(url, serviceKey');
+assert.ok(ownerCheckPosition >= 0 && serviceRolePosition > ownerCheckPosition, "Admin-control must verify owner authorization before creating the service-role client");
+
 const matchPreparePath = "supabase/functions/aqw-match-prepare/index.ts";
 assert.ok(fs.existsSync(matchPreparePath), "Active match-preparation Edge Function source is missing");
 const matchPrepare = fs.readFileSync(matchPreparePath, "utf8");
@@ -131,7 +143,7 @@ assert.match(moderationMigration, /ALTER TABLE public\.user_blocks ENABLE ROW LE
 assert.match(moderationMigration, /ALTER TABLE public\.user_reports ENABLE ROW LEVEL SECURITY/i, "Report records must have RLS enabled");
 assert.match(moderationMigration, /REVOKE ALL ON TABLE public\.user_reports FROM public, anon, authenticated/i, "Report-table access must be explicitly restricted before grants");
 assert.match(moderationMigration, /private\.is_user_blocked_between/, "Message and follow policies must enforce blocks in both directions");
-assert.match(moderationMigration, /MFA owner can review reports/, "Only an MFA-verified site owner may review reports");
+assert.match(moderationMigration, /MFA owner can review reports/, "The report-review policy must remain restricted to the registered owner helper");
 
 assert.match(source.get("privacy.html"), /通報記録/, "The privacy policy must disclose moderation report data");
 assert.match(source.get("terms.html"), /虚偽通報/, "The terms must prohibit abusive or false reports");
@@ -223,10 +235,25 @@ const admin = source.get("admin.html");
 assert.match(admin, /persistSession\s*:\s*false/, "Admin session persistence must stay disabled");
 assert.match(admin, /autoRefreshToken\s*:\s*true/, "Admin token auto-refresh must stay enabled for active in-memory sessions");
 assert.match(admin, /detectSessionInUrl\s*:\s*false/, "Admin URL session detection must stay disabled");
-assert.match(admin, /aal2/, "Admin MFA assurance-level enforcement missing");
-assert.match(admin, /mfa\.verify/, "Admin TOTP verification flow missing");
-assert.match(admin, /aqw-admin-control/, "Protected admin Edge Function call missing");
-
+assert.doesNotMatch(admin, /aal2|mfa\.verify|mfa\.enroll|mfa\.challenge|mfaQr|mfaCard/, "Admin login must not require TOTP or QR-code enrollment");
+assert.match(admin, /signInWithPassword/, "Admin must authenticate with email and password");
+assert.match(admin, /id="togglePassword"/, "Admin password visibility control missing");
+assert.match(admin, /input\.type=reveal\?'text':'password'/, "Admin password visibility toggle must switch input type");
+assert.match(admin, /aria-pressed/, "Admin password visibility toggle must expose its state accessibly");
+const removedPasswordOnlyMigration = "supabase/migrations/20261113190000_allow_password_only_site_admin.sql";
+assert.equal(fs.existsSync(removedPasswordOnlyMigration), false, "Password-only admin login must not weaken the AAL2 helper used by existing RLS policies");
+assert.match(admin, /adminAction\('get_dashboard'\)/, "Admin authorization must be checked through the protected Edge Function");
+assert.match(admin, /client\.functions\.invoke\('aqw-admin-control'/, "Admin operations must use the protected Edge Function");
+assert.doesNotMatch(admin, /client\.from\(|client\.rpc\(|client\.storage/, "Admin console must not access privileged tables or storage directly");
+assert.match(admin, /サーバー側で認証・権限確認・入力検証/, "Admin footer must describe the server-side security boundary");
+const adminEdge = fs.readFileSync("supabase/functions/aqw-admin-control/index.ts", "utf8");
+for (const action of ["get_dashboard", "list_reports", "get_report_context", "update_report", "list_posts", "update_post", "delete_post", "list_profiles", "update_profile", "list_data_records", "delete_data_record", "list_users", "set_ban"]) {
+  assert.ok(adminEdge.includes('action === "' + action + '"'), "Admin Edge Function action missing: " + action);
+}
+assert.match(adminEdge, /const DATA_TABLES = new Set\(/, "Generic data management must use a fixed table allowlist");
+assert.match(adminEdge, /const REPORT_STATUSES = new Set\(/, "Report status updates must use a fixed status allowlist");
+assert.match(adminEdge, /requireText\(body\.body, "投稿本文", 2000\)/, "Admin post editing must respect the production posts.body 2000-character constraint");
+assert.match(admin, /next\.trim\(\)\.length>2000/, "Admin post editor must enforce the database 2000-character limit before submitting");
 const multiplayer = source.get("multiplayer.html");
 assert.match(multiplayer, /let matchmakingTimer=null,matchmakingBusy=false,matchmakingPrefs=null,matchmakingPollPromise=null;/, "Random matchmaking must track an in-flight poll");
 const stopMatchmakingSource = multiplayer.match(/function stopMatchmakingPolling\(\)\{[^}]*\}/)?.[0];
@@ -352,6 +379,8 @@ const currentAnswers = Array.from({ length: 20 }, (_, index) => index % 4);
 assert.deepEqual([...migrationHelpers.normalizeSharedAnswers({ v: 9, a: currentAnswers })], currentAnswers, "Version 9 share links must restore all twenty answers");
 assert.deepEqual([...migrationHelpers.normalizeSavedAnswers({ v: 9, answers: currentAnswers })], currentAnswers, "Version 9 local saves must restore all twenty answers");
 const migratedV7 = [...Array(18).fill(0), null, null]; [8, 15, 17, 18, 19].forEach(index => migratedV7[index] = null);
+assert.deepEqual([...migrationHelpers.normalizeSharedAnswers({ v: 8, a: Array(18).fill(0) })], migratedV7, "Version 8 share links must migrate into the twenty-question structure");
+assert.deepEqual([...migrationHelpers.normalizeSavedAnswers({ v: 8, answers: Array(18).fill(0) })], migratedV7, "Version 8 local saves must migrate into the twenty-question structure");
 assert.deepEqual([...migrationHelpers.normalizeSharedAnswers({ v: 7, a: Array(18).fill(0) })], migratedV7, "Version 7 share links must re-ask newly introduced preference dimensions");
 assert.deepEqual([...migrationHelpers.normalizeSavedAnswers({ v: 7, answers: Array(18).fill(0) })], migratedV7, "Version 7 local saves must re-ask newly introduced preference dimensions");
 assert.deepEqual([...migrationHelpers.normalizeSharedAnswers({ v: 5, a: Array(13).fill(0) })], [...Array(13).fill(0), ...Array(7).fill(null)], "Version 5 share links must migrate thirteen answers into the twenty-question structure");

@@ -678,7 +678,7 @@ function runRecommendationSelfTests(){
   const legacyRelationshipAnswers=Array(13).fill(0);legacyRelationshipAnswers[9]=3;
   check('旧13問版の恋愛関係回答は恋愛量と重複させず再回答を求める',mapLegacyThirteenAnswers(legacyRelationshipAnswers)?.[9]===null);
   const previousV4Answers=Array(13).fill(0);
-  check('旧13問版の回答を保持し、新しい5問は未回答にする',mapVersionFourAnswersToThirteen(previousV4Answers)?.[1]===2&&mapVersionFourAnswersToThirteen(previousV4Answers)?.[8]===3&&[...mapVersionFourAnswersToThirteen(previousV4Answers),...Array(5).fill(null)].length===18);
+  check('旧13問版の回答を保持し、新しい7問は未回答にする',mapVersionFourAnswersToThirteen(previousV4Answers)?.[1]===2&&mapVersionFourAnswersToThirteen(previousV4Answers)?.[8]===3&&[...mapVersionFourAnswersToThirteen(previousV4Answers),...Array(7).fill(null)].length===20);
   check('推薦2枠で同じ作品IDを重複表示しない',deduplicateRecommendationGroups([{id:7,title:{native:'A'}}],[{id:7,title:{native:'B'}}]).discoveries.length===0);
  check('好きな作品の日本語タイトルを完全一致で照合',matchesSeedTitle({title:{native:'葬送のフリーレン'}},'葬送のフリーレン'));
  check('好きな作品の英語タイトルを完全一致で照合',matchesSeedTitle({title:{english:'Frieren: Beyond Journey’s End'}},'Frieren: Beyond Journey’s End'));
@@ -1287,9 +1287,9 @@ function normalizeSharedAnswers(state){
   values=[...state.a,null,null];[8,15,17].forEach(i=>values[i]=null);
  }else if(state.v===5){
   if(state.a.length!==13||!areValidLegacyAnswers(state.a))return null;
-  values=Array.from({length:questions.length},(_,index)=>{const value=state.a[index];return Number.isInteger(value)&&value>=0&&value<questions[index].options.length?value:null});
+  values=[...state.a,...Array(questions.length-state.a.length).fill(null)];
  }else if(state.v===4){
-  const old=mapVersionFourAnswersToThirteen(state.a);values=old?[...old,...Array(7).fill(null)]:null;
+  const old=mapVersionFourAnswersToThirteen(state.a);values=old?[...old,...Array(questions.length-old.length).fill(null)]:null;
  }else if(state.v===3){
   values=mapLegacySevenAnswersToThirteen(state.a);
  }else if(state.v===2){
@@ -1309,9 +1309,9 @@ function normalizeSavedAnswers(data){
   values=[...data.answers,null,null];[8,15,17].forEach(i=>values[i]=null);
  }else if(data.v===5){
   if(data.answers.length!==13||!areValidLegacyAnswers(data.answers))return null;
-  values=Array.from({length:questions.length},(_,index)=>{const value=data.answers[index];return Number.isInteger(value)&&value>=0&&value<questions[index].options.length?value:null});
+  values=[...data.answers,...Array(questions.length-data.answers.length).fill(null)];
  }else if(data.v===4){
-  const old=mapVersionFourAnswersToThirteen(data.answers);values=old?[...old,...Array(7).fill(null)]:null;
+  const old=mapVersionFourAnswersToThirteen(data.answers);values=old?[...old,...Array(questions.length-old.length).fill(null)]:null;
  }else if([1,2].includes(data.v)){
   if(data.answers.length===7){
    values=mapLegacySevenAnswersToThirteen(data.answers);
