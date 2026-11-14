@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
+Disallow: /admin.html
 
 Sitemap: https://the-rascal-of-sakurasou.github.io/anime-quiz-world/sitemap.xml
