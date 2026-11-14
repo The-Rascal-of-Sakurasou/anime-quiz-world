@@ -694,7 +694,7 @@ function runRecommendationSelfTests(){
   const profileProbeOk=questions.every((question,questionIndex)=>question.options.every((option,optionIndex)=>{
    const probe=Array(questions.length).fill(null);probe[questionIndex]=optionIndex;
    const actual=profileFromAnswers(probe,{want:'',avoid:'',preference:''});
-   const expected={genres:{},tags:{},avoidGenres:{},avoidTags:{},formats:{},sources:{},length:option.length||'any',startYearMin:Number.isFinite(option.startYearMin)?option.startYearMin:null,startYearMax:Number.isFinite(option.startYearMax)?option.startYearMax:null};
+   const expected={genres:{},tags:{},avoidGenres:{},avoidTags:{},formats:{},sources:{},textSignals:[],length:option.length||'any',startYearMin:Number.isFinite(option.startYearMin)?option.startYearMin:null,startYearMax:Number.isFinite(option.startYearMax)?option.startYearMax:null};
    for(const [key,listKey,weightKey] of [['genres','genres','genreWeights'],['tags','tags','tagWeights'],['avoidGenres','avoidGenres','avoidGenreWeights'],['avoidTags','avoidTags','avoidTagWeights'],['formats',null,'formatWeights'],['sources',null,'sourceWeights']]){
     for(const name of option[listKey]||[])expected[key][name]=(expected[key][name]||0)+1;
     for(const [name,weight] of Object.entries(option[weightKey]||{}))expected[key][name]=(expected[key][name]||0)+weight;
@@ -720,8 +720,8 @@ function runRecommendationSelfTests(){
   check('笑いとシリアスの配分を独立して反映する',questionByDimension.get('tone_balance').options.some(o=>o.genreWeights?.Comedy>0)&&questionByDimension.get('tone_balance').options.some(o=>o.genreWeights?.Drama>0));
   const legacyRelationshipAnswers=Array(13).fill(0);legacyRelationshipAnswers[9]=3;
   check('旧13問版の恋愛関係回答は恋愛量と重複させず再回答を求める',mapLegacyThirteenAnswers(legacyRelationshipAnswers)?.[9]===null);
-  check('わからない回答は加点・減点しない',(()=>{const a=Array(questions.length).fill(null);a[0]=4;const p=profileFromAnswers(a);return !Object.keys(p.genres).length&&!Object.keys(p.tags).length})());
- check('自由記述は対応するジャンル・タグに反映',(()=>{const a=Array(questions.length).fill(null),t=Array(questions.length).fill('');a[0]=5;t[0]='SFとミステリー、伏線が多い';const p=profileFromAnswers(a,t);return p.genres['Sci-Fi']>0&&p.genres.Mystery>0&&p.tags.Conspiracy>0})());
+  check('わからない回答は加点・減点しない',(()=>{const a=Array(questions.length).fill(null);a[0]=4;const p=profileFromAnswers(a,{want:'',avoid:'',preference:''});return !Object.keys(p.genres).length&&!Object.keys(p.tags).length&&!Object.keys(p.avoidGenres).length&&!Object.keys(p.avoidTags).length})());
+ check('自由記述は対応するジャンル・タグに反映',(()=>{const a=Array(questions.length).fill(null);const p=profileFromAnswers(a,{want:'SFとミステリー、伏線が多い',avoid:'',preference:''});return p.genres['Sci-Fi']>0&&p.genres.Mystery>0&&p.tags.Conspiracy>0})());
  const previousV4Answers=Array(13).fill(0);
   check('旧13問版の回答を保持し、新しい5問は未回答にする',mapVersionFourAnswersToThirteen(previousV4Answers)?.[1]===2&&mapVersionFourAnswersToThirteen(previousV4Answers)?.[8]===3&&[...mapVersionFourAnswersToThirteen(previousV4Answers),...Array(5).fill(null)].length===18);
   check('推薦2枠で同じ作品IDを重複表示しない',deduplicateRecommendationGroups([{id:7,title:{native:'A'}}],[{id:7,title:{native:'B'}}]).discoveries.length===0);
