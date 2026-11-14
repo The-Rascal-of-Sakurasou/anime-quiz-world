@@ -12,7 +12,7 @@ const OUTPUT_GZIP = 'data/anime-catalog.json.gz';
 const FORMATS = ['TV', 'TV_SHORT', 'MOVIE', 'OVA', 'ONA', 'SPECIAL'];
 const BASE_SORTS = ['POPULARITY_DESC', 'ID', 'ID_DESC'];
 const OVERFLOW_SORTS = ['SCORE_DESC', 'FAVOURITES_DESC', 'TRENDING_DESC', 'START_DATE_DESC'];
-const FIELDS = 'id countryOfOrigin source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } format popularity title { romaji english native } description(asHtml:false) synonyms coverImage { large medium extraLarge } episodes seasonYear averageScore genres studios(isMain:true) { nodes { name } } startDate { year month day } externalLinks { url site type isDisabled language }';
+const FIELDS = 'id countryOfOrigin format popularity title { romaji english native } description(asHtml:false) synonyms coverImage { large medium extraLarge } episodes seasonYear averageScore genres studios(isMain:true) { nodes { name } } startDate { year month day } externalLinks { url site type isDisabled language }';
 
 // Manually reviewed, high-priority Japanese anime that may fall outside AniList popularity pages.
 const CURATED_ANIME_IDS = [21366, 100790, 10278]; // 3-gatsu no Lion, Oshiri Tantei, and THE IDOLM@STER (2011), manually verified Japanese-origin works
@@ -270,7 +270,6 @@ const items = [...records.values()].filter(isUsableAnime).map((anime) => {
   return {
     ...compact,
     catalogueEligible: true,
-    originVerified: compact.countryOfOrigin === 'JP',
   };
 }).sort((a, b) =>
   (Number(b.popularity) || 0) - (Number(a.popularity) || 0) || Number(a.id) - Number(b.id)
