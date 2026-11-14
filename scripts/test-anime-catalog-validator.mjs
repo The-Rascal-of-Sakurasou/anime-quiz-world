@@ -21,12 +21,16 @@ const foreignFixture = structuredClone(fixture);
 const foreignAnime = structuredClone(fixture.items[0]);
 foreignAnime.id = 3;
 foreignAnime.countryOfOrigin = "US";
-foreignAnime.popularity = 10000;
+foreignAnime.popularity = 100000;
 foreignAnime.title.native = "海外作品の日本語タイトル";
 delete foreignAnime.originVerified;
 foreignFixture.items.push(foreignAnime);
 foreignFixture.count = foreignFixture.items.length;
-assert.equal(validateCatalog(foreignFixture).count, 3, "Famous foreign anime with a Japanese title should pass");
+assert.throws(
+  () => validateCatalog(foreignFixture),
+  /countryOfOrigin must be exactly JP/,
+  "Foreign anime must be rejected even when popular and titled in Japanese"
+);
 
 const rejects = (label, mutate) => {
   const sample = structuredClone(fixture);
