@@ -159,7 +159,7 @@ Deno.serve(async (req: Request) => {
 
     if (action === "update_post") {
       const postId = requireUuid(body.post_id, "投稿ID");
-      const nextBody = requireText(body.body, "投稿本文", 5000);
+      const nextBody = requireText(body.body, "投稿本文", 2000);
       const { data, error } = await admin.from("posts").update({ body: nextBody, updated_at: new Date().toISOString() }).eq("id", postId).select("id").maybeSingle();
       if (error) throw error;
       if (!data) throw new ApiError("投稿が見つかりません。", 404);

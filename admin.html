@@ -337,7 +337,7 @@ async function editPost(post,button){
  const next=prompt('投稿本文を編集します。',post.body||'');
  if(next===null)return;
  if(!next.trim()){say('本文を空にすることはできません。','error');return}
- if(next.trim().length>5000){say('投稿本文は5000文字以内で入力してください。','error');return}
+ if(next.trim().length>2000){say('投稿本文は2000文字以内で入力してください。','error');return}
  button.disabled=true;
  try{await adminAction('update_post',{post_id:post.id,body:next.trim()});say('投稿を更新しました。','success');await refreshAll()}
  catch(error){say('投稿を更新できませんでした：'+(error.message||String(error)),'error')}

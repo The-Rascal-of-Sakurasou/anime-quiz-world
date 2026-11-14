@@ -252,6 +252,8 @@ for (const action of ["get_dashboard", "list_reports", "get_report_context", "up
 }
 assert.match(adminEdge, /const DATA_TABLES = new Set\(/, "Generic data management must use a fixed table allowlist");
 assert.match(adminEdge, /const REPORT_STATUSES = new Set\(/, "Report status updates must use a fixed status allowlist");
+assert.match(adminEdge, /requireText\(body\.body, "投稿本文", 2000\)/, "Admin post editing must respect the production posts.body 2000-character constraint");
+assert.match(admin, /next\.trim\(\)\.length>2000/, "Admin post editor must enforce the database 2000-character limit before submitting");
 
 const multiplayer = source.get("multiplayer.html");
 assert.match(multiplayer, /let matchmakingTimer=null,matchmakingBusy=false,matchmakingPrefs=null,matchmakingPollPromise=null;/, "Random matchmaking must track an in-flight poll");
