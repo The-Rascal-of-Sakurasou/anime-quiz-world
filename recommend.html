@@ -185,7 +185,7 @@ const safeStorage={
  keys(){try{return Object.keys(window.localStorage)}catch(_){return []}}
 };
 const API='https://graphql.anilist.co';
-const MAX_RECOMMENDATION_PAGES_PER_SORT=20;
+const MAX_RECOMMENDATION_PAGES_PER_SORT=4;
 const questions=[
 {dimension:'genre',title:'見たい作品のジャンルは？',help:'作品の大まかなジャンルを選んでください。',options:[
 {label:'ファンタジー・冒険',genres:['Fantasy','Adventure']},
@@ -549,7 +549,7 @@ function buildRecommendationDataWarnings(failedPages,totalPages,cappedSorts){
  const capped=Number.isInteger(cappedSorts)?Math.max(0,cappedSorts):0;
  const warnings=[];
  if(failed&&total)warnings.push('作品データの一部を取得できませんでした（'+failed+'/'+total+'ページ）。推薦候補が偏る可能性があります。時間をおいて再診断してください。');
- if(capped)warnings.push('一部の並び順で取得上限（1グループ最大20ページ）に達しました。全作品を網羅できていない可能性があります。');
+ if(capped)warnings.push('一部の並び順で取得上限（1グループ最大4ページ）に達しました。全作品を網羅できていない可能性があります。');
  return warnings;
 }
 
@@ -627,7 +627,7 @@ function runRecommendationSelfTests(){
  check('苦手な作品そのものを推薦候補から除外する',buildExcludedSeedIds([],[{id:12}]).has(12));
  check('好き・苦手の両方に入力した作品も推薦候補から除外する',buildExcludedSeedIds([{id:13}],[{id:13}]).has(13));
  check('未解決の作品入力は他の候補IDを誤って除外しない',buildExcludedSeedIds([{id:null}],[]).size===0);
- check('推薦データの取得上限は4並び順×最大20ページ',4*MAX_RECOMMENDATION_PAGES_PER_SORT*50===4000);
+ check('推薦データの取得上限は4並び順×最大4ページ',4*MAX_RECOMMENDATION_PAGES_PER_SORT*50===800);
  check('全ページ取得成功時はデータ不足警告を表示しない',buildRecommendationDataWarnings(0,20).length===0);
  check('一部ページ失敗時は候補の偏りを警告する',buildRecommendationDataWarnings(3,20)[0]?.includes('3/20ページ'));
  check('全ページ失敗時も取得失敗を警告する',buildRecommendationDataWarnings(1,1)[0]?.includes('1/1ページ'));
@@ -947,7 +947,7 @@ async function getRecommendations(profile){
   throw lastError||new Error('作品データを取得できませんでした。');
  };
  // ジャンルで候補を絞らず、4種類の並び順についてAPIが返す総ページ数を確認して取得する。
- // API負荷と待ち時間を抑えるため、各並び順は5ページずつ取得し、1並び順あたり最大20ページまでとする。
+ // API負荷と待ち時間を抑えるため、各並び順は2ページずつ取得し、1並び順あたり最大4ページまでとする。
  // 上限を超える場合は取得上限到達として警告し、取得済みデータで診断を続行する。
  const sortModes=['POPULARITY_DESC','SCORE_DESC','TRENDING_DESC','START_DATE_DESC'];
  const maxPagesPerSort=MAX_RECOMMENDATION_PAGES_PER_SORT;
@@ -974,8 +974,8 @@ async function getRecommendations(profile){
  for(let i=0;i<sortPlans.length;i++){
   const plan=sortPlans[i];
   if(plan.failed||plan.target<=1)continue;
-  for(let start=2;start<=plan.target;start+=5){
-   const batchPages=Array.from({length:Math.min(5,plan.target-start+1)},(_,index)=>start+index);
+  for(let start=2;start<=plan.target;start+=2){
+   const batchPages=Array.from({length:Math.min(2,plan.target-start+1)},(_,index)=>start+index);
    const batch=await Promise.allSettled(batchPages.map(page=>fetchPage(page,plan.sort)));
    for(const result of batch){
     if(result.status==='fulfilled')pages.push({sort:plan.sort,media:result.value.media});
