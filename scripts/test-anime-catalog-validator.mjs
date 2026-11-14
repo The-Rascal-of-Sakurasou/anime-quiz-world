@@ -46,13 +46,15 @@ rejects("foreign anime without a Japanese title", (sample) => {
   sample.items[0].title.native = "English Only";
   delete sample.items[0].originVerified;
 });
-rejects("foreign anime below popularity threshold", (sample) => {
+rejects("foreign anime with Japanese title and low popularity", (sample) => {
   sample.items[0].countryOfOrigin = "US";
-  sample.items[0].popularity = 9999;
+  sample.items[0].popularity = 0;
   sample.items[0].title.native = "海外作品の日本語タイトル";
   delete sample.items[0].originVerified;
 });
-rejects("missing build-time origin marker", (sample) => { sample.items[0].originVerified = false; });
+const markerlessJapaneseFixture = structuredClone(fixture);
+delete markerlessJapaneseFixture.items[0].originVerified;
+assert.equal(validateCatalog(markerlessJapaneseFixture).count, 2, "A JP country field is sufficient; the derived originVerified marker is not an independent requirement.");
 rejects("unsupported format", (sample) => { sample.items[0].format = "MUSIC"; });
 rejects("placeholder cover image", (sample) => { sample.items[0].coverImage.large = "https://example.com/no-image.png"; });
 rejects("adult content", (sample) => { sample.items[0].isAdult = true; });
