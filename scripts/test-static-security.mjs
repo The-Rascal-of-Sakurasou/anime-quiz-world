@@ -427,14 +427,6 @@ assert.equal(JSON.stringify(originResults), JSON.stringify([true, false, false, 
 assert.match(syncScript, /startDate_greater/, "The shared catalogue must split oversized format scopes by release decade");
 
 assert.match(syncScript, /const API_REQUEST_INTERVAL_MS = 2100/, "Manual AniList requests must stay below the current 30 requests/minute limit");
-const fetchAnimeStart = index.indexOf("async function fetchAnime(vars={})");
-const fetchAnimeEnd = index.indexOf("\\nfunction ", fetchAnimeStart + 30);
-assert.ok(fetchAnimeStart >= 0 && fetchAnimeEnd > fetchAnimeStart, "AniList browser fetch pipeline must exist");
-const fetchAnimeSource = index.slice(fetchAnimeStart, fetchAnimeEnd);
-assert.equal((fetchAnimeSource.match(/const requestAniListJson=/g) || []).length, 1, "AniList requests must share one retry helper");
-assert.equal((fetchAnimeSource.match(/if\\(!response\\.ok\\)/g) || []).length, 1, "HTTP status handling must not be duplicated between single and batched AniList requests");
-assert.equal((fetchAnimeSource.match(/response\\.status===429/g) || []).length, 1, "AniList rate-limit handling must exist in one shared location");
-assert.ok(fetchAnimeSource.includes("requestAniListJson(requestQuery") && fetchAnimeSource.includes("requestAniListJson(batchQuery"), "Single and batched queries must use the same HTTP retry helper");
 assert.match(syncScript, /await sleep\(API_REQUEST_INTERVAL_MS\)/, "Every catalogue request must use the documented rate-limit pacing");
 assert.match(syncScript, /isAdult:false/, "Shared catalogue sync must exclude adult catalogue entries");
 assert.match(syncScript, /const OVERFLOW_SORTS = \['SCORE_DESC', 'FAVOURITES_DESC', 'TRENDING_DESC', 'START_DATE_DESC'\]/, "Shared catalogue sync must cover AniList pagination overflow");
@@ -448,6 +440,14 @@ assert.match(syncWorkflow, /workflow_dispatch:/, "Shared catalogue sync must sup
 assert.match(syncWorkflow, /contents: write/, "Shared catalogue sync must be able to publish the generated dataset");
 
 const index = source.get("index.html");
+const fetchAnimeStart = index.indexOf("async function fetchAnime(vars={})");
+const fetchAnimeEnd = index.indexOf("\nfunction ", fetchAnimeStart + 30);
+assert.ok(fetchAnimeStart >= 0 && fetchAnimeEnd > fetchAnimeStart, "AniList browser fetch pipeline must exist");
+const fetchAnimeSource = index.slice(fetchAnimeStart, fetchAnimeEnd);
+assert.equal((fetchAnimeSource.match(/const requestAniListJson=/g) || []).length, 1, "AniList requests must share one retry helper");
+assert.equal((fetchAnimeSource.match(/if\(!response\.ok\)/g) || []).length, 1, "HTTP status handling must not be duplicated between single and batched AniList requests");
+assert.equal((fetchAnimeSource.match(/response\.status===429/g) || []).length, 1, "AniList rate-limit handling must exist in one shared location");
+assert.ok(fetchAnimeSource.includes("requestAniListJson(requestQuery") && fetchAnimeSource.includes("requestAniListJson(batchQuery"), "Single and batched queries must use the same HTTP retry helper");
 const sharedStorage = fs.readFileSync("aqw-safe-storage.js", "utf8");
 assert.ok(index.includes('src="./aqw-safe-storage.js"'), "Quiz page must load the shared safe-storage helper before its inline application script");
 assert.ok(recommend.includes('src="./aqw-safe-storage.js"'), "Recommendation page must load the shared safe-storage helper before its inline application script");
