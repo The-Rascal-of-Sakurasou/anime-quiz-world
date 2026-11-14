@@ -22,7 +22,6 @@ on:
       - "scripts/test-static-security.mjs"
       - "scripts/test-anime-search-deduplication.mjs"
       - "scripts/test-official-site-links.mjs"
-      - "scripts/test-anime-search-deduplication.mjs"
       - "scripts/sync-anime-catalog.mjs"
       - "scripts/validate-anime-catalog.mjs"
       - "scripts/audit-question-mode-coverage.mjs"
