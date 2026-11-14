@@ -19,7 +19,7 @@
 <title>遊び方・お知らせ | Anime Quiz World</title>
 <style>
 :root{color-scheme:light;--bg:#f5f6f8;--panel:#fff;--text:#20242b;--muted:#68717d;--accent:#315b9a;--line:#dfe3e8;--soft:#edf3fb}
-*{box-sizing:border-box}
+
 body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Noto Sans JP","Yu Gothic",Meiryo,sans-serif;line-height:1.7}
 a{color:var(--accent)}
 .wrap{width:min(920px,calc(100% - 32px));margin:0 auto}
@@ -90,24 +90,14 @@ li{padding-left:3px;margin:8px 0}
   .jump{grid-template-columns:minmax(0,1fr)}
 }
 
-/* Mobile refinement: prevent clipping and improve touch/accessibility */
-@media(max-width:700px){
-  html{scroll-padding-top:14px}
-  body{overflow-wrap:anywhere}
-  img,video,canvas{max-width:100%;height:auto}
-  iframe{max-width:100%}
-  button,input,select,textarea{max-width:100%;min-width:0}
-  button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-  :focus-visible{outline:3px solid #3978c8;outline-offset:2px}
-  [id]{scroll-margin-top:14px}
-  pre{max-width:100%;overflow-x:auto}
-  code{overflow-wrap:anywhere}
-}
+</style>
+<link rel="stylesheet" href="./aqw-mobile-refinements.css">
+<style>
 
 
-/* Unified AQW logo sizing: match the home page on every page. */
-.site-brand-logo{display:block;flex:0 0 48px;width:48px;height:48px;max-width:none;}
-@media(max-width:700px){.site-brand-logo{flex-basis:46px;width:46px;height:46px}}
+</style>
+<link rel="stylesheet" href="./aqw-brand-logo.css">
+<style>
 @media(max-width:380px){.site-brand-logo{flex-basis:42px;width:42px;height:42px}}
 </style>
  <link rel="stylesheet" href="./responsive.css">

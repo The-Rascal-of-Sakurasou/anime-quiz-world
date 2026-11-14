@@ -12,6 +12,10 @@ on:
       - privacy.html
       - terms.html
       - responsive.css
+      - anime-origin-policy.js
+      - aqw-mobile-refinements.css
+      - aqw-brand-logo.css
+      - aqw-brand-base.css
       - scripts/browser-smoke.py
       - scripts/test-official-site-links.mjs
       - scripts/audit-anime-image-urls.mjs
@@ -32,6 +36,10 @@ on:
       - privacy.html
       - terms.html
       - responsive.css
+      - anime-origin-policy.js
+      - aqw-mobile-refinements.css
+      - aqw-brand-logo.css
+      - aqw-brand-base.css
       - scripts/browser-smoke.py
       - scripts/test-official-site-links.mjs
       - scripts/audit-anime-image-urls.mjs

@@ -19,9 +19,9 @@
 <title>オンライン対戦ルーム | Anime Quiz World</title>
 <style>
 :root{color-scheme:light;--bg:#f6f7f9;--panel:#fff;--text:#202936;--muted:#687586;--accent:#24518a;--line:#e1e6ed;--soft:#f1f4f8;--good:#217a4b;--bad:#b42332}
-*{box-sizing:border-box}
+
 body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Noto Sans JP","Yu Gothic",Meiryo,sans-serif;line-height:1.65}
-button,input,select{font:inherit}
+
 button{min-height:44px;padding:9px 14px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--text);font-weight:700;cursor:pointer}
 button:hover{background:#edf2f8;border-color:#b9c9dc}
 button:disabled{opacity:.55;cursor:not-allowed}
@@ -47,7 +47,7 @@ input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{ou
 .status{min-height:1.6em;margin:12px 0;color:var(--muted);overflow-wrap:anywhere}
 .status.error{color:var(--bad)}
 .status.good{color:var(--good)}
-.hidden{display:none!important}
+
 .room-code{font-size:clamp(1.6rem,7vw,2.3rem);font-weight:900;letter-spacing:.14em;color:#17395f;font-variant-numeric:tabular-nums}
 .room-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .player-list{display:grid;gap:9px;margin:14px 0;padding:0;list-style:none}
@@ -64,19 +64,9 @@ input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{ou
 /* Site-wide mobile pass: multiplayer room */
 @media(max-width:700px){html{scroll-padding-top:12px}body{font-size:16px}.wrap{width:calc(100% - 22px)}header{padding:13px 0;gap:8px}.brand{font-size:1.08rem}header>a{min-height:44px;display:inline-flex;align-items:center}main{padding:17px 0 calc(34px + env(safe-area-inset-bottom))}.card{padding:16px 13px;margin:12px 0;border-radius:11px}h1{font-size:clamp(1.5rem,6.5vw,2rem)}h2{font-size:1.12rem}.grid{grid-template-columns:minmax(0,1fr);gap:11px}.form-actions{grid-template-columns:minmax(0,1fr);gap:8px}.form-actions button{min-height:49px}input,select{font-size:16px;min-height:48px}.room-head{display:flex;flex-direction:column;align-items:stretch}.room-code{font-size:clamp(1.5rem,8vw,2.1rem);letter-spacing:.1em;overflow-wrap:anywhere}.player{padding:10px;gap:8px}.pill{white-space:normal;text-align:center}button{touch-action:manipulation}}
 @media(max-width:380px){.wrap{width:calc(100% - 16px)}.card{padding:13px 11px}.player{align-items:flex-start;flex-wrap:wrap}}
-/* Mobile refinement: prevent clipping and improve touch/accessibility */
-@media(max-width:700px){
-  html{scroll-padding-top:14px}
-  body{overflow-wrap:anywhere}
-  img,video,canvas{max-width:100%;height:auto}
-  iframe{max-width:100%}
-  button,input,select,textarea{max-width:100%;min-width:0}
-  button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-  :focus-visible{outline:3px solid #3978c8;outline-offset:2px}
-  [id]{scroll-margin-top:14px}
-  pre{max-width:100%;overflow-x:auto}
-  code{overflow-wrap:anywhere}
-}
+</style>
+<link rel="stylesheet" href="./aqw-mobile-refinements.css">
+<style>
 /* Additional mobile layout: room controls and participant list */
 @media(max-width:700px){
   .room-head{gap:12px}
@@ -105,13 +95,9 @@ input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{ou
 @media(max-width:600px){.game-options{grid-template-columns:1fr}.game-question-image{max-height:260px}.game-prompt{font-size:1.02rem}}
 
 
-/* Shared AQW brand mark used across every site page */
-.site-brand{display:flex;align-items:center;gap:10px;min-width:0;color:#102b46;text-decoration:none}
-.site-brand-logo{display:block;flex:0 0 60px;width:60px;height:60px}
-.site-brand-copy{display:flex;flex-direction:column;gap:4px;min-width:0}
-.site-brand-title{font-family:"Yu Mincho","Hiragino Mincho ProN","Noto Serif JP",Georgia,serif;font-size:1.28rem;font-weight:800;letter-spacing:-.035em;line-height:1.2;color:#102b46;white-space:nowrap}
-.site-brand-tagline{color:#667789;font-size:.78rem;font-weight:600;letter-spacing:.035em;line-height:1.35}
-@media(max-width:520px){.site-brand{gap:9px}.site-brand-logo{flex-basis:52px;width:52px;height:52px}.site-brand-title{font-size:1.05rem}.site-brand-tagline{font-size:.68rem}}
+</style>
+<link rel="stylesheet" href="./aqw-brand-base.css">
+<style>
 
 
 .match-history-list{padding-left:0;list-style:none;display:grid;gap:9px}
@@ -130,9 +116,9 @@ input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{ou
 @media(max-width:520px){.onevone-leaderboard li{grid-template-columns:34px minmax(0,1fr)}.onevone-rate{grid-column:2;justify-self:start}}
 @media(max-width:520px){.match-history-item{align-items:flex-start;flex-direction:column}.match-history-result{align-self:flex-end}}
 
-/* Unified AQW logo sizing: match the home page on every page. */
-.site-brand-logo{display:block;flex:0 0 48px;width:48px;height:48px;max-width:none;}
-@media(max-width:700px){.site-brand-logo{flex-basis:46px;width:46px;height:46px}}
+</style>
+<link rel="stylesheet" href="./aqw-brand-logo.css">
+<style>
 @media(max-width:380px){.site-brand-logo{flex-basis:42px;width:42px;height:42px}}
 </style>
  <link rel="stylesheet" href="./responsive.css">
