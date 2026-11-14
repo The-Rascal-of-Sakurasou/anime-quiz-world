@@ -19,6 +19,7 @@ on:
       - "aqw-brand-logo.css"
       - "aqw-brand-base.css"
       - "aqw-document-pages.css"
+      - aqw-legal-pages.css
       - "aqw-safe-storage.js"
       - "sitemap.xml"
       - "robots.txt"
@@ -60,6 +61,7 @@ on:
       - "aqw-brand-logo.css"
       - "aqw-brand-base.css"
       - "aqw-document-pages.css"
+      - aqw-legal-pages.css
       - "aqw-safe-storage.js"
       - "scripts/test-static-security.mjs"
       - "scripts/sync-anime-catalog.mjs"
