@@ -1490,7 +1490,7 @@ function renderFeedbackAnalytics(){
  const similarityTitle=document.createElement('strong');similarityTitle.textContent='好きな作品との類似度と評価';similaritySection.append(similarityTitle);
  const similarityText=document.createElement('p');similarityText.className='status';
  similarityText.textContent=metricRecords.length
-  ?'類似度データ付き評価 '+metricRecords.length+' 件。類似度は好きな作品とのジャンル・タグの共通度から算出した0〜8.5の内部指標です。'
+  ?'類似度データ付き評価 '+metricRecords.length+' 件。類似度は、好きな作品とのジャンルやタグの共通点をもとにした参考値です。'
   :'類似度データはまだありません。今回以降の推薦を評価すると記録されます。以前の評価にはさかのぼって追加できません。';
  similaritySection.append(similarityText);
  Object.entries(similarityGroups).forEach(([label,count])=>{
