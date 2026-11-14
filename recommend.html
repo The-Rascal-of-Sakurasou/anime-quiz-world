@@ -1287,7 +1287,7 @@ function normalizeSharedAnswers(state){
   values=[...state.a,null,null];[8,15,17].forEach(i=>values[i]=null);
  }else if(state.v===5){
   if(state.a.length!==13||!areValidLegacyAnswers(state.a))return null;
-  values=[...state.a,...Array(7).fill(null)];
+  values=Array.from({length:questions.length},(_,index)=>{const value=state.a[index];return Number.isInteger(value)&&value>=0&&value<questions[index].options.length?value:null});
  }else if(state.v===4){
   const old=mapVersionFourAnswersToThirteen(state.a);values=old?[...old,...Array(7).fill(null)]:null;
  }else if(state.v===3){
@@ -1309,7 +1309,7 @@ function normalizeSavedAnswers(data){
   values=[...data.answers,null,null];[8,15,17].forEach(i=>values[i]=null);
  }else if(data.v===5){
   if(data.answers.length!==13||!areValidLegacyAnswers(data.answers))return null;
-  values=[...data.answers,...Array(7).fill(null)];
+  values=Array.from({length:questions.length},(_,index)=>{const value=data.answers[index];return Number.isInteger(value)&&value>=0&&value<questions[index].options.length?value:null});
  }else if(data.v===4){
   const old=mapVersionFourAnswersToThirteen(data.answers);values=old?[...old,...Array(7).fill(null)]:null;
  }else if([1,2].includes(data.v)){
