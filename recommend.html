@@ -320,7 +320,7 @@ const questions=[
 ];
 const allQuestionTitles=questions.map(q=>q.title.trim());
 const allQuestionDimensions=questions.map(q=>q.dimension);
-questions.forEach(q=>q.options.push({label:'わからない・選択肢にない',neutral:true}));
+questions.forEach(q=>q.options.push({label:'わからない',neutral:true},{label:'選択肢にない',neutral:true}));
 const allQuestionLabels=questions.flatMap(q=>q.options.filter(o=>!o.neutral&&!o.other).map(option=>option.label.trim()));
 if(new Set(allQuestionTitles).size!==questions.length||new Set(allQuestionDimensions).size!==questions.length||new Set(allQuestionLabels).size!==allQuestionLabels.length)throw new Error('診断の質問または選択肢に重複があります。');
 const questionTitles=questions.map(q=>q.title.trim());
@@ -332,8 +332,8 @@ if(new Set(questionTitles).size!==questionTitles.length||new Set(questionDimensi
 const FIXED_QUESTION_COUNT=20;
 if(questions.length!==FIXED_QUESTION_COUNT)throw new Error('診断の質問数は20問固定です。')
 let step=0;const answers=Array(questions.length).fill(null);
-const SAVE_KEY='aqw-recommendation-v11';
-const PREVIOUS_SAVE_KEY='aqw-recommendation-v10';
+const SAVE_KEY='aqw-recommendation-v12';
+const PREVIOUS_SAVE_KEY='aqw-recommendation-v11';
 const LEGACY_SAVE_KEY='aqw-recommendation-v2';
 const FEEDBACK_KEY='aqw-recommendation-feedback-v1';
 const EVALUATION_HISTORY_KEY='aqw-recommendation-evaluation-history-v1';
@@ -675,7 +675,7 @@ function runRecommendationSelfTests(){
    return JSON.stringify(actual)===JSON.stringify(expected);
   }));
   check('通常の80選択肢の回答が推薦profileへ正しく反映される',profileProbeOk);
-  check('全20問は通常の4択と「わからない・選択肢にない」の5択で統一されている',!duplicateChoiceLabels&&questions.every(q=>q.options.length===5&&q.options[4].neutral&&q.options[4].label==='わからない・選択肢にない'));
+  check('全20問は通常4択・わからない・選択肢にないの6択で統一されている',!duplicateChoiceLabels&&questions.every(q=>q.options.length===6&&q.options[4].neutral&&q.options[4].label==='わからない'&&q.options[5].neutral&&q.options[5].label==='選択肢にない'));
  check('自由記述欄は20問の各質問とは独立して配置されている',Boolean($('wantText')&&$('avoidText')&&$('preferenceText'))&&!$('questionOtherWrap')&&!$('questionOtherText'));
   check('結末の好みを1問に統合し、余韻質問を重ねない',!questionByDimension.has('aftertaste')&&questionByDimension.has('ending_preference'));
   check('舞台と作品テーマを別々の観点にする',questionByDimension.get('theme_focus').title.includes('テーマ')&&questionByDimension.get('setting').title.includes('舞台'));
@@ -1402,7 +1402,7 @@ function renderCardList(containerId,items){
 }
 let latestResult=null;
 function encodeShareState(){
- const state={v:11,a:answers,w:$('wantText').value.slice(0,500),x:$('avoidText').value.slice(0,500),p:$('preferenceText').value.slice(0,700),f:$('favoriteTitles').value.slice(0,180),d:$('dislikedTitles').value.slice(0,180)};
+ const state={v:12,a:answers,w:$('wantText').value.slice(0,500),x:$('avoidText').value.slice(0,500),p:$('preferenceText').value.slice(0,700),f:$('favoriteTitles').value.slice(0,180),d:$('dislikedTitles').value.slice(0,180)};
  const bytes=new TextEncoder().encode(JSON.stringify(state));
  let binary='';bytes.forEach(byte=>binary+=String.fromCharCode(byte));
  return btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
@@ -1443,9 +1443,12 @@ function mapVersionFourAnswersToThirteen(values){
 function normalizeSharedAnswers(state){
  if(!Array.isArray(state?.a))return null;
  let values;
- if(state.v===11||state.v===10||state.v===9){
+ if(state.v===12||state.v===11){
   if(state.a.length!==questions.length)return null;
   values=state.a.map(value=>value===5?null:value);
+ }else if(state.v===10||state.v===9){
+  if(state.a.length!==questions.length)return null;
+  values=state.a.map(value=>value===5?5:value);
  }else if(state.v===8||state.v===7||state.v===6){
   if(state.a.length!==18||!areValidLegacyAnswers(state.a))return null;
   values=[...state.a,null,null];[8,15,17].forEach(i=>values[i]=null);
@@ -1465,9 +1468,12 @@ function normalizeSharedAnswers(state){
 function normalizeSavedAnswers(data){
  if(!Array.isArray(data?.answers))return null;
  let values;
- if(data.v===11||data.v===10||data.v===9){
+ if(data.v===12||data.v===11){
   if(data.answers.length!==questions.length)return null;
   values=data.answers.map(value=>value===5?null:value);
+ }else if(data.v===10||data.v===9){
+  if(data.answers.length!==questions.length)return null;
+  values=data.answers.map(value=>value===5?5:value);
  }else if(data.v===8||data.v===7||data.v===6){
   if(data.answers.length!==18||!areValidLegacyAnswers(data.answers))return null;
   values=[...data.answers,null,null];[8,15,17].forEach(i=>values[i]=null);
