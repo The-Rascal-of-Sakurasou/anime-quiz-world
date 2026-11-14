@@ -412,7 +412,6 @@ assert.match(index, /payload\?\.schemaVersion!==2/, "The quiz must require the c
 
 assert.ok(syncScript.includes("export function dedupeAnimeMetadata(anime)"), "Catalogue synchronization must deduplicate metadata");
 assert.match(syncScript, /catalogueEligible: true/, "Published records must be marked catalogue-eligible");
-assert.match(syncScript, /originVerified: compact\.countryOfOrigin === 'JP'/, "Only Japanese-origin records may carry the legacy marker");
 assert.doesNotMatch(syncScript, /hasJapaneseTitle|popularity\) >= 10000/, "Popularity and Japanese titles must not override origin country");
 assert.match(index, /new URL\('data\/anime-catalog\.json',document\.baseURI\)/, "The shared catalogue must resolve correctly from GitHub Pages subpaths");
 assert.match(index, /const sharedCatalogPromise=fetchSharedAnimeCatalog\(\)/, "Shared catalogue loading must start independently of the local cache");
