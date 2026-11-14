@@ -13,6 +13,7 @@ on:
       - terms.html
       - responsive.css
       - anime-origin-policy.js
+      - aqw-text-utils.js
       - aqw-mobile-refinements.css
       - aqw-brand-logo.css
       - aqw-brand-base.css
@@ -39,6 +40,7 @@ on:
       - terms.html
       - responsive.css
       - anime-origin-policy.js
+      - aqw-text-utils.js
       - aqw-mobile-refinements.css
       - aqw-brand-logo.css
       - aqw-brand-base.css
