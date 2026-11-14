@@ -458,7 +458,7 @@ def test_all_question_modes(browser):
     page.goto(f"{BASE_URL}/index.html", wait_until="domcontentloaded")
     page.wait_for_function("document.querySelector('#modeSelect option') !== null", timeout=20000)
     mode_values = page.locator("#modeSelect option").evaluate_all("(options) => options.map(option => option.value)")
-    assert mode_values == ["mixed", "synopsis", "titleYear", "synonym", "titleStudio"], (
+    assert mode_values == ["mixed", "image", "synopsis", "titleYear", "synonym", "titleStudio"], (
         "The selectable quiz modes must remain limited to the four requested formats plus mixed mode: "
         + repr(mode_values)
     )
