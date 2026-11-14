@@ -148,6 +148,13 @@ assert.match(source.get("guide.html"), /ブロック・通報/, "The guide must 
 
 let checkedScripts = 0;
 for (const [file, html] of source) {
+  const linkedScripts = [...html.matchAll(/<script\b[^>]*src=["']\.\/([^"']+)["']/g)];
+  for (const match of linkedScripts) {
+    const scriptPath = match[1];
+    const scriptSource = fs.readFileSync(scriptPath, "utf8");
+    new vm.Script(scriptSource, { filename: scriptPath });
+    checkedScripts++;
+  }
   const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)];
   for (const match of scripts) {
     const attrs = match[1] || "";
@@ -159,7 +166,7 @@ for (const [file, html] of source) {
     checkedScripts++;
   }
 }
-assert.ok(checkedScripts > 0, "No inline JavaScript was checked");
+assert.ok(checkedScripts > 0, "No page JavaScript was checked");
 
 const quizIndex = source.get("index.html");
 const resultStart = quizIndex.indexOf('<div id="result" class="hidden">');
