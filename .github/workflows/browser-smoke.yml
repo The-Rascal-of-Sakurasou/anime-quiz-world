@@ -12,6 +12,8 @@ on:
       - privacy.html
       - terms.html
       - responsive.css
+      - anime-origin-policy.js
+      - anime-text-utils.js
       - scripts/browser-smoke.py
       - scripts/test-official-site-links.mjs
       - scripts/audit-anime-image-urls.mjs
@@ -23,22 +25,6 @@ on:
     branches:
       - main
     paths:
-      - .github/workflows/browser-smoke.yml
-      - index.html
-      - recommend.html
-      - multiplayer.html
-      - admin.html
-      - guide.html
-      - privacy.html
-      - terms.html
-      - responsive.css
-      - scripts/browser-smoke.py
-      - scripts/test-official-site-links.mjs
-      - scripts/audit-anime-image-urls.mjs
-      - scripts/validate-anime-catalog.mjs
-      - scripts/test-anime-search-deduplication.mjs
-      - data/anime-catalog.json
-      - data/anime-catalog.json.gz
   workflow_dispatch:
 
 permissions:
