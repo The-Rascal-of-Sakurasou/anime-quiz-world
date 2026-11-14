@@ -710,13 +710,9 @@ body.quiz-preparing #quizStatus:before{content:"";display:inline-block;width:22p
 <footer><span id="footerText">作品情報・画像は外部の作品データサービスから取得しています。非公式のファンサイトです。各作品の権利は権利者に帰属します。利用にはインターネット接続が必要です。</span><div class="footer-links"><a href="./terms.html" id="footerTerms">利用規約</a><a href="./privacy.html" id="footerPrivacy">プライバシーポリシー</a><a href="./guide.html" id="footerGuide">遊び方・お知らせ</a><a href="./admin.html" id="footerAdmin">管理者ログイン</a><a id="footerContact" href="https://x.com/anime_love_p" target="_blank" rel="noopener noreferrer">連絡先：@anime_love_p（X）</a></div></footer>
 </div>
 
+<script src="./aqw-safe-storage.js"></script>
 <script>
-const safeStorage={
- getItem(key){try{return window.localStorage.getItem(key)}catch(_){return null}},
- setItem(key,value){try{window.localStorage.setItem(key,String(value));return true}catch(_){return false}},
- removeItem(key){try{window.localStorage.removeItem(key);return true}catch(_){return false}},
- keys(){try{return Object.keys(window.localStorage)}catch(_){return []}}
-};
+const safeStorage = window.AQWSafeStorage;
 // Remove the legacy per-user anime collection left by older versions.
 safeStorage.removeItem('aqw-collection');
 const API='https://graphql.anilist.co';
