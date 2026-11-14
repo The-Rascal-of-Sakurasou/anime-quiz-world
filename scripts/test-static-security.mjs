@@ -15,7 +15,16 @@ const frontendFiles = [
 const source = new Map();
 for (const file of frontendFiles) {
   assert.ok(fs.existsSync(file), `Missing frontend file: ${file}`);
-  source.set(file, fs.readFileSync(file, "utf8"));
+  const html = fs.readFileSync(file, "utf8");
+  // Include first-party deferred bundles so source-level regression checks
+  // continue to cover the complete page after script extraction.
+  const linkedScripts = [...html.matchAll(/<script\\b[^>]*src=["']\\.\\/([^"']+)["']/g)]
+    .map((match) => {
+      const scriptPath = match[1];
+      assert.ok(fs.existsSync(scriptPath), `Missing linked page script: ${scriptPath}`);
+      return fs.readFileSync(scriptPath, "utf8");
+    });
+  source.set(file, html + "\\n" + linkedScripts.join("\\n"));
 }
 
 const matchPreparePath = "supabase/functions/aqw-match-prepare/index.ts";
