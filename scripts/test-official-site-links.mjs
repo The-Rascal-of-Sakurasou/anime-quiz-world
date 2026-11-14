@@ -5,7 +5,7 @@ const pageHtml = await readFile("index.html", "utf8");
 const linkedScripts = [...pageHtml.matchAll(/<script\b[^>]*src=["']\.\/([^"']+)["']/g)];
 const html = pageHtml + "\n" + await Promise.all(
   linkedScripts.map((match) => readFile(match[1], "utf8"))
-).then((scripts) => scripts.join("\\n"));
+).then((scripts) => scripts.join("\n"));
 const catalog = JSON.parse(await readFile("data/anime-catalog.json", "utf8"));
 assert.ok(Array.isArray(catalog.items) && catalog.items.length >= 100, "Shared anime catalogue must contain at least 100 works");
 const normalizeTitle = (value) => String(value || "")
