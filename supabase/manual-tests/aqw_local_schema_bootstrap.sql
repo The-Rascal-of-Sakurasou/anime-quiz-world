@@ -25,12 +25,8 @@ create table if not exists private.aqw_player_stat_runs (
 alter table private.aqw_player_stat_runs enable row level security;
 revoke all on table private.aqw_player_stat_runs from public, anon, authenticated;
 
-drop policy if exists aqw_player_stat_runs_deny_client_access on private.aqw_player_stat_runs;
-create policy aqw_player_stat_runs_deny_client_access
-on private.aqw_player_stat_runs
-for all to anon, authenticated
-using (false)
-with check (false);
+-- The tracked feature migration creates the deny-all policy after this
+-- baseline fixture is injected. Do not create it here, or replay duplicates it.
 
 -- Public aggregate table present in production but absent from tracked migrations.
 create table if not exists public.aqw_player_stats (
