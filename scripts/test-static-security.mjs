@@ -259,6 +259,13 @@ assert.match(multiplayer, /['"]Authorization['"]:'Bearer '\+session\.access_toke
 assert.match(multiplayer, /players\.length!==2\|\|!players\.every\(p=>p\.is_ready\)/, "Client must require both players ready before starting");
 assert.match(multiplayer, /room\.host_id===user\.id/, "Only the room host may start a match in the UI");
 const privacy = source.get("privacy.html");
+const terms = source.get("terms.html");
+const legalPagesCss = fs.readFileSync("aqw-legal-pages.css", "utf8");
+for (const [pageName, pageSource] of [["privacy.html", privacy], ["terms.html", terms]]) {
+  assert.ok(pageSource.includes('href="./aqw-legal-pages.css"'), pageName + " must load the shared legal-page stylesheet");
+  assert.doesNotMatch(pageSource, /<style[\\s>]/i, pageName + " must not duplicate the shared legal-page CSS inline");
+}
+assert.match(legalPagesCss, /@media\\(max-width:700px\\)/, "Shared legal-page stylesheet must retain mobile layout rules");
 assert.doesNotMatch(privacy, /コレクション/, "Privacy policy must not describe the removed anime collection feature");
 
 const recommend = source.get("recommend.html");
