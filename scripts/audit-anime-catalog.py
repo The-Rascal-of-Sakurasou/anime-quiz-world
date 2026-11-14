@@ -34,22 +34,10 @@ def norm(value: str) -> str:
 
 
 def japanese_origin(item: dict) -> bool:
-    country = item.get("countryOfOrigin")
-    if not isinstance(country, str) or not country:
-        return False
-    if country == "JP":
-        # The catalogue sync/validator is the source of truth for Japanese origin.
-        # Compact records intentionally omit source/relations, so require its marker.
-        return item.get("originVerified") is True
-
-    title = item.get("title") or {}
-    names = [title.get("native"), title.get("english"), title.get("romaji")]
-    names.extend(item.get("synonyms") or [])
-    has_japanese_title = any(
-        isinstance(name, str) and re.search(r"[ぁ-んァ-ヶ]", name)
-        for name in names
-    )
-    return int(item.get("popularity") or 0) >= 10000 and has_japanese_title
+    # AniList countryOfOrigin is the sole inclusion criterion.
+    # Popularity, Japanese titles, synonyms, and originVerified must not
+    # override a non-Japanese or missing country value.
+    return isinstance(item, dict) and item.get("countryOfOrigin") == "JP"
 
 def title_variants(item: dict) -> set[str]:
     title = item.get("title") or {}
@@ -154,7 +142,7 @@ def main() -> int:
     if "itemCount" in payload:
         payload["itemCount"] = len(kept)
     payload["generatedAt"] = datetime.now(timezone.utc).isoformat()
-    payload["originRule"] = "Verified Japanese-origin works plus foreign works with a Japanese-language title and popularity >= 10000"
+    payload["originRule"] = "AniList countryOfOrigin must equal JP; non-Japanese and unknown-origin works are excluded"
     args.output.parent.mkdir(parents=True, exist_ok=True)
     serialized = json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + "\n"
     args.output.write_text(serialized, encoding="utf-8")
