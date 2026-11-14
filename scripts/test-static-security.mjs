@@ -18,6 +18,16 @@ for (const file of frontendFiles) {
   source.set(file, fs.readFileSync(file, "utf8"));
 }
 
+const adminFunctionPath = "supabase/functions/aqw-admin-control/index.ts";
+assert.ok(fs.existsSync(adminFunctionPath), "Admin-control Edge Function source is missing");
+const adminFunction = fs.readFileSync(adminFunctionPath, "utf8");
+assert.match(adminFunction, /userClient\.auth\.getUser\(token\)/, "Admin-control must validate the bearer token with Supabase Auth");
+assert.match(adminFunction, /userClient\.rpc\("is_site_owner"\)/, "Admin-control must verify the registered site owner");
+assert.doesNotMatch(adminFunction, /aal2|mfa\.getAuthenticatorAssuranceLevel/, "Admin-control must not require TOTP/AAL2 after password-only login is enabled");
+const ownerCheckPosition = adminFunction.indexOf('if (ownerError || owner !== true)');
+const serviceRolePosition = adminFunction.indexOf('createClient(url, serviceKey');
+assert.ok(ownerCheckPosition >= 0 && serviceRolePosition > ownerCheckPosition, "Admin-control must verify owner authorization before creating the service-role client");
+
 const matchPreparePath = "supabase/functions/aqw-match-prepare/index.ts";
 assert.ok(fs.existsSync(matchPreparePath), "Active match-preparation Edge Function source is missing");
 const matchPrepare = fs.readFileSync(matchPreparePath, "utf8");
