@@ -2,7 +2,7 @@
   "use strict";
   function normalizeAnswer(value) {
     return String(value || "").normalize("NFKC").toLocaleLowerCase()
-      .replace(/[\\s　・･:：!！?？.,，。'"“”「」『』()（）‐‑–—―−_-]/g, "").trim();
+      .replace(/[\s　・･:：!！?？.,，。'"“”「」『』()（）‐‑–—―−_-]/g, "").trim();
   }
   function escapeHTML(value) {
     return String(value ?? "").replace(/[&<>"']/g, (character) => ({
