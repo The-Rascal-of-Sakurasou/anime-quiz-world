@@ -6,6 +6,18 @@ on:
     paths:
       - "data/anime-catalog.json"
       - "scripts/filter-anime-catalog-japan-only.mjs"
+      - "index.html"
+      - "recommend.html"
+      - "admin.html"
+      - "aqw-text-utils.js"
+      - "scripts/test-aqw-text-utils.mjs"
+      - "scripts/test-anime-search-deduplication.mjs"
+      - "scripts/test-static-security.mjs"
+      - "scripts/audit-question-mode-coverage.mjs"
+      - "scripts/audit-japanese-synopses.mjs"
+      - "supabase/functions/_shared/**"
+      - "supabase/functions/aqw-admin-control/**"
+      - "supabase/functions/aqw-match-prepare/**"
       - ".github/workflows/filter-anime-catalog-japan-only.yml"
   workflow_dispatch:
 
@@ -32,10 +44,13 @@ jobs:
       - name: Check policy and catalogue scripts
         run: |
           node --check anime-origin-policy.js
+          node --check aqw-text-utils.js
           node --check scripts/filter-anime-catalog-japan-only.mjs
           node --check scripts/sync-anime-catalog.mjs
           node --check scripts/validate-anime-catalog.mjs
           node scripts/test-anime-origin-policy.mjs
+          node scripts/test-aqw-text-utils.mjs
+          node scripts/test-anime-search-deduplication.mjs
           node scripts/test-anime-catalog-validator.mjs
           node scripts/test-static-security.mjs
       - name: Remove every non-Japanese-origin catalogue entry
