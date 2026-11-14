@@ -517,9 +517,10 @@ def test_all_question_modes(browser):
             assert re.search(r"[ぁ-んァ-ヶ一-龯]", prompt), (
                 "Japanese synopsis questions must display a Japanese prompt: " + prompt
             )
+            expected_titles = {item["title"]["native"] for item in QUIZ_FIXTURES}
             for label in answers.all_inner_texts():
-                assert re.search(r"[ぁ-んァ-ヶ一-龯]", label), (
-                    "Japanese synopsis answer choices must use Japanese titles: " + label
+                assert label in expected_titles, (
+                    "Synopsis answer choices must display anime titles, not synopsis text: " + label
                 )
         assert not console_errors, (
             f"Question mode {mode} logged browser console errors: " + " | ".join(console_errors)
