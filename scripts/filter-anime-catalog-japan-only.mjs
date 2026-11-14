@@ -26,17 +26,22 @@ for (const anime of items) {
 if (!items.length) throw new Error("Refusing to write an empty catalogue.");
 if (items.length + removed.length !== before) throw new Error("Catalogue filtering count mismatch.");
 
-const output = {
-  ...catalog,
-  generatedAt: new Date().toISOString(),
-  originRule: "AniList countryOfOrigin must equal JP; non-Japanese and unknown-origin works are excluded",
-  count: items.length,
-  items,
-};
-const serialized = JSON.stringify(output) + "\n";
-const compressed = gzipSync(Buffer.from(serialized, "utf8"), { level: 9, mtime: 0 });
-await writeFile(INPUT, serialized);
-await writeFile(OUTPUT_GZIP, compressed);
+if (removed.length > 0) {
+  const output = {
+    ...catalog,
+    generatedAt: new Date().toISOString(),
+    originRule: "AniList countryOfOrigin must equal JP; non-Japanese and unknown-origin works are excluded",
+    count: items.length,
+    ...(Object.prototype.hasOwnProperty.call(catalog, "itemCount") ? { itemCount: items.length } : {}),
+    items,
+  };
+  const serialized = JSON.stringify(output) + "\\n";
+  const compressed = gzipSync(Buffer.from(serialized, "utf8"), { level: 9, mtime: 0 });
+  await writeFile(INPUT, serialized);
+  await writeFile(OUTPUT_GZIP, compressed);
+} else {
+  console.log("No non-Japanese-origin or unknown-origin records found; catalogue files left unchanged.");
+}
 
 console.log(JSON.stringify({
   before,
