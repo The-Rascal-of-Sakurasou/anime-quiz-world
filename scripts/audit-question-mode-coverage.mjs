@@ -1,5 +1,7 @@
+import "../anime-origin-policy.js";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { runInNewContext } from "node:vm";
+const { isJapaneseOriginAnime } = globalThis.AQWAnimePolicy;
 
 const CATALOG = "data/anime-catalog.json";
 const REPORT = "artifacts/question-mode-coverage/report.json";
@@ -143,8 +145,7 @@ const declaredCount = payload.count ?? payload.itemCount;
 if (payload.schemaVersion !== 2 || !Array.isArray(payload.items) || payload.items.length !== declaredCount) throw new Error("Catalogue schema/count validation failed.");
 const embeddedCharacterRecords = payload.items.filter(item => Object.prototype.hasOwnProperty.call(item || {}, "characters")).length;
 if (embeddedCharacterRecords > 0) throw new Error("Unused character records must not be embedded in the shared catalogue: " + embeddedCharacterRecords);
-const hasJapaneseTitle = (a) => [a?.title?.native,a?.title?.english,a?.title?.romaji,...(Array.isArray(a?.synonyms)?a.synonyms:[])].some(value => typeof value === "string" && /[ぁ-んァ-ヶ]/.test(value));
-const eligibleOrigin = (a) => a?.countryOfOrigin === "JP" || (typeof a?.countryOfOrigin === "string" && a.countryOfOrigin.length > 0 && Number(a?.popularity) >= 10000 && hasJapaneseTitle(a));
+const eligibleOrigin = isJapaneseOriginAnime;
 const items = payload.items.filter(a => a && a.id && a.isAdult !== true && eligibleOrigin(a) && !((a.genres || []).includes("Hentai")) && ["TV","TV_SHORT","MOVIE","OVA","ONA","SPECIAL"].includes(a.format) && title(a));
 const yearSet = new Set(items.map(year).filter(y => Number.isInteger(y) && y > 1900));
 const studioSet = new Set(items.flatMap(a => (a.studios?.nodes || []).map(n => norm(n?.name)).filter(Boolean)));
@@ -201,7 +202,7 @@ const report = {
   uniqueSynopsisTexts: synopsisCandidateCount,
   modes: [
     summarize("synopsis","あらすじ → 作品名",eligible.synopsis),
-    summarize("titleYear","作品名 → 公開・放送年",eligible.titleYear),
+    summarize("titleYear","作品名 → 放送年",eligible.titleYear),
     summarize("synonym","略称 → 作品名",eligible.synonym),
     summarize("titleStudio","作品名 → 制作スタジオ",eligible.titleStudio),
   ],

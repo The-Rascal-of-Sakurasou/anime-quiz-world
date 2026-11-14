@@ -39,6 +39,32 @@ TAGS = [
 ]
 
 
+def stub_anilist_graphql(route, fallback_media):
+    if route.request.method == "OPTIONS":
+        route.fulfill(status=204, headers=CORS_HEADERS)
+        return
+    payload = route.request.post_data_json or {}
+    query = payload.get("query", "")
+    aliases = re.findall(r"([A-Za-z][A-Za-z0-9_]*)\s*:\s*Page\s*\(", query)
+    if aliases:
+        data = {
+            alias: {"pageInfo": {"hasNextPage": False}, "media": []}
+            for alias in aliases
+        }
+    else:
+        data = {
+            "Page": {
+                "pageInfo": {"hasNextPage": False, "totalPages": 1},
+                "media": fallback_media,
+            }
+        }
+    route.fulfill(
+        status=200,
+        headers={**CORS_HEADERS, "Content-Type": "application/json"},
+        body=json.dumps({"data": data}, ensure_ascii=False),
+    )
+
+
 def make_anime(index):
     anime_id = 10000 + index
     # Keep every alias distinct: numbered titles such as "Anime 1" and
@@ -147,31 +173,6 @@ def install_routes(page):
             ),
         )
 
-    def graphql(route):
-        if route.request.method == "OPTIONS":
-            route.fulfill(status=204, headers=CORS_HEADERS)
-            return
-        payload = route.request.post_data_json or {}
-        query = payload.get("query", "")
-        aliases = re.findall(r"([A-Za-z][A-Za-z0-9_]*)\s*:\s*Page\s*\(", query)
-        if aliases:
-            data = {
-                alias: {"pageInfo": {"hasNextPage": False}, "media": []}
-                for alias in aliases
-            }
-        else:
-            data = {
-                "Page": {
-                    "pageInfo": {"hasNextPage": False, "totalPages": 1},
-                    "media": RECOMMENDATION_FIXTURES,
-                }
-            }
-        route.fulfill(
-            status=200,
-            headers={**CORS_HEADERS, "Content-Type": "application/json"},
-            body=json.dumps({"data": data}, ensure_ascii=False),
-        )
-
     page.route("**/data/anime-catalog.json.gz", compressed_catalogue)
     page.route("**/data/anime-catalog.json", catalogue)
     page.route(
@@ -193,39 +194,14 @@ def install_routes(page):
             }),
         ),
     )
-    page.route(re.compile(r"^https://graphql\.anilist\.co/?$"), graphql)
+    page.route(re.compile(r"^https://graphql\.anilist\.co/?$"), lambda route: stub_anilist_graphql(route, RECOMMENDATION_FIXTURES))
     page.route(re.compile(r"^https://example\.test/.*"), image)
 
 
 
 def install_live_catalogue_routes(page):
     """Stub AniList seasonal discovery but keep the deployed catalogue request real."""
-    def graphql(route):
-        if route.request.method == "OPTIONS":
-            route.fulfill(status=204, headers=CORS_HEADERS)
-            return
-        payload = route.request.post_data_json or {}
-        query = payload.get("query", "")
-        aliases = re.findall(r"([A-Za-z][A-Za-z0-9_]*)\s*:\s*Page\s*\(", query)
-        if aliases:
-            data = {
-                alias: {"pageInfo": {"hasNextPage": False}, "media": []}
-                for alias in aliases
-            }
-        else:
-            data = {
-                "Page": {
-                    "pageInfo": {"hasNextPage": False, "totalPages": 1},
-                    "media": [],
-                }
-            }
-        route.fulfill(
-            status=200,
-            headers={**CORS_HEADERS, "Content-Type": "application/json"},
-            body=json.dumps({"data": data}, ensure_ascii=False),
-        )
-
-    page.route(re.compile(r"^https://graphql\.anilist\.co/?$"), graphql)
+    page.route(re.compile(r"^https://graphql\.anilist\.co/?$"), lambda route: stub_anilist_graphql(route, []))
 
 
 def test_public_catalogue_all_modes(browser):
@@ -1334,7 +1310,7 @@ def test_live_seasonal_anilist():
         "ANIME": ("ANIME", {"TV", "TV_SHORT", "MOVIE", "OVA", "ONA", "SPECIAL"}),
     }
 
-    def japanese_origin(item):
+    def is_japanese_origin_for_seasonal_smoke(item):
         if item.get("countryOfOrigin") != "JP":
             return False
         if item.get("source") == "ORIGINAL":
@@ -1358,7 +1334,7 @@ def test_live_seasonal_anilist():
     ]
     eligible = [
         item for item in season_items
-        if japanese_origin(item)
+        if is_japanese_origin_for_seasonal_smoke(item)
         and item.get("format") in {"TV", "TV_SHORT", "MOVIE", "OVA", "ONA", "SPECIAL"}
         and ((item.get("coverImage") or {}).get("large") or (item.get("coverImage") or {}).get("medium"))
         and any((item.get("title") or {}).get(key) for key in ("native", "english", "romaji"))
