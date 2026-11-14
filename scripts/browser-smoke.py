@@ -159,6 +159,30 @@ def install_routes(page):
                 alias: {"pageInfo": {"hasNextPage": False}, "media": []}
                 for alias in aliases
             }
+        elif "countryOfOrigin:JP" in query and "seasonYear:" in query and "season:" in query:
+            # Featured-season tests need fixtures from the requested season.
+            # The shared recommendation fixtures intentionally use older years.
+            year_match = re.search(r"seasonYear:(\\d+)", query)
+            season_match = re.search(r"season:(WINTER|SPRING|SUMMER|FALL)", query)
+            if not year_match or not season_match:
+                raise AssertionError("Could not read the featured-season GraphQL filters")
+            featured_year = int(year_match.group(1))
+            featured_season = season_match.group(1)
+            featured_month = {"WINTER": 1, "SPRING": 4, "SUMMER": 7, "FALL": 10}[featured_season]
+            featured_items = []
+            for fixture in RECOMMENDATION_FIXTURES[:8]:
+                item = dict(fixture)
+                item["format"] = "TV"
+                item["season"] = featured_season
+                item["seasonYear"] = featured_year
+                item["startDate"] = {"year": featured_year, "month": featured_month, "day": 1}
+                featured_items.append(item)
+            data = {
+                "Page": {
+                    "pageInfo": {"hasNextPage": False, "totalPages": 1},
+                    "media": featured_items,
+                }
+            }
         else:
             data = {
                 "Page": {
