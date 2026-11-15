@@ -91,6 +91,9 @@ Deno.serve(async (req: Request) => {
     }
     if (!body || typeof body !== "object" || Array.isArray(body)) return json({ error: "入力内容が正しくありません。" }, 400);
 
+    const website = typeof body.website === "string" ? body.website.trim() : "";
+    if (website) return json({ success: true });
+
     const displayName = body.displayName == null ? "" : typeof body.displayName === "string" ? body.displayName.trim() : null;
     const title = typeof body.title === "string" ? body.title.trim() : null;
     const questionBody = typeof body.body === "string" ? body.body.trim() : null;
@@ -105,9 +108,12 @@ Deno.serve(async (req: Request) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!supabaseUrl || !serviceRoleKey) return json({ error: "送信機能を利用できません。時間をおいて再度お試しください。" }, 503);
+    const hmacSecret = Deno.env.get("AQW_QA_RATE_LIMIT_HMAC_SECRET");
+    if (!supabaseUrl || !serviceRoleKey || !hmacSecret || hmacSecret.length < 32) {
+      return json({ error: "送信機能を利用できません。時間をおいて再度お試しください。" }, 503);
+    }
 
-    const fingerprint = await fingerprintIp(ip, serviceRoleKey);
+    const fingerprint = await fingerprintIp(ip, hmacSecret);
     const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } });
     const { data: allowed, error: rateLimitError } = await admin.rpc("consume_qa_submission_rate_limit", { p_fingerprint: fingerprint });
     if (rateLimitError || typeof allowed !== "boolean") {
