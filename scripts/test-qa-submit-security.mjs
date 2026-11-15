@@ -13,6 +13,14 @@ assert.match(fn, /AQW_QA_RATE_LIMIT_HMAC_SECRET/);
 assert.match(fn, /hmacSecret\.length < 32/);
 assert.match(fn, /fingerprintIp\(ip, hmacSecret\)/);
 assert.doesNotMatch(fn, /fingerprintIp\(ip, serviceRoleKey\)/);
+assert.doesNotMatch(page, /AQW_QA_RATE_LIMIT_HMAC_SECRET|SUPABASE_SERVICE_ROLE_KEY|service_role/i, "Server-only credentials must never appear in the public Q&A page");
+const honeypotCheck = fn.indexOf("if (website) return json({ success: true })");
+const secretCheck = fn.indexOf("if (!supabaseUrl || !serviceRoleKey || !hmacSecret || hmacSecret.length < 32)");
+const fingerprintCall = fn.indexOf("fingerprintIp(ip, hmacSecret)");
+const rateLimitCall = fn.indexOf("consume_qa_submission_rate_limit");
+assert.ok(honeypotCheck >= 0 && secretCheck > honeypotCheck && fingerprintCall > secretCheck && rateLimitCall > fingerprintCall, "Honeypot discard and HMAC secret validation must happen before rate-limit consumption");
+assert.match(fn, /if \(!supabaseUrl \|\| !serviceRoleKey \|\| !hmacSecret \|\| hmacSecret\.length < 32\)\s*\{\s*return json\(\{ error: [^\n]+\}, 503\);/, "Missing or short HMAC secrets must fail closed with HTTP 503");
+
 assert.match(fn, /const website = typeof body\.website === "string"/);
 assert.match(fn, /if \(website\) return json\(\{ success: true \}\)/);
 assert.match(fn, /consume_qa_submission_rate_limit/);
