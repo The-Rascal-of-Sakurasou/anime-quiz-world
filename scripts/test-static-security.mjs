@@ -264,7 +264,7 @@ for (const action of ["get_dashboard", "list_reports", "get_report_context", "up
   const actionOffset = adminEdge.indexOf('action === "' + action + '"');
   assert.ok(actionOffset > adminActionClient, "Privileged action must only be reachable after the shared authorization gate: " + action);
 }
-assert.match(adminEdge, /throw new ApiError\("未対応の操作です\."/ , "Unknown admin actions must be rejected");
+assert.ok(adminEdge.includes('throw new ApiError("未対応の操作です。")'), "Unknown admin actions must be rejected");
 assert.match(adminEdge, /"Cache-Control": "no-store"/, "Admin responses must not be cached");
 assert.match(adminEdge, /処理に失敗しました。時間をおいて再度お試しください。/, "Unexpected server errors must not expose internal details");
 
