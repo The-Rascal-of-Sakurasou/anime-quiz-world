@@ -68,6 +68,10 @@ Deno.serve(async (req: Request) => {
     });
     const { data: userData, error: userError } = await userClient.auth.getUser(token);
     if (userError || !userData.user) throw new ApiError("ログイン状態を確認できません。", 401);
+    const { data: assurance, error: assuranceError } = await userClient.auth.mfa.getAuthenticatorAssuranceLevel(token);
+    if (assuranceError || assurance?.currentLevel !== "aal2") {
+      throw new ApiError("管理者操作には多要素認証が必要です。", 403);
+    }
     const { data: owner, error: ownerError } = await userClient.rpc("is_site_owner");
     if (ownerError || owner !== true) throw new ApiError("管理者権限がありません。", 403);
     let body: Record<string, unknown>;
