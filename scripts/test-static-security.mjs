@@ -241,9 +241,9 @@ for (const action of ["get_dashboard", "list_reports", "get_report_context", "up
 }
 assert.match(adminEdge, /userClient\.auth\.getUser\(token\)/, "Admin Edge Function must validate the authenticated user");
 assert.match(adminEdge, /userClient\.rpc\("is_site_owner"\)/, "Admin Edge Function must check site-owner authorization");
-assert.match(adminEdge, /getReader\\(\\)/, "Admin Edge Function must stream request bodies with a size cap");
+assert.match(adminEdge, /getReader\(\)/, "Admin Edge Function must stream request bodies with a size cap");
 assert.match(adminEdge, /MAX_REQUEST_BYTES = 16384/, "Admin Edge Function request-size limit missing");
-assert.doesNotMatch(adminEdge, /await req\\.text\\(\\)/, "Admin Edge Function must not buffer unbounded request bodies before checking size");
+assert.doesNotMatch(adminEdge, /await req\.text\(\)/, "Admin Edge Function must not buffer unbounded request bodies before checking size");
 assert.doesNotMatch(adminEdge, /mfa\.getAuthenticatorAssuranceLevel/, "Password-only admin function must not require MFA");
 assert.match(adminEdge, /const DATA_TABLES = new Set\(/, "Generic data management must use a fixed table allowlist");
 assert.match(adminEdge, /const REPORT_STATUSES = new Set\(/, "Report status updates must use a fixed status allowlist");
