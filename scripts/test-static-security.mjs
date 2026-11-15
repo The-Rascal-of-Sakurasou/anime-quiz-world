@@ -34,6 +34,9 @@ assert.match(supabaseConfig, /\[functions\.aqw-match-prepare\][\s\S]*?verify_jwt
 
 const synopsisOverrideEntries = ["Fate/stay night", "GTO", "幽☆遊☆白書", "偽物語", "魔女の旅々", "見える子ちゃん", "オーバーロードⅣ", "BTOOOM!", "アクダマドライブ", "虚構推理", "ゼロの使い魔", "クズの本懐", "蜘蛛ですが、なにか？", "学戦都市アスタリスク", "四畳半神話大系", "ポケットモンスター", "K", "マギ The kingdom of magic", "ゲーマーズ！", "ヒナまつり", "ワンパンマン３", "Ergo Proxy", "進撃の巨人 The Final Season完結編 後編", "わたしの幸せな結婚", "黄泉のツガイ", "らき☆すた", "かぐや様は告らせたい -ファーストキッスは終わらない-", "あそびあそばせ", "涼宮ハルヒの消失", "さよならの朝に約束の花をかざろう", "ヴァイオレット・エヴァーガーデン 外伝~永遠と自動手記人形~", "猫物語（黒）"];
 const synopsisSource = source.get("index.html");
+assert.match(synopsisSource, /workRarity\*\.45\+heuristic\*\.55/, "Difficulty score must weight anime familiarity at 45% and question format at 55%");
+assert.match(synopsisSource, /作品の知名度（45%）と問題形式（55%）/, "Japanese difficulty guidance must disclose the 45/55 weighting");
+assert.match(synopsisSource, /45% anime familiarity and 55% question format/, "English difficulty guidance must disclose the 45/55 weighting");
 for (const title of synopsisOverrideEntries) {
   const entryStart = synopsisSource.indexOf("'" + title + "':'");
   const entryEnd = synopsisSource.indexOf("',", entryStart);
@@ -326,19 +329,28 @@ assert.match(recommend, /new Set\(allQuestionTitles\)\.size!==questions\.length/
 assert.match(recommend, /new Set\(allQuestionDimensions\)\.size!==questions\.length/, "Runtime duplicate-dimension guard missing");
 assert.match(recommend, /new Set\(allQuestionLabels\)\.size!==allQuestionLabels\.length/, "Runtime duplicate-option-label guard missing");
 assert.match(recommend, /const FIXED_QUESTION_COUNT=20;/, "The recommendation diagnosis must remain fixed at twenty questions");
-assert.match(recommend, /questions\.forEach\(q=>q\.options\.push\(\{label:'わからない／特にこだわらない',neutral:true\},\{label:'選択肢にない（自由記述）',other:true\}\)\)/, "Every question must offer neutral and free-text answers");
+assert.match(recommend, /questions\.forEach\(q=>q\.options\.push\(\{label:'わからない',neutral:true\},\{label:'選択肢にない',neutral:true\}\)\)/, "Each question must have separate unknown and none-of-the-above choices");
+assert.match(recommend, /id="additionalPreferences"/, "Free text must be a separate post-question section");
+assert.match(recommend, /const additionalStep=step===questions\.length/, "Free text must appear only after all twenty questions");
+assert.match(recommend, /RECOMMENDATION_MAX_SIMILARITY=0\.68/, "Recommendation diversity threshold must be enforced");
+assert.match(recommend, /maxSimilarity=Math\.max\(maxSimilarity,genreSimilarity,tagSimilarity\)/, "Genre and tag similarity must be judged independently");
+assert.match(recommend, /questions\.forEach\(q=>q\.options\.push\(\{label:'わからない',neutral:true\},\{label:'選択肢にない',neutral:true\}\)\)/, "Every question must offer distinct neutral and none-of-the-above answers");
 assert.match(recommend, /if\(option\.neutral\)return;/, "Neutral answers must not add preference score");
-assert.match(recommend, /if\(option\.other\)\{extractTextSignals\(textAnswers\[i\]/, "Free-text answers must feed into preference signals");
+assert.match(recommend, /extractTextSignals\(text\.want,\{genres,tags,avoidGenres,avoidTags\}/, "Separate free-text preferences must feed into preference signals");
 assert.match(recommend, /if\(questions\.length!==FIXED_QUESTION_COUNT\)/, "Runtime fixed-question-count guard missing");
 assert.equal(parsedQuestions.length, 20, "Recommendation diagnosis must remain exactly twenty questions");
 const complexityQuestion = questionBlock.match(/\{dimension:\'narrative_complexity\'[\s\S]*?\n\]\}/)?.[0] || "";
 assert.ok(complexityQuestion, "Narrative complexity question must exist");
 assert.doesNotMatch(complexityQuestion, /genres:|avoidGenres:/, "Narrative complexity must not double-count the genre preference axis");
-assert.match(recommend, /const state=\{v:10,a:answers,/, "New recommendation share links must use version 10");
-assert.match(recommend, /const SAVE_KEY='aqw-recommendation-v10'/, "New local diagnosis saves must use version 10");
-assert.match(recommend, /const PREVIOUS_SAVE_KEY='aqw-recommendation-v9'/, "Previous version 8 local saves must remain readable");
+assert.match(recommend, /const state=\{v:12,a:answers,/, "New recommendation share links must use version 12");
+assert.match(recommend, /const SAVE_KEY='aqw-recommendation-v12'/, "New local diagnosis saves must use version 12");
+assert.match(recommend, /const PREVIOUS_SAVE_KEY='aqw-recommendation-v11'/, "Previous version 11 local saves must remain readable");
+assert.match(recommend, /const OLDER_SAVE_KEY='aqw-recommendation-v10'/, "Previous version 10 local saves must remain readable");
+assert.match(recommend, /const OLDEST_SAVE_KEY='aqw-recommendation-v9'/, "Previous version 9 local saves must remain readable");
 assert.match(recommend, /const LEGACY_SAVE_KEY='aqw-recommendation-v2'/, "Legacy version 2 local diagnosis data must remain readable");
 assert.match(recommend, /safeStorage\.removeItem\(PREVIOUS_SAVE_KEY\)/, "Clearing diagnosis data must remove the previous save");
+assert.match(recommend, /safeStorage\.removeItem\(OLDER_SAVE_KEY\)/, "Clearing diagnosis data must remove the older save");
+assert.match(recommend, /safeStorage\.removeItem\(OLDEST_SAVE_KEY\)/, "Clearing diagnosis data must remove the oldest save");
 assert.match(recommend, /safeStorage\.removeItem\(LEGACY_SAVE_KEY\)/, "Clearing diagnosis data must remove the legacy save");
 const legacyValidatorSource = recommend.match(/function areValidLegacyAnswers\(values\)\{[\s\S]*?\n\}/)?.[0];
 const legacySevenMapperSource = recommend.match(/function mapLegacySevenAnswersToThirteen\(values\)\{[\s\S]*?\n\}/)?.[0];
