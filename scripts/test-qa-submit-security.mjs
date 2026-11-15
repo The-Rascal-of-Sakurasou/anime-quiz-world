@@ -23,6 +23,6 @@ assert.match(migration, /private\.consume_qa_submission_rate_limit/);
 assert.match(migration, /count_10m <= 5 and v_count_24h <= 15/);
 assert.match(migration, /interval '30 days'/i);
 assert.match(migration, /grant execute on function private\.consume_qa_submission_rate_limit\(text\) to service_role/i);
-assert.match(privacy, /HMAC-SHA-256/);
+assert.match(privacy, /秘密鍵付きハッシュ値（HMAC）/);
 assert.match(privacy, /最終更新から30日を超えたもの/);
 console.log("Q&A production-path security checks passed.");
