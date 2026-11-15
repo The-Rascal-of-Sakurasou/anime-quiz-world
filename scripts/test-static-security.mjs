@@ -250,6 +250,24 @@ const adminOwnerCheck = adminEdge.indexOf('userClient.rpc("is_site_owner")');
 const adminServiceClient = adminEdge.indexOf("const admin = createClient(url, serviceKey");
 assert.ok(adminMfaCheck >= 0 && adminOwnerCheck > adminMfaCheck && adminServiceClient > adminOwnerCheck, "MFA and owner checks must both complete before creating the service-role client");
 assert.doesNotMatch(adminEdge, /getAuthenticatorAssuranceLevel\(\)/, "Server-side MFA validation must not rely on a browser session that is not stored in the Edge Function");
+assert.match(adminEdge, /req\.headers\.get\("Origin"\) !== ALLOWED_ORIGIN/, "Admin Edge Function must reject unexpected browser origins");
+assert.match(adminEdge, /req\.method !== "POST"/, "Admin Edge Function must reject methods other than POST and OPTIONS");
+assert.match(adminEdge, /authHeader\?\.startsWith\("Bearer "\)/, "Admin Edge Function must require a bearer token");
+assert.match(adminEdge, /token\.length > 8192/, "Admin Edge Function must bound bearer-token length");
+assert.match(adminEdge, /if \(!contentType\.toLowerCase\(\)\.startsWith\("application\/json"\)\)/, "Admin Edge Function must require JSON requests");
+const adminUserValidation = adminEdge.indexOf("userClient.auth.getUser(token)");
+const adminBodyRead = adminEdge.indexOf("req.body?.getReader()");
+const adminActionParse = adminEdge.indexOf("if (typeof body.action !== \"string\")");
+const adminActionClient = adminEdge.indexOf("const admin = createClient(url, serviceKey");
+assert.ok(adminUserValidation >= 0 && adminMfaCheck > adminUserValidation && adminOwnerCheck > adminMfaCheck && adminBodyRead > adminOwnerCheck && adminActionParse > adminBodyRead && adminActionClient > adminActionParse, "JWT, MFA, owner, and bounded-body validation must precede creation of the service-role client");
+for (const action of ["get_dashboard", "list_reports", "get_report_context", "update_report", "list_posts", "update_post", "delete_post", "list_profiles", "update_profile", "list_data_records", "delete_data_record", "list_users", "set_ban", "list_qa_questions", "update_qa_question"]) {
+  const actionOffset = adminEdge.indexOf('action === "' + action + '"');
+  assert.ok(actionOffset > adminActionClient, "Privileged action must only be reachable after the shared authorization gate: " + action);
+}
+assert.match(adminEdge, /throw new ApiError\("未対応の操作です\."/ , "Unknown admin actions must be rejected");
+assert.match(adminEdge, /"Cache-Control": "no-store"/, "Admin responses must not be cached");
+assert.match(adminEdge, /処理に失敗しました。時間をおいて再度お試しください。/, "Unexpected server errors must not expose internal details");
+
 
 assert.match(source.get("admin.html"), /id="mfaForm"/, "Admin UI must retain the MFA challenge form");
 assert.match(source.get("admin.html"), /async function prepareMfa\(/, "Admin UI must prepare a verified MFA factor");
