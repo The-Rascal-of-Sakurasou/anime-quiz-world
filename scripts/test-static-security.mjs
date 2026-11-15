@@ -223,7 +223,7 @@ const admin = source.get("admin.html");
 assert.match(admin, /persistSession\s*:\s*false/, "Admin session persistence must stay disabled");
 assert.match(admin, /autoRefreshToken\s*:\s*true/, "Admin token auto-refresh must stay enabled for active in-memory sessions");
 assert.match(admin, /detectSessionInUrl\s*:\s*false/, "Admin URL session detection must stay disabled");
-assert.doesNotMatch(admin, /aal2|mfa\.verify|mfa\.enroll|mfa\.challenge|mfaQr|mfaCard/, "Admin login must not require TOTP or QR-code enrollment");
+assert.match(admin, /id="mfaForm"/, "Admin login must retain its MFA challenge form");
 assert.match(admin, /signInWithPassword/, "Admin must authenticate with email and password");
 assert.match(admin, /id="togglePassword"/, "Admin password visibility control missing");
 assert.match(admin, /input\.type=reveal\?'text':'password'/, "Admin password visibility toggle must switch input type");
@@ -241,7 +241,7 @@ for (const action of ["get_dashboard", "list_reports", "get_report_context", "up
 }
 assert.match(adminEdge, /userClient\.auth\.getUser\(token\)/, "Admin Edge Function must validate the authenticated user");
 assert.match(adminEdge, /userClient\.rpc\("is_site_owner"\)/, "Admin Edge Function must check site-owner authorization");
-assert.match(adminEdge, /getAuthenticatorAssuranceLevel\\(token\\)/, "Admin Edge Function must verify the supplied JWT's MFA assurance level");
+assert.match(adminEdge, /getAuthenticatorAssuranceLevel\(token\)/, "Admin Edge Function must verify the supplied JWT MFA assurance level");
 assert.match(adminEdge, /assurance\?\.currentLevel !== "aal2"/, "Admin Edge Function must reject sessions without aal2");
 assert.match(source.get("admin.html"), /id="mfaForm"/, "Admin UI must retain the MFA challenge form");
 assert.match(source.get("admin.html"), /async function prepareMfa\(/, "Admin UI must prepare a verified MFA factor");
@@ -249,7 +249,7 @@ assert.match(source.get("admin.html"), /const mfaReady=await prepareMfa\(\)/, "A
 assert.match(adminEdge, /getReader\(\)/, "Admin Edge Function must stream request bodies with a size cap");
 assert.match(adminEdge, /MAX_REQUEST_BYTES = 16384/, "Admin Edge Function request-size limit missing");
 assert.doesNotMatch(adminEdge, /await req\.text\(\)/, "Admin Edge Function must not buffer unbounded request bodies before checking size");
-assert.doesNotMatch(adminEdge, /mfa\.getAuthenticatorAssuranceLevel/, "Password-only admin function must not require MFA");
+assert.match(adminEdge, /mfa\.getAuthenticatorAssuranceLevel/, "Privileged admin actions must require MFA at the server boundary");
 assert.match(adminEdge, /const DATA_TABLES = new Set\(/, "Generic data management must use a fixed table allowlist");
 assert.match(adminEdge, /const REPORT_STATUSES = new Set\(/, "Report status updates must use a fixed status allowlist");
 assert.match(adminEdge, /const QA_STATUSES = new Set\(/, "Q&A status updates must use a fixed status allowlist");
