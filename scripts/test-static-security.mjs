@@ -223,9 +223,69 @@ const admin = source.get("admin.html");
 assert.match(admin, /persistSession\s*:\s*false/, "Admin session persistence must stay disabled");
 assert.match(admin, /autoRefreshToken\s*:\s*true/, "Admin token auto-refresh must stay enabled for active in-memory sessions");
 assert.match(admin, /detectSessionInUrl\s*:\s*false/, "Admin URL session detection must stay disabled");
-assert.match(admin, /aal2/, "Admin MFA assurance-level enforcement missing");
-assert.match(admin, /mfa\.verify/, "Admin TOTP verification flow missing");
-assert.match(admin, /aqw-admin-control/, "Protected admin Edge Function call missing");
+assert.match(admin, /id="mfaForm"/, "Admin login must retain its MFA challenge form");
+assert.match(admin, /signInWithPassword/, "Admin must authenticate with email and password");
+assert.match(admin, /id="togglePassword"/, "Admin password visibility control missing");
+assert.match(admin, /input\.type=reveal\?'text':'password'/, "Admin password visibility toggle must switch input type");
+assert.match(admin, /aria-pressed/, "Admin password visibility toggle must expose its state accessibly");
+assert.match(admin, /adminAction\('get_dashboard'\)/, "Admin authorization must be checked through the protected Edge Function");
+assert.match(admin, /client\.functions\.invoke\('aqw-admin-control'/, "Admin operations must use the protected Edge Function");
+assert.doesNotMatch(admin, /client\.from\(|client\.storage/, "Admin console must not access privileged tables or storage directly");
+assert.match(admin, /client\.rpc\([\x27"]is_site_owner[\x27"]\)/, "The only direct RPC must be the non-privileged site-owner check");
+assert.equal((admin.match(/client\.rpc\(/g) || []).length, 1, "Admin console must not call other RPCs directly");
+assert.match(admin, /サーバー側で認証・権限確認・入力検証/, "Admin footer must describe the server-side security boundary");
+for (const id of ["qaCount", "reloadQuestions", "qaQuestions"]) assert.ok(admin.includes('id="' + id + '"'), "Q&A admin UI missing: " + id);
+assert.match(admin, /adminAction\('list_qa_questions'\)/, "Q&A list must use the protected admin Edge Function");
+assert.match(admin, /adminAction\('update_qa_question'/, "Q&A updates must use the protected admin Edge Function");
+const adminEdge = fs.readFileSync("supabase/functions/aqw-admin-control/index.ts", "utf8");
+for (const action of ["get_dashboard", "list_reports", "get_report_context", "update_report", "list_posts", "update_post", "delete_post", "list_profiles", "update_profile", "list_data_records", "delete_data_record", "list_users", "set_ban", "list_qa_questions", "update_qa_question"]) {
+  assert.ok(adminEdge.includes('action === "' + action + '"'), "Admin Edge Function action missing: " + action);
+}
+assert.match(adminEdge, /userClient\.auth\.getUser\(token\)/, "Admin Edge Function must validate the authenticated user");
+assert.match(adminEdge, /userClient\.rpc\("is_site_owner"\)/, "Admin Edge Function must check site-owner authorization");
+assert.match(adminEdge, /getAuthenticatorAssuranceLevel\(token\)/, "Admin Edge Function must verify the supplied JWT MFA assurance level");
+assert.match(adminEdge, /assurance\?\.currentLevel !== "aal2"/, "Admin Edge Function must reject sessions without aal2");
+const adminMfaCheck = adminEdge.indexOf("getAuthenticatorAssuranceLevel(token)");
+const adminOwnerCheck = adminEdge.indexOf('userClient.rpc("is_site_owner")');
+const adminServiceClient = adminEdge.indexOf("const admin = createClient(url, serviceKey");
+assert.ok(adminMfaCheck >= 0 && adminOwnerCheck > adminMfaCheck && adminServiceClient > adminOwnerCheck, "MFA and owner checks must both complete before creating the service-role client");
+assert.doesNotMatch(adminEdge, /getAuthenticatorAssuranceLevel\(\)/, "Server-side MFA validation must not rely on a browser session that is not stored in the Edge Function");
+assert.match(adminEdge, /req\.headers\.get\("Origin"\) !== ALLOWED_ORIGIN/, "Admin Edge Function must reject unexpected browser origins");
+assert.match(adminEdge, /req\.method !== "POST"/, "Admin Edge Function must reject methods other than POST and OPTIONS");
+assert.match(adminEdge, /authHeader\?\.startsWith\("Bearer "\)/, "Admin Edge Function must require a bearer token");
+assert.match(adminEdge, /token\.length > 8192/, "Admin Edge Function must bound bearer-token length");
+assert.match(adminEdge, /if \(!contentType\.toLowerCase\(\)\.startsWith\("application\/json"\)\)/, "Admin Edge Function must require JSON requests");
+const adminUserValidation = adminEdge.indexOf("userClient.auth.getUser(token)");
+const adminBodyRead = adminEdge.indexOf("req.body?.getReader()");
+const adminActionParse = adminEdge.indexOf("if (typeof body.action !== \"string\")");
+const adminActionClient = adminEdge.indexOf("const admin = createClient(url, serviceKey");
+assert.ok(adminUserValidation >= 0 && adminMfaCheck > adminUserValidation && adminOwnerCheck > adminMfaCheck && adminBodyRead > adminOwnerCheck && adminActionParse > adminBodyRead && adminActionClient > adminActionParse, "JWT, MFA, owner, and bounded-body validation must precede creation of the service-role client");
+for (const action of ["get_dashboard", "list_reports", "get_report_context", "update_report", "list_posts", "update_post", "delete_post", "list_profiles", "update_profile", "list_data_records", "delete_data_record", "list_users", "set_ban", "list_qa_questions", "update_qa_question"]) {
+  const actionOffset = adminEdge.indexOf('action === "' + action + '"');
+  assert.ok(actionOffset > adminActionClient, "Privileged action must only be reachable after the shared authorization gate: " + action);
+}
+assert.ok(adminEdge.includes('throw new ApiError("未対応の操作です。")'), "Unknown admin actions must be rejected");
+assert.match(adminEdge, /"Cache-Control": "no-store"/, "Admin responses must not be cached");
+assert.match(adminEdge, /処理に失敗しました。時間をおいて再度お試しください。/, "Unexpected server errors must not expose internal details");
+assert.doesNotMatch(admin, /(?:SUPABASE_SERVICE_ROLE_KEY|SUPABASE_SECRET_KEY|service_role)/i, "Admin browser code must not contain server credentials");
+assert.doesNotMatch(admin, /client\.from\(|client\.storage\./, "Admin browser code must not access privileged tables or storage directly");
+assert.match(admin, /client\.rpc\('is_site_owner'\)/, "The browser may perform only the read-only owner precheck; the Edge Function must independently enforce authorization");
+assert.match(admin, /client\.functions\.invoke\('aqw-admin-control'/, "Admin browser code must route privileged actions through the secured Edge Function");
+
+
+
+assert.match(source.get("admin.html"), /id="mfaForm"/, "Admin UI must retain the MFA challenge form");
+assert.match(source.get("admin.html"), /async function prepareMfa\(/, "Admin UI must prepare a verified MFA factor");
+assert.match(source.get("admin.html"), /const mfaReady=await prepareMfa\(\)/, "Admin UI must complete MFA before exposing the admin console");
+assert.match(adminEdge, /getReader\(\)/, "Admin Edge Function must stream request bodies with a size cap");
+assert.match(adminEdge, /MAX_REQUEST_BYTES = 16384/, "Admin Edge Function request-size limit missing");
+assert.doesNotMatch(adminEdge, /await req\.text\(\)/, "Admin Edge Function must not buffer unbounded request bodies before checking size");
+assert.match(adminEdge, /mfa\.getAuthenticatorAssuranceLevel/, "Privileged admin actions must require MFA at the server boundary");
+assert.match(adminEdge, /const DATA_TABLES = new Set\(/, "Generic data management must use a fixed table allowlist");
+assert.match(adminEdge, /const REPORT_STATUSES = new Set\(/, "Report status updates must use a fixed status allowlist");
+assert.match(adminEdge, /const QA_STATUSES = new Set\(/, "Q&A status updates must use a fixed status allowlist");
+assert.match(adminEdge, /requireText\(body\.body, "投稿本文", 2000\)/, "Admin post editing must respect the production posts.body 2000-character constraint");
+assert.match(admin, /next\.trim\(\)\.length>2000/, "Admin post editor must enforce the database 2000-character limit before submitting");
 
 const multiplayer = source.get("multiplayer.html");
 assert.match(multiplayer, /let matchmakingTimer=null,matchmakingBusy=false,matchmakingPrefs=null,matchmakingPollPromise=null;/, "Random matchmaking must track an in-flight poll");

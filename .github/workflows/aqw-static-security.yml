@@ -18,7 +18,6 @@ on:
       - "scripts/test-static-security.mjs"
       - "scripts/test-anime-search-deduplication.mjs"
       - "scripts/test-official-site-links.mjs"
-      - "scripts/test-anime-search-deduplication.mjs"
       - "scripts/sync-anime-catalog.mjs"
       - "scripts/audit-anime-image-urls.mjs"
       - "scripts/detect-title-image-text.py"
@@ -30,6 +29,7 @@ on:
       - "supabase/migrations/**"
       - "supabase/config.toml"
       - "supabase/functions/aqw-match-prepare/**"
+      - "supabase/functions/aqw-admin-control/**"
       - ".github/workflows/aqw-static-security.yml"
   pull_request:
     paths:
@@ -48,6 +48,7 @@ on:
       - ".github/workflows/japanese-synopsis-audit.yml"
       - ".github/workflows/sync-anime-catalog.yml"
       - "supabase/migrations/**"
+      - "supabase/functions/aqw-admin-control/**"
       - ".github/workflows/aqw-static-security.yml"
   workflow_dispatch:
 
