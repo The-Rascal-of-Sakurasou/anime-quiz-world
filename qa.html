@@ -105,7 +105,7 @@ small{font-size:.84rem;color:var(--muted);font-weight:400}
         auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
       });
       var result = await client.functions.invoke('aqw-qa-submit', {
-        body: { display_name: displayName, title: title, body: body }
+        body: { display_name: displayName, title: title, body: body, website: document.getElementById('website').value }
       });
       if (result.error) {
         if (result.error.context && result.error.context.status === 429) {
