@@ -39,6 +39,35 @@ function getAllowedApiKeys(): string[] {
   return [...new Set(keys)];
 }
 
+
+async function readJsonLimited(req: Request, maxBytes: number): Promise<unknown> {
+  const reader = req.body?.getReader();
+  if (!reader) throw new Error("INVALID_BODY");
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        await reader.cancel();
+        throw new Error("PAYLOAD_TOO_LARGE");
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+}
+
 Deno.serve(async (req: Request) => {
   if (req.headers.get("Origin") !== ALLOWED_ORIGIN) return json({ error: "許可されていない接続元です。" }, 403);
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
@@ -51,7 +80,15 @@ Deno.serve(async (req: Request) => {
 
     const contentLength = Number(req.headers.get("content-length") || "0");
     if (contentLength > 16384) return json({ error: "送信内容が大きすぎます。" }, 413);
-    const body = await req.json();
+    let body: unknown;
+    try {
+      body = await readJsonLimited(req, 16384);
+    } catch (error) {
+      if (error instanceof Error && error.message === "PAYLOAD_TOO_LARGE") {
+        return json({ error: "送信内容が大きすぎます。" }, 413);
+      }
+      return json({ error: "入力内容が正しくありません。" }, 400);
+    }
     if (!body || typeof body !== "object" || Array.isArray(body)) return json({ error: "入力内容が正しくありません。" }, 400);
 
     const displayName = body.displayName == null ? "" : typeof body.displayName === "string" ? body.displayName.trim() : null;
