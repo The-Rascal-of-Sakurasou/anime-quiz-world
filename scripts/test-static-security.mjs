@@ -245,6 +245,12 @@ assert.match(adminEdge, /userClient\.auth\.getUser\(token\)/, "Admin Edge Functi
 assert.match(adminEdge, /userClient\.rpc\("is_site_owner"\)/, "Admin Edge Function must check site-owner authorization");
 assert.match(adminEdge, /getAuthenticatorAssuranceLevel\(token\)/, "Admin Edge Function must verify the supplied JWT MFA assurance level");
 assert.match(adminEdge, /assurance\?\.currentLevel !== "aal2"/, "Admin Edge Function must reject sessions without aal2");
+const adminMfaCheck = adminEdge.indexOf("getAuthenticatorAssuranceLevel(token)");
+const adminOwnerCheck = adminEdge.indexOf('userClient.rpc("is_site_owner")');
+const adminServiceClient = adminEdge.indexOf("const admin = createClient(url, serviceKey");
+assert.ok(adminMfaCheck >= 0 && adminOwnerCheck > adminMfaCheck && adminServiceClient > adminOwnerCheck, "MFA and owner checks must both complete before creating the service-role client");
+assert.doesNotMatch(adminEdge, /getAuthenticatorAssuranceLevel\(\)/, "Server-side MFA validation must not rely on a browser session that is not stored in the Edge Function");
+
 assert.match(source.get("admin.html"), /id="mfaForm"/, "Admin UI must retain the MFA challenge form");
 assert.match(source.get("admin.html"), /async function prepareMfa\(/, "Admin UI must prepare a verified MFA factor");
 assert.match(source.get("admin.html"), /const mfaReady=await prepareMfa\(\)/, "Admin UI must complete MFA before exposing the admin console");
