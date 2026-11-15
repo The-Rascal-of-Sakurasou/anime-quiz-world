@@ -52,6 +52,8 @@ on:
       - ".github/workflows/japanese-synopsis-audit.yml"
       - ".github/workflows/sync-anime-catalog.yml"
       - "supabase/migrations/**"
+      - "supabase/functions/aqw-submit-question/**"
+      - "scripts/test-qa-submit-security.mjs"
       - ".github/workflows/aqw-static-security.yml"
   workflow_dispatch:
 
