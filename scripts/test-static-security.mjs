@@ -230,7 +230,9 @@ assert.match(admin, /input\.type=reveal\?'text':'password'/, "Admin password vis
 assert.match(admin, /aria-pressed/, "Admin password visibility toggle must expose its state accessibly");
 assert.match(admin, /adminAction\('get_dashboard'\)/, "Admin authorization must be checked through the protected Edge Function");
 assert.match(admin, /client\.functions\.invoke\('aqw-admin-control'/, "Admin operations must use the protected Edge Function");
-assert.doesNotMatch(admin, /client\.from\(|client\.rpc\(|client\.storage/, "Admin console must not access privileged tables or storage directly");
+assert.doesNotMatch(admin, /client\.from\(|client\.storage/, "Admin console must not access privileged tables or storage directly");
+assert.match(admin, /client\.rpc\([\x27"]is_site_owner[\x27"]\)/, "The only direct RPC must be the non-privileged site-owner check");
+assert.equal((admin.match(/client\.rpc\(/g) || []).length, 1, "Admin console must not call other RPCs directly");
 assert.match(admin, /サーバー側で認証・権限確認・入力検証/, "Admin footer must describe the server-side security boundary");
 for (const id of ["qaCount", "reloadQuestions", "qaQuestions"]) assert.ok(admin.includes('id="' + id + '"'), "Q&A admin UI missing: " + id);
 assert.match(admin, /adminAction\('list_qa_questions'\)/, "Q&A list must use the protected admin Edge Function");
