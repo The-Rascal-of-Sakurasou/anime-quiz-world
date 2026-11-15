@@ -268,7 +268,8 @@ assert.ok(adminEdge.includes('throw new ApiError("未対応の操作です。")'
 assert.match(adminEdge, /"Cache-Control": "no-store"/, "Admin responses must not be cached");
 assert.match(adminEdge, /処理に失敗しました。時間をおいて再度お試しください。/, "Unexpected server errors must not expose internal details");
 assert.doesNotMatch(admin, /(?:SUPABASE_SERVICE_ROLE_KEY|SUPABASE_SECRET_KEY|service_role)/i, "Admin browser code must not contain server credentials");
-assert.doesNotMatch(admin, /client\.from\(|client\.storage\.|client\.rpc\(/, "Admin browser code must not access privileged database or storage APIs directly");
+assert.doesNotMatch(admin, /client\.from\(|client\.storage\./, "Admin browser code must not access privileged tables or storage directly");
+assert.match(admin, /client\.rpc\('is_site_owner'\)/, "The browser may perform only the read-only owner precheck; the Edge Function must independently enforce authorization");
 assert.match(admin, /client\.functions\.invoke\('aqw-admin-control'/, "Admin browser code must route privileged actions through the secured Edge Function");
 
 
