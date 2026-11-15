@@ -37,7 +37,10 @@ Deno.serve(async (req: Request) => {
   try {
     const url = Deno.env.get("SUPABASE_URL");
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!url || !serviceKey) throw new Error("Server configuration unavailable");
+    const hmacSecret = Deno.env.get("AQW_QA_RATE_LIMIT_HMAC_SECRET");
+    if (!url || !serviceKey || !hmacSecret || hmacSecret.length < 32) {
+      throw new Error("Server configuration unavailable");
+    }
 
     const ip = req.headers.get("cf-connecting-ip")?.trim();
     if (!ip || ip.length > 64) {
@@ -72,7 +75,7 @@ Deno.serve(async (req: Request) => {
     const admin = createClient(url, serviceKey, {
       auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
     });
-    const ipHash = await hashClientIp(ip, serviceKey);
+    const ipHash = await hashClientIp(ip, hmacSecret);
     const { data: allowed, error: limitError } = await admin
       .rpc("consume_qa_submission_rate_limit", { p_ip_hash: ipHash });
     if (limitError) {
