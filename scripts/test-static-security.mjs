@@ -267,6 +267,10 @@ for (const action of ["get_dashboard", "list_reports", "get_report_context", "up
 assert.ok(adminEdge.includes('throw new ApiError("未対応の操作です。")'), "Unknown admin actions must be rejected");
 assert.match(adminEdge, /"Cache-Control": "no-store"/, "Admin responses must not be cached");
 assert.match(adminEdge, /処理に失敗しました。時間をおいて再度お試しください。/, "Unexpected server errors must not expose internal details");
+assert.doesNotMatch(admin, /(?:SUPABASE_SERVICE_ROLE_KEY|SUPABASE_SECRET_KEY|service_role)/i, "Admin browser code must not contain server credentials");
+assert.doesNotMatch(admin, /client\\.from\\(|client\\.storage\\.|client\\.rpc\\(/, "Admin browser code must not access privileged database or storage APIs directly");
+assert.match(admin, /client\\.functions\\.invoke\\('aqw-admin-control'/, "Admin browser code must route privileged actions through the secured Edge Function");
+
 
 
 assert.match(source.get("admin.html"), /id="mfaForm"/, "Admin UI must retain the MFA challenge form");
