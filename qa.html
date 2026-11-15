@@ -66,7 +66,6 @@ small{font-size:.84rem;color:var(--muted);font-weight:400}
 </main>
 <footer class="site-footer"><span>© Anime Quiz World / 非公式ファンサイト</span><nav aria-label="フッターナビゲーション"><a href="./index.html">ホーム</a><a href="./guide.html">遊び方・お知らせ</a><a href="./terms.html">利用規約</a><a href="./privacy.html">プライバシーポリシー</a><a href="./admin.html">管理者ログイン</a><a href="https://x.com/anime_love_p" target="_blank" rel="noopener noreferrer">連絡先：@anime_love_p（X）</a></nav></footer>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function () {
   'use strict';
@@ -85,7 +84,7 @@ small{font-size:.84rem;color:var(--muted);font-weight:400}
     var displayName = document.getElementById('displayName').value.trim();
     var title = document.getElementById('questionTitle').value.trim();
     var body = document.getElementById('questionBody').value.trim();
-    if (title.length < 1 || title.length > 100 || body.length < 5 || body.length > 3000) {
+    if (title.length < 1 || title.length > 100 || body.length < 5 || body.length > 3000 || displayName.length > 40) {
       showStatus('入力内容を確認してください。', 'error');
       return;
     }
@@ -98,24 +97,25 @@ small{font-size:.84rem;color:var(--muted);font-weight:400}
     button.disabled = true;
     showStatus('送信しています。', '');
     try {
-      if (!window.supabase || !window.supabase.createClient) {
-        throw new Error('Supabase SDK unavailable');
+      var response = await fetch(supabaseUrl + '/functions/v1/aqw-submit-question', {
+        method: 'POST',
+        headers: { 'apikey': supabaseKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ displayName: displayName, title: title, body: body })
+      });
+      var result = await response.json().catch(function () { return {}; });
+      if (response.status === 429) {
+        showStatus(result.error || '送信回数の上限に達しました。しばらくしてから再度お試しください。', 'error');
+        return;
       }
-      var client = window.supabase.createClient(supabaseUrl, supabaseKey, {
-        auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
-      });
-      var result = await client.from('qa_questions').insert({
-        display_name: displayName,
-        title: title,
-        body: body
-      });
-      if (result.error) throw result.error;
+      if (!response.ok || result.success !== true) {
+        throw new Error(result.error || '送信できませんでした。時間をおいて再度お試しください。');
+      }
       try { sessionStorage.setItem('aqw-question-last-submit', String(Date.now())); } catch (error) {}
       form.reset();
       showStatus('質問を送信しました。内容を確認のうえ、必要に応じて対応します。', 'success');
     } catch (error) {
       console.error('AQW Q&A submission failed:', error);
-      showStatus('送信できませんでした。通信状態を確認して、時間をおいて再度お試しください。', 'error');
+      showStatus(error && error.message ? error.message : '送信できませんでした。通信状態を確認して、時間をおいて再度お試しください。', 'error');
     } finally {
       button.disabled = false;
     }
