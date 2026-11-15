@@ -19,7 +19,6 @@ on:
       - "scripts/test-static-security.mjs"
       - "scripts/test-anime-search-deduplication.mjs"
       - "scripts/test-official-site-links.mjs"
-      - "scripts/test-anime-search-deduplication.mjs"
       - "scripts/sync-anime-catalog.mjs"
       - "scripts/audit-anime-image-urls.mjs"
       - "scripts/detect-title-image-text.py"
@@ -36,6 +35,7 @@ on:
       - ".github/workflows/aqw-static-security.yml"
   pull_request:
     paths:
+      - "qa.html"
       - "multiplayer.html"
       - "index.html"
       - "data/anime-catalog.json"
