@@ -100,7 +100,7 @@ small{font-size:.84rem;color:var(--muted);font-weight:400}
       var response = await fetch(supabaseUrl + '/functions/v1/aqw-submit-question', {
         method: 'POST',
         headers: { 'apikey': supabaseKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ displayName: displayName, title: title, body: body })
+        body: JSON.stringify({ displayName: displayName, title: title, body: body, website: document.getElementById('website').value })
       });
       var result = await response.json().catch(function () { return {}; });
       if (response.status === 429) {
