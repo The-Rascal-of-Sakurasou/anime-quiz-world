@@ -8,10 +8,15 @@ const privacy = fs.readFileSync("privacy.html", "utf8");
 const config = fs.readFileSync("supabase/config.toml", "utf8");
 
 assert.match(page, /functions\.invoke\(['"]aqw-qa-submit['"]/);
+assert.match(page, /website:\s*document\.getElementById\(['"]website['"]\)\.value/);
 assert.doesNotMatch(page, /\.from\(['"]qa_questions['"]\)\.insert/);
 assert.match(fn, /cf-connecting-ip/);
 assert.match(fn, /new TextEncoder\(\)\.encode\(rawBody\)\.byteLength > 8192/);
 assert.match(fn, /name:\s*"HMAC",\s*hash:\s*"SHA-256"/);
+assert.match(fn, /AQW_QA_RATE_LIMIT_HMAC_SECRET/);
+assert.match(fn, /hmacSecret\.length < 32/);
+assert.match(fn, /hashClientIp\(ip, hmacSecret\)/);
+assert.doesNotMatch(fn, /hashClientIp\(ip, serviceKey\)/);
 assert.match(fn, /consume_qa_submission_rate_limit/);
 assert.match(fn, /admin\.from\("qa_questions"\)\.insert/);
 assert.match(fn, /429/);
