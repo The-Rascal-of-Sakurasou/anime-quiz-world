@@ -3074,12 +3074,6 @@ async function resetOnlineLeaderboardRecords(){
  finally{if(button)button.disabled=false}
 }
 
-async function saveRushBoardImage(){
- let url='';
- try{const file=await createRushBoardImage();url=URL.createObjectURL(file);const a=document.createElement('a');a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove();message($s('aqwRushBoardStatus'),aqwRushT('savedImage'))}
- catch(e){message($s('aqwRushBoardStatus'),aqwRushT('shareError')+errText(e))}
- finally{if(url)setTimeout(()=>URL.revokeObjectURL(url),10000)}
-}
 
 function applyPlayerLeaderboardLanguage(){
  const map={aqwPlayerBoardTitle:'title',aqwPlayerBoardDescription:'description',aqwPlayerBoardSortLabel:'sort',aqwPlayerBoardRefresh:'refresh',aqwPlayerRankHeading:'rank',aqwPlayerNameHeading:'player',aqwPlayerMetricHeading:'metric',aqwPlayerDetailHeading:'detail'};
