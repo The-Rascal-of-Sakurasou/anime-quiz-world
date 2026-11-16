@@ -2977,12 +2977,32 @@ async function createRushBoardImage(){
  
  return await new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(new File([blob],'anime-quiz-world-speed-rush-ranking.png',{type:'image/png'})):reject(new Error('PNG export failed')),'image/png'));
 }
-async function shareRushBoardImage(){
+function downloadImageFile(file,statusElement){
+ const url=URL.createObjectURL(file);
  try{
-  const file=await createRushBoardImage();
-  if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({title:'Anime Quiz World · Speed Rush',files:[file]});message($s('aqwRushBoardStatus'),aqwRushT('shareOpened'));return}
-  const url=URL.createObjectURL(file),a=document.createElement('a');a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);message($s('aqwRushBoardStatus'),aqwRushT('savedImage'));
- }catch(e){message($s('aqwRushBoardStatus'),aqwRushT('shareError')+errText(e))}
+  const link=document.createElement('a');link.href=url;link.download=file.name;
+  document.body.appendChild(link);link.click();link.remove();
+  message(statusElement,aqwRushT('savedImage'));
+ }finally{setTimeout(()=>URL.revokeObjectURL(url),10000)}
+}
+async function shareImageFile(file,title,statusElement){
+ if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+  await navigator.share({title,files:[file]});
+  message(statusElement,aqwRushT('shareOpened'));
+  return;
+ }
+ downloadImageFile(file,statusElement);
+}
+
+async function shareRushBoardImage(){
+ const status=$s('aqwRushBoardStatus');
+ try{await shareImageFile(await createRushBoardImage(),'Anime Quiz World · Speed Rush',status)}
+ catch(error){message(status,aqwRushT('shareError')+errText(error))}
+}
+async function saveRushBoardImage(){
+ const status=$s('aqwRushBoardStatus');
+ try{downloadImageFile(await createRushBoardImage(),status)}
+ catch(error){message(status,aqwRushT('shareError')+errText(error))}
 }
 
 async function createPlayerBoardImage(){
@@ -3011,15 +3031,16 @@ async function createPlayerBoardImage(){
  return await new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(new File([blob],'anime-quiz-world-player-ranking.png',{type:'image/png'})):reject(new Error('PNG export failed')),'image/png'));
 }
 async function sharePlayerBoardImage(){
- try{const file=await createPlayerBoardImage();if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({title:'Anime Quiz World · Player Ranking',files:[file]});message($s('aqwPlayerBoardStatus'),aqwRushT('shareOpened'));return}
- const url=URL.createObjectURL(file),a=document.createElement('a');a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);message($s('aqwPlayerBoardStatus'),aqwRushT('savedImage'));
- }catch(e){message($s('aqwPlayerBoardStatus'),aqwRushT('shareError')+errText(e))}
+ const status=$s('aqwPlayerBoardStatus');
+ try{await shareImageFile(await createPlayerBoardImage(),'Anime Quiz World · Player Ranking',status)}
+ catch(error){message(status,aqwRushT('shareError')+errText(error))}
 }
 async function savePlayerBoardImage(){
- let url='';try{const file=await createPlayerBoardImage();url=URL.createObjectURL(file);const a=document.createElement('a');a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove();message($s('aqwPlayerBoardStatus'),aqwRushT('savedImage'))}
- catch(e){message($s('aqwPlayerBoardStatus'),aqwRushT('shareError')+errText(e))}
- finally{if(url)setTimeout(()=>URL.revokeObjectURL(url),10000)}
+ const status=$s('aqwPlayerBoardStatus');
+ try{downloadImageFile(await createPlayerBoardImage(),status)}
+ catch(error){message(status,aqwRushT('shareError')+errText(error))}
 }
+
 async function refreshLeaderboardRegistration(){
  if(!currentUser){message($s('aqwLeaderboardAccountStatus'),'ログインするとランキング登録を管理できます。');return}
  const {data,error}=await sb.from('profiles').select('leaderboard_enabled').eq('id',currentUser.id).maybeSingle();
