@@ -680,12 +680,6 @@ body.quiz-preparing #quizStatus:before{content:"";display:inline-block;width:22p
  <div class="aqw-rush-board-scroll"><table><thead><tr><th id="aqwRushRankHeading">順位</th><th id="aqwRushPlayerHeading">プレイヤー</th><th id="aqwRushScoreHeading">正解数</th><th id="aqwRushTimeHeading">タイム</th></tr></thead><tbody id="aqwRushBoardRows"></tbody></table></div>
  <p class="muted aqw-rush-board-status" id="aqwMyRushRank" role="status" aria-live="polite"></p>
 </section>
-<section id="aqwPlayerLeaderboard" class="social-box aqw-rush-board" aria-labelledby="aqwPlayerBoardTitle">
- <div class="aqw-rush-board-head"><h3 id="aqwPlayerBoardTitle">プレイヤー総合ランキング</h3><div class="aqw-rush-board-actions"><label class="aqw-player-sort-label" for="aqwPlayerBoardPeriod"><span id="aqwPlayerBoardPeriodLabel">期間</span><select id="aqwPlayerBoardPeriod"><option value="all">全期間</option><option value="day">今日</option><option value="week">今週</option><option value="month">今月</option></select></label><label class="aqw-player-sort-label" for="aqwPlayerBoardSort"><span id="aqwPlayerBoardSortLabel">集計方法</span><select id="aqwPlayerBoardSort"><option value="xp">総合XP</option><option value="runs">プレイ回数</option><option value="accuracy">正答率（10問以上）</option></select></label><button id="aqwPlayerBoardRefresh" type="button">更新</button><button id="aqwPlayerBoardShare" type="button">ランキングを共有</button><button id="aqwPlayerBoardSave" type="button">画像を保存</button></div></div>
- <p class="muted aqw-rush-board-desc" id="aqwPlayerBoardDescription">クイズの獲得XP・プレイ回数・正答率でプレイヤーを比較できます。ランキングはログイン中のプレイから集計されます。</p>
- <p class="aqw-rush-board-status" id="aqwPlayerBoardStatus" role="status" aria-live="polite">ランキングを読み込んでいます…</p>
- <div class="aqw-rush-board-scroll"><table><thead><tr><th id="aqwPlayerRankHeading">順位</th><th id="aqwPlayerNameHeading">プレイヤー</th><th id="aqwPlayerMetricHeading">総合XP</th><th id="aqwPlayerDetailHeading">プレイ回数・正答数</th></tr></thead><tbody id="aqwPlayerBoardRows"></tbody></table></div>
- <p class="muted aqw-rush-board-status" id="aqwMyPlayerRank" role="status" aria-live="polite"></p>
 </section>
 </section>
 <section id="social" class="card hidden">
@@ -2840,7 +2834,7 @@ mainNavigation?.addEventListener('click',e=>{
  if(tab==='social'||tab==='ranking'){
   window.aqwEnsureSupabaseFeatures?.().then(()=>{
    if(tab==='social')return window.aqwOpenSocialFeatures?.();
-   if(tab==='ranking'){loadRushLeaderboard();loadPlayerLeaderboard();refreshLeaderboardRegistration()}
+   if(tab==='ranking'){loadRushLeaderboard();refreshLeaderboardRegistration()}
   }).catch(error=>console.warn('AQW services are unavailable:',error));
  }
 });
@@ -2959,24 +2953,11 @@ aqwRushText.en.noPeriodRank='No record in this period yet.';aqwRushText.ja.noPer
 const aqwPeriodLabels={ja:{label:'期間',all:'全期間',day:'今日',week:'今週',month:'今月'},en:{label:'Period',all:'All time',day:'Today',week:'This week',month:'This month'},ko:{label:'기간',all:'전체 기간',day:'오늘',week:'이번 주',month:'이번 달'},zh:{label:'期间',all:'全部时间',day:'今天',week:'本周',month:'本月'},es:{label:'Periodo',all:'Todo',day:'Hoy',week:'Esta semana',month:'Este mes'},fr:{label:'Période',all:'Tout',day:'Aujourd’hui',week:'Cette semaine',month:'Ce mois-ci'},pt:{label:'Período',all:'Todo',day:'Hoje',week:'Esta semana',month:'Este mês'},de:{label:'Zeitraum',all:'Gesamt',day:'Heute',week:'Diese Woche',month:'Dieser Monat'}};
 const aqwPeriodT=key=>(aqwPeriodLabels[lang]||aqwPeriodLabels.en)[key]||aqwPeriodLabels.en[key]||key;
 function applyPeriodLabels(){
- for(const [id,prefix] of [['aqwRushBoardPeriod','aqwRushBoardPeriodLabel'],['aqwPlayerBoardPeriod','aqwPlayerBoardPeriodLabel']]){
+ for(const [id,prefix] of [['aqwRushBoardPeriod','aqwRushBoardPeriodLabel']]){
   const label=$s(prefix);if(label)label.textContent=aqwPeriodT('label');
   const select=$s(id);if(select)for(const value of ['all','day','week','month']){const option=select.querySelector('option[value="'+value+'"]');if(option)option.textContent=aqwPeriodT(value)}
  }
 }
-const aqwPlayerBoardText={
- ja:{title:'プレイヤー総合ランキング',description:'獲得XP・プレイ回数・正答率を期間別に比較できます。期間別集計はログイン中にサーバーへ保存されたプレイ記録を使用し、期間の区切りは日本時間です。',sort:'集計方法',xp:'総合XP',runs:'プレイ回数',accuracy:'正答率（10問以上）',refresh:'更新',loading:'ランキングを読み込んでいます…',error:'ランキングを読み込めませんでした：',rank:'順位',player:'プレイヤー',metric:'記録',detail:'プレイ回数・正答数',plays:'プレイ',correct:'正解',needLogin:'プレイ記録をランキングに反映するにはAQWアカウントでログインしてください。',saved:'プレイ記録をランキングに反映しました。',duplicate:'このプレイ記録は登録済みです。',submitError:'プレイ記録を登録できませんでした：',unverified:'記録は自己申告制です。公式認証済みの競技記録ではありません。',minAccuracy:'正答率ランキングは累計10問以上のプレイヤーが対象です。',myRank:'あなたの順位：',rankSuffix:'位（同点時は同順位）',loginRank:'ログインすると自分の順位を確認できます。',rankUnavailable:'自分の順位を取得できませんでした：'},
- en:{title:'Player Leaderboard',description:'Compare players by XP, quiz plays, and accuracy for the selected period. Period boundaries use Japan Standard Time; only server-recorded runs completed while signed in are counted.',sort:'Sort by',xp:'Total XP',runs:'Quiz plays',accuracy:'Accuracy (10+ questions)',refresh:'Refresh',loading:'Loading player rankings…',error:'Could not load player rankings: ',rank:'Rank',player:'Player',metric:'Record',detail:'Plays · Correct',plays:'Plays',correct:'Correct',needLogin:'Sign in to add this quiz to the player leaderboard.',saved:'Your quiz result was added to the leaderboard.',duplicate:'This quiz result was already submitted.',submitError:'Could not submit quiz result: ',unverified:'Self-reported records; not officially verified.',minAccuracy:'Accuracy rankings include players with at least 10 questions answered.',myRank:'Your rank: ',rankSuffix:' (ties share a rank)',loginRank:'Sign in to view your personal rank.',rankUnavailable:'Could not load your personal rank: '},
- ko:{title:'플레이어 종합 랭킹',description:'총 XP, 퀴즈 플레이 횟수, 정답률로 플레이어를 비교합니다. 로그인 상태에서 완료한 퀴즈만 집계됩니다.',sort:'정렬 기준',xp:'총 XP',runs:'플레이 횟수',accuracy:'정답률(10문제 이상)',refresh:'새로고침',loading:'랭킹을 불러오는 중…',error:'랭킹을 불러오지 못했습니다: ',rank:'순위',player:'플레이어',metric:'기록',detail:'플레이 · 정답',plays:'플레이',correct:'정답',needLogin:'랭킹에 기록하려면 로그인하세요.',saved:'퀴즈 기록을 랭킹에 반영했습니다.',duplicate:'이미 등록된 플레이 기록입니다.',submitError:'퀴즈 기록을 제출하지 못했습니다: ',unverified:'자기 신고 기록이며 공식 인증되지 않았습니다.',minAccuracy:'정답률 랭킹은 누적 10문제 이상인 플레이어만 포함합니다.'},
- zh:{title:'玩家综合排行榜',description:'按总经验值、游戏次数和正确率比较玩家。仅统计登录状态下完成的答题。',sort:'排序方式',xp:'总经验值',runs:'游戏次数',accuracy:'正确率（至少10题）',refresh:'刷新',loading:'正在加载排行榜…',error:'无法加载排行榜：',rank:'排名',player:'玩家',metric:'记录',detail:'次数 · 正确数',plays:'次数',correct:'正确',needLogin:'登录后才能将本次答题计入排行榜。',saved:'答题记录已计入排行榜。',duplicate:'这条答题记录已经提交过。',submitError:'无法提交答题记录：',unverified:'记录由玩家自行提交，未经官方验证。',minAccuracy:'正确率榜仅包含累计答题至少10题的玩家。'},
- es:{title:'Clasificación general de jugadores',description:'Compara a los jugadores por XP total, partidas y precisión. Solo cuentan las partidas completadas con la sesión iniciada.',sort:'Ordenar por',xp:'XP total',runs:'Partidas',accuracy:'Precisión (10+ preguntas)',refresh:'Actualizar',loading:'Cargando clasificación…',error:'No se pudo cargar la clasificación: ',rank:'Puesto',player:'Jugador',metric:'Registro',detail:'Partidas · Aciertos',plays:'Partidas',correct:'Aciertos',needLogin:'Inicia sesión para añadir esta partida a la clasificación.',saved:'Tu resultado se añadió a la clasificación.',duplicate:'Este resultado ya se había enviado.',submitError:'No se pudo enviar el resultado: ',unverified:'Registros autodeclarados; sin verificación oficial.',minAccuracy:'La clasificación de precisión requiere al menos 10 preguntas respondidas.'},
- fr:{title:'Classement général des joueurs',description:'Comparez les joueurs selon leur XP, leurs parties et leur précision. Seules les parties terminées avec une session ouverte sont comptabilisées.',sort:'Trier par',xp:'XP total',runs:'Parties',accuracy:'Précision (10+ questions)',refresh:'Actualiser',loading:'Chargement du classement…',error:'Impossible de charger le classement : ',rank:'Rang',player:'Joueur',metric:'Résultat',detail:'Parties · Réponses correctes',plays:'Parties',correct:'Correctes',needLogin:'Connectez-vous pour ajouter ce quiz au classement.',saved:'Votre résultat a été ajouté au classement.',duplicate:'Ce résultat a déjà été envoyé.',submitError:'Impossible d’envoyer le résultat : ',unverified:'Résultats déclaratifs, non vérifiés officiellement.',minAccuracy:'Le classement de précision inclut les joueurs ayant répondu à au moins 10 questions.'},
- pt:{title:'Ranking geral de jogadores',description:'Compare jogadores por XP total, partidas e precisão. Apenas partidas concluídas enquanto conectado são contabilizadas.',sort:'Ordenar por',xp:'XP total',runs:'Partidas',accuracy:'Precisão (10+ perguntas)',refresh:'Atualizar',loading:'Carregando ranking…',error:'Não foi possível carregar o ranking: ',rank:'Posição',player:'Jogador',metric:'Registro',detail:'Partidas · Acertos',plays:'Partidas',correct:'Acertos',needLogin:'Entre para adicionar esta partida ao ranking.',saved:'Seu resultado foi adicionado ao ranking.',duplicate:'Este resultado já foi enviado.',submitError:'Não foi possível enviar o resultado: ',unverified:'Registros autodeclarados, sem verificação oficial.',minAccuracy:'O ranking de precisão inclui jogadores com pelo menos 10 perguntas respondidas.'},
- de:{title:'Gesamt-Rangliste der Spieler',description:'Vergleiche Spieler nach XP, Quizrunden und Trefferquote. Gezählt werden nur Quizze, die während einer Anmeldung abgeschlossen wurden.',sort:'Sortieren nach',xp:'Gesamt-XP',runs:'Quizrunden',accuracy:'Trefferquote (mind. 10 Fragen)',refresh:'Aktualisieren',loading:'Rangliste wird geladen…',error:'Rangliste konnte nicht geladen werden: ',rank:'Platz',player:'Spieler',metric:'Ergebnis',detail:'Runden · Richtig',plays:'Runden',correct:'Richtig',needLogin:'Melde dich an, um dieses Quiz zur Rangliste hinzuzufügen.',saved:'Dein Ergebnis wurde zur Rangliste hinzugefügt.',duplicate:'Dieses Ergebnis wurde bereits übermittelt.',submitError:'Ergebnis konnte nicht gesendet werden: ',unverified:'Selbst gemeldete Ergebnisse, nicht offiziell geprüft.',minAccuracy:'Die Trefferquoten-Rangliste umfasst Spieler mit mindestens 10 beantworteten Fragen.'}
-};
-const aqwPlayerT=key=>(aqwPlayerBoardText[lang]||aqwPlayerBoardText.en)[key]||aqwPlayerBoardText.en[key]||key;
-aqwPlayerBoardText.en.noPeriodRank='No record in this period yet.';aqwPlayerBoardText.ja.noPeriodRank='この期間の記録はまだありません。';
-let pendingPlayerRuns=[],playerLeaderboardCache=[],leaderboardProfiles=new Map();
 let pendingRushResults=[];
 function queuePendingRun(queue,result){
  if(!result||!result.runId)return;
@@ -3058,42 +3039,6 @@ async function saveRushBoardImage(){
  catch(error){message(status,aqwRushT('shareError')+errText(error))}
 }
 
-async function createPlayerBoardImage(){
- const period=$s('aqwPlayerBoardPeriod')?.value||'all',metric=$s('aqwPlayerBoardSort')?.value||'xp';
- const {data,error}=await sb.rpc('get_aqw_player_leaderboard',{p_period:period,p_metric:metric});
- if(error)throw error;if(!data?.length)throw new Error(aqwPlayerT('empty'));
- const canvas=document.createElement('canvas');canvas.width=1200;canvas.height=630;
- const ctx=canvas.getContext('2d');if(!ctx)throw new Error('Canvas unavailable');
- const bg=ctx.createLinearGradient(0,0,1200,630);bg.addColorStop(0,'#101a30');bg.addColorStop(1,'#263e67');ctx.fillStyle=bg;ctx.fillRect(0,0,1200,630);
- ctx.fillStyle='#8fb4ff';ctx.font='bold 22px Arial,sans-serif';ctx.fillText('ANIME QUIZ WORLD',70,64);
- ctx.fillStyle='#fff';ctx.font='bold 40px Arial,sans-serif';ctx.fillText('PLAYER RANKING',70,125);
- ctx.fillStyle='#c9d7ee';ctx.font='22px Arial,sans-serif';ctx.fillText(aqwPlayerT('title')+' · '+aqwPeriodT(period),70,164);
- const heads=[aqwPlayerT('rank'),aqwPlayerT('player'),aqwPlayerT('metric'),aqwPlayerT('detail')],xs=[85,220,820,1010];
- ctx.fillStyle='#9fb5d7';ctx.font='bold 20px Arial,sans-serif';heads.forEach((h,i)=>ctx.fillText(h,xs[i],220));
- const metricValue=x=>metric==='runs'?Number(x.total_runs||0):metric==='accuracy'?(Number(x.total_questions)?Number(x.total_correct)/Number(x.total_questions):0):Number(x.total_xp||0);
- const sorted=[...data].sort((a,b)=>metricValue(b)-metricValue(a));
- let previous=null,rank=0;
- sorted.slice(0,10).forEach((item,index)=>{const value=metricValue(item);if(value!==previous)rank=index+1;previous=value;const y=270+index*32;if(index<3){ctx.fillStyle=['#e6b83f','#aab6c5','#c18a61'][index];ctx.globalAlpha=.17;ctx.fillRect(65,y-25,1070,30);ctx.globalAlpha=1}
- ctx.fillStyle=index<3?['#f4d477','#d5deea','#e2b18b'][index]:'#fff';ctx.font='bold 20px Arial,sans-serif';ctx.fillText(String(rank),xs[0],y);
- let name=item.display_name||item.username||aqwPlayerT('player');if(name.length>26)name=name.slice(0,25)+'…';ctx.fillText(name,xs[1],y);
- const valueText=metric==='runs'?Number(item.total_runs||0).toLocaleString():metric==='accuracy'?Math.round(value*100)+'%':Number(item.total_xp||0).toLocaleString()+' XP';
- const detail=metric==='accuracy'?Number(item.total_correct||0)+' / '+Number(item.total_questions||0):Number(item.total_runs||0)+' '+aqwPlayerT('plays');
- ctx.fillText(valueText,xs[2],y);ctx.fillText(detail,xs[3],y);
- });
- ctx.fillStyle='#aebdd3';ctx.font='18px Arial,sans-serif';ctx.fillText(aqwPlayerT('unverified'),70,590);
- return await new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(new File([blob],'anime-quiz-world-player-ranking.png',{type:'image/png'})):reject(new Error('PNG export failed')),'image/png'));
-}
-async function sharePlayerBoardImage(){
- const status=$s('aqwPlayerBoardStatus');
- try{await shareImageFile(await createPlayerBoardImage(),'Anime Quiz World · Player Ranking',status)}
- catch(error){message(status,aqwRushT('shareError')+errText(error))}
-}
-async function savePlayerBoardImage(){
- const status=$s('aqwPlayerBoardStatus');
- try{downloadImageFile(await createPlayerBoardImage(),status)}
- catch(error){message(status,aqwRushT('shareError')+errText(error))}
-}
-
 async function refreshLeaderboardRegistration(){
  if(!currentUser){message($s('aqwLeaderboardAccountStatus'),'ログインするとランキング登録を管理できます。');return}
  const {data,error}=await sb.from('profiles').select('leaderboard_enabled').eq('id',currentUser.id).maybeSingle();
@@ -3111,93 +3056,23 @@ async function toggleLeaderboardRegistration(){
  if(!confirm(next?'ランキングに再登録しますか？':'ランキングへの掲載を停止します。保存済みの記録は削除されず、再登録すると再び表示されます。続行しますか？'))return;
  const {data:result,error}=await sb.rpc('set_aqw_leaderboard_enabled',{p_enabled:next});
  if(error){message($s('aqwLeaderboardAccountStatus'),'設定を変更できませんでした：'+errText(error));return}
- await refreshLeaderboardRegistration();await loadRushLeaderboard(true);await loadPlayerLeaderboard(true);
+ await refreshLeaderboardRegistration();await loadRushLeaderboard(true);
 }
 async function resetOnlineLeaderboardRecords(){
  if(!currentUser){message($s('aqwLeaderboardAccountStatus'),'実績のリセットにはログインが必要です。');return}
- if(!confirm('ログイン中の自分のサーバー上のランキング実績（総合XP・プレイ回数・正答数・スピードラッシュ記録と期間別履歴）だけを削除します。他のユーザーの記録や、このブラウザの作品データ・ローカル実績は削除されません。この操作は取り消せません。続行しますか？'))return;
+ if(!confirm('ログイン中の自分のサーバー上のランキング実績（スピードラッシュ記録と期間別履歴）だけを削除します。他のユーザーの記録や、このブラウザの作品データ・ローカル実績は削除されません。この操作は取り消せません。続行しますか？'))return;
  const button=$s('aqwResetOnlineRecords');if(button)button.disabled=true;
  message($s('aqwLeaderboardAccountStatus'),'自分のランキング実績を削除しています…');
  try{
   const {error}=await sb.rpc('reset_aqw_player_records');
   if(error)throw error;
-  await Promise.all([loadRushLeaderboard(),loadPlayerLeaderboard()]);
-  message($s('aqwLeaderboardAccountStatus'),'自分のランキング実績を削除し、ランキングを更新しました。他のユーザーの記録と作品データは保持されています。');
+  await loadRushLeaderboard();
+  message($s('aqwLeaderboardAccountStatus'),'自分のスピードラッシュ記録を削除し、ランキングを更新しました。他のユーザーの記録と作品データは保持されています。');
  }catch(error){message($s('aqwLeaderboardAccountStatus'),'実績をリセットできませんでした：'+errText(error))}
  finally{if(button)button.disabled=false}
 }
 
 
-function applyPlayerLeaderboardLanguage(){
- const map={aqwPlayerBoardTitle:'title',aqwPlayerBoardDescription:'description',aqwPlayerBoardSortLabel:'sort',aqwPlayerBoardRefresh:'refresh',aqwPlayerRankHeading:'rank',aqwPlayerNameHeading:'player',aqwPlayerMetricHeading:'metric',aqwPlayerDetailHeading:'detail'};
- for(const [id,key] of Object.entries(map)){const el=$s(id);if(el)el.textContent=aqwPlayerT(key)}
- const select=$s('aqwPlayerBoardSort');
- if(select){const values=['xp','runs','accuracy'];for(const value of values){const option=select.querySelector('option[value="'+value+'"]');if(option)option.textContent=aqwPlayerT(value)}}
-}
-async function loadMyPlayerRank(mode,period){
- const el=$s('aqwMyPlayerRank');if(!el)return;
- if(!currentUser){message(el,aqwPlayerT('loginRank'));return}
- const {data,error}=await sb.rpc('get_aqw_player_my_rank',{p_period:period,p_metric:mode});
- if(error){message(el,aqwPlayerT('rankUnavailable')+errText(error));return}
- if(data==null){message(el,mode==='accuracy'?aqwPlayerT('minAccuracy'):aqwPlayerT('noPeriodRank'));return}
- message(el,aqwPlayerT('myRank')+Number(data).toLocaleString()+aqwPlayerT('rankSuffix'));
-}
-function renderPlayerLeaderboard(){
- const rows=$s('aqwPlayerBoardRows'),statusEl=$s('aqwPlayerBoardStatus');if(!rows||!statusEl)return;
- const mode=$s('aqwPlayerBoardSort')?.value||'xp';
- let data=[...playerLeaderboardCache];
- if(mode==='accuracy')data=data.filter(x=>Number(x.total_questions)>=10);
- const metric=x=>mode==='runs'?Number(x.total_runs||0):mode==='accuracy'?(Number(x.total_questions)>0?Number(x.total_correct)/Number(x.total_questions):0):Number(x.total_xp||0);
- data.sort((a,b)=>metric(b)-metric(a)||(mode==='accuracy'?Number(b.total_questions)-Number(a.total_questions):Number(b.total_xp)-Number(a.total_xp))||Number(b.total_runs)-Number(a.total_runs));
- rows.replaceChildren();
- if(!data.length){message(statusEl,aqwPlayerT('empty'));return}
- message(statusEl,aqwPlayerT('unverified')+(mode==='accuracy'?' '+aqwPlayerT('minAccuracy'):''));
- let previousMetric=null,currentRank=0;
- data.slice(0,20).forEach((item,index)=>{
-  const currentMetric=metric(item);
-  if(currentMetric!==previousMetric)currentRank=index+1;
-  previousMetric=currentMetric;
-  const profile={username:item.username,display_name:item.display_name};
-  const trEl=document.createElement('tr');
-  if(currentUser?.id===item.user_id)trEl.classList.add('is-me');
-  if(currentRank<=3)trEl.classList.add('podium-'+currentRank);
-  const rank=document.createElement('td');rank.className='rank-cell'+(currentRank<=3?' podium-'+currentRank:'');rank.textContent=String(currentRank);
-  const player=document.createElement('td');player.className='aqw-player-cell';player.append(makeAvatarElement(leaderboardProfiles.get(item.user_id)?.avatar_path,profile?.display_name||profile?.username||aqwPlayerT('player')));const meta=document.createElement('span');meta.className='player-meta';
-  const name=document.createElement('span');name.className='player-name';name.textContent=profile?.display_name||profile?.username||aqwPlayerT('player');
-  const handle=document.createElement('span');handle.className='player-handle';handle.textContent='@'+(profile?.username||'user')+(currentUser?.id===item.user_id?' · '+aqwRushT('you'):'');meta.append(name,handle);player.append(meta);
-  const value=document.createElement('td');
-  const detail=document.createElement('td');
-  value.dataset.label=mode==='runs'?'プレイ回数':mode==='accuracy'?'正答率':'総合XP';
-  detail.dataset.label=mode==='runs'?'獲得XP':mode==='accuracy'?'正解数 / 出題数':'プレイ回数・正解数';
-  if(mode==='runs'){value.textContent=Number(item.total_runs||0).toLocaleString();detail.textContent=Number(item.total_xp||0).toLocaleString()+' XP'}
-  else if(mode==='accuracy'){const total=Number(item.total_questions||0),correct=Number(item.total_correct||0);value.textContent=(total?Math.round(correct/total*100):0)+'%';detail.textContent=correct.toLocaleString()+' / '+total.toLocaleString()}
-  else{value.textContent=Number(item.total_xp||0).toLocaleString()+' XP';detail.textContent=Number(item.total_runs||0).toLocaleString()+' '+aqwPlayerT('plays')+' · '+Number(item.total_correct||0).toLocaleString()+' '+aqwPlayerT('correct')}
-  trEl.append(rank,player,value,detail);rows.append(trEl);
- });
-}
-async function loadPlayerLeaderboardRemote(){
- if(!sb)return;
- const statusEl=$s('aqwPlayerBoardStatus'),rows=$s('aqwPlayerBoardRows'),mode=$s('aqwPlayerBoardSort')?.value||'xp',period=$s('aqwPlayerBoardPeriod')?.value||'all';
- message(statusEl,aqwPlayerT('loading'));rows.replaceChildren();
- const {data,error}=await sb.rpc('get_aqw_player_leaderboard',{p_period:period,p_metric:mode});
- if(error){playerLeaderboardCache=[];message(statusEl,aqwPlayerT('error')+errText(error));return}
- playerLeaderboardCache=data||[];const {data:avatarProfiles}=data.length?await sb.from('profiles').select('id,avatar_path').in('id',data.map(x=>x.user_id)):{data:[]};leaderboardProfiles=new Map((avatarProfiles||[]).map(x=>[x.id,x]));
- renderPlayerLeaderboard();
- await loadMyPlayerRank(mode,period);
-}
-let playerLeaderboardLoadedAt=0,playerLeaderboardLoading=null,playerLeaderboardLoadedKey='';
-async function loadPlayerLeaderboard(force=false){
- if(!sb)return;
- const key=($s('aqwPlayerBoardSort')?.value||'xp')+'|'+($s('aqwPlayerBoardPeriod')?.value||'all');
- if(playerLeaderboardLoading)return playerLeaderboardLoading;
- if(!force&&playerLeaderboardLoadedKey===key&&Date.now()-playerLeaderboardLoadedAt<30000){renderPlayerLeaderboard();return}
- playerLeaderboardLoading=loadPlayerLeaderboardRemote().then(()=>{playerLeaderboardLoadedAt=Date.now();playerLeaderboardLoadedKey=key}).finally(()=>{
-  playerLeaderboardLoading=null;
-  const latestKey=($s('aqwPlayerBoardSort')?.value||'xp')+'|'+($s('aqwPlayerBoardPeriod')?.value||'all');
-  if(latestKey!==playerLeaderboardLoadedKey)return loadPlayerLeaderboard(true);
- });
- return playerLeaderboardLoading;
-}
 async function loadQuestionDifficultyStats(){
  if(!sb)return;
  try{
@@ -3221,23 +3096,6 @@ async function loadMyDifficultyProfile(){
  }
 }
 window.aqwLoadPersonalDifficultyProfile=loadMyDifficultyProfile;
-async function submitPlayerRun(result){
- if(!result||!result.runId||!Number.isInteger(result.correctCount)||!Number.isInteger(result.questionCount)||![10,15].includes(result.xpMultiplier))return;
- const pendingRun={runId:result.runId,correctCount:result.correctCount,questionCount:result.questionCount,xpMultiplier:result.xpMultiplier,questionResults:Array.isArray(result.questionResults)?result.questionResults:[]};
- if(!currentUser){queuePendingRun(pendingPlayerRuns,pendingRun);message($s('aqwPlayerBoardStatus'),aqwPlayerT('needLogin'));return}
- try{
-  const {data,error}=await sb.rpc('submit_aqw_player_run',{p_run_id:result.runId,p_correct_count:result.correctCount,p_question_count:result.questionCount,p_xp_multiplier:result.xpMultiplier,p_question_results:pendingRun.questionResults});
-  if(error){queuePendingRun(pendingPlayerRuns,pendingRun);message($s('aqwPlayerBoardStatus'),aqwPlayerT('submitError')+errText(error));return}
-  removePendingRun(pendingPlayerRuns,result.runId);
-  message($s('aqwPlayerBoardStatus'),data?.duplicate?aqwPlayerT('duplicate'):aqwPlayerT('saved'));
-  await loadPlayerLeaderboard(true);
-  await loadQuestionDifficultyStats();
-  await loadMyDifficultyProfile();
- }catch(error){
-  queuePendingRun(pendingPlayerRuns,pendingRun);
-  message($s('aqwPlayerBoardStatus'),aqwPlayerT('submitError')+errText(error));
- }
-}
 async function loadMyRushRank(period){
  const el=$s('aqwMyRushRank');if(!el)return;
  if(!currentUser){message(el,aqwRushT('loginRank'));return}
@@ -3386,8 +3244,7 @@ async function refreshSession(session,{light=false}={}){
   await Promise.all([loadFriends(),updateNotificationCount()]);
   await loadMyDifficultyProfile();
   for(const run of [...pendingRushResults])await submitRushResult(run);
-  for(const run of [...pendingPlayerRuns])await submitPlayerRun(run);
- }catch(e){setStatus(rt('profileError')+errText(e))}
+   }catch(e){setStatus(rt('profileError')+errText(e))}
 }
 function avatarPublicUrl(path){if(!path)return '';if(/^https?:\/\//i.test(path))return path;return sb.storage.from('aqw-social').getPublicUrl(path).data.publicUrl}
 function makeAvatarElement(path,label='ユーザー'){
@@ -4007,9 +3864,9 @@ $s('aqwPasswordForm').addEventListener('submit',async e=>{e.preventDefault();con
 $s('aqwSignOut').addEventListener('click',async()=>{const {error}=await sb.auth.signOut();if(error)message(authMsg,errText(error));else message(authMsg,localJa()?'ログアウトしました。':'Signed out.')});
 sb.auth.onAuthStateChange((event,session)=>{if(event==='INITIAL_SESSION')return;setTimeout(()=>{refreshSession(session).then(()=>{if(event==='PASSWORD_RECOVERY'){message($s('aqwPasswordMessage'),localJa()?'新しいパスワードを設定してください。':'Set your new password below.');$s('aqwPasswordForm').scrollIntoView({behavior:'smooth',block:'center'});$s('aqwNewPassword').focus()}}).catch(error=>setStatus(errText(error)))},0)});
 await sb.auth.getSession().then(({data,error})=>{if(error)setStatus(errText(error));else refreshSession(data.session,{light:true})});
-$s('aqwProfileForm').addEventListener('submit',async e=>{e.preventDefault();if(!currentUser)return;const username=$s('aqwEditUsername').value.trim();if(!/^[A-Za-z0-9_]{3,24}$/.test(username)){message(authMsg,localJa()?'ユーザー名は半角英数字と _ の3〜24文字にしてください。':'Username must be 3–24 characters using letters, numbers, and underscores.');return}const button=$s('aqwProfileForm').querySelector('button[type=submit]');button.disabled=true;try{let avatarPath=currentProfile?.avatar_path||null;const file=$s('aqwAvatarFile').files?.[0];if(file){const newPath=await uploadAvatar(file);const oldPath=avatarPath;avatarPath=newPath;const {error}=await sb.from('profiles').update({username,display_name:$s('aqwEditDisplayName').value.trim(),bio:$s('aqwBio').value.trim(),avatar_path:avatarPath,updated_at:new Date().toISOString()}).eq('id',currentUser.id);if(error){await removeStoredAvatar(newPath);throw error}await removeStoredAvatar(oldPath)}else{const {error}=await sb.from('profiles').update({username,display_name:$s('aqwEditDisplayName').value.trim(),bio:$s('aqwBio').value.trim(),updated_at:new Date().toISOString()}).eq('id',currentUser.id);if(error)throw error}message(authMsg,rt('profileSave'));await refreshSession({user:currentUser});await Promise.all([loadRushLeaderboard(),loadPlayerLeaderboard()])}catch(error){message(authMsg,errText(error))}finally{button.disabled=false}});
+$s('aqwProfileForm').addEventListener('submit',async e=>{e.preventDefault();if(!currentUser)return;const username=$s('aqwEditUsername').value.trim();if(!/^[A-Za-z0-9_]{3,24}$/.test(username)){message(authMsg,localJa()?'ユーザー名は半角英数字と _ の3〜24文字にしてください。':'Username must be 3–24 characters using letters, numbers, and underscores.');return}const button=$s('aqwProfileForm').querySelector('button[type=submit]');button.disabled=true;try{let avatarPath=currentProfile?.avatar_path||null;const file=$s('aqwAvatarFile').files?.[0];if(file){const newPath=await uploadAvatar(file);const oldPath=avatarPath;avatarPath=newPath;const {error}=await sb.from('profiles').update({username,display_name:$s('aqwEditDisplayName').value.trim(),bio:$s('aqwBio').value.trim(),avatar_path:avatarPath,updated_at:new Date().toISOString()}).eq('id',currentUser.id);if(error){await removeStoredAvatar(newPath);throw error}await removeStoredAvatar(oldPath)}else{const {error}=await sb.from('profiles').update({username,display_name:$s('aqwEditDisplayName').value.trim(),bio:$s('aqwBio').value.trim(),updated_at:new Date().toISOString()}).eq('id',currentUser.id);if(error)throw error}message(authMsg,rt('profileSave'));await refreshSession({user:currentUser});await loadRushLeaderboard()}catch(error){message(authMsg,errText(error))}finally{button.disabled=false}});
 $s('aqwAvatarFile').addEventListener('change',()=>{const file=$s('aqwAvatarFile').files?.[0];if(!file){updateAvatarPreview(currentProfile?.avatar_path||null);return}if(file.size>5*1024*1024||!['image/jpeg','image/png','image/webp','image/gif'].includes(file.type)){message(authMsg,file.size>5*1024*1024?rt('imageTooLarge'):rt('imageType'));$s('aqwAvatarFile').value='';return}const image=$s('aqwAvatarPreviewImage');image.src=URL.createObjectURL(file);image.classList.remove('hidden');$s('aqwAvatarFallback').classList.add('hidden')});
-$s('aqwRemoveAvatar').addEventListener('click',async()=>{if(!currentUser||!currentProfile?.avatar_path)return;if(!confirm(localJa()?'プロフィールアイコンを削除しますか？':'Remove your profile picture?'))return;const path=currentProfile.avatar_path;const {error}=await sb.from('profiles').update({avatar_path:null,updated_at:new Date().toISOString()}).eq('id',currentUser.id);if(error){message(authMsg,errText(error));return}await removeStoredAvatar(path);currentProfile.avatar_path=null;$s('aqwAvatarFile').value='';updateAvatarPreview(null);message(authMsg,localJa()?'アイコンを削除しました。':'Profile picture removed.');await Promise.all([loadRushLeaderboard(),loadPlayerLeaderboard()])});
+$s('aqwRemoveAvatar').addEventListener('click',async()=>{if(!currentUser||!currentProfile?.avatar_path)return;if(!confirm(localJa()?'プロフィールアイコンを削除しますか？':'Remove your profile picture?'))return;const path=currentProfile.avatar_path;const {error}=await sb.from('profiles').update({avatar_path:null,updated_at:new Date().toISOString()}).eq('id',currentUser.id);if(error){message(authMsg,errText(error));return}await removeStoredAvatar(path);currentProfile.avatar_path=null;$s('aqwAvatarFile').value='';updateAvatarPreview(null);message(authMsg,localJa()?'アイコンを削除しました。':'Profile picture removed.');await loadRushLeaderboard()});
 $s('aqwPostForm').addEventListener('submit',e=>{e.preventDefault();doPost()});
 $s('aqwShareQuiz').addEventListener('click',()=>{let h=[];try{h=JSON.parse(safeStorage.getItem('aqw-history')||'[]')}catch{}const runs=safeStorage.getItem('aqw-total-runs')||'0',xp=safeStorage.getItem('aqw-xp')||'0',t=({ja:['AQWクイズ記録','プレイ回数：','経験値：','最近の記録：'],en:['AQW quiz record','Plays: ','XP: ','Recent records: '],ko:['AQW 퀴즈 기록','플레이 횟수: ','경험치: ','최근 기록: '],zh:['AQW 答题记录','游玩次数：','经验值：','最近记录：'],es:['Registro del cuestionario AQW','Partidas: ','Experiencia: ','Registros recientes: '],fr:['Résultat du quiz AQW','Parties jouées : ','Expérience : ','Résultats récents : '],pt:['Registro de quiz AQW','Partidas: ','Experiência: ','Registros recentes: '],de:['AQW-Quizrekord','Gespielte Quizze: ','Erfahrungspunkte: ','Letzte Ergebnisse: ']})[lang]||['AQW quiz record','Plays: ','XP: ','Recent records: '];$s('aqwPostBody').value=t[0]+'\n'+t[1]+runs+'\n'+t[2]+xp+'\n'+(h.length?t[3]+JSON.stringify(h.slice(-3)):'')+'\n#AQW';$s('aqwPostBody').focus()});
 $s('aqwRefreshFeed').addEventListener('click',loadFeed);
@@ -4025,21 +3882,15 @@ $s('aqwNotificationsButton').addEventListener('click',async()=>{$s('aqwNotificat
 $s('aqwEnableBrowserNotifications').addEventListener('click',enableBrowserNotifications);
 $s('aqwRushBoardRefresh').addEventListener('click',()=>loadRushLeaderboard(true));
 $s('aqwRushBoardPeriod').addEventListener('change',()=>loadRushLeaderboard(true));
-$s('aqwPlayerBoardRefresh').addEventListener('click',()=>loadPlayerLeaderboard(true));
-$s('aqwPlayerBoardSort').addEventListener('change',()=>loadPlayerLeaderboard(true));
-$s('aqwPlayerBoardPeriod').addEventListener('change',()=>loadPlayerLeaderboard(true));
 $s('aqwRushBoardShare').addEventListener('click',shareRushBoardImage);
 $s('aqwRushBoardSave').addEventListener('click',saveRushBoardImage);
-$s('aqwPlayerBoardShare').addEventListener('click',sharePlayerBoardImage);
-$s('aqwPlayerBoardSave').addEventListener('click',savePlayerBoardImage);
 $s('aqwResetOnlineRecords').addEventListener('click',resetOnlineLeaderboardRecords);
 $s('aqwToggleLeaderboardRegistration').addEventListener('click',toggleLeaderboardRegistration);
 
-document.getElementById('languageSelect')?.addEventListener('change',()=>{applyRushLeaderboardLanguage();applyPlayerLeaderboardLanguage();applyPeriodLabels();renderPlayerLeaderboard()});
-window.addEventListener('aqw:quiz-finished',event=>{
- const detail=event.detail;
- if(!detail||!detail.runId||!Number.isInteger(detail.correctCount)||!Number.isInteger(detail.questionCount)||![10,15].includes(detail.xpMultiplier))return;
- submitPlayerRun(detail);
+document.getElementById('languageSelect')?.addEventListener('change',()=>{applyRushLeaderboardLanguage();applyPeriodLabels();renderPlayerLeaderboard()});
+window.addEventListener('aqw:quiz-finished',()=>{
+ loadQuestionDifficultyStats();
+ loadMyDifficultyProfile();
 });
 window.addEventListener('aqw:rush-finished',event=>{
  const detail=event.detail;
