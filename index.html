@@ -653,7 +653,7 @@ body.quiz-preparing #quizStatus:before{content:"";display:inline-block;width:22p
 <header class="top"><div class="brand-area"><button type="button" class="brand-home" id="homeLogo" aria-label="AQW Home" title="AQW Home"><svg class="aqw-logo" viewBox="0 0 100 100" role="img" aria-label="AQW"><rect x="2" y="2" width="96" height="96" fill="#064675"/><text x="50" y="64" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="34" font-weight="800" font-style="italic" letter-spacing="-1" textLength="80" lengthAdjust="spacingAndGlyphs" fill="#fff">AQW</text></svg></button><div><div class="brand">Anime Quiz <span>World</span></div></div></div><div class="top-actions"><label class="language-picker" for="languageSelect"><span id="languageLabel">Language</span> <select id="languageSelect" aria-label="Display language" onchange="selectLanguage(this.value)"><option value="ja">日本語</option><option value="en">English</option></select></label></div></header>
 <section class="hero"><div class="tag">PLAY · DISCOVER · CHALLENGE</div><h1 id="heroTitle">あなたのアニメ知識、<br>試してみよう。</h1><p id="heroDescription">作品ビジュアルからタイトルを当てるクイズに挑戦。気になる作品を検索して、新しいアニメとの出会いも見つけよう。</p><div class="hero-actions"><a class="hero-recommend-link" href="./recommend.html">おすすめアニメ診断を始める <span aria-hidden="true">→</span></a><a class="hero-info-link" id="guideLink" href="./guide.html">遊び方・お知らせ</a><a class="hero-info-link" href="./multiplayer.html">オンライン対戦</a></div></section>
 <section class="featured-section" aria-label="今シーズンの日本アニメ"><div id="featuredRail" class="featured-rail" aria-live="polite"><p class="muted">今シーズンのアニメを読み込んでいます…</p></div></section>
-<nav class="tabs" aria-label="メインメニュー"><button class="tab active" data-tab="quiz" id="quizTab">クイズ</button><button class="tab" data-tab="search" id="searchTab">検索</button><button class="tab" data-tab="progressTab" id="progressTab">実績</button><button class="tab" data-tab="social" id="socialTab">AQW</button><button class="tab" data-tab="ranking" id="rankingTab">ランキング</button></nav>
+<nav class="tabs" id="mainNavigation" role="tablist" aria-label="メインメニュー"><button type="button" class="tab active" data-tab="quiz" id="quizTab" role="tab" aria-controls="quiz" aria-selected="true" tabindex="0">クイズ</button><button type="button" class="tab" data-tab="search" id="searchTab" role="tab" aria-controls="search" aria-selected="false" tabindex="-1">検索</button><button type="button" class="tab" data-tab="progressTab" id="progressTab" role="tab" aria-controls="progressPanel" aria-selected="false" tabindex="-1">実績</button><button type="button" class="tab" data-tab="social" id="socialTab" role="tab" aria-controls="social" aria-selected="false" tabindex="-1">AQW</button><button type="button" class="tab" data-tab="ranking" id="rankingTab" role="tab" aria-controls="ranking" aria-selected="false" tabindex="-1">ランキング</button></nav>
 <section id="quiz" class="card" tabindex="-1"><div class="row" id="quizHeader"><div><div class="tag">ANIME TITLE QUIZ</div><h2 id="quizHeading">この作品のタイトルは？</h2></div><div><strong id="progress">準備中</strong><div class="muted" id="score">スコア 0</div></div></div><div id="quizStatus" class="status" role="status" aria-live="polite">作品データを読み込んでいます…</div><div id="animePoolProgress" class="muted" aria-live="polite">作品データの取得状況を表示します。</div><div class="setup-controls row" id="setupControls"><label for="playMode"><span id="playModeLabel">プレイ形式</span><select id="playMode"><option value="normal">通常クイズ</option><option value="rush">スピードラッシュ（10問・5秒）</option></select></label><label for="modeSelect"><span id="modeLabel">出題内容</span><select id="modeSelect">
 <option value="mixed" selected>ランダム出題</option>
 <optgroup label="作品を当てる">
@@ -2764,13 +2764,22 @@ function goHome(){
  window.scrollTo({top:0,behavior:'smooth'});
 }
 document.getElementById('homeLogo')?.addEventListener('click',goHome);
-// Bind primary navigation before asynchronous startup so one startup error cannot disable the other tabs.
-document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',e=>{
- e.preventDefault();
- const tab=b.dataset.tab;
- document.querySelectorAll('.tab').forEach(x=>{x.classList.toggle('active',x===b);x.setAttribute('aria-selected',String(x===b))});
+// Delegate navigation from one stable container so every label remains tappable,
+ // including clicks on nested text or future icons. Panels switch without a page reload.
+const mainNavigation=document.getElementById('mainNavigation');
+mainNavigation?.addEventListener('click',e=>{
+ const button=e.target.closest('button[data-tab]');
+ if(!button||!mainNavigation.contains(button))return;
+ const tab=button.dataset.tab;
  const panels={quiz:$('#quiz'),search:$('#search'),progressTab:$('#progressPanel'),social:$('#social'),ranking:$('#ranking')};
- Object.entries(panels).forEach(([key,panel])=>{if(panel)panel.classList.toggle('hidden',key!==tab)});
+ if(!Object.prototype.hasOwnProperty.call(panels,tab)||!panels[tab])return;
+ mainNavigation.querySelectorAll('[role="tab"]').forEach(item=>{
+  const active=item===button;
+  item.classList.toggle('active',active);
+  item.setAttribute('aria-selected',String(active));
+  item.tabIndex=active?0:-1;
+ });
+ Object.entries(panels).forEach(([key,panel])=>panel.classList.toggle('hidden',key!==tab));
  if(tab==='progressTab')renderProgress();
  if(tab==='social'||tab==='ranking'){
   window.aqwEnsureSupabaseFeatures?.().then(()=>{
@@ -2778,7 +2787,7 @@ document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',e=>{
    if(tab==='ranking'){loadRushLeaderboard();loadPlayerLeaderboard();refreshLeaderboardRegistration()}
   }).catch(error=>console.warn('AQW services are unavailable:',error));
  }
-}));
+});
 try{restoreLanguage()}catch(e){console.error('AQW language initialization failed:',e);const status=document.getElementById('quizStatus');if(status)status.textContent='表示設定の初期化に失敗しました。作品データの読み込みを続行します。';const start=document.getElementById('start');if(start){start.classList.remove('hidden');start.disabled=false;start.textContent='クイズを開始';}prepare().catch(error=>console.error('AQW recovery loading failed:',error))}
 
 $('#resetProgress').onclick=()=>{const msg=lang==='ja'?'実績とプレイ記録をすべてリセットします。この操作は取り消せません。続行しますか？':'Reset all achievements and play records? This cannot be undone.';if(!confirm(msg))return;['aqw-history','aqw-total-runs','aqw-xp','aqw-daily-progress','aqw-daily-quest-claims','aqw-streak'].forEach(k=>safeStorage.removeItem(k));safeStorage.keys().filter(k=>k.startsWith('aqw-best-')).forEach(k=>safeStorage.removeItem(k));renderProgress();const hs=document.getElementById('historySummary');if(hs)hs.textContent='';const status=document.getElementById('resetDescription');if(status)status.textContent=lang==='ja'?'実績とプレイ記録をリセットしました。':'Achievements and play records have been reset.'};
