@@ -270,8 +270,11 @@ assert.match(recommend, /hasFamousJapaneseTitle\(media\)/, "Foreign anime must h
 
 const recommendOriginHelper = recommend.match(/function isJapaneseOriginAnime\(media\)\{[\s\S]*?\n\}/)?.[0];
 assert.ok(recommendOriginHelper, "Recommendation Japanese-origin verification helper missing");
-const famousTitleHelper = recommend.match(/function hasFamousJapaneseTitle\(media\)\{[\s\S]*?\n\}/)?.[0];
-assert.ok(famousTitleHelper, "Japanese-title verification helper missing");
+const sharedAnimeUtils = fs.readFileSync("anime-utils.js", "utf8");
+const famousTitleHelper = sharedAnimeUtils.match(/function hasFamousJapaneseTitle\(media\)\{[\s\S]*?\n\}/)?.[0];
+assert.ok(famousTitleHelper, "Shared Japanese-title verification helper missing");
+assert.match(recommend, /<script src="\.\/anime-utils\.js"><\/script>/, "Recommendation page must load shared anime utilities");
+assert.match(index, /<script src="\.\/anime-utils\.js"><\/script>/, "Quiz page must load shared anime utilities");
 const isRecommendedOriginJapanese = vm.runInNewContext(famousTitleHelper + "\n" + recommendOriginHelper + "\nisJapaneseOriginAnime");
 assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "ORIGINAL" }), true, "Japanese original anime must remain eligible");
 assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), true, "Japanese manga adaptations must remain eligible");
@@ -461,8 +464,8 @@ assert.ok(index.includes("format popularity title { romaji english native }"), "
 assert.ok(index.includes("synonyms coverImage"), "Quiz catalogue records must include alternate titles for Japanese-title verification");
 assert.match(index, /countryOfOrigin!==.JP./, "Quiz data must apply the documented foreign-title exception only to non-Japanese production countries");
 const indexOriginHelper = index.match(/function isJapaneseOriginAnime\(a\)\{[\s\S]*?\n\}/)?.[0];
-const indexFamousTitleHelper = index.match(/function hasFamousJapaneseTitle\(a\)\{[\s\S]*?\n\}/)?.[0];
-assert.ok(indexOriginHelper && indexFamousTitleHelper, "Quiz Japanese-origin and Japanese-title verification helpers must exist");
+const indexFamousTitleHelper = famousTitleHelper;
+assert.ok(indexOriginHelper && indexFamousTitleHelper, "Quiz Japanese-origin and shared Japanese-title verification helpers must exist");
 const isQuizOriginJapanese = vm.runInNewContext(indexFamousTitleHelper + "\n" + indexOriginHelper + "\nisJapaneseOriginAnime");
 assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", source: "ORIGINAL" }), true, "Japanese original anime must remain eligible in the quiz");
 assert.equal(isQuizOriginJapanese({ countryOfOrigin: "JP", originVerified: true }), true, "Compact shared-catalogue entries must pass the verified-origin marker");
