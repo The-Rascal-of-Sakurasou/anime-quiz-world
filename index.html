@@ -1183,14 +1183,8 @@ function deduplicateSearchResults(items){
  return result;
 }
 function mergeAnimeRecords(existing,incoming){
- const stripUnusedCharacters=anime=>{
-  if(!anime||typeof anime!=='object'||Array.isArray(anime))return anime;
-  const clean={...anime};
-  delete clean.characters;
-  return clean;
- };
- existing=stripUnusedCharacters(existing);
- incoming=stripUnusedCharacters(incoming);
+ // Character nodes and voice-cast edges are required by the character question modes.
+ // Preserve them when cached, shared-catalogue and fresh API records are merged.
  if(!existing)return incoming;
  if(!incoming)return existing;
  const merge=(oldValue,newValue)=>{
