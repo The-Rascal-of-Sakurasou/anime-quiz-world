@@ -103,7 +103,8 @@ Deno.serve(async (req: Request) => {
       return json({ error: "入力内容を確認してください。" }, 400);
     }
 
-    const ip = (req.headers.get("cf-connecting-ip") || req.headers.get("x-forwarded-for")?.split(",")[0] || req.headers.get("x-real-ip") || "").trim();
+    // Trust only the platform-injected Cloudflare client IP. Do not fall back to client-controlled forwarding headers.
+    const ip = (req.headers.get("cf-connecting-ip") || "").trim();
     if (!/^[0-9a-fA-F:.]{3,64}$/.test(ip)) return json({ error: "送信元を確認できません。時間をおいて再度お試しください。" }, 503);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
