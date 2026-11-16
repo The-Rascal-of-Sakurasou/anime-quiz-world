@@ -124,7 +124,7 @@ assert.match(moderationMigration, /MFA owner can review reports/, "Only an MFA-v
 
 assert.match(source.get("privacy.html"), /通報記録/, "The privacy policy must disclose moderation report data");
 assert.match(source.get("terms.html"), /虚偽通報/, "The terms must prohibit abusive or false reports");
-assert.match(source.get("guide.html"), /ブロック・通報/, "The guide must explain the community safety controls");
+assert.doesNotMatch(source.get("guide.html"), /ブロック・通報/, "The shortened guide must not reintroduce the removed community feature walkthrough");
 
 let checkedScripts = 0;
 for (const [file, html] of source) {
