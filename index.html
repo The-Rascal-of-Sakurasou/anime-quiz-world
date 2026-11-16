@@ -672,7 +672,7 @@ body.quiz-preparing #quizStatus:before{content:"";display:inline-block;width:22p
 </select></label><label for="difficultySelect"><span id="difficultyLabel">難易度</span><select id="difficultySelect" aria-describedby="difficultyHelp"><option value="veryEasy">とても簡単</option><option value="easy">簡単</option><option value="normal" selected>ふつう</option><option value="hard">難しい</option><option value="veryHard">とても難しい</option></select><small id="difficultyHelp" class="muted" style="display:block;max-width:260px;margin-top:4px">初級：作品画像から作品名を当てる問題。</small></label><label for="answerFormatSelect"><span id="answerFormatLabel">回答方式</span><select id="answerFormatSelect"><option value="choices">四択</option><option value="typed">入力式</option></select></label><label for="questionCount"><span id="countLabel">問題数</span><div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(110px,1fr);gap:8px;width:100%"><select id="questionCountPreset" aria-label="問題数の定番設定" style="min-width:0;width:100%" onchange="if(this.value!=='custom')document.getElementById('questionCount').value=this.value"><option value="custom">自由入力</option><option value="5">5問</option><option value="10" selected>10問</option><option value="20">20問</option><option value="50">50問</option><option value="100">100問</option><option value="200">200問</option><option value="500">500問</option><option value="1000">1,000問</option><option value="5000">5,000問</option><option value="10000">10,000問</option></select><input id="questionCount" type="number" inputmode="numeric" min="1" max="10000" step="1" value="10" aria-label="出題問題数（1〜10,000問）" style="width:100%;min-width:0;min-height:46px;padding:10px 12px;border:1px solid #cbd2db;border-radius:6px;background:#fff;color:var(--text)" oninput="document.getElementById('questionCountPreset').value=['5','10','20','50','100','200','500','1000','5000','10000'].includes(this.value)?this.value:'custom'"></div><small id="questionCountHelp" class="muted">1〜10,000問を指定できます。出題可能な作品数を超えた場合は、出題できる数まで自動調整します。</small></label><label for="timeLimitSelect"><span id="timeLimitLabel">1問の制限時間</span><select id="timeLimitSelect"><option value="5">5秒</option><option value="10">10秒</option><option value="15" selected>15秒</option><option value="20">20秒</option><option value="30">30秒</option><option value="45">45秒</option><option value="60">60秒</option></select></label></div><div class="row"><button id="quitQuizButton" type="button" class="danger-button hidden">やめる</button></div><div id="quizArea" class="quiz-layout hidden"><img id="cover" class="cover" alt="アニメ作品のビジュアル"><div><div class="row"><span id="timerLabel" class="muted">残り時間：15秒</span><span id="elapsedLabel" class="muted">経過時間：0秒</span></div><div class="quiz-progress" role="progressbar" aria-label="Quiz progress"><div id="quizProgressBar"></div></div><div class="game-tools"><span class="pill" id="comboBadge">連続正解 0</span><span class="pill" id="hintBadge">ヒント 1回</span><button id="hintButton" type="button">四択用ヒント</button><button id="typedHintButton" class="hidden" type="button">入力用ヒント</button></div><p class="muted" id="answerPrompt">画像を見て、正しい作品名を選択してください。</p><div id="answers" class="answers"></div><div id="typedAnswerBox" class="hidden" style="margin-top:14px"><label id="typedAnswerLabel" for="typedAnswer">回答を入力</label><div class="row" style="margin-top:6px"><input id="typedAnswer" type="text" autocomplete="off" style="flex:1;min-width:0;padding:11px;border:1px solid #cbd2db;border-radius:6px" /><button id="submitTypedAnswer" class="primary" type="button">回答する</button><button id="typedUnknownAnswer" type="button">わからない</button></div></div><div class="row" style="margin-top:10px"><button id="toggleAnswerMode" class="hidden" type="button" aria-hidden="true" tabindex="-1">入力で回答する</button></div><div class="row" style="margin-top:18px"><span id="feedback" aria-live="polite"></span><button id="next" class="primary hidden">次の問題</button></div></div></div><div id="result" class="hidden"><h2 id="resultHeading">クイズ終了</h2><p id="resultText"></p><button id="restart" class="primary hidden">もう一度挑戦</button> <button id="homeAfterQuiz" type="button">戻る</button> <button id="reviewMissed" class="hidden">間違えた問題を復習</button><div class="share-actions hidden"><button id="shareResult" class="primary">結果を共有</button><button id="downloadResult">画像を保存</button></div><p id="shareStatus" class="share-note hidden" aria-live="polite"></p><div id="historySummary" class="muted hidden" style="margin-top:14px"></div></div><button id="start" class="primary hidden">クイズを開始</button></section>
 <section id="progressPanel" class="card hidden"><div class="row" style="justify-content:space-between;align-items:center"><h2 id="progressHeading">実績</h2><button type="button" id="resetProgress" class="danger-button">実績をリセット</button></div><p class="muted" id="resetDescription">このブラウザに保存された実績をリセットします。</p><div id="achievements" class="grid"></div></section>
 <section id="ranking" class="card hidden">
-<div class="tag">AQW RANKINGS</div><h2 id="rankingHeading">ランキング</h2><div class="game-tools"><button id="aqwResetOnlineRecords" type="button" class="danger-button">ランキング実績をリセット</button><button id="aqwToggleLeaderboardRegistration" type="button">ランキング登録を解除</button></div><p class="muted" id="aqwLeaderboardAccountStatus" role="status" aria-live="polite"></p>
+<div class="tag">AQW RANKINGS</div><h2 id="rankingHeading">ランキング</h2><div class="game-tools"><button id="aqwToggleLeaderboardRegistration" type="button">スピードラッシュランキング登録を解除</button></div><p class="muted" id="aqwLeaderboardAccountStatus" role="status" aria-live="polite"></p>
 <section id="aqwRushLeaderboard" class="social-box aqw-rush-board" aria-labelledby="aqwRushBoardTitle">
  <div class="aqw-rush-board-head"><h3 id="aqwRushBoardTitle">スピードラッシュ・世界ランキング</h3><div class="aqw-rush-board-actions"><label class="aqw-player-sort-label" for="aqwRushBoardPeriod"><span id="aqwRushBoardPeriodLabel">期間</span><select id="aqwRushBoardPeriod"><option value="all">全期間</option><option value="day">今日</option><option value="week">今週</option><option value="month">今月</option></select></label><button id="aqwRushBoardRefresh" type="button">更新</button><button id="aqwRushBoardShare" type="button">ランキングを共有</button><button id="aqwRushBoardSave" type="button">画像を保存</button></div></div>
  <p class="muted aqw-rush-board-desc" id="aqwRushBoardDescription">ログインして記録を登録できます。各ユーザーの自己ベストを表示します。</p>
@@ -3040,12 +3040,12 @@ async function saveRushBoardImage(){
 }
 
 async function refreshLeaderboardRegistration(){
- if(!currentUser){message($s('aqwLeaderboardAccountStatus'),'ログインするとランキング登録を管理できます。');return}
+ if(!currentUser){message($s('aqwLeaderboardAccountStatus'),'ログインするとスピードラッシュランキング登録を管理できます。');return}
  const {data,error}=await sb.from('profiles').select('leaderboard_enabled').eq('id',currentUser.id).maybeSingle();
  if(error){message($s('aqwLeaderboardAccountStatus'),'登録状態を取得できませんでした：'+errText(error));return}
  const enabled=data?.leaderboard_enabled!==false;
- const button=$s('aqwToggleLeaderboardRegistration');if(button)button.textContent=enabled?'ランキング登録を解除':'ランキングに再登録';
- message($s('aqwLeaderboardAccountStatus'),enabled?'ランキング登録中です。':'ランキング登録を解除しています。記録データは保持されています。');
+ const button=$s('aqwToggleLeaderboardRegistration');if(button)button.textContent=enabled?'スピードラッシュランキング登録を解除':'スピードラッシュランキングに再登録';
+ message($s('aqwLeaderboardAccountStatus'),enabled?'スピードラッシュランキング登録中です。':'スピードラッシュスピードラッシュランキング登録を解除しています。記録データは保持されています。');
 }
 async function toggleLeaderboardRegistration(){
  if(!currentUser){message($s('aqwLeaderboardAccountStatus'),'ランキング登録の変更にはログインが必要です。');return}
@@ -3053,26 +3053,11 @@ async function toggleLeaderboardRegistration(){
  if(readError){message($s('aqwLeaderboardAccountStatus'),'登録状態を取得できませんでした：'+errText(readError));return}
  const enabled=data?.leaderboard_enabled!==false;
  const next=!enabled;
- if(!confirm(next?'ランキングに再登録しますか？':'ランキングへの掲載を停止します。保存済みの記録は削除されず、再登録すると再び表示されます。続行しますか？'))return;
+ if(!confirm(next?'スピードラッシュランキングに再登録しますか？':'スピードラッシュランキングへの掲載を停止します。保存済みの記録は削除されず、再登録すると再び表示されます。続行しますか？'))return;
  const {data:result,error}=await sb.rpc('set_aqw_leaderboard_enabled',{p_enabled:next});
  if(error){message($s('aqwLeaderboardAccountStatus'),'設定を変更できませんでした：'+errText(error));return}
  await refreshLeaderboardRegistration();await loadRushLeaderboard(true);
 }
-async function resetOnlineLeaderboardRecords(){
- if(!currentUser){message($s('aqwLeaderboardAccountStatus'),'実績のリセットにはログインが必要です。');return}
- if(!confirm('ログイン中の自分のサーバー上のランキング実績（スピードラッシュ記録と期間別履歴）だけを削除します。他のユーザーの記録や、このブラウザの作品データ・ローカル実績は削除されません。この操作は取り消せません。続行しますか？'))return;
- const button=$s('aqwResetOnlineRecords');if(button)button.disabled=true;
- message($s('aqwLeaderboardAccountStatus'),'自分のランキング実績を削除しています…');
- try{
-  const {error}=await sb.rpc('reset_aqw_player_records');
-  if(error)throw error;
-  await loadRushLeaderboard();
-  message($s('aqwLeaderboardAccountStatus'),'自分のスピードラッシュ記録を削除し、ランキングを更新しました。他のユーザーの記録と作品データは保持されています。');
- }catch(error){message($s('aqwLeaderboardAccountStatus'),'実績をリセットできませんでした：'+errText(error))}
- finally{if(button)button.disabled=false}
-}
-
-
 async function loadQuestionDifficultyStats(){
  if(!sb)return;
  try{
@@ -3884,10 +3869,9 @@ $s('aqwRushBoardRefresh').addEventListener('click',()=>loadRushLeaderboard(true)
 $s('aqwRushBoardPeriod').addEventListener('change',()=>loadRushLeaderboard(true));
 $s('aqwRushBoardShare').addEventListener('click',shareRushBoardImage);
 $s('aqwRushBoardSave').addEventListener('click',saveRushBoardImage);
-$s('aqwResetOnlineRecords').addEventListener('click',resetOnlineLeaderboardRecords);
 $s('aqwToggleLeaderboardRegistration').addEventListener('click',toggleLeaderboardRegistration);
 
-document.getElementById('languageSelect')?.addEventListener('change',()=>{applyRushLeaderboardLanguage();applyPeriodLabels();renderPlayerLeaderboard()});
+document.getElementById('languageSelect')?.addEventListener('change',()=>{applyRushLeaderboardLanguage();applyPeriodLabels()});
 window.addEventListener('aqw:quiz-finished',()=>{
  loadQuestionDifficultyStats();
  loadMyDifficultyProfile();
@@ -3899,8 +3883,6 @@ window.addEventListener('aqw:rush-finished',event=>{
 });
 
 applyRushLeaderboardLanguage();
-applyPlayerLeaderboardLanguage();
-
 applyPeriodLabels();
 // Leaderboards are fetched only when the ranking tab is opened.
 setStatus(localJa()?'ログインすると投稿・フォローなどのSNS機能を利用できます。':'Sign in to post and follow users.');
