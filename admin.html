@@ -153,11 +153,11 @@ footer{color:var(--muted);font-size:.85rem;padding:10px 0 30px}
 <div class="card">
 <div class="actions" style="justify-content:space-between"><div><h2 style="margin:0">運営状況</h2><small id="ownerIdentity"></small></div><div class="actions"><button id="refreshButton" type="button">最新情報に更新</button><button id="logoutButton" type="button">ログアウト</button></div></div>
 <div class="metrics" style="margin-top:16px">
-<div class="metric"><span>登録プロフィール</span><strong id="profileCount">—</strong></div>
-<div class="metric"><span>投稿・返信</span><strong id="postCount">—</strong></div>
-<div class="metric"><span>通知</span><strong id="notificationCount">—</strong></div>
-<div class="metric"><span>フレンドメッセージ</span><strong id="messageCount">—</strong></div>
-<div class="metric"><span>未対応の通報</span><strong id="reportCount">—</strong></div>
+<div class="metric" hidden aria-hidden="true"><span>登録プロフィール</span><strong id="profileCount">—</strong></div>
+<div class="metric" hidden aria-hidden="true"><span>投稿・返信</span><strong id="postCount">—</strong></div>
+<div class="metric" hidden aria-hidden="true"><span>通知</span><strong id="notificationCount">—</strong></div>
+<div class="metric" hidden aria-hidden="true"><span>フレンドメッセージ</span><strong id="messageCount">—</strong></div>
+<div class="metric" hidden aria-hidden="true"><span>未対応の通報</span><strong id="reportCount">—</strong></div>
 <div class="metric"><span>未対応の質問</span><strong id="qaCount">—</strong></div>
 </div>
 <p class="muted" style="font-size:.85rem;margin-top:12px">件数のみを表示しています。個人間メッセージの本文は通常表示しません。通報対象として指定されたメッセージのみ、通報確認のため多要素認証済み管理者が個別に表示できます。</p>
@@ -168,12 +168,12 @@ footer{color:var(--muted);font-size:.85rem;padding:10px 0 30px}
 <div class="actions" style="margin-bottom:12px"><button id="reloadQuestions" type="button">質問を更新</button></div>
 <div id="qaQuestions" class="list"><p class="muted">読み込み中…</p></div>
 </div>
-<div class="card">
+<div class="card" hidden aria-hidden="true">
 <h2>投稿・返信の管理</h2>
 <p class="muted">最新100件を表示します。削除すると、その投稿への返信・いいね・関連通知もデータベースの外部キー設定に従って削除されます。</p>
 <div id="posts" class="list"><p class="muted">読み込み中…</p></div>
 </div>
-<div class="card">
+<div class="card" hidden aria-hidden="true">
 <h2>通報管理</h2>
 <p class="muted">最新100件を表示します。通報対象の投稿・返信・メッセージ本文は「内容を確認」を押した場合に限り表示されます。確認結果を選択して保存してください。</p>
 <div class="actions" style="margin-bottom:12px"><button id="reloadReports" type="button">通報を更新</button></div>
@@ -190,7 +190,7 @@ footer{color:var(--muted);font-size:.85rem;padding:10px 0 30px}
 <div class="actions" style="margin-bottom:12px"><button id="reloadUsers" type="button">アカウント一覧を更新</button></div>
 <div class="table-wrap"><table><thead><tr><th>メールアドレス</th><th>登録日</th><th>最終ログイン</th><th>状態</th><th>操作</th></tr></thead><tbody id="authUsers"><tr><td colspan="5">読み込み中…</td></tr></tbody></table></div>
 </div>
-<div class="card">
+<div class="card" hidden aria-hidden="true">
 <h2>サイトデータ・ランキング・SNS管理</h2>
 <p class="muted">ランキング記録、フォロー、いいね、通知、フレンドメッセージの管理ができます。メッセージ本文はプライバシー保護のため表示せず、送受信者と日時のみを表示します。</p>
 <div class="actions" style="margin:12px 0">
