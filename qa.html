@@ -45,27 +45,26 @@ small{font-size:.84rem;color:var(--muted);font-weight:400}
 </head>
 <body>
 <div class="wrap">
-<a class="site-brand" href="./index.html" aria-label="Anime Quiz World トップページ">
-<svg class="site-brand-logo" viewBox="0 0 100 100" role="img" aria-label="AQW"><rect x="2" y="2" width="96" height="96" fill="#064675"/><text x="50" y="64" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="34" font-weight="800" font-style="italic" letter-spacing="-1" textLength="80" lengthAdjust="spacingAndGlyphs" fill="#fff">AQW</text></svg>
-<span class="site-brand-title">Anime Quiz World</span></a>
-<a class="back" href="./index.html">← AQWに戻る</a>
-<nav class="page-nav" aria-label="サイト内ナビゲーション"><a href="./index.html">ホーム</a><a href="./guide.html">遊び方・お知らせ</a><a href="./terms.html">利用規約</a><a href="./privacy.html">プライバシーポリシー</a><a href="./qa.html" aria-current="page">Q&A・質問</a></nav>
-<header><p class="muted">ANIME QUIZ WORLD</p><h1>Q&A・質問フォーム</h1><div class="doc-meta"><span>Anime Quiz World 運営者への質問</span><span>送信内容は非公開です</span></div><p>サイトの使い方、機能への要望、不具合の報告など、運営者への質問はこちらから送信できます。</p></header>
+<header>
+<a class="site-brand" href="./index.html" aria-label="Anime Quiz World トップページ"><svg class="site-brand-logo" viewBox="0 0 100 100" role="img" aria-label="AQW"><rect x="2" y="2" width="96" height="96" fill="#064675"/><text x="50" y="64" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="34" font-weight="800" font-style="italic" letter-spacing="-1" textLength="80" lengthAdjust="spacingAndGlyphs" fill="#fff">AQW</text></svg><span class="site-brand-title">Anime Quiz World</span></a>
+<a class="back" href="./index.html">AQWに戻る</a>
+</header>
 <main>
-<section class="notice"><strong>送信前にご確認ください</strong><ul><li>質問内容は一般公開されず、サイト管理者のみが確認します。</li><li>すべての質問への返信を保証するものではありません。</li><li>住所、電話番号、学校名、メールアドレス、パスワードなどの個人情報は入力しないでください。</li><li>迷惑行為、広告、第三者への誹謗中傷などは送信しないでください。</li></ul></section>
-<h2>質問を送る</h2>
+<h1>お問い合わせ</h1>
+<p>不具合の報告や機能への要望などを運営者へ送信できます。送信内容は公開されず、管理者のみが確認します。</p>
 <form id="questionForm">
-<label>表示名（任意）<input id="displayName" name="displayName" maxlength="40" autocomplete="nickname" placeholder="匿名でも送信できます"><small>本名を入力する必要はありません。</small></label>
-<label>質問タイトル<input id="questionTitle" name="title" maxlength="100" required placeholder="質問の内容が分かるタイトル"></label>
-<label>質問内容<textarea id="questionBody" name="body" minlength="5" maxlength="3000" required placeholder="質問や伝えたい内容を入力してください。"></textarea><small>5〜3,000文字。個人情報は記載しないでください。</small></label>
+<label>表示名（任意）<input id="displayName" name="displayName" maxlength="40" autocomplete="nickname" placeholder="匿名でも送信できます"></label>
+<label>件名<input id="questionTitle" name="title" maxlength="100" required placeholder="お問い合わせの件名"></label>
+<label>内容<textarea id="questionBody" name="body" minlength="5" maxlength="3000" required placeholder="お問い合わせ内容を入力してください。"></textarea><small>5〜3,000文字。住所・学校名・パスワードなどの個人情報は入力しないでください。</small></label>
 <label class="hp" aria-hidden="true">この欄は入力しないでください<input id="website" name="website" tabindex="-1" autocomplete="off"></label>
-<button class="primary" id="submitQuestion" type="submit">質問を送信する</button>
+<button class="primary" id="submitQuestion" type="submit">送信する</button>
 </form>
 <p id="formStatus" class="status" role="status" aria-live="polite"></p>
-<p class="muted">送信された質問は、運営上必要な範囲で管理します。詳しくは<a href="./privacy.html">プライバシーポリシー</a>をご確認ください。</p>
+<p class="muted">すべての送信内容への返信を保証するものではありません。詳しくは<a href="./privacy.html">プライバシーポリシー</a>をご確認ください。</p>
 </main>
-<footer class="site-footer"><span>© Anime Quiz World / 非公式ファンサイト</span><nav aria-label="フッターナビゲーション"><a href="./index.html">ホーム</a><a href="./guide.html">遊び方・お知らせ</a><a href="./terms.html">利用規約</a><a href="./privacy.html">プライバシーポリシー</a><a href="./admin.html">管理者ログイン</a><a href="https://x.com/anime_love_p" target="_blank" rel="noopener noreferrer">連絡先：@anime_love_p（X）</a></nav></footer>
+<footer class="site-footer"><span>© Anime Quiz World / 非公式ファンサイト</span><nav aria-label="フッターナビゲーション"><a href="./index.html">ホーム</a><a href="./guide.html">遊び方</a><a href="./terms.html">利用規約</a><a href="./privacy.html">プライバシーポリシー</a><a href="./admin.html">管理者ログイン</a></nav></footer>
 </div>
+</body>
 <script>
 (function () {
   'use strict';
@@ -122,4 +121,5 @@ small{font-size:.84rem;color:var(--muted);font-weight:400}
   });
 })();
 </script>
+
 </body></html>
