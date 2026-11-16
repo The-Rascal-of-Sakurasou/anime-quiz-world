@@ -53,9 +53,9 @@ small{font-size:.84rem;color:var(--muted);font-weight:400}
 <h1>お問い合わせ</h1>
 <p>不具合の報告や機能への要望などを運営者へ送信できます。送信内容は公開されず、管理者のみが確認します。</p>
 <form id="questionForm">
-<label>表示名（任意）<input id="displayName" name="displayName" maxlength="40" autocomplete="nickname" placeholder="匿名でも送信できます"></label>
-<label>件名<input id="questionTitle" name="title" maxlength="100" required placeholder="お問い合わせの件名"></label>
-<label>内容<textarea id="questionBody" name="body" minlength="5" maxlength="3000" required placeholder="お問い合わせ内容を入力してください。"></textarea><small>5〜3,000文字。住所・学校名・パスワードなどの個人情報は入力しないでください。</small></label>
+
+
+<label>質問・お問い合わせ内容<textarea id="questionBody" name="body" minlength="5" maxlength="3000" required placeholder="質問や要望を入力してください。"></textarea><small>5〜3,000文字。住所・学校名・パスワードなどの個人情報は入力しないでください。</small></label>
 <label class="hp" aria-hidden="true">この欄は入力しないでください<input id="website" name="website" tabindex="-1" autocomplete="off"></label>
 <button class="primary" id="submitQuestion" type="submit">送信する</button>
 </form>
@@ -79,10 +79,10 @@ small{font-size:.84rem;color:var(--muted);font-weight:400}
   form.addEventListener('submit', async function (event) {
     event.preventDefault();
     if (document.getElementById('website').value.trim()) return;
-    var displayName = document.getElementById('displayName').value.trim();
-    var title = document.getElementById('questionTitle').value.trim();
+    var displayName = '';
+    var title = 'お問い合わせ';
     var body = document.getElementById('questionBody').value.trim();
-    if (title.length < 1 || title.length > 100 || body.length < 5 || body.length > 3000 || displayName.length > 40) {
+    if (body.length < 5 || body.length > 3000) {
       showStatus('入力内容を確認してください。', 'error');
       return;
     }
