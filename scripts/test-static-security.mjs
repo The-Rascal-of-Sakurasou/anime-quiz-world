@@ -728,7 +728,10 @@ const studioChoiceBuilder = index.match(/function studioChoiceRecordsForAnime\(a
 assert.ok(studioChoiceBuilder, "Bounded studio-choice builder must exist");
 assert.match(studioChoiceBuilder, /distractors\.length<3/, "Studio distractor selection must stop after three alternatives");
 assert.doesNotMatch(studioChoiceBuilder, /shuffle\(difficultyDistractors\(/, "Studio distractor selection must not shuffle the entire catalogue per candidate");
-assert.match(index, /function yearChoiceRecordsForAnime\(a\)\{[^\n]*records\.length>=4/, "Year distractor selection must stop after four choices");
+const yearChoiceBuilder = index.match(/function yearChoiceRecordsForAnime\(a\)\{[\s\S]*?\n\}/)?.[0];
+assert.ok(yearChoiceBuilder, "Year distractor builder must exist");
+assert.match(yearChoiceBuilder, /remaining\.slice\(0,3-selected\.length\)/, "Year distractor selection must add no more than three alternatives");
+assert.match(yearChoiceBuilder, /return records;/, "Year distractor builder must return the validated answer set");
 const synopsisChoiceBuilder = index.match(/function synopsisChoiceRecords\(a,answerIsTitle=false\)\{[\s\S]*?\n\}/)?.[0];
 assert.ok(synopsisChoiceBuilder, "Synopsis choice builder must exist");
 assert.match(synopsisChoiceBuilder, /offset<candidates\.length&&options\.size<4/, "Synopsis distractor selection must stop after four choices");
