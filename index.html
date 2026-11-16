@@ -657,6 +657,7 @@ body.quiz-preparing #quizStatus:before{content:"";display:inline-block;width:22p
 @media(max-width:380px){body.quiz-active #answers{grid-template-columns:minmax(0,1fr)!important}}
 </style>
  <link rel="stylesheet" href="./responsive.css">
+<script src="./anime-utils.js"></script>
 </head>
 <body><a class="skip-link" href="#quiz">クイズへ移動</a><div id="app" class="wrap">
 <header class="top"><div class="brand-area"><button type="button" class="brand-home" id="homeLogo" aria-label="AQW Home" title="AQW Home"><svg class="aqw-logo" viewBox="0 0 100 100" role="img" aria-label="AQW"><rect x="2" y="2" width="96" height="96" fill="#064675"/><text x="50" y="64" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="34" font-weight="800" font-style="italic" letter-spacing="-1" textLength="80" lengthAdjust="spacingAndGlyphs" fill="#fff">AQW</text></svg></button><div><div class="brand">Anime Quiz <span>World</span></div></div></div><div class="top-actions"><label class="language-picker" for="languageSelect"><span id="languageLabel">Language</span> <select id="languageSelect" aria-label="Display language" onchange="selectLanguage(this.value)"><option value="ja">日本語</option><option value="en">English</option></select></label></div></header>
@@ -820,10 +821,7 @@ const ph=document.getElementById('query');if(ph)ph.placeholder=lang==='ja'?'例�
 }
 const query=`query ($page:Int,$perPage:Int,$search:String,$id_in:[Int],$format_in:[MediaFormat],$startDate_greater:FuzzyDateInt,$startDate_lesser:FuzzyDateInt) { Page(page:$page,perPage:$perPage) { pageInfo { hasNextPage } media(id_in:$id_in,format_in:$format_in,startDate_greater:$startDate_greater,startDate_lesser:$startDate_lesser,type:ANIME,sort:POPULARITY_DESC,search:$search,isAdult:false) { id countryOfOrigin source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } format popularity title { romaji english native } description(asHtml:false) synonyms coverImage { large medium extraLarge } episodes seasonYear averageScore genres studios { nodes { name } } startDate { year }  externalLinks { url site type isDisabled language } } } }`;
 function normalizeUnicode(value){if(typeof value==='string')return value.normalize('NFC');if(Array.isArray(value))return value.map(normalizeUnicode);if(value&&typeof value==='object'){const out={};for(const [key,item] of Object.entries(value))out[key]=normalizeUnicode(item);return out}return value}
-function hasFamousJapaneseTitle(a){
- const names=[a?.title?.native,a?.title?.english,a?.title?.romaji,...(Array.isArray(a?.synonyms)?a.synonyms:[])];
- return names.some(name=>typeof name==='string'&&/[ぁ-んァ-ヶ]/.test(name));
-}
+
 function isJapaneseOriginAnime(a){
  if(!a)return false;
  if(a.countryOfOrigin!=='JP')return Number(a.popularity)>=10000&&hasFamousJapaneseTitle(a);
