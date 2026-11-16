@@ -1806,7 +1806,7 @@ function difficultyModesForAnime(a){
  return availableQuestionModes(a,$('#answerFormatSelect')?.value||'choices');
 }
 function questionModeDifficultyScore(a,mode){
- const base={image:12,studio:38,year:34,synonym:42,titleStudio:42,titleYear:36,titleSynopsis:66,synopsis:62,titleEpisodes:32,titleGenre:48,titleFormat:28};
+ const base={image:12,studio:38,year:34,synonym:42,titleStudio:42,titleYear:36,titleSynopsis:66,synopsis:62,titleEpisodes:32,titleGenre:48,titleFormat:28,titleSource:36,voiceActor:54};
  let score=base[mode]??50;
  if(mode==='titleStudio'){
   const studios=[...new Set((a?.studios?.nodes||[]).map(node=>String(node?.name||'').trim()).filter(Boolean))];
@@ -2040,7 +2040,7 @@ async function ensureQuestionChoiceSummaryAsync(){
   const tierPool=sourcePool.filter(item=>titleUsable(item));
   const titleKeys=new Set(tierPool.map(item=>normalizeAnswer(titleOf(item))).filter(Boolean));
   const titleChoiceRecords=new Map(),titleAliasOwners=new Map(),aliasAnimeOwners=new Map();
-  const tierStudioKeys=new Set(),yearKeys=new Set(),episodeKeys=new Set(),formatKeys=new Set(),genreKeys=new Set(),synopsisKeys=new Set(),synopsisCandidates=[];
+  const tierStudioKeys=new Set(),yearKeys=new Set(),episodeKeys=new Set(),formatKeys=new Set(),sourceKeys=new Set(),genreKeys=new Set(),synopsisKeys=new Set(),synopsisCandidates=[];
   for(let i=0;i<tierPool.length;i++){
    const item=tierPool[i],primaryKey=normalizeAnswer(titleOf(item));
    if(primaryKey){
@@ -2062,6 +2062,7 @@ async function ensureQuestionChoiceSummaryAsync(){
    if(Number.isInteger(year)&&year>1900)yearKeys.add(String(year));
    const episodes=Number(item?.episodes);if(Number.isInteger(episodes)&&episodes>0)episodeKeys.add(String(episodes));
    const format=String(item?.format||'').trim();if(format)formatKeys.add(format);
+   const source=String(item?.source||'').trim();if(source)sourceKeys.add(source);
    for(const genre of Array.isArray(item?.genres)?item.genres:[]){const value=String(genre||'').trim();if(value)genreKeys.add(value)}
    if(hasUsableSynopsis(item)){
     const synopsisKey=normalizeAnswer(synopsisText(item));
@@ -2085,7 +2086,7 @@ async function ensureQuestionChoiceSummaryAsync(){
   for(const key of characterNameKeys)if(characterNameAnimeCounts.get(key)===1)uniqueCharacterNameKeys.add(key);
   const value={
    titleKeys,titleChoiceRecords,titleAliasOwners,aliasAnimeOwners,
-   tierStudioKeys,studioKeys:tierStudioKeys,yearKeys,episodeKeys,formatKeys,genreKeys,
+   tierStudioKeys,studioKeys:tierStudioKeys,yearKeys,episodeKeys,formatKeys,sourceKeys,genreKeys,
    characterNameKeys,characterNamesByAnime,characterNameAnimeCounts,characterNameCounts,
    uniqueCharacterNameKeys,uniqueCharacterRecords,
    synopsisCandidates,synopsisKeys
@@ -2180,14 +2181,18 @@ function quizSourceLabel(value){const labels={ja:{ORIGINAL:'オリジナル',MAN
 function sourceChoiceRecordsForAnime(a){return metadataValueChoiceRecords(a,'source',quizSourceLabel)}
 function voiceActorDisplayName(actor){const name=actor?.name||{};return String((lang==='ja'?name.native:(name.full||name.native))||name.full||name.native||'').trim()}
 function voiceActorCharacterRecords(anime){
- const records=[],seenActors=new Set(),seenCharacters=new Set();
+ const candidates=[];
  for(const edge of anime?.characters?.edges||[]){
   const character=edge?.node,characterName=characterDisplayName(character),characterId=Number(character?.id)||0;
-  const actor=edge?.voiceActors?.find(item=>voiceActorDisplayName(item));
-  const actorName=voiceActorDisplayName(actor),actorId=Number(actor?.id)||0;
-  if(!characterName||!actorName||!characterId||!actorId||seenActors.has(actorId)||seenCharacters.has(characterId))continue;
-  seenActors.add(actorId);seenCharacters.add(characterId);
-  records.push({characterId,characterName,actorId,actorName});
+  const actors=(edge?.voiceActors||[]).map(actor=>({actorId:Number(actor?.id)||0,actorName:voiceActorDisplayName(actor)})).filter(actor=>actor.actorId&&actor.actorName);
+  if(characterName&&characterId&&actors.length)candidates.push({characterId,characterName,actors});
+ }
+ const actorCounts=new Map();
+ for(const record of candidates)for(const actor of record.actors)actorCounts.set(actor.actorId,(actorCounts.get(actor.actorId)||0)+1);
+ const records=[];
+ for(const record of candidates){
+  const actor=record.actors.find(item=>actorCounts.get(item.actorId)===1);
+  if(actor)records.push({characterId:record.characterId,characterName:record.characterName,actorId:actor.actorId,actorName:actor.actorName});
  }
  return records;
 }
