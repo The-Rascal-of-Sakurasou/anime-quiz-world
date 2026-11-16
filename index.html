@@ -2681,17 +2681,25 @@ function questionExplanationText(anime,mode){
  const studios=[...new Set((anime?.studios?.nodes||[]).map(node=>String(node?.name||'').trim()).filter(Boolean))];
  const genres=[...new Set((Array.isArray(anime?.genres)?anime.genres:[]).map(value=>String(value||'').trim()).filter(Boolean))];
  const details=[];
- if(['year','titleYear'].includes(mode)&&Number.isInteger(year))details.push((lang==='ja'?'公開・放送開始年：':'Year: ')+year);
- if(['studio','titleStudio'].includes(mode)&&studios.length)details.push((lang==='ja'?'制作スタジオ：':'Studio: ')+studios.join('、'));
- if(mode==='titleEpisodes'&&Number.isInteger(Number(anime.episodes))&&Number(anime.episodes)>0)details.push((lang==='ja'?'話数：':'Episodes: ')+anime.episodes);
- if(mode==='titleGenre'&&genres.length)details.push((lang==='ja'?'登録ジャンル：':'Genres: ')+genres.map(quizGenreLabel).join('・'));
- if(mode==='titleFormat'&&anime.format)details.push((lang==='ja'?'作品形式：':'Format: ')+quizFormatLabel(anime.format));
- if(['image','synonym','synopsis','character'].includes(mode)){
-  if(title)details.push((lang==='ja'?'作品名：':'Anime: ')+title);
-  if(Number.isInteger(year))details.push((lang==='ja'?'公開・放送開始年：':'Year: ')+year);
-  if(genres.length)details.push((lang==='ja'?'ジャンル：':'Genres: ')+genres.slice(0,3).map(quizGenreLabel).join('・'));
+ const add=(ja,en,value)=>{if(value)details.push((lang==='ja'?ja:en)+value)};
+ if(title&&['image','synonym','synopsis','character','titleSynopsis'].includes(mode))add('作品名：','Anime: ',title);
+ if(['year','titleYear'].includes(mode))add('公開・放送開始年：','Year: ',Number.isInteger(year)?String(year):'');
+ if(['studio','titleStudio'].includes(mode))add('制作スタジオ：','Studio: ',studios.join('、'));
+ if(mode==='titleEpisodes'){
+  add('話数：','Episodes: ',Number.isInteger(Number(anime.episodes))&&Number(anime.episodes)>0?String(anime.episodes):'');
+  if(anime.format)add('作品形式：','Format: ',quizFormatLabel(anime.format));
  }
- if(!details.length&&title)details.push((lang==='ja'?'作品名：':'Anime: ')+title);
+ if(mode==='titleGenre')add('登録ジャンル：','Genres: ',genres.map(quizGenreLabel).join('・'));
+ if(mode==='titleFormat'){
+  add('作品形式：','Format: ',anime.format?quizFormatLabel(anime.format):'');
+  if(Number.isInteger(year))add('公開・放送開始年：','Year: ',String(year));
+ }
+ if(['image','synonym','synopsis','character','titleSynopsis'].includes(mode)){
+  if(Number.isInteger(year))add('公開・放送開始年：','Year: ',String(year));
+  if(genres.length)add('ジャンル：','Genres: ',genres.slice(0,3).map(quizGenreLabel).join('・'));
+ }
+ if(['titleGenre','titleSynopsis'].includes(mode)&&studios.length)add('制作スタジオ：','Studio: ',studios.slice(0,2).join('、'));
+ if(!details.length&&title)add('作品名：','Anime: ',title);
  return details.length?(lang==='ja'?'補足：':'Info: ')+details.join(' / '):'';
 }
 function choose(btn,value,correct,meta={}){if(locked)return;locked=true;clearInterval(questionTimer);const buttons=[...$('#answers').children];buttons.forEach(b=>{b.disabled=true;if(meta.correctId!=null?Number(b.dataset.mediaId)===Number(meta.correctId):b.dataset.value===String(correct))b.classList.add('correct')});const isCorrect=meta.typed?answersMatch(value,meta.anime,meta.mode,correct):(meta.selectedId!=null&&meta.correctId!=null?Number(meta.selectedId)===Number(meta.correctId):value===correct);const answeredAnime=questions[index];if(playMode!=='review'&&answeredAnime&&Number.isSafeInteger(Number(answeredAnime.id))&&Number(answeredAnime.id)>0)questionAttemptResults.push({animeId:Number(answeredAnime.id),questionMode:currentQuestionMode,correct:isCorrect});if(isCorrect){points++;combo++;bestCombo=Math.max(bestCombo,combo);if(btn)btn.classList.add('correct');$('#feedback').textContent=(combo>=3?({ja:'正解！ '+combo+'連続正解！',en:'Correct! '+combo+' combo!',ko:'정답! '+combo+'연속 정답!',zh:'答对了！连续答对 '+combo+' 题！',es:'¡Correcto! Racha de '+combo,fr:'Correct ! Série de '+combo,pt:'Correto! Sequência de '+combo,de:'Richtig! '+combo+' in Folge!'}[lang]||'Correct! '+combo+' combo!'):tr('correct'));$('#feedback').style.color='var(--good)'}else{combo=0;$('#comboBadge').textContent=({ja:'連続正解 ',en:'Combo ',ko:'연속 정답 ',zh:'连续答对 ',es:'Racha ',fr:'Série ',pt:'Sequência ',de:'Serie '}[lang]||'Combo ')+combo;$('#comboBadge').classList.remove('combo-hot');missedQuestions.push(questions[index]);if(btn)btn.classList.add('wrong');const feedbackPrefix=value==='__unknown__'?({ja:'わからない。正解：',en:"You didn't know. Correct answer: ",ko:'모르겠어요. 정답: ',zh:'不知道。正确答案：',es:'No lo sabías. Respuesta correcta: ',fr:'Vous ne saviez pas. Bonne réponse : ',pt:'Você não sabia. Resposta correta: ',de:'Nicht gewusst. Richtige Antwort: '}[lang]||"You didn't know. Correct answer: "):(value==='__timeout__'?({ja:'時間切れ。不正解。正解：',en:'Time up. Correct answer: ',ko:'시간 초과. 오답입니다. 정답: ',zh:'时间到，答错了。正确答案：',es:'Tiempo agotado. Respuesta correcta: ',fr:'Temps écoulé. Bonne réponse : ',pt:'Tempo esgotado. Resposta correta: ',de:'Zeit abgelaufen. Richtige Antwort: '}[lang]||'Time up. Correct answer: '):({ja:'不正解。正解：',en:'Incorrect. Correct answer: ',ko:'오답입니다. 정답: ',zh:'回答错误。正确答案：',es:'Incorrecto. Respuesta correcta: ',fr:'Incorrect. Bonne réponse : ',pt:'Incorreto. Resposta correta: ',de:'Falsch. Richtige Antwort: '}[lang]||'Incorrect. Correct answer: '));$('#feedback').textContent=feedbackPrefix+correct;$('#feedback').style.color='var(--bad)'}$('#typedAnswer').disabled=true;$('#submitTypedAnswer').disabled=true;const explanation=questionExplanationText(answeredAnime,currentQuestionMode);if(explanation)$('#feedback').textContent+=' · '+explanation;$('#toggleAnswerMode').disabled=true;$('#hintButton').disabled=true;$('#typedHintButton').disabled=true;$('#comboBadge').textContent=(lang==='ja'?'連続正解 ':'Combo ')+combo;$('#comboBadge').classList.toggle('combo-hot',combo>=3);$('#score').textContent=tr('score')+' '+points;$('#next').classList.remove('hidden');$('#next').textContent=(index===questions.length-1&&playMode!=='endless')?tr('finish'):tr('next');clearTimeout(autoNextTimer);autoNextTimer=setTimeout(()=>{if(!locked)return;$('#next').click()},120)}
