@@ -2120,7 +2120,19 @@ function episodeChoiceRecordsForAnime(a){
  return records;
 }
 function quizGenreLabel(value){const ja={Action:'アクション',Adventure:'アドベンチャー',Comedy:'コメディ',Drama:'ドラマ',Fantasy:'ファンタジー',Horror:'ホラー','Mahou Shoujo':'魔法少女',Mecha:'メカ',Music:'音楽',Mystery:'ミステリー',Psychological:'心理',Romance:'恋愛','Sci-Fi':'SF','Slice of Life':'日常',Sports:'スポーツ',Supernatural:'超常',Thriller:'サスペンス'};return lang==='ja'?(ja[value]||value):value}
-function genreChoiceRecordsForAnime(a){const own=[...new Set((Array.isArray(a?.genres)?a.genres:[]).map(value=>String(value||'').trim()).filter(Boolean))];if(!own.length)return [];const correct=own[randomInt(own.length)],excluded=new Set(own),records=[{label:quizGenreLabel(correct),value:quizGenreLabel(correct)}];for(const genre of questionChoiceSummary().genreKeys){if(excluded.has(genre))continue;const label=quizGenreLabel(genre);if(records.some(record=>record.value===label))continue;records.push({label,value:label});if(records.length>=4)break}return records}
+function genreChoiceRecordsForAnime(a){
+ const own=[...new Set((Array.isArray(a?.genres)?a.genres:[]).map(value=>String(value||'').trim()).filter(Boolean))];
+ if(!own.length)return [];
+ const correct=own[randomInt(own.length)],excluded=new Set(own),correctLabel=quizGenreLabel(correct),records=[{label:correctLabel,value:correctLabel}];
+ const candidates=shuffle([...(questionChoiceSummary().genreKeys||[])]);
+ for(const genre of candidates){
+  if(excluded.has(genre))continue;
+  const label=quizGenreLabel(genre);
+  if(!label||records.some(record=>record.value===label))continue;
+  records.push({label,value:label});if(records.length>=4)break;
+ }
+ return records;
+}
 function quizFormatLabel(value){const labels={ja:{TV:'TVアニメ',TV_SHORT:'短編アニメ',MOVIE:'劇場版',OVA:'OVA',ONA:'Webアニメ',SPECIAL:'特別編'},en:{TV:'TV',TV_SHORT:'TV short',MOVIE:'Movie',OVA:'OVA',ONA:'ONA',SPECIAL:'Special'},ko:{TV:'TV 애니메이션',TV_SHORT:'단편 애니메이션',MOVIE:'극장판',OVA:'OVA',ONA:'웹 애니메이션',SPECIAL:'스페셜'},zh:{TV:'电视动画',TV_SHORT:'短篇动画',MOVIE:'剧场版',OVA:'OVA',ONA:'网络动画',SPECIAL:'特别篇'},es:{TV:'TV',TV_SHORT:'TV corto',MOVIE:'Película',OVA:'OVA',ONA:'ONA',SPECIAL:'Especial'},fr:{TV:'TV',TV_SHORT:'Court métrage TV',MOVIE:'Film',OVA:'OVA',ONA:'ONA',SPECIAL:'Spécial'},pt:{TV:'TV',TV_SHORT:'TV curto',MOVIE:'Filme',OVA:'OVA',ONA:'ONA',SPECIAL:'Especial'},de:{TV:'TV',TV_SHORT:'TV-Kurzformat',MOVIE:'Film',OVA:'OVA',ONA:'ONA',SPECIAL:'Spezial'}};return labels[lang]?.[value]||labels.en[value]||value}
 function metadataValueChoiceRecords(a,field,labeler){
  const correct=String(a?.[field]??'').trim();if(!correct)return [];
