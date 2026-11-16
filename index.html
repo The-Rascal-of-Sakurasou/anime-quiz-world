@@ -712,7 +712,7 @@ body.quiz-preparing #quizStatus:before{content:"";display:inline-block;width:22p
 </section>
 <section id="aqwPlayerLeaderboard" class="social-box aqw-rush-board" aria-labelledby="aqwPlayerBoardTitle">
  <div class="aqw-rush-board-head"><h3 id="aqwPlayerBoardTitle">プレイヤー総合ランキング</h3><div class="aqw-rush-board-actions"><label class="aqw-player-sort-label" for="aqwPlayerBoardPeriod"><span id="aqwPlayerBoardPeriodLabel">期間</span><select id="aqwPlayerBoardPeriod"><option value="all">全期間</option><option value="day">今日</option><option value="week">今週</option><option value="month">今月</option></select></label><label class="aqw-player-sort-label" for="aqwPlayerBoardSort"><span id="aqwPlayerBoardSortLabel">集計方法</span><select id="aqwPlayerBoardSort"><option value="runs">プレイ回数</option><option value="accuracy">正答率（10問以上）</option></select></label><button id="aqwPlayerBoardRefresh" type="button">更新</button><button id="aqwPlayerBoardShare" type="button">ランキングを共有</button><button id="aqwPlayerBoardSave" type="button">画像を保存</button></div></div>
- <p class="muted aqw-rush-board-desc" id="aqwPlayerBoardDescription">クイズの獲得XP・プレイ回数・正答率でプレイヤーを比較できます。ランキングはログイン中のプレイから集計されます。</p>
+ <p class="muted aqw-rush-board-desc" id="aqwPlayerBoardDescription">プレイ回数・正答率でプレイヤーを比較できます。ランキングはログイン中のプレイから集計されます。</p>
  <p class="aqw-rush-board-status" id="aqwPlayerBoardStatus" role="status" aria-live="polite">ランキングを読み込んでいます…</p>
  <div class="aqw-rush-board-scroll"><table><thead><tr><th id="aqwPlayerRankHeading">順位</th><th id="aqwPlayerNameHeading">プレイヤー</th><th id="aqwPlayerMetricHeading">記録</th><th id="aqwPlayerDetailHeading">プレイ回数・正答数</th></tr></thead><tbody id="aqwPlayerBoardRows"></tbody></table></div>
  <p class="muted aqw-rush-board-status" id="aqwMyPlayerRank" role="status" aria-live="polite"></p>
@@ -724,7 +724,7 @@ body.quiz-preparing #quizStatus:before{content:"";display:inline-block;width:22p
 
 </section>
 <section id="search" class="card hidden"><div class="tag">ANIME DATABASE</div><h2 id="searchHeading">作品を検索</h2><p class="muted" id="searchDescription">作品名を入力して、作品情報を検索できます。</p><form id="searchForm" class="searchbar"><input id="query" placeholder="例：葬送のフリーレン" aria-label="作品名" required><button class="primary" id="searchButton">検索</button></form><div id="searchStatus" class="status"></div><div id="results" class="grid"></div></section>
-<footer><span id="footerText">作品情報・画像は外部の作品データサービスから取得しています。非公式のファンサイトです。各作品の権利は権利者に帰属します。利用にはインターネット接続が必要です。</span><div class="footer-links"><a href="./terms.html" id="footerTerms">利用規約</a><a href="./privacy.html" id="footerPrivacy">プライバシーポリシー</a><a href="./qa.html" id="footerQa">Q&A・質問</a><a href="./guide.html" id="footerGuide">遊び方・お知らせ</a><a href="./admin.html" id="footerAdmin">管理者ログイン</a><a id="footerContact" href="https://x.com/anime_love_p" target="_blank" rel="noopener noreferrer">連絡先：@anime_love_p（X）</a></div></footer>
+<footer><span id="footerText">作品情報・画像は外部の作品データサービスから取得しています。非公式のファンサイトです。各作品の権利は権利者に帰属します。利用にはインターネット接続が必要です。</span><div class="footer-links"><a href="./terms.html" id="footerTerms">利用規約</a><a href="./privacy.html" id="footerPrivacy">プライバシーポリシー</a><a href="./qa.html" id="footerQa">Q&A・質問</a><a href="./guide.html" id="footerGuide">遊び方</a><a href="./admin.html" id="footerAdmin">管理者ログイン</a><a id="footerContact" href="https://x.com/anime_love_p" target="_blank" rel="noopener noreferrer">連絡先：@anime_love_p（X）</a></div></footer>
 </div>
 
 <script>
@@ -3308,12 +3308,12 @@ async function initSupabase(){
   });
   try{await supabaseSdkPromise}catch(error){
    supabaseSdkPromise=null;
-   setStatus(localJa()?'SNSライブラリを読み込めませんでした。ネット接続を確認してください。':'Could not load the community module. Check your internet connection.');
+   setStatus(localJa()?'ランキング機能を読み込めませんでした。ネット接続を確認してください。':'Could not load the ranking module. Check your internet connection.');
    console.warn('AQW Supabase SDK load failed:',error);
    return false;
   }
  }
- if(!window.supabase?.createClient){setStatus(localJa()?'SNSライブラリを読み込めませんでした。ネット接続を確認してください。':'Could not load the community module. Check your internet connection.');return false}
+ if(!window.supabase?.createClient){setStatus(localJa()?'ランキング機能を読み込めませんでした。ネット接続を確認してください。':'Could not load the ranking module. Check your internet connection.');return false}
  sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,storage:window.sessionStorage,autoRefreshToken:true,detectSessionInUrl:true}});
  return true;
 }
@@ -3360,7 +3360,7 @@ async function authAction(kind){
 async function refreshSession(session,{light=false}={}){
  currentUser=session?.user||null;currentProfile=null;
  if(light){if(!currentUser)window.dispatchEvent(new CustomEvent('aqw:personal-difficulty-profile',{detail:null}));return}
- await Promise.all([syncFollowRealtime(),syncNotificationRealtime()]);
+ // Social follow and notification realtime subscriptions are no longer initialized.
  $s('aqwNotificationsButton').classList.toggle('hidden',!currentUser);$s('aqwEnableBrowserNotifications').classList.toggle('hidden',!currentUser);
  if(!currentUser)$s('aqwNotifications').classList.add('hidden');
  $s('aqwAuthPanel').classList.remove('hidden');
@@ -3377,7 +3377,7 @@ async function refreshSession(session,{light=false}={}){
   $s('aqwEditDisplayName').value=data.display_name||'';
   $s('aqwBio').value=data.bio||'';updateAvatarPreview(data.avatar_path||null);$s('aqwAvatarFile').value='';
   setStatus((localJa()?'ログイン中：@':'Signed in as @')+data.username);
-  await Promise.all([loadFriends(),updateNotificationCount()]);
+  // Keep only ranking and difficulty-feedback data requests in the signed-in session.
   await loadMyDifficultyProfile();
   for(const run of [...pendingRushResults])await submitRushResult(run);
   for(const run of [...pendingPlayerRuns])await submitPlayerRun(run);
