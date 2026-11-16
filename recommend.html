@@ -125,6 +125,7 @@ body{background:#f6f7f9;color:#202936;letter-spacing:.005em}
 @media(max-width:380px){.site-brand-logo{flex-basis:42px;width:42px;height:42px}}
 </style>
  <link rel="stylesheet" href="./responsive.css">
+<script src="./anime-utils.js"></script>
 </head>
 <body>
 <a class="skip-link" href="#mainContent">診断コンテンツへ移動</a>
@@ -911,10 +912,7 @@ function normalizeSeedTitle(value){
  return String(value||'').toLocaleLowerCase().normalize('NFKC')
   .replace(/[\s・：:!！?？。、,.'’"「」『』()（）［］【】_ｰ-]/g,'');
 }
-function hasFamousJapaneseTitle(media){
- const names=[media?.title?.native,media?.title?.english,media?.title?.romaji,...(Array.isArray(media?.synonyms)?media.synonyms:[])];
- return names.some(name=>typeof name==='string'&&/[ぁ-んァ-ヶ]/.test(name));
-}
+
 function isJapaneseOriginAnime(media){
  if(!media)return false;
  // 海外作品は、日本語の作品名が確認でき、AniList popularity が10,000以上の有名作品に限って採用する。
