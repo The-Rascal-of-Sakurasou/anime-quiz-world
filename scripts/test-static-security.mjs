@@ -274,7 +274,7 @@ const sharedAnimeUtils = fs.readFileSync("anime-utils.js", "utf8");
 const famousTitleHelper = sharedAnimeUtils.match(/function hasFamousJapaneseTitle\(media\)\{[\s\S]*?\n\}/)?.[0];
 assert.ok(famousTitleHelper, "Shared Japanese-title verification helper missing");
 assert.match(recommend, /<script src="\.\/anime-utils\.js"><\/script>/, "Recommendation page must load shared anime utilities");
-assert.match(index, /<script src="\.\/anime-utils\.js"><\/script>/, "Quiz page must load shared anime utilities");
+assert.match(source.get("index.html"), /<script src="\.\/anime-utils\.js"><\/script>/, "Quiz page must load shared anime utilities");
 const isRecommendedOriginJapanese = vm.runInNewContext(famousTitleHelper + "\n" + recommendOriginHelper + "\nisJapaneseOriginAnime");
 assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "ORIGINAL" }), true, "Japanese original anime must remain eligible");
 assert.equal(isRecommendedOriginJapanese({ countryOfOrigin: "JP", source: "MANGA", relations: { edges: [{ relationType: "ADAPTATION", node: { type: "MANGA", countryOfOrigin: "JP", format: "MANGA" } }] } }), true, "Japanese manga adaptations must remain eligible");
