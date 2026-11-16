@@ -661,6 +661,12 @@ body.quiz-preparing #quizStatus:before{content:"";display:inline-block;width:22p
 <option value="synopsis">あらすじ → 作品名</option>
 <option value="synonym">略称・別名 → 作品名</option>
 </optgroup>
+<optgroup label="キャラクターを当てる">
+<option value="character">登場キャラクター → 作品名</option>
+<option value="titleCharacter">作品名 → 登場キャラクター</option>
+<option value="characterImage">キャラクター画像 → 名前</option>
+<option value="characterNameImage">キャラクター名 → 画像</option>
+</optgroup>
 <optgroup label="作品情報を当てる">
 <option value="titleYear">作品名 → 公開／放送開始年</option>
 <option value="titleStudio">作品名 → 制作スタジオ</option>
@@ -742,8 +748,8 @@ function setDocumentLanguage(){document.documentElement.lang=lang;document.title
 function selectLanguage(l){const next=SUPPORTED_LANGUAGES.includes(l)?l:'ja';if(next===lang)return;const active=!document.getElementById('quizArea').classList.contains('hidden')&&questions.length>0;const prompt=document.getElementById('answerPrompt'),feedback=document.getElementById('feedback');const questionView=active?{promptText:prompt?.textContent,promptWhiteSpace:prompt?.style.whiteSpace,promptPadding:prompt?.style.padding,promptBackground:prompt?.style.background,promptBorderRadius:prompt?.style.borderRadius,feedbackText:feedback?.textContent,feedbackColor:feedback?.style.color}:null;lang=next;safeStorage.setItem('aqw-language',lang);setDocumentLanguage();const sel=document.getElementById('languageSelect');if(sel)sel.value=lang;applyLanguage();if(active){if(prompt&&questionView){prompt.textContent=questionView.promptText;prompt.style.whiteSpace=questionView.promptWhiteSpace;prompt.style.padding=questionView.promptPadding;prompt.style.background=questionView.promptBackground;prompt.style.borderRadius=questionView.promptBorderRadius}if(feedback&&questionView){feedback.textContent=questionView.feedbackText;feedback.style.color=questionView.feedbackColor}updateTimer();document.getElementById('score').textContent=tr('score')+' '+points;return}if(!pool.length)prepare();else{document.getElementById('progress').textContent=pool.length+(tr('loaded')||'');document.getElementById('start').classList.remove('hidden');document.getElementById('start').textContent=tr('start')}}
 function restoreLanguage(){const saved=safeStorage.getItem('aqw-language');lang=SUPPORTED_LANGUAGES.includes(saved)?saved:'ja';setDocumentLanguage();const sel=document.getElementById('languageSelect');if(sel)sel.value=lang;applyLanguage();if(!pool.length)prepare()}
 function applyLanguage(){const uiNow=LANG_UI[lang]||LANG_UI.en;const guideText=({ja:'遊び方・お知らせ',en:'Help & News',ko:'이용 안내·공지',zh:'使用指南与公告',es:'Ayuda y noticias',fr:'Aide et actualités',pt:'Ajuda e novidades',de:'Hilfe & Neuigkeiten'}[lang]||'Help & News');const guideLink=document.getElementById('guideLink'),footerGuide=document.getElementById('footerGuide');if(guideLink)guideLink.textContent=guideText;if(footerGuide)footerGuide.textContent=guideText;const recommendLink=document.querySelector('.hero-recommend-link');if(recommendLink){recommendLink.innerHTML=lang==='ja'?'おすすめアニメ診断を始める <span aria-hidden="true">→</span>':'Start Anime Recommendations <span aria-hidden="true">→</span>'}const multiplayerLink=document.querySelector('a[href="./multiplayer.html"]');if(multiplayerLink)multiplayerLink.textContent=lang==='ja'?'オンライン対戦':'Online Multiplayer';const featuredRail=document.getElementById('featuredRail');if(featuredRail&&featuredRail.querySelector('.muted'))featuredRail.querySelector('.muted').textContent=lang==='ja'?'今シーズンのアニメを読み込んでいます…':'Loading this season’s anime…';const footerLabels={footerTerms:lang==='ja'?'利用規約':'Terms of Use',footerPrivacy:lang==='ja'?'プライバシーポリシー':'Privacy Policy',footerQa:lang==='ja'?'Q&A・質問':'Q&A / Contact',footerAdmin:lang==='ja'?'管理者ログイン':'Admin Login',footerContact:lang==='ja'?'連絡先：@anime_love_p（X）':'Contact: @anime_love_p (X)'};Object.entries(footerLabels).forEach(([id,label])=>{const el=document.getElementById(id);if(el)el.textContent=label});const quitButton=document.getElementById('quitQuizButton');if(quitButton)quitButton.textContent=({ja:'やめる',en:'Quit',ko:'그만하기',zh:'退出',es:'Salir',fr:'Quitter',pt:'Sair',de:'Beenden'}[lang]||'Quit');updateDifficultyUI();const homeLogo=document.getElementById('homeLogo');if(homeLogo){homeLogo.setAttribute('aria-label',({ja:'ホームへ戻る',en:'Return to home',ko:'홈으로 돌아가기',zh:'返回首页',es:'Volver al inicio',fr:'Retour à l’accueil',pt:'Voltar ao início',de:'Zur Startseite'}[lang]||'Return to home'));homeLogo.title=homeLogo.getAttribute('aria-label')}const homeAfterQuiz=document.getElementById('homeAfterQuiz');if(homeAfterQuiz)homeAfterQuiz.textContent=({ja:'戻る',en:'Back',ko:'뒤로',zh:'返回',es:'Volver',fr:'Retour',pt:'Voltar',de:'Zurück'}[lang]||'Back');const shareBtn=document.getElementById('shareResult'),saveBtn=document.getElementById('downloadResult');if(shareBtn)shareBtn.textContent=uiNow.share||'Share result image';const answerToggleBtn=document.getElementById('toggleAnswerMode'),answerSubmitBtn=document.getElementById('submitTypedAnswer'),answerTypedLabel=document.getElementById('typedAnswerLabel');if(answerToggleBtn)answerToggleBtn.textContent=uiNow.answerTyping||'Answer by typing';if(answerSubmitBtn)answerSubmitBtn.textContent=uiNow.submit||'Submit answer';if(answerTypedLabel)answerTypedLabel.textContent=uiNow.typeAnswer||'Type your answer';const toggle=document.getElementById('toggleAnswerMode'),submit=document.getElementById('submitTypedAnswer'),typedLabel=document.getElementById('typedAnswerLabel'),hint=document.getElementById('hintButton'),typedHint=document.getElementById('typedHintButton'),typedUnknown=document.getElementById('typedUnknownAnswer');if(typedUnknown)typedUnknown.textContent=({ja:'わからない',en:"I don't know",ko:'모르겠어요',zh:'不知道',es:'No lo sé',fr:'Je ne sais pas',pt:'Não sei',de:'Ich weiß es nicht'}[lang]||"I don't know");if(toggle)toggle.textContent=uiNow.answerTyping||'Answer by typing';if(submit)submit.textContent=uiNow.submit||'Submit answer';if(typedLabel)typedLabel.textContent=uiNow.typeAnswer||'Type your answer';if(hint)hint.textContent=({ja:'四択用ヒント',en:'Multiple-choice hint',ko:'객관식 힌트',zh:'四选一提示',es:'Pista para opción múltiple',fr:'Indice QCM',pt:'Dica de múltipla escolha',de:'Multiple-Choice-Hinweis'}[lang]||'Multiple-choice hint');if(typedHint)typedHint.textContent=({ja:'入力用ヒント',en:'Typed-answer hint',ko:'직접 입력 힌트',zh:'输入题提示',es:'Pista para respuesta escrita',fr:'Indice pour réponse écrite',pt:'Dica para resposta digitada',de:'Hinweis für Texteingabe'}[lang]||'Typed-answer hint');if(saveBtn)saveBtn.textContent=uiNow.download||'Save result image';const labels=[uiNow.progressHeading,uiNow.missionHeading,uiNow.achievementHeading];['progressHeading','missionHeading','achievementHeading'].forEach((id,i)=>{const el=document.getElementById(id);if(el)el.textContent=labels[i]});const pt=document.getElementById('progressTab');if(pt)pt.textContent=uiNow.progressTab||'Progress & Collection';const pl=document.getElementById('playModeLabel');if(pl)pl.textContent=uiNow.playMode||'Play mode';const po=document.getElementById('playMode');if(po){const names=[uiNow.normal,uiNow.daily,uiNow.endless,uiNow.rush];[...po.options].forEach((o,i)=>o.textContent=names[i])}['countLabel','heroTitle','heroDescription','quizTab','searchTab','quizHeading','answerPrompt','start','resultHeading','restart','searchHeading','searchDescription','searchButton','footerText','footerText2'].forEach(k=>{let e=document.getElementById(k);if(e){if(k==='heroTitle')e.innerHTML=tr(k);else e.textContent=tr(k)}});const languageToggle=document.getElementById('languageToggle');if(languageToggle){const other=lang==='ja'?'en':'ja';languageToggle.textContent=lang==='ja'?'English':'日本語';languageToggle.setAttribute('aria-label',lang==='ja'?'Switch to English':'Switch to Japanese');languageToggle.title=lang==='ja'?'Switch to English':'Switch to Japanese'};document.getElementById('query').placeholder=tr('placeholder');if(!pool.length){document.getElementById('progress').textContent=tr('preparing');document.getElementById('score').textContent=tr('score')+' 0';}const localizedQuizModeLabels={
-ja:{image:'作品ビジュアル → 作品名',synopsis:'あらすじ → 作品名',synonym:'略称・別名 → 作品名',studio:'制作スタジオ → 作品名',year:'公開／放送開始年 → 作品名',titleYear:'作品名 → 公開／放送開始年',titleStudio:'作品名 → 制作スタジオ',titleSynopsis:'作品名 → あらすじ',titleEpisodes:'作品名 → 話数',titleGenre:'作品名 → ジャンル',titleFormat:'作品名 → 作品形式',mixed:'ランダム出題',typed:'入力式クイズ'},
-en:{image:'Artwork → Anime',synopsis:'Synopsis → Anime',synonym:'Alias → Anime',studio:'Studio → Anime',year:'Release/broadcast year → Anime',titleYear:'Anime → Release/broadcast year',titleStudio:'Anime → Studio',titleSynopsis:'Anime → Synopsis',titleEpisodes:'Anime → Episode count',titleGenre:'Anime → Genre',titleFormat:'Anime → Format',mixed:'Random',typed:'Typed-answer quiz'},
+ja:{image:'作品ビジュアル → 作品名',character:'登場キャラクター → 作品名',titleCharacter:'作品名 → 登場キャラクター',characterImage:'キャラクター画像 → 名前',characterNameImage:'キャラクター名 → 画像',synopsis:'あらすじ → 作品名',synonym:'略称・別名 → 作品名',studio:'制作スタジオ → 作品名',year:'公開／放送開始年 → 作品名',titleYear:'作品名 → 公開／放送開始年',titleStudio:'作品名 → 制作スタジオ',titleSynopsis:'作品名 → あらすじ',titleEpisodes:'作品名 → 話数',titleGenre:'作品名 → ジャンル',titleFormat:'作品名 → 作品形式',mixed:'ランダム出題',typed:'入力式クイズ'},
+en:{image:'Artwork → Anime',character:'Character → Anime',titleCharacter:'Anime → Character',characterImage:'Character image → Name',characterNameImage:'Character name → Image',synopsis:'Synopsis → Anime',synonym:'Alias → Anime',studio:'Studio → Anime',year:'Release/broadcast year → Anime',titleYear:'Anime → Release/broadcast year',titleStudio:'Anime → Studio',titleSynopsis:'Anime → Synopsis',titleEpisodes:'Anime → Episode count',titleGenre:'Anime → Genre',titleFormat:'Anime → Format',mixed:'Random',typed:'Typed-answer quiz'},
 ko:{image:'이미지 → 작품명',synopsis:'줄거리 → 작품명',synonym:'별칭 → 작품명',studio:'제작사 → 작품명',year:'공개·방영 연도 → 작품명',titleYear:'작품명 → 공개·방영 연도',titleStudio:'작품명 → 제작사',titleSynopsis:'작품명 → 줄거리',titleEpisodes:'작품명 → 에피소드 수',titleGenre:'작품명 → 장르',titleFormat:'작품명 → 형식',mixed:'무작위',typed:'직접 입력 퀴즈'},
 zh:{image:'图片 → 作品名',synopsis:'简介 → 作品名',synonym:'别名 → 作品名',studio:'制作公司 → 作品名',year:'上映／播出年份 → 作品名',titleYear:'作品名 → 上映／播出年份',titleStudio:'作品名 → 制作公司',titleSynopsis:'作品名 → 简介',titleEpisodes:'作品名 → 集数',titleGenre:'作品名 → 类型',titleFormat:'作品名 → 形式',mixed:'随机出题',typed:'输入答案'},
 es:{image:'Imagen → Anime',synopsis:'Sinopsis → Anime',synonym:'Alias → Anime',studio:'Estudio → Anime',year:'Año de estreno/emisión → Anime',titleYear:'Anime → Año de estreno/emisión',titleStudio:'Anime → Estudio',titleSynopsis:'Anime → Sinopsis',titleEpisodes:'Anime → Episodios',titleGenre:'Anime → Género',titleFormat:'Anime → Formato',mixed:'Aleatorio',typed:'Respuesta escrita'},
@@ -806,7 +812,7 @@ const msgPanel=document.getElementById('aqwFriendMessagesPanel');if(msgPanel){co
 const legal=document.querySelectorAll('#social > .legal-links a');if(legal[0])legal[0].textContent=sl.termsLink;if(legal[1])legal[1].textContent=sl.privacyLink;
 const ph=document.getElementById('query');if(ph)ph.placeholder=lang==='ja'?'例：葬送のフリーレン':lang==='en'?'e.g. Frieren: Beyond Journey’s End':({ko:'예: 장송의 프리렌',zh:'例如：葬送的芙莉莲',es:'p. ej., Frieren',fr:'ex. : Frieren',pt:'ex.: Frieren',de:'z. B. Frieren'}[lang]||'Search anime');
 }
-const query=`query ($page:Int,$perPage:Int,$search:String,$id_in:[Int],$format_in:[MediaFormat],$startDate_greater:FuzzyDateInt,$startDate_lesser:FuzzyDateInt) { Page(page:$page,perPage:$perPage) { pageInfo { hasNextPage } media(id_in:$id_in,format_in:$format_in,startDate_greater:$startDate_greater,startDate_lesser:$startDate_lesser,type:ANIME,sort:POPULARITY_DESC,search:$search,isAdult:false) { id countryOfOrigin source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } format popularity title { romaji english native } description(asHtml:false) synonyms coverImage { large medium extraLarge } episodes seasonYear averageScore genres studios { nodes { name } } startDate { year }  externalLinks { url site type isDisabled language } } } }`;
+const query=`query ($page:Int,$perPage:Int,$search:String,$id_in:[Int],$format_in:[MediaFormat],$startDate_greater:FuzzyDateInt,$startDate_lesser:FuzzyDateInt) { Page(page:$page,perPage:$perPage) { pageInfo { hasNextPage } media(id_in:$id_in,format_in:$format_in,startDate_greater:$startDate_greater,startDate_lesser:$startDate_lesser,type:ANIME,sort:POPULARITY_DESC,search:$search,isAdult:false) { id countryOfOrigin source(version:2) relations { edges { relationType node { id type countryOfOrigin format } } } format popularity title { romaji english native } description(asHtml:false) synonyms characters(perPage:10,sort:ROLE) { nodes { id name { full native } image { large } } } coverImage { large medium extraLarge } episodes seasonYear averageScore genres studios { nodes { name } } startDate { year }  externalLinks { url site type isDisabled language } } } }`;
 function normalizeUnicode(value){if(typeof value==='string')return value.normalize('NFC');if(Array.isArray(value))return value.map(normalizeUnicode);if(value&&typeof value==='object'){const out={};for(const [key,item] of Object.entries(value))out[key]=normalizeUnicode(item);return out}return value}
 
 function isJapaneseOriginAnime(a){
@@ -1994,14 +2000,25 @@ function questionChoiceSummary(){
    if(key)synopsisKeys.add(key);
   }
  }
- // Legacy character helpers remain harmlessly empty; the active quiz menu
- // uses only synopsis, title-year, alias and title-studio questions.
+ // Character metadata is indexed alongside the existing title and synopsis choices.
+ const characterNameKeys=new Set(),characterNamesByAnime=new Map(),characterNameAnimeCounts=new Map(),characterNameCounts=new Map(),uniqueCharacterNameKeys=new Set(),uniqueCharacterRecords=characterRecords(tierPool);
+ for(const anime of tierPool){
+  const names=new Set();
+  for(const character of anime?.characters?.nodes||[]){
+   const name=characterDisplayName(character),key=normalizeAnswer(name);
+   if(!name||!key)continue;
+   names.add(key);characterNameKeys.add(key);
+   characterNameCounts.set(key,(characterNameCounts.get(key)||0)+1);
+  }
+  characterNamesByAnime.set(Number(anime.id),names);
+  for(const key of names)characterNameAnimeCounts.set(key,(characterNameAnimeCounts.get(key)||0)+1);
+ }
+ for(const key of characterNameKeys)if(characterNameAnimeCounts.get(key)===1)uniqueCharacterNameKeys.add(key);
  const value={
   titleKeys,titleChoiceRecords,titleAliasOwners,aliasAnimeOwners,
   tierStudioKeys,studioKeys:tierStudioKeys,yearKeys,episodeKeys,formatKeys,genreKeys,
-  characterNameKeys:new Set(),characterNamesByAnime:new Map(),
-  characterNameAnimeCounts:new Map(),characterNameCounts:new Map(),
-  uniqueCharacterNameKeys:new Set(),uniqueCharacterRecords:[],
+  characterNameKeys,characterNamesByAnime,characterNameAnimeCounts,characterNameCounts,
+  uniqueCharacterNameKeys,uniqueCharacterRecords,
   synopsisCandidates:tierPool.filter(hasUsableSynopsis),synopsisKeys
  };
  questionChoiceSummaryCache={key,pool,value};
@@ -2049,12 +2066,24 @@ async function ensureQuestionChoiceSummaryAsync(){
    }
    if((i+1)%64===0&&i+1<tierPool.length)await new Promise(resolve=>setTimeout(resolve,0));
   }
+  const characterNameKeys=new Set(),characterNamesByAnime=new Map(),characterNameAnimeCounts=new Map(),characterNameCounts=new Map(),uniqueCharacterNameKeys=new Set(),uniqueCharacterRecords=characterRecords(tierPool);
+  for(const anime of tierPool){
+   const names=new Set();
+   for(const character of anime?.characters?.nodes||[]){
+    const name=characterDisplayName(character),key=normalizeAnswer(name);
+    if(!name||!key)continue;
+    names.add(key);characterNameKeys.add(key);
+    characterNameCounts.set(key,(characterNameCounts.get(key)||0)+1);
+   }
+   characterNamesByAnime.set(Number(anime.id),names);
+   for(const key of names)characterNameAnimeCounts.set(key,(characterNameAnimeCounts.get(key)||0)+1);
+  }
+  for(const key of characterNameKeys)if(characterNameAnimeCounts.get(key)===1)uniqueCharacterNameKeys.add(key);
   const value={
    titleKeys,titleChoiceRecords,titleAliasOwners,aliasAnimeOwners,
    tierStudioKeys,studioKeys:tierStudioKeys,yearKeys,episodeKeys,formatKeys,genreKeys,
-   characterNameKeys:new Set(),characterNamesByAnime:new Map(),
-   characterNameAnimeCounts:new Map(),characterNameCounts:new Map(),
-   uniqueCharacterNameKeys:new Set(),uniqueCharacterRecords:[],
+   characterNameKeys,characterNamesByAnime,characterNameAnimeCounts,characterNameCounts,
+   uniqueCharacterNameKeys,uniqueCharacterRecords,
    synopsisCandidates,synopsisKeys
   };
   if(pool===sourcePool)questionChoiceSummaryCache={key,pool:sourcePool,value};
@@ -2156,6 +2185,12 @@ function availableQuestionModes(a,format=$('#answerFormatSelect')?.value||'choic
  if(titleUsable(a)&&a?.format!=='MOVIE'&&Number.isInteger(Number(a?.episodes))&&Number(a.episodes)>0)modes.push('titleEpisodes');
  if(titleUsable(a)&&Array.isArray(a?.genres)&&a.genres.length)modes.push('titleGenre');
  if(titleUsable(a)&&a?.format)modes.push('titleFormat');
+ if(format!=='typed'){
+  if(titleUsable(a)&&characterRecords([a]).some(record=>isSingleAnimeCharacter(record)))modes.push('character');
+  if(titleUsable(a)&&characterRecordsWithFourTitleChoicesForAnime(a).length>0)modes.push('titleCharacter');
+  if(characterRecordsWithFourChoicesForAnime(a,questionChoiceSummary(),false).length>0)modes.push('characterImage');
+  if(characterRecordsWithFourChoicesForAnime(a,questionChoiceSummary(),true).length>0)modes.push('characterNameImage');
+ }
  
  
  return modes.filter(mode=>questionModeHasFourChoices(a,mode));
